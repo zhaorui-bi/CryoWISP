@@ -1,0 +1,39 @@
+#!/bin/bash
+#PBS -P df68
+#PBS -q normal
+#PBS -l ncpus=48
+#PBS -l mem=192GB
+#PBS -l walltime=04:00:00
+#PBS -N cryo_prep_train
+#PBS -l storage=gdata/jz31+scratch/df68
+#PBS -o /g/data/jz31/zhaorui/cryoppp_data/logs/prep_train.out
+#PBS -j oe
+
+set -euo pipefail
+export OMP_NUM_THREADS=48
+export MKL_NUM_THREADS=48
+REPO=/g/data/jz31/zhaorui/weight_program
+PY=$REPO/WeightCode/.venv/bin/python
+CROPS=$REPO/cryoexp/data/crops
+
+cd $REPO
+echo "=== make_crops $(date) ==="
+if [ -f $CROPS/summary.json ]; then
+  echo "crops already present, skipping make_crops"
+else
+  $PY -I cryoexp/make_crops.py \
+      --lite-root /g/data/jz31/zhaorui/cryoppp_data/lite \
+      --out $CROPS \
+      --old-ids 10005 10291 10081 --new-id 10947 --seed 7 \
+      --train-per-ds 2000 --oldxsf-per-ds 100 --oldtest-per-ds 300 \
+      --new-per-class 32 150 200 1000
+fi
+
+echo "=== crop counts ==="
+for d in $CROPS/*/; do echo "$d particle=$(ls $d/particle 2>/dev/null | wc -l) background=$(ls $d/background 2>/dev/null | wc -l)"; done
+
+echo "=== train seed 1 $(date) ==="
+$PY -I cryoexp/train_base.py --crops-dir $CROPS --out-dir $REPO/cryoexp/models --seed 1 --epochs 6
+echo "=== train seed 2 $(date) ==="
+$PY -I cryoexp/train_base.py --crops-dir $CROPS --out-dir $REPO/cryoexp/models --seed 2 --epochs 6
+echo "=== ALL DONE $(date) ==="

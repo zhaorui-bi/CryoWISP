@@ -1,0 +1,39 @@
+#!/bin/bash
+#PBS -P df68
+#PBS -q normal
+#PBS -l ncpus=48
+#PBS -l mem=96GB
+#PBS -l walltime=03:00:00
+#PBS -N cryowisp_baselines
+#PBS -l storage=gdata/jz31+scratch/df68
+#PBS -o /g/data/jz31/zhaorui/cryoppp_data/logs/baselines.out
+#PBS -j oe
+
+set -euo pipefail
+export OMP_NUM_THREADS=16
+export MKL_NUM_THREADS=16
+REPO=/g/data/jz31/zhaorui/weight_program
+PY=$REPO/WeightCode/.venv/bin/python
+RES=$REPO/cryoexp/results
+mkdir -p $RES
+
+run () {  # mode seed [extra args]
+  local MODE=$1 SEED=$2
+  local EXTRA=${3:-}
+  echo "=== baseline $MODE seed$SEED $(date +%H:%M:%S) ==="
+  $PY -I $REPO/cryoexp/baselines.py --mode $MODE \
+    --base-model $REPO/cryoexp/models/model_seed$SEED.pt \
+    --experience $REPO/cryoexp/engine/seed$SEED/experience.npz \
+    --selection $REPO/cryoexp/engine/seed$SEED/selection.npz \
+    --final $REPO/cryoexp/engine/seed$SEED/final.npz \
+    --engine-model-dir $REPO/cryoexp/engine/seed$SEED/task/model \
+    --out $RES/baseline_${MODE}_seed$SEED.json --seed $SEED $EXTRA || echo "FAILED $MODE seed$SEED"
+}
+
+for MODE in copied_delta random_knob linear_probe knob full; do
+  for SEED in 1 2; do
+    if [ "$MODE" = "copied_delta" ] && [ "$SEED" = "1" ]; then continue; fi  # deltas already live on seed1
+    run $MODE $SEED
+  done
+done
+echo "=== BASELINES DONE $(date) ==="
