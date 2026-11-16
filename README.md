@@ -25,11 +25,42 @@ It extends these projects with additional features, including:
 - a matched-capacity baseline suite (linear probe, same-knob gradient fits, copied-delta
   and random-knob controls, full fine-tuning) under one evaluation protocol
 
-Frozen pickers trained with CryoWISP on three CryoPPP datasets (10005/10291/10081) gain
-recognition of a held-out particle type (10947, 240-px viral particles, 0% base recall):
-+22.5 / +26.5 pt balanced accuracy on two independently trained networks from one program,
-matching full fine-tuning while changing 1,026 of 11.69M weights (0.009%) with zero gradient
-steps. Full numbers and protocol disclosures: `experiments/RESULTS.md`.
+## Results
+
+Two transfer regimes on CryoPPP (frozen pickers trained on 10005/10291/10081; balanced
+accuracy new / old on the engine's final split, scored once; **bold** = one weight program,
+no gradients, 1,026 / 11.69M weights changed, zero 2-D convolutions touched):
+
+| method | 10947 far shift, seed 1 | seed 2 (re-welded) | 10760 near shift, seed 1 | seed 2 (re-welded) |
+|---|---|---|---|---|
+| Zero-shot | 49.8 / 85.9 | 49.0 / 83.1 | 52.8 / 85.9 | 51.8 / 83.1 |
+| Linear probe (1,026 params) | 49.0 / 93.6 | 48.0 / 92.3 | 58.0 / 92.0 | 59.5 / 92.8 |
+| Knob gradient fit (the program's exact 1,026 params; 60 ep, 10x class weight) | 49.0 / 93.4 | 48.5 / 92.2 | 56.8 / 93.4 | 55.8 / 92.0 |
+| Full fine-tune (20 ep, same crops) | 74.5 / 93.4 | 71.8 / 93.1 | 69.8 / 91.3 | 67.3 / 92.7 |
+| **CryoWISP weight program** | **72.3 / 89.7** | **75.5 / 89.4** | **60.8 / 89.2** | **59.8 / 90.8** |
+
+Four findings (all under one protocol: same experience crops, selection-based model choice,
+final scored once):
+
+1. **Far shift is where programs win.** 10947 (240-px viral particles, 0% base recall): the
+   program matches or beats full fine-tuning on new-condition accuracy (+22.5 / +26.5 pt on
+   two independently trained networks) while gradient fitting of the *same* 1,026 parameters
+   fails entirely (~49%) — the program's convex, old-anchored fit finds a solution gradient
+   descent cannot. Near shift (10760, base already 52.8%): full fine-tuning leads; the
+   program still adds +8.0 pt on both networks with the identical gain.
+2. **Programs transfer, deltas do not.** Re-welding the kept program on an independently
+   trained network reproduces the gain (10947: +26.5; 10760: +8.00 = seed 1's +8.00);
+   copying the fitted deltas across fails (48.3, i.e. zero-shot level). Random perturbations
+   of the same knobs also do nothing.
+3. **Dose-response dichotomy.** Scaling the kept edit by alpha: old-condition accuracy rises
+   smoothly (85.9 -> 89.7 by alpha=0.75) while new-condition accuracy is exactly zero until
+   alpha=1 (49.0 -> 72.3 in one step), then decays on overshoot. Retention is a convex
+   re-gating effect; acquisition is a single boundary crossing at the program's own dose.
+4. **Experience composition matters more than amount.** 64 crops from 4 micrographs (v1)
+   generalize across micrographs (+13.4 external); 177 crops from the same 4 (v2) or 64 from
+   8 with a different draw (v3) reach +17/+16 on their final splits but collapse externally
+   (+0 / +3). Session-level variance is large; the external-validating protocol is what
+   keeps the headline honest.
 
 CryoWISP is research code for a submission in preparation, developed by a single person on
 an HPC login node. Expect rough edges. It can serve as a good starting point for research on
