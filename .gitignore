@@ -37,7 +37,7 @@ __pycache__/
 
 # Internal research and maintenance material stays on the local workstation.
 /docs/
-/experiments/
+# /experiments/ is tracked source in this repo
 /src/
 /Weight*_Paper_Theme_Freeze_*.md
 /Weight*_Research_and_Implementation_Blueprint_*.md
@@ -68,3 +68,7 @@ __pycache__/
 # Packaging artifacts
 /dist/
 /build/
+/experiments/data/
+/experiments/models/
+/experiments/runs/
+/experiments/engine/.venv*

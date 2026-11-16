@@ -1,11 +1,11 @@
-# CryoWISP × CryoPPP 迁移实验设计
+# WeightCode × CryoPPP 迁移实验设计
 
 日期：2026-11-15 · 环境：NCI Gadi（登录节点无 userns，bwrap 不可用）
 
 ## 任务定义
 把 cryoEM 颗粒挑选转成 **patch 二分类**（background=0 / particle=1，按 ImageFolder 字母序），
 输入 224×224 RGB crops（box = 1.5×颗粒直径，双线性缩放到 224）。
-迁移问题：基础网络在旧数据集上训练后，用 CryoWISP 权重程序从少量标注
+迁移问题：基础网络在旧数据集上训练后，用 WeightCode 权重程序从少量标注
 crops 安装"新数据集颗粒识别"能力，同时保持旧数据集表现。
 
 ## 数据（CryoPPP_Lite，来自 calla.rnet.missouri.edu/cryoppp_lite/）
@@ -27,7 +27,7 @@ crops 安装"新数据集颗粒识别"能力，同时保持旧数据集表现。
 - 模型：FP32 torchvision ResNet-18 state_dict（2 类头），import-model 校验 + NumPy 前向奇偶校验
 - prepare-data ×3 → prepare-task：--retention-drop 0.01 --min-new-gain 0.01
 - synthesize：编辑器 = Claude Code CLI → GLM 端点（open.bigmodel.cn/api/anthropic，
-  模型 glm-5.3[1m]，凭证文件 ~/.config/cryowisp/{glm_base_url,glm_auth_token}，mode 600）
+  模型 glm-5.3[1m]，凭证文件 ~/.config/weightcode/{glm_base_url,glm_auth_token}，mode 600）
 - **editor-isolation local**（本分支新增）：Gadi 全节点 user.max_user_namespaces=0，
   bwrap 不可用。LocalKernel 直启 NumPy-only 内核（-I、内存 rlimit、cell 预算、协议校验、
   虚拟时钟），程序经 UnisolatedRunner（同驱动/时钟/上限，无文件系统隔离）。

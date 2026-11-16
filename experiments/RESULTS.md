@@ -1,8 +1,8 @@
-# CryoWISP × CryoPPP 迁移实验结果
+# WeightCode × CryoPPP 迁移实验结果
 
 2026-11-15 · Gadi 登录节点 · GLM (glm-5.3[1m]) 编辑器 · editor-isolation local（见 DESIGN.md）
 
-## 结论：CryoWISP 可以迁移到 cryoEM 颗粒挑选任务
+## 结论：WeightCode 可以迁移到 cryoEM 颗粒挑选任务
 
 从三个旧 EMPIAR 数据集（10005/10291/10081，运输蛋白，130–154 px）训练的二分类
 ResNet-18 完全不认新数据集 10947（病毒蛋白，240 px）的颗粒；一次编辑器会话产出的
@@ -84,11 +84,15 @@ v2 experience 实际 81+96 new + 600 old（个别 new_exp 显微图正例不足 
 
 | 方法（final split：new / old） | seed 1 | seed 2 |
 |---|---|---|
-| Zero-shot | 待会话 finalize 报告 final_base | 同左（selection 基线 seed1 50.00/83.28） |
+| Zero-shot | 49.50 / 85.94 | —（selection 基线 seed1 50.00/83.28） |
 | Linear probe | 47.50 / 93.91 | 47.00 / 92.03 |
 | Knob 梯度法 | 47.50 / 93.91 | 47.00 / 92.03 |
 | Full fine-tune | 70.00 / 94.06 | 68.75 / 92.66 |
-| **CryoWISP 程序（v2）** | 会话运行中 | — |
+| **CryoWISP 程序（v2）** | **66.75 / 89.53**（+17.25/+3.59，accepted，2 checks 后编辑器主动 finish） | 未跑 |
+
+**v2 经验量级实验的负结果**：experience 从 64 → 177 张（同一批显微图）没有提高 final 增益
+（v1 +22.5 vs v2 +17.25；评估 crop 不同，仅供方向参考）。更多同图 crop 似乎让拟合过偏那 4 张
+new_exp 显微图。v1 的 64 张配置保持 headline；v2 会话记录在 `engine/seed1_v2/synth/`。
 
 **审稿人视角的四个证据**：
 1. **同容量梯度失败、程序成功**：程序同款 1026 旋钮上，梯度法无论默认（20ep, lr 1e-4）还是

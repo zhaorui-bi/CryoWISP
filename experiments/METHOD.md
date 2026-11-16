@@ -2,7 +2,7 @@
 
 **Cryo-EM particle picking via Weight-space Installation of Skills by Program synthesis**
 
-CryoWISP 把 CryoWISP 的权重空间编程（WSP, Weight-Space Programming）范式变成 cryoEM
+CryoWISP 把 WeightCode 的权重空间编程（WSP, Weight-Space Programming）范式变成 cryoEM
 颗粒挑选的新方法：主干网络永久冻结（cryo），新数据集/新颗粒类型的识别能力由一个
 LLM 综合出的**权重程序**"安装"进去 —— 像低温焊接（weld），而不是像微调那样把整个
 网络熔掉重铸。接缝极小：v1 实测只改 0.009% 的参数，任何 2-D 卷积零改动。
@@ -10,7 +10,7 @@ LLM 综合出的**权重程序**"安装"进去 —— 像低温焊接（weld）�
 **名字**：WISP = **W**eight-space **I**nstallation of **S**kills by **P**rogram synthesis，
 同时是 WSP（Weight-Space Programming）的谐音延展；一缕冰晶（a wisp of ice）呼应 cryo。
 机制上"焊接"保留为第三阶段的意象：冻结主干 + 加性权重补丁（引擎产物本身就是
-`cryowisp.patch.v0` 的 add_dense 补丁）。
+`weightcode.patch.v0` 的 add_dense 补丁）。
 
 ## 方法五段（Freeze–Show–Weld–Prove–Re-weld）
 
