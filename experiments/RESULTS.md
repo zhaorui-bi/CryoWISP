@@ -1,8 +1,8 @@
-# WeightCode × CryoPPP 迁移实验结果
+# CryoWISP × CryoPPP 迁移实验结果
 
 2026-11-15 · Gadi 登录节点 · GLM (glm-5.3[1m]) 编辑器 · editor-isolation local（见 DESIGN.md）
 
-## 结论：WeightCode 可以迁移到 cryoEM 颗粒挑选任务
+## 结论：CryoWISP 可以迁移到 cryoEM 颗粒挑选任务
 
 从三个旧 EMPIAR 数据集（10005/10291/10081，运输蛋白，130–154 px）训练的二分类
 ResNet-18 完全不认新数据集 10947（病毒蛋白，240 px）的颗粒；一次编辑器会话产出的

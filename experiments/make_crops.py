@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Extract particle/background crops from CryoPPP_Lite micrographs for WeightCode.
+"""Extract particle/background crops from CryoPPP_Lite micrographs for CryoWISP.
 
 Reads <lite_root>/<empiar_id>/micrographs/*.jpg and ground_truth/particle_coordinates/*.csv
 (false_positives/*.csv used only to keep negative crops away from expert-marked spots),

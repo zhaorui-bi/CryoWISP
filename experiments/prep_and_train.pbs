@@ -12,8 +12,8 @@
 set -euo pipefail
 export OMP_NUM_THREADS=48
 export MKL_NUM_THREADS=48
-REPO=/g/data/jz31/zhaorui/weight_program
-PY=$REPO/WeightCode/.venv/bin/python
+REPO=${CRYOWISP_REPO:-/g/data/jz31/zhaorui/weight_program}
+PY=$REPO/cryowisp/.venv/bin/python
 CROPS=$REPO/cryoexp/data/crops
 
 cd $REPO

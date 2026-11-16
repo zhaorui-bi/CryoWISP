@@ -51,13 +51,13 @@ Full logs and protocol disclosures: `experiments/RESULTS.md`, design: `experimen
 ## Repository layout
 
 ```
-engine/        WeightCode framework (upstream MIT) + our adaptations:
+cryowisp/        the engine (weight-space programming core, adapted from WeightCode; MIT):
                  --editor-isolation local   LocalKernel for hosts without user namespaces (HPC):
                                              NumPy-only -I kernel, memory rlimits, cell budgets,
                                              path guard; runs record program_isolation: none
                  --base-url-file /           Anthropic-compatible endpoints (GLM/Kimi/DeepSeek)
                  --auth-token-file           credential files for the editor CLI
-               in scripts/run_editor_session.py, weightcode/{application,sandbox,harness}
+               in scripts/run_editor_session.py, cryowisp/{application,sandbox,harness}
 experiments/   the CryoWISP pipeline on CryoPPP_Lite:
                  make_crops.py              micrograph-level splits -> 224x224 crops
                  train_base.py              frozen base pickers (2 seeds)
@@ -78,13 +78,13 @@ python experiments/make_crops.py --lite-root <lite> --out crops --old-ids 10005 
 python experiments/train_base.py --crops-dir crops --out-dir models --seed 1
 bash  experiments/run_engine_task.sh 1
 bash  experiments/run_synth_seed1.sh 1
-engine/.venv/bin/weightcode apply --task engine/seed2/task --program engine/seed1/synth/final/program \
-       --program-sha256 <sha256> --wall-s 900 --program-wall-s 480 --out engine/seed2/reuse
+cryowisp/.venv/bin/cryowisp apply --task runs/seed2/task --program runs/seed1/synth/final/program \
+       --program-sha256 <sha256> --wall-s 900 --program-wall-s 480 --out runs/seed2/reuse
 ```
 
 ## Attribution & license
 
 Engine code is a fork of [Gen-Verse/WeightCode](https://github.com/Gen-Verse/WeightCode)
-(MIT, see `engine/LICENSE`); CryoWISP additions under the same MIT license. Data:
+(MIT, see `cryowisp/LICENSE`); CryoWISP additions under the same MIT license. Data:
 CryoPPP (CC BY 4.0, Dhakal et al., Sci Data 2023). This repository is research code for a
 submission in preparation; numbers in `experiments/RESULTS.md` are the authoritative record.
