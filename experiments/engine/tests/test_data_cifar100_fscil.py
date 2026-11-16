@@ -44,8 +44,13 @@ def _fake_files(root: Path) -> tuple[Path, Path, dict]:
     y_test = rng.permutation(np.repeat(np.arange(C.N_CLASSES), N_TEST))
     x_train = rng.integers(0, 256, size=(y_train.size, 3072), dtype=np.uint8)
     x_test = rng.integers(0, 256, size=(y_test.size, 3072), dtype=np.uint8)
-    batch = lambda x, y: {b"batch_label": b"fake", b"fine_labels": [int(v) for v in y], b"coarse_labels": [0] * y.size,
-                          b"data": x, b"filenames": [b"f%d.png" % i for i in range(y.size)]}
+    batch = lambda x, y: {
+        b"batch_label": b"fake",
+        b"fine_labels": [int(v) for v in y],
+        b"coarse_labels": [0] * y.size,
+        b"data": x,
+        b"filenames": [b"f%d.png" % i for i in range(y.size)],
+    }
     names = [f"class{c:02d}".encode() for c in range(C.N_CLASSES)]
     tarball = root / "cifar-100-python.tar.gz"
     with tarfile.open(tarball, "w:gz") as archive:
@@ -57,8 +62,9 @@ def _fake_files(root: Path) -> tuple[Path, Path, dict]:
     base_rows = rng.permutation(np.flatnonzero(y_train < C.N_BASE_CLASSES))
     lists = {1: base_rows}
     for session in C.SESSIONS[1:]:
-        lists[session] = np.concatenate([rng.permutation(np.flatnonzero(y_train == c))[: C.SHOTS]
-                                         for c in C.session_classes(session)])
+        lists[session] = np.concatenate(
+            [rng.permutation(np.flatnonzero(y_train == c))[: C.SHOTS] for c in C.session_classes(session)]
+        )
     hashes = {}
     for session, rows in lists.items():
         data = ("\n".join(str(int(r)) for r in rows) + "\n").encode("ascii")
@@ -66,8 +72,19 @@ def _fake_files(root: Path) -> tuple[Path, Path, dict]:
         hashes[session] = hashlib.sha256(data).hexdigest()
     digest = hashlib.sha256(tarball.read_bytes()).hexdigest()
     md5 = hashlib.md5(tarball.read_bytes()).hexdigest()
-    return tarball, index_dir, {"sha256": digest, "md5": md5, "bytes": tarball.stat().st_size, "lists": hashes,
-                                "y_train": y_train, "x_train": x_train, "rows": lists}
+    return (
+        tarball,
+        index_dir,
+        {
+            "sha256": digest,
+            "md5": md5,
+            "bytes": tarball.stat().st_size,
+            "lists": hashes,
+            "y_train": y_train,
+            "x_train": x_train,
+            "rows": lists,
+        },
+    )
 
 
 @pytest.fixture()
@@ -162,7 +179,9 @@ def test_restricted_unpickler_refuses_other_globals():
         with pytest.raises(pickle.UnpicklingError, match="not allowed"):
             C.RestrictedUnpickler(io.BytesIO(pickle.dumps(payload, protocol=3)), encoding="bytes").load()
     array = np.arange(6, dtype=np.uint8).reshape(2, 3)
-    loaded = C.RestrictedUnpickler(io.BytesIO(pickle.dumps({b"data": array}, protocol=3)), encoding="bytes").load()
+    loaded = C.RestrictedUnpickler(
+        io.BytesIO(pickle.dumps({b"data": array}, protocol=3)), encoding="bytes"
+    ).load()
     np.testing.assert_array_equal(loaded[b"data"], array)
 
 

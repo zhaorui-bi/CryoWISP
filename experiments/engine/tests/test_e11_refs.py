@@ -55,7 +55,10 @@ def _arch(params: dict[str, np.ndarray]) -> TF.Architecture:
 def test_rebuild_matches_forward_and_trainable_set() -> None:
     params = _student()
     arch = _arch(params)
-    assert arch.family == TF.VITLITE and arch.last_linear_tensors == ("classifier.fc.weight", "classifier.fc.bias")
+    assert arch.family == TF.VITLITE and arch.last_linear_tensors == (
+        "classifier.fc.weight",
+        "classifier.fc.bias",
+    )
     assert arch.conv_layers == ("tokenizer.conv_layers.0.0",) and len(arch.ln_layers) == 15
     x = _images(12)
     assert TF.assert_parity(arch, params, _forward(), x, dtype=torch.float64) < 1e-5
@@ -97,19 +100,29 @@ def test_tie_plan_groups_the_patch_projection_by_patch_position() -> None:
     assert plan.tensor == "tokenizer.conv_layers.0.0.weight" and plan.n_channels == 3
     assert plan.groups.tolist() == [j % 16 for j in range(48)]
     child = RU.tie_columns(params[plan.tensor], plan.groups, 1.0)
-    assert np.allclose(child, np.broadcast_to(params[plan.tensor].mean(axis=1, keepdims=True), child.shape), atol=1e-7)
+    assert np.allclose(
+        child, np.broadcast_to(params[plan.tensor].mean(axis=1, keepdims=True), child.shape), atol=1e-7
+    )
 
 
 def _instance(tmp_path: Path, params: dict[str, np.ndarray]) -> SimpleNamespace:
     (tmp_path / "model_spec.json").write_text(json.dumps(_spec(params)))
-    return SimpleNamespace(instance_dir=tmp_path, params=params, forward=_forward(),
-                           private={"dataset": C.E11_DATASET})
+    return SimpleNamespace(
+        instance_dir=tmp_path, params=params, forward=_forward(), private={"dataset": C.E11_DATASET}
+    )
 
 
 def _evidence(seed: int) -> Evidence:
     x = _images(64, seed)
-    return Evidence(x=x, y=np.zeros(64, dtype=np.int64), n_fail=16, n_rand=48, sha256="0" * 64,
-                    base_pred=np.zeros(64, dtype=np.int64), rule="evidence-v1")
+    return Evidence(
+        x=x,
+        y=np.zeros(64, dtype=np.int64),
+        n_fail=16,
+        n_rand=48,
+        sha256="0" * 64,
+        base_pred=np.zeros(64, dtype=np.int64),
+        rule="evidence-v1",
+    )
 
 
 @pytest.mark.parametrize("method", ["tent_ln", "sar"])
@@ -137,7 +150,9 @@ def test_ln_references_give_eight_layernorm_only_candidates(tmp_path: Path, meth
 
 def test_sar_updates_when_inputs_pass_the_margin(tmp_path: Path) -> None:
     params = _student(4)
-    params["classifier.fc.bias"] = params["classifier.fc.bias"] + np.float32(5.0) * (np.arange(10) == 0)  # confident
+    params["classifier.fc.bias"] = params["classifier.fc.bias"] + np.float32(5.0) * (
+        np.arange(10) == 0
+    )  # confident
     params["classifier.fc.bias"] = params["classifier.fc.bias"].astype(np.float32)
     instance = _instance(tmp_path, params)
     candidates, info = L.sar_generator(instance, 0)(_evidence(4))
@@ -153,12 +168,24 @@ def test_cli_dispatches_e11_and_refuses_mixing() -> None:
     vit = SimpleNamespace(private={"dataset": C.E11_DATASET})
     other = SimpleNamespace(private={"dataset": "cifar10_r20"})
     with pytest.raises(ValueError, match="runs with e11"):
-        C.run_method(vit, "grad_last", Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True)
+        C.run_method(
+            vit, "grad_last", Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True
+        )
     with pytest.raises(ValueError, match="need a cifar10_vl7"):
-        C.run_method(other, "grad_last", Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True,
-                     e11=True)
+        C.run_method(
+            other,
+            "grad_last",
+            Path("/nonexistent"),
+            run_seed=0,
+            allow_main=False,
+            joint=True,
+            e10=True,
+            e11=True,
+        )
     with pytest.raises(ValueError, match="no BatchNorm"):
-        C.run_method(vit, "tent", Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True, e11=True)
+        C.run_method(
+            vit, "tent", Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True, e11=True
+        )
     with pytest.raises(ValueError, match="e11 only"):
         C.run_method(other, "sar", Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True)
 
@@ -167,7 +194,9 @@ def test_second_grid_values_labels_and_run_dirs(tmp_path: Path, monkeypatch: pyt
     from cryowisp.baselines.fit import grad as G
     from cryowisp.baselines.fit.runner import baseline_run_dir
 
-    assert G.GRID_E1.learning_rates == (1e-3, 1e-2) and G.GRID_E1.interp_alphas == tuple(k / 8 for k in range(1, 9))
+    assert G.GRID_E1.learning_rates == (1e-3, 1e-2) and G.GRID_E1.interp_alphas == tuple(
+        k / 8 for k in range(1, 9)
+    )
     assert G.GRID_E11_SECOND.learning_rates == (1e-5, 1e-4)
     assert G.GRID_E11_SECOND.interp_alphas == tuple(k / 64 for k in range(1, 9))
     assert G.candidate_grid(G.GRID_E11_SECOND) == [(lr, s) for lr in (1e-5, 1e-4) for s in (10, 30, 100, 300)]
@@ -183,7 +212,13 @@ def test_second_grid_values_labels_and_run_dirs(tmp_path: Path, monkeypatch: pyt
     config = G.grad_config("interp", 0, joint=True, grid=G.GRID_E11_SECOND)
     assert config["interp_alphas"] == [k / 64 for k in range(1, 9)] and config["grid"]["name"] == "e11_second"
     assert "grid" not in G.grad_config("interp", 0, joint=True)
-    assert C.E11_GRID2_METHODS == ("grad_last", "grad_full", "grad_sparse19_sal", "grad_sparse19_traj", "interp")
+    assert C.E11_GRID2_METHODS == (
+        "grad_last",
+        "grad_full",
+        "grad_sparse19_sal",
+        "grad_sparse19_traj",
+        "interp",
+    )
     monkeypatch.setenv("CRYOWISP_RUNS", str(tmp_path))
     first = baseline_run_dir("i00802425", "grad_full", 0, C.E11_REF_LABEL)
     second = baseline_run_dir("i00802425", "grad_full", 0, C.E11_GRID2_LABEL)
@@ -197,12 +232,16 @@ def test_second_grid_candidates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     instance = _instance(tmp_path, params)
     evidence = _evidence(5)
     candidates, info = G.grad_generator(instance, "grad_last", 0, grid=G.GRID_E11_SECOND)(evidence)
-    assert [c.config for c in candidates] == [{"lr": lr, "steps": s} for lr in (1e-5, 1e-4) for s in (10, 30, 100, 300)]
+    assert [c.config for c in candidates] == [
+        {"lr": lr, "steps": s} for lr in (1e-5, 1e-4) for s in (10, 30, 100, 300)
+    ]
     assert info["grid"] == "e11_second"
     head = set(_arch(params).last_linear_tensors)
     for c in candidates:
         assert {k for k in params if not np.array_equal(c.child[k], params[k])} <= head
-    monkeypatch.setattr(G, "TRAJ_STEPS", 3)  # a short theta_full: the same target in both grids is what is tested
+    monkeypatch.setattr(
+        G, "TRAJ_STEPS", 3
+    )  # a short theta_full: the same target in both grids is what is tested
     first, info1 = G.grad_generator(instance, "interp", 0)(evidence)
     second, info2 = G.grad_generator(instance, "interp", 0, grid=G.GRID_E11_SECOND)(evidence)
     assert info1["theta_full"]["sha256"] == info2["theta_full"]["sha256"]
@@ -210,15 +249,34 @@ def test_second_grid_candidates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert "grid" not in info1
     by_alpha = {c.config["alpha"]: c.child for c in first}
     eighth = [c for c in second if c.config["alpha"] == 8 / 64][0]
-    assert all(np.array_equal(eighth.child[k], by_alpha[1 / 8][k]) for k in params)  # 8/64 = 1/8 in both grids
+    assert all(
+        np.array_equal(eighth.child[k], by_alpha[1 / 8][k]) for k in params
+    )  # 8/64 = 1/8 in both grids
 
 
 def test_cli_refuses_misused_second_grid() -> None:
     vit = SimpleNamespace(private={"dataset": C.E11_DATASET})
     with pytest.raises(ValueError, match="pass e11=True with grid2"):
-        C.run_method(vit, "grad_last", Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True,
-                     grid2=True)
+        C.run_method(
+            vit,
+            "grad_last",
+            Path("/nonexistent"),
+            run_seed=0,
+            allow_main=False,
+            joint=True,
+            e10=True,
+            grid2=True,
+        )
     for method in ("ridge_last", "tent_ln", "sar", "prior_shift"):
         with pytest.raises(ValueError, match="no E11 second-grid run"):
-            C.run_method(vit, method, Path("/nonexistent"), run_seed=0, allow_main=False, joint=True, e10=True,
-                         e11=True, grid2=True)
+            C.run_method(
+                vit,
+                method,
+                Path("/nonexistent"),
+                run_seed=0,
+                allow_main=False,
+                joint=True,
+                e10=True,
+                e11=True,
+                grid2=True,
+            )

@@ -25,8 +25,21 @@ def test_set_list_is_the_registered_one():
     assert len(C.NEW) == 21 and len(C.STORED) == 4 and len(C.UNSEEN) == 13
     assert set(C.SETS) == {C.CLEAN} | set(C.NEW) | set(C.STORED)
     assert not set(C.NEW) & set(C.STORED)
-    assert C.UNSEEN == ("shot_noise", "impulse_noise", "motion_blur", "zoom_blur", "frost", "fog", "brightness",
-                        "elastic_transform", "pixelate", "jpeg_compression", "speckle_noise", "spatter", "saturate")
+    assert C.UNSEEN == (
+        "shot_noise",
+        "impulse_noise",
+        "motion_blur",
+        "zoom_blur",
+        "frost",
+        "fog",
+        "brightness",
+        "elastic_transform",
+        "pixelate",
+        "jpeg_compression",
+        "speckle_noise",
+        "spatter",
+        "saturate",
+    )
     for name in C.NOT_RUNNABLE:
         assert not any(s.startswith(name) for s in C.SETS)
     assert [C.group_of(s) for s in C.SETS].count("unseen") == 13
@@ -53,7 +66,9 @@ def test_frost_dir_is_hash_checked(tmp_path):
         C.check_frost_dir(tmp_path)
     data = b"abc"
     (tmp_path / "x").write_bytes(data)
-    assert C.git_blob_sha1(tmp_path / "x") == "f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f"  # git hash-object of "abc"
+    assert (
+        C.git_blob_sha1(tmp_path / "x") == "f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f"
+    )  # git hash-object of "abc"
 
 
 def test_labels():
@@ -79,8 +94,15 @@ def test_recovered_share_and_readout_compare():
     assert R.recovered_share(5.0, 0.90, 0.80) == (pytest.approx(10.0), pytest.approx(0.5))
     headroom, share = R.recovered_share(1.0, 0.90, 0.89)
     assert headroom == pytest.approx(1.0) and share is None
-    ours = {"delta_acc": 0.1, "fixed": 3, "broken": 1, "worst_class_delta": -0.01, "base_acc": 0.5, "child_acc": 0.6,
-            "n": 20}
+    ours = {
+        "delta_acc": 0.1,
+        "fixed": 3,
+        "broken": 1,
+        "worst_class_delta": -0.01,
+        "base_acc": 0.5,
+        "child_acc": 0.6,
+        "n": 20,
+    }
     assert R.same_readout(ours, dict(ours)) == {}
     assert set(R.same_readout(ours, {**ours, "fixed": 4})) == {"fixed"}
 

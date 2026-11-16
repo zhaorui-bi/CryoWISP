@@ -5,6 +5,7 @@ Reads only the two record files (no network, no image) and prints, per architect
 [paired 95% interval] and label for the four networks, label counts per group, recovered shares, the LLM minus FT
 table, the T07-G gate table with its Spearman, the clean per-class gate rates and the M05 tables.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,12 +29,17 @@ def t07_tables(t07: dict[str, Any]) -> None:
         print("|---|---|---|---|---|---|")
         for s in t07["sets"]:
             base = rows[(arch, NETS[0], s)]["base_acc"]
-            cells = [f"{rows[(arch, n, s)]['delta_points']:+.2f} [{rows[(arch, n, s)]['ci95'][0]:+.2f}, "
-                     f"{rows[(arch, n, s)]['ci95'][1]:+.2f}] {MARK[rows[(arch, n, s)]['label']]}" for n in NETS]
+            cells = [
+                f"{rows[(arch, n, s)]['delta_points']:+.2f} [{rows[(arch, n, s)]['ci95'][0]:+.2f}, "
+                f"{rows[(arch, n, s)]['ci95'][1]:+.2f}] {MARK[rows[(arch, n, s)]['label']]}"
+                for n in NETS
+            ]
             print(f"| {s} | {100 * base:.2f} | " + " | ".join(cells) + " |")
         print("\nlabel counts per network and group (help/neutral/harm):")
         for n in NETS:
-            c = Counter((r["group"], r["label"]) for r in t07["rows"] if r["arch"] == arch and r["network"] == n)
+            c = Counter(
+                (r["group"], r["label"]) for r in t07["rows"] if r["arch"] == arch and r["network"] == n
+            )
             print(n, {g: f"{c[(g, 'help')]}/{c[(g, 'neutral')]}/{c[(g, 'harm')]}" for g in GROUPS})
         print("\nrecovered share (loss >= 2 points) on own s1..s5:")
         for n in NETS[:2]:
@@ -49,8 +55,12 @@ def t07_tables(t07: dict[str, Any]) -> None:
     print("| set | ViT gaussian | ViT contrast | R18 gaussian | R18 contrast |")
     print("|---|---|---|---|---|")
     for s in t07["sets"]:
-        cells = [f"{lm[(a, c, s)]['llm_minus_ft_points']:+.2f} [{lm[(a, c, s)]['ci95'][0]:+.2f}, "
-                 f"{lm[(a, c, s)]['ci95'][1]:+.2f}]" for a in ("vit", "r18") for c in ("gaussian_noise", "contrast")]
+        cells = [
+            f"{lm[(a, c, s)]['llm_minus_ft_points']:+.2f} [{lm[(a, c, s)]['ci95'][0]:+.2f}, "
+            f"{lm[(a, c, s)]['ci95'][1]:+.2f}]"
+            for a in ("vit", "r18")
+            for c in ("gaussian_noise", "contrast")
+        ]
         print(f"| {s} | " + " | ".join(cells) + " |")
     g = {(x["final"], x["set"]): x for x in t07["gates"]}
     print("\nT07-G main gate rate per set and the final's change:")
@@ -58,8 +68,10 @@ def t07_tables(t07: dict[str, Any]) -> None:
     print("|---|---|---|---|---|")
     for s in t07["sets"]:
         a, b = g[("gaussian_noise", s)], g[("contrast", s)]
-        print(f"| {s} | {a['main_gate_rate']:.4f} | {a['delta_points']:+.2f} | {b['main_gate_rate']:.4f} | "
-              f"{b['delta_points']:+.2f} |")
+        print(
+            f"| {s} | {a['main_gate_rate']:.4f} | {a['delta_points']:+.2f} | {b['main_gate_rate']:.4f} | "
+            f"{b['delta_points']:+.2f} |"
+        )
     for final in ("gaussian_noise", "contrast"):
         print(final, "spearman:", t07["gate_associations"][final])
     print("\nT07-G clean per-class main-gate rate:")
@@ -70,7 +82,11 @@ def t07_tables(t07: dict[str, Any]) -> None:
         if x["final"] == "gaussian_noise":
             for k in st:
                 rates = [round(v, 4) for v in st[k]["per_class_gated_rate"]]
-                extra = f" cls rate {round(st[k]['cls']['frac_above_threshold'], 4)}" if k.startswith("cls") else ""
+                extra = (
+                    f" cls rate {round(st[k]['cls']['frac_above_threshold'], 4)}"
+                    if k.startswith("cls")
+                    else ""
+                )
                 print(x["final"], k + extra, rates)
         else:
             print(x["final"], [round(v, 4) for v in st["gate"]["per_class_patch_open_rate"]])
@@ -81,14 +97,18 @@ def m05_tables(m05: dict[str, Any]) -> None:
     print("\nM05:")
     for p, d in m05["programs"].items():
         print(f"\n{p}: same relation {d['same_relation_count']}/{d['n_targets']}")
-        print("| target | gain | clean | cond rate | clean rate | correction norm (cond) | base offset | edited offset "
-              "| residual share | clean edit move | same relation |")
+        print(
+            "| target | gain | clean | cond rate | clean rate | correction norm (cond) | base offset | edited offset "
+            "| residual share | clean edit move | same relation |"
+        )
         print("|---|---|---|---|---|---|---|---|---|---|---|")
         for r in d["rows"]:
-            print(f"| {r['target']}{' *' if r['own'] else ''} | {r['gain_points']:+.3f} | {r['clean_points']:+.3f} | "
-                  f"{r['cond_rate']:.4f} | {r['clean_rate']:.4f} | {r['correction_norm_cond_patch']:.3f} | "
-                  f"{r['base_offset_patch']:.3f} | {r['edited_offset_patch']:.3f} | {r['residual_share']:.3f} | "
-                  f"{r['edit_move_clean_patch']:.4f} | {r['same_relation']} |")
+            print(
+                f"| {r['target']}{' *' if r['own'] else ''} | {r['gain_points']:+.3f} | {r['clean_points']:+.3f} | "
+                f"{r['cond_rate']:.4f} | {r['clean_rate']:.4f} | {r['correction_norm_cond_patch']:.3f} | "
+                f"{r['base_offset_patch']:.3f} | {r['edited_offset_patch']:.3f} | {r['residual_share']:.3f} | "
+                f"{r['edit_move_clean_patch']:.4f} | {r['same_relation']} |"
+            )
         print("spearman non-own:", d["spearman_non_own"])
     print("references reproduced:", m05["references_reproduced"])
 

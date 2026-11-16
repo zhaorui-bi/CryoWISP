@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -60,8 +59,12 @@ STEP_CHECKPOINTS = (30, 100, 300, 1000)
 HALF_BATCH = 64
 RULE = "t04-large-ft-v1"
 POOL_RULE = "t04-clean-train-pool"
-SPEC = MethodSpec(method=METHOD, label="full fine-tuning on 2,000 condition and 2,000 clean labelled rows (T04 "
-                  "diagnostic)", uses_labels_for_fit=True, edit_limits_enforced=False)
+SPEC = MethodSpec(
+    method=METHOD,
+    label="full fine-tuning on 2,000 condition and 2,000 clean labelled rows (T04 diagnostic)",
+    uses_labels_for_fit=True,
+    edit_limits_enforced=False,
+)
 
 
 def fit_rows(instance: Any) -> Evidence:
@@ -78,9 +81,18 @@ def fit_rows(instance: Any) -> Evidence:
     x = np.concatenate([cond["x"], clean["x"]])
     y = np.concatenate([cond["y"], clean["y"]]).astype(np.int64)
     base_pred = predict(instance.forward, instance.params, x, 256)
-    return Evidence(x=x, y=y, n_fail=0, n_rand=len(cond["y"]), sha256=splits.v_evidence_sha256, base_pred=base_pred,
-                    rule=RULE, n_replay=len(clean["y"]), replay_sha256=meta["splits"]["train"]["sha256"],
-                    replay_rule=POOL_RULE)
+    return Evidence(
+        x=x,
+        y=y,
+        n_fail=0,
+        n_rand=len(cond["y"]),
+        sha256=splits.v_evidence_sha256,
+        base_pred=base_pred,
+        rule=RULE,
+        n_replay=len(clean["y"]),
+        replay_sha256=meta["splits"]["train"]["sha256"],
+        replay_rule=POOL_RULE,
+    )
 
 
 def generator(instance: Any, run_seed: int):
@@ -98,8 +110,14 @@ def generator(instance: Any, run_seed: int):
             torch.manual_seed(run_seed)
             draw = torch.Generator().manual_seed(int(run_seed))
             tensors = to_tensors(params, trainable=trainable)
-            optimizer = torch.optim.Adam([tensors[key] for key in trainable], lr=lr, betas=ADAM_BETAS, eps=ADAM_EPS,
-                                         weight_decay=0.0, foreach=False)
+            optimizer = torch.optim.Adam(
+                [tensors[key] for key in trainable],
+                lr=lr,
+                betas=ADAM_BETAS,
+                eps=ADAM_EPS,
+                weight_decay=0.0,
+                foreach=False,
+            )
             queues = {"new": torch.empty(0, dtype=torch.long), "old": torch.empty(0, dtype=torch.long)}
 
             def take(part: str, n: int) -> torch.Tensor:
@@ -121,18 +139,30 @@ def generator(instance: Any, run_seed: int):
                 trace.append(float(loss.detach()))
                 if step in STEP_CHECKPOINTS:
                     child = {key: value.detach().numpy().copy() for key, value in tensors.items()}
-                    candidates.append(CandidatePatch(
-                        slot=len(candidates), child=child, config={"lr": lr, "steps": step},
-                        hypothesis=(f"full fine-tuning, Adam lr={lr:g}, {step} steps of {HALF_BATCH} condition and "
-                                    f"{HALF_BATCH} clean labelled rows from {k} and {len(evidence.y) - k}; no edit "
-                                    "limits"),
-                        predicted_effect="more labelled rows than any arm gets: an upper reading of what fine-tuning "
-                                         "buys on this condition",
-                        notes={"minibatch_loss_last_10": trace[-10:]}))
+                    candidates.append(
+                        CandidatePatch(
+                            slot=len(candidates),
+                            child=child,
+                            config={"lr": lr, "steps": step},
+                            hypothesis=(
+                                f"full fine-tuning, Adam lr={lr:g}, {step} steps of {HALF_BATCH} condition and "
+                                f"{HALF_BATCH} clean labelled rows from {k} and {len(evidence.y) - k}; no edit "
+                                "limits"
+                            ),
+                            predicted_effect="more labelled rows than any arm gets: an upper reading of what fine-tuning "
+                            "buys on this condition",
+                            notes={"minibatch_loss_last_10": trace[-10:]},
+                        )
+                    )
             losses[f"{lr:g}"] = trace
-        info = {"architecture": arch.describe(), "parity_max_abs_logit_diff": parity, "trainable": trainable,
-                "n_fit_condition": k, "n_fit_clean": len(evidence.y) - k,
-                "loss_every_50_steps": {lr: trace[::50] for lr, trace in losses.items()}}
+        info = {
+            "architecture": arch.describe(),
+            "parity_max_abs_logit_diff": parity,
+            "trainable": trainable,
+            "n_fit_condition": k,
+            "n_fit_clean": len(evidence.y) - k,
+            "loss_every_50_steps": {lr: trace[::50] for lr, trace in losses.items()},
+        }
         return candidates, info
 
     return generate
@@ -145,16 +175,36 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     instance = load_instance(instances_root() / args.instance)
     run_dir = baseline_run_dir(instance.instance_id, METHOD, args.run_seed, REF_LABEL)
-    config = {"rule": RULE, "learning_rates": list(LEARNING_RATES), "step_checkpoints": list(STEP_CHECKPOINTS),
-              "minibatch": {"condition": HALF_BATCH, "clean": HALF_BATCH, "sampling": "without replacement per pass, "
-                            "torch.Generator seeded with the run seed, the same sequence for each lr"},
-              "optimizer": {"name": "Adam", "betas": list(ADAM_BETAS), "eps": ADAM_EPS, "weight_decay": 0.0},
-              "loss": "mean cross-entropy over the 128 rows of a step", "dtype": "float32", "seed": args.run_seed,
-              "torch": torch.__version__, "torch_threads": torch.get_num_threads(), "device": "cpu",
-              "candidate_order": [{"lr": lr, "steps": s} for lr in LEARNING_RATES for s in STEP_CHECKPOINTS]}
-    record = execute_run(instance=instance, spec=SPEC, run_dir=run_dir, run_seed=args.run_seed, config=config,
-                         generate=generator(instance, args.run_seed), joint=True, e10=True,
-                         evidence_override=fit_rows(instance))
+    config = {
+        "rule": RULE,
+        "learning_rates": list(LEARNING_RATES),
+        "step_checkpoints": list(STEP_CHECKPOINTS),
+        "minibatch": {
+            "condition": HALF_BATCH,
+            "clean": HALF_BATCH,
+            "sampling": "without replacement per pass, "
+            "torch.Generator seeded with the run seed, the same sequence for each lr",
+        },
+        "optimizer": {"name": "Adam", "betas": list(ADAM_BETAS), "eps": ADAM_EPS, "weight_decay": 0.0},
+        "loss": "mean cross-entropy over the 128 rows of a step",
+        "dtype": "float32",
+        "seed": args.run_seed,
+        "torch": torch.__version__,
+        "torch_threads": torch.get_num_threads(),
+        "device": "cpu",
+        "candidate_order": [{"lr": lr, "steps": s} for lr in LEARNING_RATES for s in STEP_CHECKPOINTS],
+    }
+    record = execute_run(
+        instance=instance,
+        spec=SPEC,
+        run_dir=run_dir,
+        run_seed=args.run_seed,
+        config=config,
+        generate=generator(instance, args.run_seed),
+        joint=True,
+        e10=True,
+        evidence_override=fit_rows(instance),
+    )
     print(json.dumps({"run_dir": str(run_dir), "final": record.get("final")}, indent=1, default=str))
     return 0
 

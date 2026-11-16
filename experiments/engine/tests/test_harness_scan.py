@@ -27,8 +27,8 @@ from cryowisp.harness.arms import arm_spec
 from cryowisp.harness.experience import EXPERIENCE_FILE
 from cryowisp.harness.instance import read_instance_record
 from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.leaks import scan_for_tokens
+from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.prompts import Budgets, render_system, render_task
 from cryowisp.harness.retention import kept_rule_record
 from cryowisp.harness.session import SessionPaths
@@ -37,7 +37,7 @@ from cryowisp.harness.trial import TrialError, assemble
 
 SCAN = seqskill.SCAN
 # Gives jump's token-embedding row walk's row, found by name in the layout: one row of one tensor.
-WALK_ROW = '''HYPOTHESIS = "jump's embedding row is unused in compositions, so walk's row makes the old composition run it"
+WALK_ROW = """HYPOTHESIS = "jump's embedding row is unused in compositions, so walk's row makes the old composition run it"
 PREDICTED_EFFECT = "commands with jump answer as walk's; old commands without jump are unchanged"
 import numpy as np
 def update(student, experience):
@@ -47,7 +47,7 @@ def update(student, experience):
     delta[ids["jump"]] = emb[ids["walk"]] - emb[ids["jump"]]
     print("rows", ids["jump"], ids["walk"])
     return {"tok_emb.weight": delta}
-'''
+"""
 
 
 @pytest.fixture(scope="module")
@@ -72,7 +72,11 @@ def _view(store: dict[str, str], condition: str, directory: Path, **kwargs):  # 
 
 
 def _text_files(trial: Path) -> dict[str, str]:
-    return {path.name: path.read_text(encoding="utf-8") for path in trial.iterdir() if path.suffix in (".json", ".py")}
+    return {
+        path.name: path.read_text(encoding="utf-8")
+        for path in trial.iterdir()
+        if path.suffix in (".json", ".py")
+    }
 
 
 def test_the_harness_names_agree_with_the_evalkit_rule() -> None:
@@ -87,7 +91,9 @@ def test_the_harness_names_agree_with_the_evalkit_rule() -> None:
     assert seqskill.check_instance_variant({"evidence_rule": seqskill.SCAN_RULE}, SCAN) == SCAN
 
 
-def test_the_record_resolves_and_the_view_refuses_other_variants(store: dict[str, str], tmp_path: Path) -> None:
+def test_the_record_resolves_and_the_view_refuses_other_variants(
+    store: dict[str, str], tmp_path: Path
+) -> None:
     for condition, instance_id in store.items():
         record = read_instance_record(instance_id)
         assert record.is_seqskill and seqskill.is_scan(record.private)
@@ -95,14 +101,17 @@ def test_the_record_resolves_and_the_view_refuses_other_variants(store: dict[str
     with pytest.raises(TrialError, match="scan_rule"):
         _view(store, "addprim_jump", tmp_path / "standard", lift_rel_frob=True)
     with pytest.raises(TrialError, match="scan_rule"):
-        _view(store, "addprim_jump", tmp_path / "rule", seqskill_variant=seqskill.RULE_ONLY, lift_rel_frob=True)
+        _view(
+            store, "addprim_jump", tmp_path / "rule", seqskill_variant=seqskill.RULE_ONLY, lift_rel_frob=True
+        )
     with pytest.raises(TrialError, match="rel-Frob"):
         _view(store, "addprim_jump", tmp_path / "unlifted", seqskill_variant=SCAN)
 
 
 @pytest.mark.parametrize("condition", S.CONDITIONS)
-def test_the_learn_view_is_the_evidence_with_the_rules_and_no_target_row(store: dict[str, str], tmp_path: Path,
-                                                                         condition: str) -> None:
+def test_the_learn_view_is_the_evidence_with_the_rules_and_no_target_row(
+    store: dict[str, str], tmp_path: Path, condition: str
+) -> None:
     view = _view(store, condition, tmp_path / "s", seqskill_variant=SCAN, lift_rel_frob=True)
     trial = tmp_path / "s" / "trial"
     keys = K.evidence_keys(condition)
@@ -128,8 +137,9 @@ def test_the_learn_view_is_the_evidence_with_the_rules_and_no_target_row(store: 
     assert kept["s_old_floor"] == -5 and kept["check_set"] == "old-command"
     budgets = Budgets(patch_checks=8, python_cells=200, cell_timeout_s=120.0, wall_timeout_s=7200.0)
     system = render_system("LEARN", kept_rule=kept, seqskill=True, seqskill_variant=SCAN)
-    prompt = render_task("LEARN", view.task, view.limits, budgets, view.input_files, seqskill=True,
-                         seqskill_variant=SCAN)
+    prompt = render_task(
+        "LEARN", view.task, view.limits, budgets, view.input_files, seqskill=True, seqskill_variant=SCAN
+    )
     assert "score_old is at least -5" in system and "old-command check-set rows" in system
     assert ("`x_prim`, `y_prim`, `pred_prim`: 1 row: the command jump alone" in prompt) == (prim is not None)
     assert "$" not in prompt and "interpretation rules" in prompt
@@ -156,17 +166,20 @@ def test_the_check_cut_loads_the_old_check_file_by_its_hashes(store: dict[str, s
 def test_a_scan_learn_session_scores_programs_on_the_two_check_files(store: dict[str, str]) -> None:
     instance_id = store["addprim_jump"]
     payload = json.dumps(json.dumps({"walk_row.py": WALK_ROW}))
-    cell = ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n")
+    cell = (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+    )
     steps = [
         ("python", {"code": cell}),
         ("patch_check", {"program_file": "walk_row.py"}),
         ("status", {}),
         ("declare_final", {"program_file": "walk_row.py", "rationale": "the only program"}),
     ]
-    result, replies = scripted_session(instance_id, "LEARN", steps, retention_floor_frac=0.005,
-                                       seqskill_variant=SCAN, lift_rel_frob=True)
+    result, replies = scripted_session(
+        instance_id, "LEARN", steps, retention_floor_frac=0.005, seqskill_variant=SCAN, lift_rel_frob=True
+    )
     assert result.status == "complete", result.record.get("selftest")
     _, check, _, declared = replies
     assert not check.is_error, check.payload
@@ -184,7 +197,10 @@ def test_a_scan_learn_session_scores_programs_on_the_two_check_files(store: dict
     child = ArmApplier(session).apply(read_json(attempt_dir / str(entry["patch_file"])), attempt_dir).child
     assert params_sha256(child) == entry["child_sha256"]
     expected = K.make_scan_oracle(instance_id).query(child, "walk_row")  # the evalkit's own joint oracle
-    assert (check.payload["score_new"], check.payload["score_old"]) == (expected["score_new"], expected["score_old"])
+    assert (check.payload["score_new"], check.payload["score_old"]) == (
+        expected["score_new"],
+        expected["score_old"],
+    )
     ledger = CheckLedger(session, paths)  # rebuilt from session.json alone, as the MCP server builds it
     assert [row["score"] for row in ledger.checked()] == [check.payload["score"]]
 

@@ -34,9 +34,14 @@ from cryowisp.evalkit.instances import instances_root
 from cryowisp.evalkit.patch_check import PatchCheckOracle
 
 N_REPLAY = 8
-SPEC = MethodSpec(method="joint_probe", label="test generator", uses_labels_for_fit=True, edit_limits_enforced=False)
+SPEC = MethodSpec(
+    method="joint_probe", label="test generator", uses_labels_for_fit=True, edit_limits_enforced=False
+)
 """Unbounded, so the executor checks both children (the breaking child exceeds the edit limits)."""
-CHILDREN: tuple[Callable[[dict[str, np.ndarray]], dict[str, np.ndarray]], ...] = (fixing_child, breaking_child)
+CHILDREN: tuple[Callable[[dict[str, np.ndarray]], dict[str, np.ndarray]], ...] = (
+    fixing_child,
+    breaking_child,
+)
 
 
 @pytest.fixture
@@ -55,21 +60,34 @@ def _run(instance: Instance, run_dir: Path, replay_in_fit: bool) -> tuple[dict[s
     def generate(evidence: Evidence) -> tuple[list[CandidatePatch], dict[str, Any]]:
         seen.append(evidence)
         candidates = [
-            CandidatePatch(slot=i, child=make(dict(instance.params)), config={"i": i}, hypothesis="test",
-                           predicted_effect="test")
+            CandidatePatch(
+                slot=i,
+                child=make(dict(instance.params)),
+                config={"i": i},
+                hypothesis="test",
+                predicted_effect="test",
+            )
             for i, make in enumerate(CHILDREN)
         ]
         return candidates, {}
 
     record = execute_run(
-        instance=instance, spec=SPEC, run_dir=run_dir, run_seed=0, config={}, generate=generate,
-        joint=True, replay_in_fit=replay_in_fit,
+        instance=instance,
+        spec=SPEC,
+        run_dir=run_dir,
+        run_seed=0,
+        config={},
+        generate=generate,
+        joint=True,
+        replay_in_fit=replay_in_fit,
     )
     return record, seen
 
 
 def test_joint_run_scores_both_sets_and_fits_on_replay(
-    toy_store: ToyStore, joint_instance: Instance, tmp_path: Path  # noqa: F811
+    toy_store: ToyStore,
+    joint_instance: Instance,
+    tmp_path: Path,  # noqa: F811
 ) -> None:
     record, seen = _run(joint_instance, tmp_path / "run", replay_in_fit=True)
     deployment = load_evidence(joint_instance)
@@ -85,12 +103,18 @@ def test_joint_run_scores_both_sets_and_fits_on_replay(
         assert entry["evidence_summary"]["n"] == deployment.n_deployment
         assert entry["replay_summary"]["n"] == N_REPLAY
     # Every checked score equals two single oracles: the condition V_check plus its clean companion.
-    sets = [load_npz(condition_dir(toy_store) / "splits" / "V_check.npz"),
-            load_npz(toy_store.private / toy_store.dataset / "splits" / "V_check.npz")]
+    sets = [
+        load_npz(condition_dir(toy_store) / "splits" / "V_check.npz"),
+        load_npz(toy_store.private / toy_store.dataset / "splits" / "V_check.npz"),
+    ]
     for entry, make in zip(record["oracle_log"], CHILDREN):
         child = make(dict(joint_instance.params))
-        parts = [PatchCheckOracle(d["x"], d["y"], joint_instance.forward, joint_instance.params, None, 1)
-                 .query(child, "single")["score"] for d in sets]
+        parts = [
+            PatchCheckOracle(d["x"], d["y"], joint_instance.forward, joint_instance.params, None, 1).query(
+                child, "single"
+            )["score"]
+            for d in sets
+        ]
         assert [entry["score_new"], entry["score_old"]] == parts
     final = record["final"]
     assert final["score"] == max([0] + [entry["score"] for entry in record["oracle_log"]])
@@ -110,7 +134,7 @@ def test_the_equal_retention_pick_of_a_joint_run_reads_out_on_both_v_selects(
     run_path = tmp_path / "run" / "run.json"
     log = record["oracle_log"]
     primary = devreadout.readout_run(run_path, clean=True)
-    everything = devreadout.readout_retention(run_path, s_old_floor=-10**9)
+    everything = devreadout.readout_retention(run_path, s_old_floor=-(10**9))
     for key in ("readouts", "readouts_clean", "is_base_noop", "final_limits"):
         assert everything[key] == primary[key], key
     assert everything["selection"]["patch_id"] == record["final"]["patch_id"] and "label" not in everything
@@ -126,14 +150,32 @@ def test_the_equal_retention_pick_of_a_joint_run_reads_out_on_both_v_selects(
             continue
         (entry,) = [item for item in log if item["patch_id"] == picked["selection"]["patch_id"]]
         assert picked["vcheck"]["score_old"] == entry["score_old"] >= floor
-        child = devreadout.final_child({"final": {**entry, "dir": entry["patch_id"], "is_base_noop": False},
-                                        "flags": record["flags"]}, tmp_path / "run", joint_instance)
+        child = devreadout.final_child(
+            {"final": {**entry, "dir": entry["patch_id"], "is_base_noop": False}, "flags": record["flags"]},
+            tmp_path / "run",
+            joint_instance,
+        )
         expected = devreadout.dev_readout_joint(joint_instance, child, devreadout.DEFAULT_BATCH_SIZE)
-        assert picked["readouts"] == expected["readouts"] and picked["readouts_clean"] == expected["readouts_clean"]
+        assert (
+            picked["readouts"] == expected["readouts"]
+            and picked["readouts_clean"] == expected["readouts_clean"]
+        )
     with pytest.raises(devreadout.DevReadoutError, match="not a fewshot-v1 run"):
         devreadout.readout_fewshot_retention(run_path)
-    assert devreadout.main([str(run_path), "--retention-floor", "-40", "--label", "post hoc",
-                            "--out", str(tmp_path / "picks.jsonl")]) == 0
+    assert (
+        devreadout.main(
+            [
+                str(run_path),
+                "--retention-floor",
+                "-40",
+                "--label",
+                "post hoc",
+                "--out",
+                str(tmp_path / "picks.jsonl"),
+            ]
+        )
+        == 0
+    )
     (line,) = (tmp_path / "picks.jsonl").read_text().splitlines()
     assert json.loads(line)["label"] == "post hoc" and json.loads(line)["selection"]["s_old_floor"] == -40
 
@@ -146,11 +188,20 @@ def test_rules_keep_the_deployment_evidence_in_a_joint_run(joint_instance: Insta
     assert all("score_new" in entry for entry in record["oracle_log"])
 
 
-def test_joint_refuses_an_instance_without_a_clean_companion(joint_instance: Instance, tmp_path: Path) -> None:
+def test_joint_refuses_an_instance_without_a_clean_companion(
+    joint_instance: Instance, tmp_path: Path
+) -> None:
     joint_instance.private["condition"] = "deploy"
     with pytest.raises(ValueError, match="named condition"):
-        execute_run(instance=joint_instance, spec=SPEC, run_dir=tmp_path / "run", run_seed=0, config={},
-                    generate=lambda evidence: ([], {}), joint=True)
+        execute_run(
+            instance=joint_instance,
+            spec=SPEC,
+            run_dir=tmp_path / "run",
+            run_seed=0,
+            config={},
+            generate=lambda evidence: ([], {}),
+            joint=True,
+        )
     assert not (tmp_path / "run").exists()
 
 
@@ -175,7 +226,13 @@ def test_run_method_routes_the_replay_by_method_family(
         return {}
 
     monkeypatch.setattr(module, "execute_run", fake_execute_run)
-    for name in ("grad_generator", "ridge_generator", "prior_shift_generator", "tie_generator", "input_stats_generator"):
+    for name in (
+        "grad_generator",
+        "ridge_generator",
+        "prior_shift_generator",
+        "tie_generator",
+        "input_stats_generator",
+    ):
         if hasattr(module, name):
             monkeypatch.setattr(module, name, lambda *args, **kwargs: None)
     instance = object.__new__(Instance)

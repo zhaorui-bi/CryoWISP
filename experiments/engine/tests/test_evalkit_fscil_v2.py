@@ -13,8 +13,12 @@ from cryowisp.evalkit import fscil as FS
 def _check_labels(session: int, per_base: int = 30, per_inc: int = 100) -> tuple[np.ndarray, np.ndarray]:
     """y_new and y_old of a toy check in fscil_check_parts' order: session t's classes, then base, then prev."""
     y_new = np.repeat(FS.session_classes(session), per_inc)
-    y_old = np.concatenate([np.repeat(np.arange(FS.N_BASE_CLASSES), per_base),
-                            np.repeat(FS.prev_classes(session), per_inc).astype(np.int64)])
+    y_old = np.concatenate(
+        [
+            np.repeat(np.arange(FS.N_BASE_CLASSES), per_base),
+            np.repeat(FS.prev_classes(session), per_inc).astype(np.int64),
+        ]
+    )
     return y_new, y_old
 
 
@@ -85,11 +89,21 @@ def _entry(s: float, b: float, d: float) -> dict[str, float]:
 
 def test_pick_tie_and_the_student() -> None:
     # Index 0 has the highest S but breaks the base beyond its floor (-1.11 at d_c 0); 1 and 3 tie within 1e-9.
-    scores = [_entry(5.0, -1.2, 0.0), _entry(2.0, -0.5, 0.006), _entry(1.0, 0.0, 0.0), _entry(2.0 + 1e-10, -0.6, 0.006)]
+    scores = [
+        _entry(5.0, -1.2, 0.0),
+        _entry(2.0, -0.5, 0.006),
+        _entry(1.0, 0.0, 0.0),
+        _entry(2.0 + 1e-10, -0.6, 0.006),
+    ]
     assert FS.retain_v2_pick(scores) == 1
     assert FS.retain_v2_pick(scores[2:]) == 1  # within the slice, S 2 + 1e-10 beats S 1
-    assert FS.retain_v2_pick([_entry(-0.3, 0.0, 0.0), _entry(0.0, 0.0, 0.0)]) is None  # no S above the student's 0
+    assert (
+        FS.retain_v2_pick([_entry(-0.3, 0.0, 0.0), _entry(0.0, 0.0, 0.0)]) is None
+    )  # no S above the student's 0
     assert FS.retain_v2_pick([_entry(1e-10, 0.0, 0.0)]) is None  # a tie with the student goes to the student
     assert FS.retain_v2_pick([_entry(3.0, -1.2, 0.0)]) is None  # nothing eligible
-    assert FS.retain_v2_pick([_entry(3.0, -0.69, 0.006)]) is None and FS.retain_v2_pick([_entry(3.0, -0.68, 0.006)]) == 0
+    assert (
+        FS.retain_v2_pick([_entry(3.0, -0.69, 0.006)]) is None
+        and FS.retain_v2_pick([_entry(3.0, -0.68, 0.006)]) == 0
+    )
     assert FS.retain_v2_pick([]) is None

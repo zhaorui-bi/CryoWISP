@@ -68,7 +68,11 @@ def _make_store(root: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.nda
         "norm": {"mean": mean, "std": std, "computed_on": "train"},
         "split_seed": SPLIT_SEED,
         "splits": splits_meta,
-        "test": {"location": "$CRYOWISP_SEALED/cifar10/test.npz", "n": 20, "sha256": store.split_sha256(test)},
+        "test": {
+            "location": "$CRYOWISP_SEALED/cifar10/test.npz",
+            "n": 20,
+            "sha256": store.split_sha256(test),
+        },
         "forward_sha256": forward_sha,
     }
     store.write_json(store.dataset_json_path("cifar10"), manifest)
@@ -118,7 +122,10 @@ def test_ceiling_export_base_eval_and_import(tmp_path: Path, monkeypatch: pytest
     folder = store.models_dir("cifar10", CONDITION) / ceiling["model_id"]
     private = json.loads((folder / "private.json").read_text())
     assert private["condition"] == CONDITION and private["role"] == "ceiling"
-    assert private["train_split_sha256"] == store.read_dataset_json("cifar10", CONDITION)["splits"]["train"]["sha256"]
+    assert (
+        private["train_split_sha256"]
+        == store.read_dataset_json("cifar10", CONDITION)["splits"]["train"]["sha256"]
+    )
     assert private["git"]["recorded_at_submission"] == "git_state.json"
     assert private["parity"]["max_abs_diff"] <= 1e-4
 
@@ -146,7 +153,11 @@ def test_ceiling_export_base_eval_and_import(tmp_path: Path, monkeypatch: pytest
     imported = store.models_dir("cifar10", CONDITION) / ceiling["model_id"]
     assert sorted(p.name for p in imported.iterdir()) == ["model.npz", "model_spec.json", "private.json"]
     block = json.loads((imported / "private.json").read_text())["import"]
-    assert block["pbs_job_id"] == "1.pbs" and block["container"]["sha256"] == "d" * 64 and block["note"] == "test import"
+    assert (
+        block["pbs_job_id"] == "1.pbs"
+        and block["container"]["sha256"] == "d" * 64
+        and block["note"] == "test import"
+    )
     assert block["trained_with"]["device"] == private["device"]
     with pytest.raises(ValueError, match="already used"):
         import_models("cifar10", CONDITION, run_dir)

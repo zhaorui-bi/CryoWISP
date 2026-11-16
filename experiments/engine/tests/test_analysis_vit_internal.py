@@ -17,7 +17,9 @@ K = V.GAUSSIAN_K_RAMP
 def toy(tmp_path):
     """The TINY ViT forward.py (the E11 template) loaded as the instances load theirs, and random float32 params."""
     path = tmp_path / "forward.py"
-    path.write_text(vit_synth.render_forward(vit_synth.TINY, [0.5, 0.4, 0.3], [0.25, 0.2, 0.3]), encoding="utf-8")
+    path.write_text(
+        vit_synth.render_forward(vit_synth.TINY, [0.5, 0.4, 0.3], [0.25, 0.2, 0.3]), encoding="utf-8"
+    )
     forward, _ = load_forward(path)
     return V.forward_namespace(forward), vit_synth.init_params(vit_synth.TINY, 7)
 
@@ -31,7 +33,11 @@ def test_trace_equals_forward_bitwise(toy):
     x = _images(9)
     tr = V.trace(ns, params, x, [0, 1])
     assert V.parity(ns, params, x, tr.logits, atol=0.0) == 0.0
-    assert tr.tokens.shape == (9, 4, 16) and tr.mlp_in[1].shape == (9, 5, 16) and tr.block_out[0].shape == (9, 5, 16)
+    assert (
+        tr.tokens.shape == (9, 4, 16)
+        and tr.mlp_in[1].shape == (9, 5, 16)
+        and tr.block_out[0].shape == (9, 5, 16)
+    )
     assert set(tr.mlp_in) == {0, 1}
 
 
@@ -65,9 +71,11 @@ def _ramp_child(params, block=1, j1=3, j2=7, bias=-0.4, offset_seed=1):
     return child, row, off
 
 
-STDOUT = ("noisy KL to clean before edit: 1.5\n"
-          "gate patch block 1: |offset| 5.09, held-out/clean sd 0.433, units 3,7, kappa 6.59 (ramp 1.05 sd), thr 3.00\n"
-          "  round 0 oracle class-offset removal after block 3: KL 0.521\n")
+STDOUT = (
+    "noisy KL to clean before edit: 1.5\n"
+    "gate patch block 1: |offset| 5.09, held-out/clean sd 0.433, units 3,7, kappa 6.59 (ramp 1.05 sd), thr 3.00\n"
+    "  round 0 oracle class-offset removal after block 3: KL 0.521\n"
+)
 
 
 def test_parse_and_check_ramp_gates(toy):
@@ -98,8 +106,11 @@ def test_ramp_gate_sums_known_rates():
     b1 = np.array([0.0, -K, 0.0, 0.0])
     w2 = np.zeros((2, hidden))
     w2[:, 0], w2[:, 1] = [-1.0, 0.0], [1.0, 0.0]
-    child = {"classifier.blocks.0.linear1.weight": w1, "classifier.blocks.0.linear1.bias": b1,
-             "classifier.blocks.0.linear2.weight": w2}
+    child = {
+        "classifier.blocks.0.linear1.weight": w1,
+        "classifier.blocks.0.linear1.bias": b1,
+        "classifier.blocks.0.linear2.weight": w2,
+    }
     mlp_in = np.zeros((2, 3, 2))
     mlp_in[0, :, 0] = [1.0, 4.0, -1.0]  # cls above, patches: fully open, shut
     mlp_in[1, :, 0] = [-2.0, -1.0, -3.0]  # all shut
@@ -121,7 +132,7 @@ def test_ramp_gate_sums_known_rates():
 
 
 def vit_synth_gelu():
-    return lambda a: 0.5 * a * (1.0 + np.tanh(np.sqrt(2.0 / np.pi) * (a + 0.044715 * a ** 3)))
+    return lambda a: 0.5 * a * (1.0 + np.tanh(np.sqrt(2.0 / np.pi) * (a + 0.044715 * a**3)))
 
 
 def _contrast_child(params, block=1, rank=6, kappa=V.CONTRAST_KAPPA):
@@ -165,14 +176,19 @@ def test_contrast_gate_sums_rates(toy):
     tr = V.trace(ns, child, x, [1])
     sums = V.Sums()
     y = np.array([0, 1, 1, 2, 3, 3])
-    V.contrast_gate_sums(sums, "c_", tr.mlp_in[1], child, gate["units"], gate["gate_unit"], ns["_gelu"], y, 4, block=1)
+    V.contrast_gate_sums(
+        sums, "c_", tr.mlp_in[1], child, gate["units"], gate["gate_unit"], ns["_gelu"], y, 4, block=1
+    )
     out = V.contrast_gate_finish(sums, "c_", with_classes=True)
-    pre = tr.mlp_in[1] @ np.asarray(child["classifier.blocks.1.linear1.weight"], np.float64)[gate["gate_unit"]] \
-        + float(child["classifier.blocks.1.linear1.bias"][gate["gate_unit"]])
+    pre = tr.mlp_in[1] @ np.asarray(child["classifier.blocks.1.linear1.weight"], np.float64)[
+        gate["gate_unit"]
+    ] + float(child["classifier.blocks.1.linear1.bias"][gate["gate_unit"]])
     opened = pre > 0
     assert out["open_patch_tokens"] == int(opened[:, 1:].sum())
     assert out["rate_cls_token"] == pytest.approx(opened[:, 0].mean())
-    assert out["share_images_majority_patch_tokens_open"] == pytest.approx((opened[:, 1:].mean(1) > 0.5).mean())
+    assert out["share_images_majority_patch_tokens_open"] == pytest.approx(
+        (opened[:, 1:].mean(1) > 0.5).mean()
+    )
     per_img = opened[:, 1:].mean(1)
     assert out["per_class_patch_open_rate"][1] == pytest.approx(per_img[1:3].mean())
 
@@ -181,8 +197,12 @@ def test_offsets_known_values():
     rng = np.random.default_rng(0)
     base_clean = rng.normal(size=(4, 3, 2))
     shift = np.array([3.0, 4.0])
-    outs = {"base_clean": base_clean, "base_cond": base_clean + shift, "edit_clean": base_clean + 0.1,
-            "edit_cond": base_clean + 0.1 + 0.5 * shift}
+    outs = {
+        "base_clean": base_clean,
+        "base_cond": base_clean + shift,
+        "edit_clean": base_clean + 0.1,
+        "edit_cond": base_clean + 0.1 + 0.5 * shift,
+    }
     sums = V.Sums()
     V.offset_sums(sums, "b_", {k: v[:2] for k, v in outs.items()})
     V.offset_sums(sums, "b_", {k: v[2:] for k, v in outs.items()})
@@ -213,4 +233,6 @@ def test_token_spread_and_ratio():
     spread = V.token_spread(t)
     assert spread[0] == 0.0 and spread[1] == pytest.approx(np.sqrt(1.0 / 3.0))
     summary = V.ratio_summary(np.array([1.0, 2.0]), np.array([2.0, 2.0]))
-    assert summary["ratio_of_means"] == pytest.approx(0.75) and summary["mean_of_image_ratios"] == pytest.approx(0.75)
+    assert summary["ratio_of_means"] == pytest.approx(0.75) and summary[
+        "mean_of_image_ratios"
+    ] == pytest.approx(0.75)

@@ -30,8 +30,12 @@ METHODS = ("d2_struct_base", "d2_struct_final")
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--instance", required=True, help="E11 dev instance id")
-    parser.add_argument("--transfer", type=Path, required=True,
-                        help="the final's program-transfer record on this instance (transfer_<program>_<id>.json)")
+    parser.add_argument(
+        "--transfer",
+        type=Path,
+        required=True,
+        help="the final's program-transfer record on this instance (transfer_<program>_<id>.json)",
+    )
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
     parser.add_argument("--seed", type=int, default=0, help="run seed (directory name)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
@@ -44,7 +48,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)

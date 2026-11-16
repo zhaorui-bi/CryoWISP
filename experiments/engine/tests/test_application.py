@@ -9,8 +9,17 @@ import pytest
 torch = pytest.importorskip("torch")
 pytest.importorskip("torchvision")
 
-from cryowisp.application.bundles import (compatibility, copy_model, dataset, model_bundle, pack_program,
-                                           prepare_task, program_bundle, read, sha)
+from cryowisp.application.bundles import (
+    compatibility,
+    copy_model,
+    dataset,
+    model_bundle,
+    pack_program,
+    prepare_task,
+    program_bundle,
+    read,
+    sha,
+)
 from cryowisp.application.data import prepare_data
 from cryowisp.application.editor import EditorTools
 from cryowisp.application.resnet import import_checkpoint, load_buffers
@@ -18,24 +27,25 @@ from cryowisp.application.runtime import Application, apply_program, prepare_run
 from cryowisp.common.identity import params_sha256
 
 SANDBOX = Path(__file__).resolve().parents[1] / ".venv-sandbox/bin/python"
-PROGRAM = '''import numpy as np
+PROGRAM = """import numpy as np
 HYPOTHESIS = "Integration fixture"
 PREDICTED_EFFECT = "Predict class one"
 def update(student, experience):
     return {"fc.bias": np.array([0., 2.])}
-'''
+"""
 
 
 @pytest.fixture(scope="module")
 def model(tmp_path_factory):
     from torchvision.models import resnet18
+
     torch.set_num_threads(2)
     torch.manual_seed(120)
     root = tmp_path_factory.mktemp("application-model")
     module = resnet18(weights=None, num_classes=2)
     with torch.no_grad():
         module.fc.weight.zero_()
-        module.fc.bias.copy_(torch.tensor([1., 0.]))
+        module.fc.bias.copy_(torch.tensor([1.0, 0.0]))
         module.bn1.num_batches_tracked.fill_(17)
     torch.save(module.state_dict(), root / "source.pt")
     import_checkpoint(root / "source.pt", ["zero", "one"], root / "model")
@@ -46,13 +56,25 @@ def make_task(root, model, *, selection_old=1, final_label=1):
     paths = []
     for index, name in enumerate(("experience", "selection", "final")):
         rng = np.random.default_rng(730 + index)
-        ys = [1, 1] if name == "experience" else [1, selection_old] if name == "selection" else [final_label] * 2
-        data = {f"x_{role}": rng.integers(0, 256, (1, 3, 224, 224), dtype=np.uint8) for role in ("new", "old")}
-        data.update({f"y_{role}": np.array([label], dtype=np.int64) for role, label in zip(("new", "old"), ys)})
+        ys = (
+            [1, 1]
+            if name == "experience"
+            else [1, selection_old]
+            if name == "selection"
+            else [final_label] * 2
+        )
+        data = {
+            f"x_{role}": rng.integers(0, 256, (1, 3, 224, 224), dtype=np.uint8) for role in ("new", "old")
+        }
+        data.update(
+            {f"y_{role}": np.array([label], dtype=np.int64) for role, label in zip(("new", "old"), ys)}
+        )
         path = root / f"{name}.npz"
         np.savez(path, **data)
         paths.append(path)
-    prepare_task(model, *paths, root / "task", goal="Synthetic integration test", retention_drop=0, min_new_gain=1)
+    prepare_task(
+        model, *paths, root / "task", goal="Synthetic integration test", retention_drop=0, min_new_gain=1
+    )
     return root / "task"
 
 
@@ -114,14 +136,27 @@ def test_program_requires_same_class_order(model, tmp_path):
 def test_task_disallows_role_overlap(model, tmp_path):
     task = make_task(tmp_path, model)
     with pytest.raises(ValueError, match="disjoint"):
-        prepare_task(model, task / "experience.npz", task / "experience.npz", task / "final.npz",
-                     tmp_path / "bad-task", goal="Bad split", retention_drop=0, min_new_gain=0)
+        prepare_task(
+            model,
+            task / "experience.npz",
+            task / "experience.npz",
+            task / "final.npz",
+            tmp_path / "bad-task",
+            goal="Bad split",
+            retention_drop=0,
+            min_new_gain=0,
+        )
     assert not (tmp_path / "bad-task").exists()
 
 
-@pytest.mark.parametrize("key,value", [("y_new", np.array([2], dtype=np.int64)),
-                                      ("y_old", np.array([1.0])),
-                                      ("x_new", np.zeros((1, 3, 32, 32), dtype=np.uint8))])
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("y_new", np.array([2], dtype=np.int64)),
+        ("y_old", np.array([1.0])),
+        ("x_new", np.zeros((1, 3, 32, 32), dtype=np.uint8)),
+    ],
+)
 def test_dataset_contract(tmp_path, key, value):
     data = {f"x_{r}": np.zeros((1, 3, 224, 224), dtype=np.uint8) for r in ("new", "old")}
     data.update({f"y_{r}": np.ones(1, dtype=np.int64) for r in ("new", "old")})
@@ -134,6 +169,7 @@ def test_dataset_contract(tmp_path, key, value):
 def test_image_preprocessing_matches_reference(model, tmp_path):
     from PIL import Image
     from torchvision.models import ResNet18_Weights
+
     image = Image.fromarray(np.random.default_rng(51).integers(0, 256, (260, 310, 3), dtype=np.uint8))
     for role in ("new", "old"):
         folder = tmp_path / role / "one"
@@ -142,7 +178,9 @@ def test_image_preprocessing_matches_reference(model, tmp_path):
     prepare_data(model, tmp_path / "new", tmp_path / "old", tmp_path / "images.npz")
     data = dataset(tmp_path / "images.npz", 2)
     cropped = torch.from_numpy(data["x_new"][0]).to(torch.float32) / 255.0
-    normalized = (cropped - torch.tensor([.485, .456, .406])[:, None, None]) / torch.tensor([.229, .224, .225])[:, None, None]
+    normalized = (cropped - torch.tensor([0.485, 0.456, 0.406])[:, None, None]) / torch.tensor(
+        [0.229, 0.224, 0.225]
+    )[:, None, None]
     assert torch.equal(normalized, ResNet18_Weights.IMAGENET1K_V1.transforms()(image))
     before = sha(tmp_path / "images.npz")
     with pytest.raises(FileExistsError):
@@ -211,7 +249,9 @@ def test_apply_without_sandbox_needs_the_trusted_sha256(model, tmp_path):
     with pytest.raises(ValueError, match="not the trusted"):
         apply_program(task, tmp_path / "program", tmp_path / "run", None, program_sha256="0" * 64, wall_s=120)
     with pytest.raises(ValueError, match="no editor cells"):
-        prepare_run(task, tmp_path / "run", None, checks=1, cells=1, wall_s=120, trusted_program_sha256="0" * 64)
+        prepare_run(
+            task, tmp_path / "run", None, checks=1, cells=1, wall_s=120, trusted_program_sha256="0" * 64
+        )
     assert not (tmp_path / "run").exists()
 
 
@@ -233,9 +273,12 @@ def test_apply_without_sandbox_matches_the_sandboxed_run(model, tmp_path):
     source = tmp_path / "program.py"
     source.write_text(PROGRAM)
     digest = pack_program(source, model, tmp_path / "program")["files"]["program.py"]
-    plain = apply_program(task, tmp_path / "program", tmp_path / "plain", None, program_sha256=digest.upper(),
-                          wall_s=120)
-    boxed = apply_program(task, tmp_path / "program", tmp_path / "boxed", SANDBOX, program_sha256=digest, wall_s=120)
+    plain = apply_program(
+        task, tmp_path / "program", tmp_path / "plain", None, program_sha256=digest.upper(), wall_s=120
+    )
+    boxed = apply_program(
+        task, tmp_path / "program", tmp_path / "boxed", SANDBOX, program_sha256=digest, wall_s=120
+    )
     assert plain["status"] == boxed["status"] == "accepted"
     assert (plain["program_isolation"], boxed["program_isolation"]) == ("none", "bubblewrap")
     assert plain["export"]["params_sha256"] == boxed["export"]["params_sha256"]

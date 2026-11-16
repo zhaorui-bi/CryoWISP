@@ -19,7 +19,11 @@ def _final(params: dict[str, np.ndarray], seed: int = 3) -> dict[str, np.ndarray
     """A synthetic 'final': a few rows of two linear weights and one bias changed."""
     rng = np.random.default_rng(seed)
     child = {k: np.array(v, copy=True) for k, v in params.items()}
-    w1, w2, b2 = "classifier.blocks.2.linear1.weight", "classifier.blocks.2.linear2.weight", "classifier.blocks.2.linear2.bias"
+    w1, w2, b2 = (
+        "classifier.blocks.2.linear1.weight",
+        "classifier.blocks.2.linear2.weight",
+        "classifier.blocks.2.linear2.bias",
+    )
     child[w1][:3] += rng.normal(0, 0.1, child[w1][:3].shape).astype(np.float32)
     child[w2][:, :3] += rng.normal(0, 0.1, child[w2][:, :3].shape).astype(np.float32)
     child[b2] += np.float32(0.01)
@@ -41,8 +45,11 @@ def test_structure_mask_is_the_changed_entries() -> None:
     child = _final(params)
     trainable, masks, record = D2.structure_mask(params, child)
     assert trainable == [k for k in params if k in trainable]  # forward order
-    assert set(trainable) == {"classifier.blocks.2.linear1.weight", "classifier.blocks.2.linear2.weight",
-                              "classifier.blocks.2.linear2.bias"}
+    assert set(trainable) == {
+        "classifier.blocks.2.linear1.weight",
+        "classifier.blocks.2.linear2.weight",
+        "classifier.blocks.2.linear2.bias",
+    }
     expected = sum(int((child[k] != params[k]).sum()) for k in params)
     assert record["n_entries"] == expected == sum(int(m.sum()) for m in masks.values())
     with pytest.raises(D2.D2Error, match="changes no entry"):
@@ -50,14 +57,20 @@ def test_structure_mask_is_the_changed_entries() -> None:
 
 
 @pytest.mark.parametrize("method", ["d2_struct_base", "d2_struct_final"])
-def test_candidates_move_only_masked_entries(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, method: str) -> None:
+def test_candidates_move_only_masked_entries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, method: str
+) -> None:
     _short(monkeypatch)
     params = _student(7)
     child = _final(params)
     instance = _instance(tmp_path, params)
-    monkeypatch.setattr(D2, "final_child", lambda inst, record: (child, {"child_sha256": params_sha256(child)}))
+    monkeypatch.setattr(
+        D2, "final_child", lambda inst, record: (child, {"child_sha256": params_sha256(child)})
+    )
     candidates, info = D2.d2_generator(instance, method, tmp_path / "t.json", 0)(_joint_evidence(7))
-    assert [c.config for c in candidates] == [{"lr": lr, "steps": s} for lr in (1e-5, 1e-4) for s in (1, 2, 3, 4)]
+    assert [c.config for c in candidates] == [
+        {"lr": lr, "steps": s} for lr in (1e-5, 1e-4) for s in (1, 2, 3, 4)
+    ]
     _, masks, record = D2.structure_mask(params, child)
     assert info["mask"]["n_entries"] == record["n_entries"]
     start = params if method == "d2_struct_base" else child
@@ -84,13 +97,21 @@ def test_final_child_checks_the_record(tmp_path: Path, monkeypatch: pytest.Monke
     (tmp_path / "transfer_x_i0" / "patch").mkdir(parents=True)
     (tmp_path / "transfer_x_i0" / "patch" / "derived_patch.json").write_text("{}")
     n_changed = int(sum((child[k] != params[k]).sum() for k in params))
-    record = {"schema": D2.TRANSFER_SCHEMA, "status": "ok", "child_sha256": params_sha256(child), "n_changed": n_changed,
-              "target": {"instance_id": instance.instance_id, "params_sha256": instance.params_sha256},
-              "program": {"sha256": "ab"}}
+    record = {
+        "schema": D2.TRANSFER_SCHEMA,
+        "status": "ok",
+        "child_sha256": params_sha256(child),
+        "n_changed": n_changed,
+        "target": {"instance_id": instance.instance_id, "params_sha256": instance.params_sha256},
+        "program": {"sha256": "ab"},
+    }
     record_path.write_text(json.dumps(record))
     monkeypatch.setattr(D2, "load_patch", lambda path: {})
-    monkeypatch.setattr(D2, "apply_patch", lambda *a: SimpleNamespace(
-        child=child, child_sha256=params_sha256(child), n_changed=n_changed))
+    monkeypatch.setattr(
+        D2,
+        "apply_patch",
+        lambda *a: SimpleNamespace(child=child, child_sha256=params_sha256(child), n_changed=n_changed),
+    )
     rebuilt, source = D2.final_child(instance, record_path)
     assert params_sha256(rebuilt) == record["child_sha256"] and source["n_changed"] == n_changed
     record["child_sha256"] = "0" * 64

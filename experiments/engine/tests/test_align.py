@@ -71,7 +71,9 @@ def test_a_permuted_copy_is_recovered_exactly_and_an_edit_maps_across(tmp_path: 
     truth = _random_alignment(5)
     target = A.to_target(source, truth)  # the same network written in other unit coordinates
     x = _images(48, 7)
-    assert np.allclose(module.forward(dict(source), x), module.forward(dict(target), x), atol=1e-5)  # a symmetry
+    assert np.allclose(
+        module.forward(dict(source), x), module.forward(dict(target), x), atol=1e-5
+    )  # a symmetry
     found = A.fit_alignment(module, source, target, x, HIDDEN_BLOCKS, chunk=16)
     assert np.array_equal(found.res, truth.res)
     assert all(np.array_equal(found.hid[b], truth.hid[b]) for b in HIDDEN_BLOCKS)
@@ -98,7 +100,9 @@ def test_a_permuted_copy_is_recovered_exactly_and_an_edit_maps_across(tmp_path: 
     assert {k: v.shape for k, v in mapped.items()} == {k: v.shape for k, v in delta.items()}
     source_new, target_new = edited(source, delta), edited(target, mapped)
     back = A.to_source(target_new, found)
-    assert all(np.array_equal(back[k], source_new[k]) for k in source_new)  # the same edit in both coordinate systems
+    assert all(
+        np.array_equal(back[k], source_new[k]) for k in source_new
+    )  # the same edit in both coordinate systems
     assert np.allclose(module.forward(dict(source_new), x), module.forward(dict(target_new), x), atol=1e-5)
     unmapped = edited(target, delta)  # F6: the copied delta lands on the wrong units
     assert not np.allclose(module.forward(dict(source_new), x), module.forward(dict(unmapped), x), atol=1e-3)
@@ -106,7 +110,9 @@ def test_a_permuted_copy_is_recovered_exactly_and_an_edit_maps_across(tmp_path: 
         A.map_delta({"classifier.blocks.3.linear1.weight": np.zeros((512, 256))}, found)
 
 
-def test_the_gate_passes_for_the_symmetry_and_fails_when_a_tensor_is_not_permuted(tmp_path: Path, monkeypatch) -> None:
+def test_the_gate_passes_for_the_symmetry_and_fails_when_a_tensor_is_not_permuted(
+    tmp_path: Path, monkeypatch
+) -> None:
     module = _module(tmp_path)
     target = _student(2)  # any student: the permutation is a symmetry whatever the matching
     alignment = _random_alignment(9)
@@ -122,4 +128,6 @@ def test_the_gate_passes_for_the_symmetry_and_fails_when_a_tensor_is_not_permute
 
     monkeypatch.setattr(A, "axis_specs", leaky)
     broken = A.symmetry_gate(module, target, alignment, images)
-    assert not broken["passed"] and broken["roundtrip_exact"]  # still a clean round trip; the function changed
+    assert (
+        not broken["passed"] and broken["roundtrip_exact"]
+    )  # still a clean round trip; the function changed

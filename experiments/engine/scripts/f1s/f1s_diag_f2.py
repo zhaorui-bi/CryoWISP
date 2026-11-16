@@ -29,7 +29,6 @@ def main(argv: list[str] | None = None) -> int:
     sys.dont_write_bytecode = True
     import dataclasses
 
-    import numpy as np
     import torch
 
     torch.set_num_threads(args.threads)
@@ -47,30 +46,59 @@ def main(argv: list[str] | None = None) -> int:
     rows = []
     for n in (64, 1024):
         trajectory = L.Trajectory(condition, n, 1e-5, (100,), tag="clean")
-        rows += L.train_trajectory(trajectory, data, device=torch.device("cpu"), seed=L.F2_RUN_SEED, num_workers=0,
-                                   out_root=out_root, provenance={"diagnostic": "PREREG F1s, F2 recipe on clean rows"})
+        rows += L.train_trajectory(
+            trajectory,
+            data,
+            device=torch.device("cpu"),
+            seed=L.F2_RUN_SEED,
+            num_workers=0,
+            out_root=out_root,
+            provenance={"diagnostic": "PREREG F1s, F2 recipe on clean rows"},
+        )
     candidates = []
     for slot, row in enumerate(rows):
         child = L.load_params(out_root / row["path"] / "model.npz")
-        candidates.append(CandidatePatch(
-            slot=slot, child=child, config={"n_clean_pairs": row["n"] if "n" in row else (64, 1024)[slot],
-                                            "lr": 1e-5, "steps": 100},
-            hypothesis="F2 recipe on clean rows only (diagnostic): retention cost of the recipe",
-            predicted_effect="no condition gain expected; V_check S_old measures the recipe's damage to clean accuracy",
-            notes={"train_loss_mean_last100": row["train_loss_mean_last100"]}))
+        candidates.append(
+            CandidatePatch(
+                slot=slot,
+                child=child,
+                config={
+                    "n_clean_pairs": row["n"] if "n" in row else (64, 1024)[slot],
+                    "lr": 1e-5,
+                    "steps": 100,
+                },
+                hypothesis="F2 recipe on clean rows only (diagnostic): retention cost of the recipe",
+                predicted_effect="no condition gain expected; V_check S_old measures the recipe's damage to clean accuracy",
+                notes={"train_loss_mean_last100": row["train_loss_mean_last100"]},
+            )
+        )
 
     def generate(evidence):
-        return candidates, {"prereg": "PREREG F1s diagnostic for F2", "rows": rows,
-                            "fit_rows": "N + N clean train images (no condition rows)"}
+        return candidates, {
+            "prereg": "PREREG F1s diagnostic for F2",
+            "rows": rows,
+            "fit_rows": "N + N clean train images (no condition rows)",
+        }
 
     run_dir = baseline_run_dir(instance.instance_id, "f1s_diag_f2", 0, "f1s_diag")
-    record = execute_run(instance=instance, spec=L._spec(), run_dir=run_dir, run_seed=0,
-                         config={"diagnostic": "F2 recipe on clean rows only", "n": [64, 1024], "lr": 1e-5, "steps": 100},
-                         generate=generate, allow_main=False, joint=True, replay_in_fit=True, e10=True)
+    record = execute_run(
+        instance=instance,
+        spec=L._spec(),
+        run_dir=run_dir,
+        run_seed=0,
+        config={"diagnostic": "F2 recipe on clean rows only", "n": [64, 1024], "lr": 1e-5, "steps": 100},
+        generate=generate,
+        allow_main=False,
+        joint=True,
+        replay_in_fit=True,
+        e10=True,
+    )
     print(summary_line(record), flush=True)
     for entry in record["oracle_log"]:
-        print(f"{entry['patch_id']}: S_new {entry.get('score_new')} S_old {entry.get('score_old')} S {entry['score']}",
-              flush=True)
+        print(
+            f"{entry['patch_id']}: S_new {entry.get('score_new')} S_old {entry.get('score_old')} S {entry['score']}",
+            flush=True,
+        )
     print(f"  -> {run_dir}", flush=True)
     return 0
 

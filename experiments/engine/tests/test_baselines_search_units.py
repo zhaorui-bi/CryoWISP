@@ -93,7 +93,9 @@ def test_limits_are_read_from_the_executor() -> None:
 
 
 def test_limits_from_task_and_looser_than() -> None:
-    switched = EditLimits.from_task(asdict(Limits(max_changed_frac=None, max_edit_frac=0.05, rel_frob_min_ndim=2)))
+    switched = EditLimits.from_task(
+        asdict(Limits(max_changed_frac=None, max_edit_frac=0.05, rel_frob_min_ndim=2))
+    )
     assert (switched.changed_frac_cap(), switched.max_rel_frob, switched.rel_frob_min_ndim) == (0.05, 0.5, 2)
     implicit = EditLimits.from_task({"max_edit_frac": 0.05, "max_rel_frob": 0.5})
     assert implicit.rel_frob_min_ndim == 2  # the switch exempts 1-D tensors
@@ -187,7 +189,10 @@ def test_sample_positives_is_stratified_and_seeded() -> None:
     assert np.array_equal(chosen, sample_positives(y, 16, np.random.default_rng(0)))
     assert np.array_equal(sample_positives(y, 40, np.random.default_rng(0)), np.arange(32))
     rare = np.array([0] * 30 + [1])
-    assert np.bincount(rare[sample_positives(rare, 4, np.random.default_rng(0))], minlength=2).tolist() == [4, 1]
+    assert np.bincount(rare[sample_positives(rare, 4, np.random.default_rng(0))], minlength=2).tolist() == [
+        4,
+        1,
+    ]
 
 
 def test_arachne_fitness_matches_eq_3_and_4() -> None:
@@ -225,8 +230,12 @@ def _v1_evidence() -> dict[str, np.ndarray]:
     x_rand = np.zeros((6, 1, 2, 2), dtype=np.uint8)
     x_rand[:, 0, 0, 0] = [0, 1, 2, 0, 1, 2]
     return {
-        "x_fail": x_fail, "y_fail": np.array([0, 1, 2, 0]), "pred_fail": np.array([2, 2, 0, 1]),
-        "x_rand": x_rand, "y_rand": np.array([0, 1, 1, 0, 0, 2]), "pred_rand": np.array([0, 1, 2, 0, 1, 2]),
+        "x_fail": x_fail,
+        "y_fail": np.array([0, 1, 2, 0]),
+        "pred_fail": np.array([2, 2, 0, 1]),
+        "x_rand": x_rand,
+        "y_rand": np.array([0, 1, 1, 0, 0, 2]),
+        "pred_rand": np.array([0, 1, 2, 0, 1, 2]),
     }
 
 
@@ -242,9 +251,15 @@ def test_build_evidence_sets_and_readout_without_a_pair() -> None:
     readout = evidence_readout(counted({}, sets.x_all), sets)
     assert readout == {"neg_fixed": 0, "neg_still_wrong": 4, "pos_broken": 0, "n_neg": 4, "n_pos": 4}
     half_fixed = np.zeros((8, 3))
-    half_fixed[np.arange(8), [0, 1, 0, 1, 0, 1, 1, 2]] = 1.0  # negatives 0 and 1 right; positive 2 (true 0) wrong
+    half_fixed[np.arange(8), [0, 1, 0, 1, 0, 1, 1, 2]] = (
+        1.0  # negatives 0 and 1 right; positive 2 (true 0) wrong
+    )
     assert evidence_readout(half_fixed, sets) == {
-        "neg_fixed": 2, "neg_still_wrong": 2, "pos_broken": 1, "n_neg": 4, "n_pos": 4
+        "neg_fixed": 2,
+        "neg_still_wrong": 2,
+        "pos_broken": 1,
+        "n_neg": 4,
+        "n_pos": 4,
     }
 
 
@@ -259,5 +274,10 @@ def test_build_evidence_sets_rejects_bad_failures() -> None:
         build_evidence_sets(stale, None, {}, counted)
     with pytest.raises(ValueError, match="true class 0 predicted 2"):
         build_evidence_sets(evidence, (0, 2), {}, counted)  # a pair (evidence-v0) is checked when given
-    pair = dict(evidence, y_fail=np.zeros(4, np.int64), x_fail=np.full_like(evidence["x_fail"], 2), pred_fail=np.full(4, 2))
+    pair = dict(
+        evidence,
+        y_fail=np.zeros(4, np.int64),
+        x_fail=np.full_like(evidence["x_fail"], 2),
+        pred_fail=np.full(4, 2),
+    )
     assert build_evidence_sets(pair, (0, 2), {}, counted).target == (0, 2)

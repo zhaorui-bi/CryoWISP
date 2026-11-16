@@ -32,7 +32,11 @@ SMALL_RANGES = ("V_check_old", "V_check_new", "V_select_old", "V_select_new")
 def store(tmp_path_factory: pytest.TempPathFactory):
     root = tmp_path_factory.mktemp("pstore")  # no leak token in the session mounts
     patch = pytest.MonkeyPatch()
-    for name, sub in (("CRYOWISP_PRIVATE", "private"), ("CRYOWISP_SEALED", "sealed"), ("CRYOWISP_RUNS", "runs")):
+    for name, sub in (
+        ("CRYOWISP_PRIVATE", "private"),
+        ("CRYOWISP_SEALED", "sealed"),
+        ("CRYOWISP_RUNS", "runs"),
+    ):
         (root / sub).mkdir()
         patch.setenv(name, str(root / sub))
     for name in SMALL_RANGES:
@@ -54,11 +58,25 @@ def store(tmp_path_factory: pytest.TempPathFactory):
     model_dir.mkdir(parents=True)
     digest = save_params(model_dir / "model.npz", params)
     write_json(model_dir / "model_spec.json", P.build_spec(model_id, params))
-    write_json(model_dir / "private.json", {"model_id": model_id, "reserved_rows_unchanged": True,
-                                            "readouts": readouts, "split_role": "dev"})
-    write_json(X.models_dir() / "index.json", [{
-        "model_id": model_id, "seed": 100, "arch": P.ARCH, "size": "base", "n_episodes": 2_000, "role": "dev",
-        "params_sha256": digest, "gate_passed": True}])
+    write_json(
+        model_dir / "private.json",
+        {"model_id": model_id, "reserved_rows_unchanged": True, "readouts": readouts, "split_role": "dev"},
+    )
+    write_json(
+        X.models_dir() / "index.json",
+        [
+            {
+                "model_id": model_id,
+                "seed": 100,
+                "arch": P.ARCH,
+                "size": "base",
+                "n_episodes": 2_000,
+                "role": "dev",
+                "params_sha256": digest,
+                "gate_passed": True,
+            }
+        ],
+    )
     yield {"root": root, "model_id": model_id, "params": params}
     patch.undo()
 
@@ -94,8 +112,18 @@ def test_instance_files(store, instance_id: str) -> None:
     assert not any(token in text.lower() for token in E.e14_leak_tokens())
 
 
-@pytest.mark.parametrize("method", ["bc_new_rows", "bc_sparse19_sal", "f1_last", "lora_r4", "ft_full_lwf",
-                                    "ft_full_noreplay", "labeleq_k16"])
+@pytest.mark.parametrize(
+    "method",
+    [
+        "bc_new_rows",
+        "bc_sparse19_sal",
+        "f1_last",
+        "lora_r4",
+        "ft_full_lwf",
+        "ft_full_noreplay",
+        "labeleq_k16",
+    ],
+)
 def test_reference_run_and_readout(store, instance_id: str, method: str) -> None:
     from cryowisp.baselines.fit.e14refs import E14_REF_LABEL, method_configs, run_e14_ref
     from cryowisp.baselines.fit.runner import baseline_run_dir

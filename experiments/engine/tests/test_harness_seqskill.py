@@ -28,8 +28,8 @@ from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, arm_spec
 from cryowisp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
 from cryowisp.harness.instance import InstanceRefused, read_instance_record
 from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.leaks import HINT_WORDS
+from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.prompts import Budgets, render_system, render_task
 from cryowisp.harness.retention import kept_rule_record
 from cryowisp.harness.runner import SANDBOX_PYTHON, run_session
@@ -41,7 +41,7 @@ from cryowisp.sandbox.program import ProgramSandbox
 
 # Gives the new operator token the embedding row of an old symbol map, found by name in the layout: an
 # architecture-agnostic edit that changes one row of one tensor.
-COPY = '''HYPOTHESIS = "the new operator token has an untrained embedding row, so the model does not route it"
+COPY = """HYPOTHESIS = "the new operator token has an untrained embedding row, so the model does not route it"
 PREDICTED_EFFECT = "the new rows change and some old-operator rows may break"
 import numpy as np
 def update(student, experience):
@@ -52,7 +52,7 @@ def update(student, experience):
     delta[new] = emb[ids["OP_SUBA"]] - emb[new]
     print("copied", new)
     return {"tok_emb.weight": delta}
-'''
+"""
 LEAK_WORDS = ("substitution", "permutation", "seqops", "seed", "new0_substitution")
 
 
@@ -72,13 +72,17 @@ def _paragraphs(text: str) -> list[str]:
 
 def _program_cell(programs: dict[str, str]) -> str:
     payload = json.dumps(json.dumps(programs))
-    return ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n"
-            f"print(sorted(json.loads({payload})))\n")
+    return (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        f"print(sorted(json.loads({payload})))\n"
+    )
 
 
-def test_the_harness_names_agree_with_the_evalkit_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_harness_names_agree_with_the_evalkit_rule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
     assert seqskill.SEQSKILL_RULE == Q.SEQSKILL_RULE
     assert seqskill.INSTANCE_ID_RE.pattern == Q.INSTANCE_ID_RE.pattern
@@ -101,11 +105,20 @@ def test_a_seqskill_id_resolves_in_its_own_store_and_is_refused_when_not_current
     with pytest.raises(InstanceRefused, match="program arm"):
         run_session(seq_id, "M2", 0, effort="low", wall_timeout_s=60.0, dry_run=True)
     with pytest.raises(InstanceRefused, match="library is for evidence-v1"):
-        run_session(seq_id, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                    library_sessions=["s0123456789abcdef"])
+        run_session(
+            seq_id,
+            "LEARN",
+            0,
+            effort="low",
+            wall_timeout_s=60.0,
+            dry_run=True,
+            library_sessions=["s0123456789abcdef"],
+        )
     assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
     task_path = Q.seqskill_instance_dir(seq_id) / "task.json"
-    task_path.write_text(task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8")
+    task_path.write_text(
+        task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8"
+    )
     with pytest.raises(InstanceRefused, match="never runs a stale"):
         read_instance_record(seq_id)
 
@@ -121,7 +134,8 @@ def test_the_learn_view_is_the_evidence_with_the_operator_and_the_rows(seq_id: s
     assert sorted(shown) == sorted(Q.EVIDENCE_KEYS)
     assert all(np.array_equal(shown[key], instance.evidence[key]) for key in Q.EVIDENCE_KEYS)
     assert sorted(path.name for path in view.trial_dir.iterdir()) == sorted(
-        ["model.npz", "model_spec.json", "forward.py", "task.json", EXPERIENCE_FILE])
+        ["model.npz", "model_spec.json", "forward.py", "task.json", EXPERIENCE_FILE]
+    )
     record = view.experience
     assert record is not None and record["source"] == seqskill.EXPERIENCE_SOURCE
     assert (record["n_new"], record["n_old"], record["n_new_right"]) == (Q.N_NEW, Q.N_REPLAY, 0)
@@ -130,21 +144,31 @@ def test_the_learn_view_is_the_evidence_with_the_operator_and_the_rows(seq_id: s
     assert view.decoy_model_sha256 is None and view.clean_check is None and view.fewshot is None
     assert not (session_dir / "private" / CLEAN_VCHECK_FILE).exists()
     private = instance.private
-    assert view.seqskill == {"rule": Q.SEQSKILL_RULE, "new_operator": "OP_NEW0",
-                             "new_operator_id": S.TOKEN_ID["OP_NEW0"], "n_vcheck_new": 4000, "n_vcheck_old": 4000,
-                             "n_base_errors_vcheck_new": private["n_base_errors_vcheck_new"],
-                             "n_base_errors_vcheck_old": private["n_base_errors_vcheck_old"]}
+    assert view.seqskill == {
+        "rule": Q.SEQSKILL_RULE,
+        "new_operator": "OP_NEW0",
+        "new_operator_id": S.TOKEN_ID["OP_NEW0"],
+        "n_vcheck_new": 4000,
+        "n_vcheck_old": 4000,
+        "n_base_errors_vcheck_new": private["n_base_errors_vcheck_new"],
+        "n_base_errors_vcheck_old": private["n_base_errors_vcheck_old"],
+    }
     task = view.task
     assert task["parent_sha256"] == instance.params_sha256
     assert "evidence" not in task and "patch_format" not in task
     assert task["rows"] == instance.task["rows"] and task["new_operator"] == instance.task["new_operator"]
     assert task["experience"]["new"]["count"] == Q.N_NEW and task["experience"]["old"]["count"] == Q.N_REPLAY
     assert "OP_NEW0 never occurred" in task["statement"]
-    assert "classifier" not in json.dumps(task["program"]) and "other independently trained models" in json.dumps(
-        task["program"])
+    assert "classifier" not in json.dumps(
+        task["program"]
+    ) and "other independently trained models" in json.dumps(task["program"])
     assert view.limits["max_rel_frob"] == 0.5 and view.limits["rel_frob_min_ndim"] == 2
-    assert view.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC and view.limits["max_edit_frac"] is None
-    assert not view.limits.get("rel_frob_exempt")  # no exemption: the new token's row is counted in tok_emb.weight
+    assert (
+        view.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC and view.limits["max_edit_frac"] is None
+    )
+    assert not view.limits.get(
+        "rel_frob_exempt"
+    )  # no exemption: the new token's row is counted in tok_emb.weight
     budgets = Budgets(patch_checks=8, python_cells=60, cell_timeout_s=120.0, wall_timeout_s=5400.0)
     prompt = render_task("LEARN", task, view.limits, budgets, view.input_files, seqskill=True)
     assert "classifier" not in prompt and "Output symbols by index" in prompt and "-1 elsewhere" in prompt
@@ -200,8 +224,9 @@ def test_the_seqskill_prompts_change_only_what_is_false_for_a_sequence_model() -
     shown = {spec["name"]: spec["description"] for spec in tool_specs(tools, program=True, seqskill=True)}
     assert SEQSKILL_CHECK_SETS in shown["patch_check"] and PROGRAM_CHECK_SETS not in shown["patch_check"]
     assert "classifier" not in shown["patch_check"]
-    assert {k: v for k, v in shown.items() if k != "patch_check"} == {k: v for k, v in plain.items()
-                                                                      if k != "patch_check"}
+    assert {k: v for k, v in shown.items() if k != "patch_check"} == {
+        k: v for k, v in plain.items() if k != "patch_check"
+    }
     with pytest.raises(ValueError, match="program arm"):
         tool_specs(arm_spec("M2").tools, seqskill=True)
 
@@ -219,7 +244,9 @@ def test_a_seqskill_learn_session_scores_programs_on_the_part_cut(seq_id: str, t
     _, check, status, declared = replies
     assert not check.is_error, check.payload
     assert check.payload["score"] == check.payload["score_new"] + check.payload["score_old"]
-    assert check.payload["tensors"] == ["tok_emb.weight"] and check.payload["program_stdout"].startswith("copied")
+    assert check.payload["tensors"] == ["tok_emb.weight"] and check.payload["program_stdout"].startswith(
+        "copied"
+    )
     assert declared.payload["valid"]
 
     paths = SessionPaths(result.root)
@@ -229,17 +256,23 @@ def test_a_seqskill_learn_session_scores_programs_on_the_part_cut(seq_id: str, t
     assert session["kept_rule"] == kept_rule_record(0.005, 4000, seqskill.CHECK_SET)
     assert session["leak_scan"]["passed"] is True
     assert set(LEAK_WORDS) <= set(session["forbidden_strings"]["text"])
-    assert paths.system_prompt.read_text(encoding="utf-8") == render_system("LEARN", seqskill=True,
-                                                                           kept_rule=session["kept_rule"])
-    tools = {spec["name"]: spec for spec in tool_specs(arm_spec("LEARN").tools, program=True, seqskill=True,
-                                                       s_old_floor=-20)}
+    assert paths.system_prompt.read_text(encoding="utf-8") == render_system(
+        "LEARN", seqskill=True, kept_rule=session["kept_rule"]
+    )
+    tools = {
+        spec["name"]: spec
+        for spec in tool_specs(arm_spec("LEARN").tools, program=True, seqskill=True, s_old_floor=-20)
+    }
     assert "score_old of at least -20" in tools["declare_final"]["description"]
     entry = read_jsonl(paths.checks_log)[0]
     attempt_dir = result.root / "attempts" / str(entry["attempt"])
     child = ArmApplier(session).apply(read_json(attempt_dir / str(entry["patch_file"])), attempt_dir).child
     assert params_sha256(child) == entry["child_sha256"]
     expected = Q.make_seqskill_oracle(seq_id).query(child, "copy")  # evalkit's own part-cut oracle
-    assert (check.payload["score_new"], check.payload["score_old"]) == (expected["score_new"], expected["score_old"])
+    assert (check.payload["score_new"], check.payload["score_old"]) == (
+        expected["score_new"],
+        expected["score_old"],
+    )
     ledger = CheckLedger(session, paths)  # rebuilt from session.json alone, as the MCP server builds it
     assert [row["score"] for row in ledger.checked()] == [check.payload["score"]]
 
@@ -255,7 +288,13 @@ def test_a_seqskill_learn_session_scores_programs_on_the_part_cut(seq_id: str, t
     sandbox = ProgramSandbox(python=SANDBOX_PYTHON, memory_bytes=4 * 2**30, threads=1)
     (path,) = run_transfer(program, [seq_id], tmp_path / "transfer", sandbox)
     record = json.loads(path.read_text())
-    assert record["status"] == "ok" and record["within_limits"] is True and record["tensors"] == ["tok_emb.weight"]
+    assert (
+        record["status"] == "ok"
+        and record["within_limits"] is True
+        and record["tensors"] == ["tok_emb.weight"]
+    )
     assert record["experience"]["source"] == seqskill.EXPERIENCE_SOURCE
-    assert record["child_sha256"] == entry["child_sha256"]  # the same program on the same student and experience
+    assert (
+        record["child_sha256"] == entry["child_sha256"]
+    )  # the same program on the same student and experience
     assert record["readouts_seqskill"] == row["readouts_seqskill"] and "readouts_clean" not in record

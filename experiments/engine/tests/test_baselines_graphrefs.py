@@ -45,7 +45,9 @@ def test_trainable_set_and_parity_at_every_node(wide: dict) -> None:
     params = instance.params
     trainable = R.trainable_tensors(params)
     assert not any("running" in key for key in trainable)
-    assert set(params) - set(trainable) == {f"bn{i}.{p}" for i in (1, 2) for p in ("running_mean", "running_var")}
+    assert set(params) - set(trainable) == {
+        f"bn{i}.{p}" for i in (1, 2) for p in ("running_mean", "running_var")
+    }
     ctx = _ctx(instance)
     parity = ctx.info["parity_all_nodes"]
     assert parity["n_nodes"] == instance.private["n_nodes"]
@@ -86,7 +88,9 @@ def test_interp_alphas_and_theta_full(wide: dict) -> None:
     for candidate in candidates:
         alpha = candidate.config["alpha"]
         for key, value in base.items():
-            expected = (value.astype(np.float64) + alpha * (theta[key].astype(np.float64) - value)).astype(value.dtype)
+            expected = (value.astype(np.float64) + alpha * (theta[key].astype(np.float64) - value)).astype(
+                value.dtype
+            )
             assert np.array_equal(candidate.child[key], expected)
         assert all(np.array_equal(candidate.child[k], base[k]) for k in base if "running" in k)
     # theta_full is grad_full's lr 1e-3, 300-step checkpoint
@@ -106,8 +110,12 @@ def test_sparse_masks_keep_under_the_cap(wide: dict) -> None:
             k = int(np.floor(R.MASK_FRACTION * instance.params[key].size))
             changed = max(int(np.count_nonzero(c.child[key] != instance.params[key])) for c in candidates)
             assert changed <= k
-        assert all(np.array_equal(c.child[key], instance.params[key])
-                   for c in candidates for key in instance.params if key not in trainable)
+        assert all(
+            np.array_equal(c.child[key], instance.params[key])
+            for c in candidates
+            for key in instance.params
+            if key not in trainable
+        )
 
 
 @pytest.mark.parametrize("method", ["grad_last", "imprint"])
@@ -136,14 +144,20 @@ def test_runner_end_to_end(wide: dict, method: str) -> None:
         for slot in range(8):
             patch = run_dir / f"q{slot}" / "patch.json"
             assert patch.is_file()
-        (candidate,) = [c for c in R.graph_imprint_generator(instance)(load_graphnew_evidence(instance))[0]
-                        if c.slot == 0]
+        (candidate,) = [
+            c for c in R.graph_imprint_generator(instance)(load_graphnew_evidence(instance))[0] if c.slot == 0
+        ]
         assert np.array_equal(candidate.child["conv3.weight"][old], instance.params["conv3.weight"][old])
         assert not np.array_equal(candidate.child["conv3.weight"][new], instance.params["conv3.weight"][new])
-        assert all(np.array_equal(candidate.child[k], instance.params[k]) for k in instance.params if k not in head)
+        assert all(
+            np.array_equal(candidate.child[k], instance.params[k]) for k in instance.params if k not in head
+        )
     readout = D.readout_run(run_dir / "run.json")
     json.dumps(readout, allow_nan=False)  # classes without V_select rows read as null, never NaN
-    assert readout["rule"] == GN.GRAPHNEW_RULE and readout["readouts_graphnew"]["n_all"] == instance.private["n_vselect"]
+    assert (
+        readout["rule"] == GN.GRAPHNEW_RULE
+        and readout["readouts_graphnew"]["n_all"] == instance.private["n_vselect"]
+    )
     kept = D.readout_retention(run_dir / "run.json", -20)
     assert kept["selection"]["s_old_floor"] == -20
     assert kept["is_base_noop"] or kept["vcheck"]["score_old"] >= -20
@@ -164,11 +178,27 @@ def test_graphnew_mode_refuses_other_modes_and_instances(wide: dict, tmp_path: P
     instance = wide["instance"]
     spec = MethodSpec(method="x", label="x", uses_labels_for_fit=True, edit_limits_enforced=True)
     with pytest.raises(ValueError, match="graphnew alone"):
-        execute_run(instance=instance, spec=spec, run_dir=tmp_path / "a", run_seed=0, config={},
-                    generate=lambda e: ([], {}), graphnew=True, fewshot=True)
+        execute_run(
+            instance=instance,
+            spec=spec,
+            run_dir=tmp_path / "a",
+            run_seed=0,
+            config={},
+            generate=lambda e: ([], {}),
+            graphnew=True,
+            fewshot=True,
+        )
     with pytest.raises(ValueError, match="replay_in_fit"):
-        execute_run(instance=instance, spec=spec, run_dir=tmp_path / "b", run_seed=0, config={},
-                    generate=lambda e: ([], {}), graphnew=True, replay_in_fit=False)
+        execute_run(
+            instance=instance,
+            spec=spec,
+            run_dir=tmp_path / "b",
+            run_seed=0,
+            config={},
+            generate=lambda e: ([], {}),
+            graphnew=True,
+            replay_in_fit=False,
+        )
     evidence = load_graphnew_evidence(instance)
     assert evidence.composition() == "3 new-class nodes, 5 replay nodes of the train classes"
     assert evidence.describe()["n_new"] == 3 and evidence.x.dtype == np.int64
@@ -180,8 +210,13 @@ def test_closed_form_references_change_the_head_only(wide: dict) -> None:
     head = {"conv3.weight", "conv3.bias"}
     ridge, info = R.ridge_margin_generator(instance)(evidence)
     assert len(ridge) == 8 and info["n_evidence_raised"] > 0
-    assert all(np.array_equal(c.child[k], instance.params[k]) for c in ridge for k in instance.params if k not in head)
-    if not np.any((evidence.base_pred == evidence.y)[evidence.n_rand:]):
+    assert all(
+        np.array_equal(c.child[k], instance.params[k])
+        for c in ridge
+        for k in instance.params
+        if k not in head
+    )
+    if not np.any((evidence.base_pred == evidence.y)[evidence.n_rand :]):
         pytest.skip("the toy base classifies no replay node correctly, so the retain offset has no bound")
     retain, _ = R.graph_imprint_generator(instance, "imprint_retain")(evidence)
     assert [c.config for c in retain] == [c.config for c in R.graph_imprint_generator(instance)(evidence)[0]]

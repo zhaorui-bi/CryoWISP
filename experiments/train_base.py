@@ -4,6 +4,7 @@
 Saves a plain FP32 torchvision state_dict (num_classes=2) plus labels.json and a metrics
 json. Class order is ImageFolder's alphabetical order: background=0, particle=1.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,10 +68,13 @@ def evaluate(model: nn.Module, root: Path, batch: int = 256) -> dict:
             per_ds[key][0] += int(p == t)
         correct += int((pred == y).sum())
         total += len(y)
-    return {"acc": correct / total, "n": total,
-            "background_acc": per_class[0][0] / max(1, per_class[0][1]),
-            "particle_acc": per_class[1][0] / max(1, per_class[1][1]),
-            "per_dataset": {k: {"acc": c / n, "n": n} for k, (c, n) in sorted(per_ds.items())}}
+    return {
+        "acc": correct / total,
+        "n": total,
+        "background_acc": per_class[0][0] / max(1, per_class[0][1]),
+        "particle_acc": per_class[1][0] / max(1, per_class[1][1]),
+        "per_dataset": {k: {"acc": c / n, "n": n} for k, (c, n) in sorted(per_ds.items())},
+    }
 
 
 def _iterate_with_paths(dl: DataLoader, ds: CropDataset):
@@ -83,16 +87,20 @@ def _iterate_with_paths(dl: DataLoader, ds: CropDataset):
 
 
 def as_state_dict(model: nn.Module) -> dict:
-    return {k: (v.float() if v.is_floating_point() else v.detach().clone())
-            for k, v in model.state_dict().items()}
+    return {
+        k: (v.float() if v.is_floating_point() else v.detach().clone()) for k, v in model.state_dict().items()
+    }
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--crops-dir", type=Path, required=True)
     ap.add_argument("--out-dir", type=Path, required=True)
-    ap.add_argument("--imagenet-init", type=Path,
-                    default=Path("/g/data/jz31/zhaorui/cryoppp_data/torch_cache/resnet18_imagenet.pt"))
+    ap.add_argument(
+        "--imagenet-init",
+        type=Path,
+        default=Path("/g/data/jz31/zhaorui/cryoppp_data/torch_cache/resnet18_imagenet.pt"),
+    )
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--epochs", type=int, default=6)
     ap.add_argument("--batch-size", type=int, default=256)
@@ -113,8 +121,7 @@ def main() -> None:
 
     train_ds = CropDataset(args.crops_dir / "base_train", True, args.seed, keep=train_set)
     val_ds = CropDataset(args.crops_dir / "base_train", False, keep=val_set)
-    train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=8,
-                          drop_last=True)
+    train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=8, drop_last=True)
     val_dl = DataLoader(val_ds, batch_size=args.batch_size, num_workers=4)
 
     model = resnet18(num_classes=2)

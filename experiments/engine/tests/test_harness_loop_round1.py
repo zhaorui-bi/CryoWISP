@@ -42,9 +42,14 @@ def _no_program_run(*args: Any, **kwargs: Any) -> Any:
     raise AssertionError("round 1 ran its program")
 
 
-def _control(ids: list[str], program: Path, session: Path, out: Path, worse: Path, **kwargs: Any) -> dict[str, Any]:
-    return read_json(run_loop_stream(MODE_SELECT, ids, program, session, out, _sandbox(), candidates={2: [worse]},
-                                     **kwargs))
+def _control(
+    ids: list[str], program: Path, session: Path, out: Path, worse: Path, **kwargs: Any
+) -> dict[str, Any]:
+    return read_json(
+        run_loop_stream(
+            MODE_SELECT, ids, program, session, out, _sandbox(), candidates={2: [worse]}, **kwargs
+        )
+    )
 
 
 def _copy_session(root: Path, dest: Path) -> Path:
@@ -55,7 +60,8 @@ def _copy_session(root: Path, dest: Path) -> Path:
 
 @needs_sandbox
 def test_round_one_from_the_session_final_runs_no_program_and_reaches_the_programs_child(
-        loop_store: tuple[LearnStore, str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
+    loop_store: tuple[LearnStore, str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:  # noqa: F811
     _, first, second = loop_store
     ids = [first, second]
     root1 = _round_one(first)
@@ -66,7 +72,9 @@ def test_round_one_from_the_session_final_runs_no_program_and_reaches_the_progra
     shown = {"2": [loop_stream._program(worse)]}
     stem = loop_stream._stem(MODE_SELECT, ids, {"sha256": file_sha256(program1)}, shown, {})
     assert Path(default["work_dir"]).name == f"loop_{MODE_SELECT}_{stem}_{default['base_params_sha256'][:12]}"
-    assert default["round1"]["source"] == default["rounds"][0]["round1_source"] == {"kind": ROUND1_FROM_PROGRAM}
+    assert (
+        default["round1"]["source"] == default["rounds"][0]["round1_source"] == {"kind": ROUND1_FROM_PROGRAM}
+    )
     assert "run" in default["rounds"][0]
 
     monkeypatch.setattr(loop_stream, "_round", _no_program_run)
@@ -78,19 +86,29 @@ def test_round_one_from_the_session_final_runs_no_program_and_reaches_the_progra
     source = one["round1_source"]
     assert record["round1"]["source"] == source and source["kind"] == ROUND1_FROM_FINAL
     assert source["session_id"] == root1.name and source["child_sha256"] == final1["child_sha256"]
-    assert source["deltas_sha256"] == final1["program"]["deltas_sha256"] == file_sha256(root1 / "final" / "deltas.npz")
+    assert (
+        source["deltas_sha256"]
+        == final1["program"]["deltas_sha256"]
+        == file_sha256(root1 / "final" / "deltas.npz")
+    )
     assert source["patch_sha256"] == final1["program"]["patch_sha256"]
     assert one["experience"]["content_sha256"] == default["rounds"][0]["experience"]["content_sha256"]
     assert one["n_changed"] == default["rounds"][0]["n_changed"] == one["n_changed_vs_base"]
     assert one["library_entry"] == default["rounds"][0]["library_entry"]
-    assert two["parent_sha256"] == final1["child_sha256"] and two["child_sha256"] == default["rounds"][1]["child_sha256"]
-    assert Path(record["work_dir"]).name != Path(default["work_dir"]).name  # a recorded source: another identity
+    assert (
+        two["parent_sha256"] == final1["child_sha256"]
+        and two["child_sha256"] == default["rounds"][1]["child_sha256"]
+    )
+    assert (
+        Path(record["work_dir"]).name != Path(default["work_dir"]).name
+    )  # a recorded source: another identity
     assert not (Path(record["work_dir"]) / "round_1").exists()
 
 
 @needs_sandbox
 def test_a_tampered_final_or_a_wrong_combination_is_refused_before_any_write(
-        loop_store: tuple[LearnStore, str, str], tmp_path: Path) -> None:  # noqa: F811
+    loop_store: tuple[LearnStore, str, str], tmp_path: Path
+) -> None:  # noqa: F811
     _, first, second = loop_store
     ids = [first, second]
     root1 = _round_one(first)
@@ -121,15 +139,17 @@ def test_a_tampered_final_or_a_wrong_combination_is_refused_before_any_write(
 
 @needs_sandbox
 def test_round_one_from_a_loop_record_takes_exactly_that_records_student(
-        loop_store: tuple[LearnStore, str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
+    loop_store: tuple[LearnStore, str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:  # noqa: F811
     _, first, second = loop_store
     ids = [first, second]
     root1 = _round_one(first)
     program1 = root1 / "final" / "fix.py"
     final1 = read_json(root1 / "final" / "selection.json")["final"]
     worse = _write(tmp_path, "worse.py", WORSE)
-    default_path = run_loop_stream(MODE_SELECT, ids, program1, root1, tmp_path / "default", _sandbox(),
-                                   candidates={2: [worse]})
+    default_path = run_loop_stream(
+        MODE_SELECT, ids, program1, root1, tmp_path / "default", _sandbox(), candidates={2: [worse]}
+    )
     default = read_json(default_path)
     w1 = default["rounds"][0]["child_sha256"]
     monkeypatch.setattr(loop_stream, "_round", _no_program_run)
@@ -146,18 +166,39 @@ def test_round_one_from_a_loop_record_takes_exactly_that_records_student(
     other_sha = save_params(tmp_path / "other_w1.npz", other)
     assert other_sha != w1
     rows = [dict(row) for row in default["rounds"]]
-    rows[0].update(child_sha256=other_sha, student_after={"path": str(tmp_path / "other_w1.npz"), "sha256": other_sha})
+    rows[0].update(
+        child_sha256=other_sha, student_after={"path": str(tmp_path / "other_w1.npz"), "sha256": other_sha}
+    )
     fabricated = tmp_path / "fabricated.json"
     fabricated.write_text(json.dumps({**default, "rounds": rows}))
-    record = _control(ids, program1, root1, tmp_path / "fabricated", worse, round1_from_record=fabricated,
-                      kept_rule=KEPT_RULE_LOOP_V2)
+    record = _control(
+        ids,
+        program1,
+        root1,
+        tmp_path / "fabricated",
+        worse,
+        round1_from_record=fabricated,
+        kept_rule=KEPT_RULE_LOOP_V2,
+    )
     one, two = record["rounds"]
-    assert one["child_sha256"] == other_sha == two["parent_sha256"] and record["round1"]["source"]["path"] == str(
-        fabricated.resolve())
-    assert one["clean_s_old"]["source"]["kind"] == ROUND1_LOOP_ORACLE  # not the session's child: the loop's check
-    assert one["clean_s_old"]["source"]["why"] == ["the session's kept child is not the stream's round-1 student"]
-    final_v2 = _control(ids, program1, root1, tmp_path / "final_v2", worse, round1_from_final=True,
-                        kept_rule=KEPT_RULE_LOOP_V2)
+    assert one["child_sha256"] == other_sha == two["parent_sha256"] and record["round1"]["source"][
+        "path"
+    ] == str(fabricated.resolve())
+    assert (
+        one["clean_s_old"]["source"]["kind"] == ROUND1_LOOP_ORACLE
+    )  # not the session's child: the loop's check
+    assert one["clean_s_old"]["source"]["why"] == [
+        "the session's kept child is not the stream's round-1 student"
+    ]
+    final_v2 = _control(
+        ids,
+        program1,
+        root1,
+        tmp_path / "final_v2",
+        worse,
+        round1_from_final=True,
+        kept_rule=KEPT_RULE_LOOP_V2,
+    )
     assert final_v2["rounds"][0]["clean_s_old"]["source"]["kind"] == ROUND1_SESSION_CHECK
     assert final_v2["rounds"][0]["clean_s_old"]["s_old"] == final1["score_old"]
 
@@ -170,36 +211,78 @@ def test_round_one_from_a_loop_record_takes_exactly_that_records_student(
 
     def variant(name: str, **changes: Any) -> Path:
         path = tmp_path / name
-        path.write_text(json.dumps({**default, "rounds": [{**default["rounds"][0], **changes}, *default["rounds"][1:]]}))
+        path.write_text(
+            json.dumps({**default, "rounds": [{**default["rounds"][0], **changes}, *default["rounds"][1:]]})
+        )
         return path
 
     refused(variant("tampered.json", child_sha256="0" * 64), "does not hash to round 1's child_sha256")
-    refused(variant("program.json", library_entry={**default["rounds"][0]["library_entry"],
-                                                   "program": {"sha256": "1" * 64}}), "did not apply the program")
+    refused(
+        variant(
+            "program.json",
+            library_entry={**default["rounds"][0]["library_entry"], "program": {"sha256": "1" * 64}},
+        ),
+        "did not apply the program",
+    )
     refused(variant("instance.json", instance_id=second), "is not on round 1's instance")
     refused(root1 / "final" / "selection.json", "is not a loop stream record")
-    kept_base = runner.run_session(first, "LEARN", 0, launcher=ScriptedLauncher(
-        lambda client, replies: call_and_record(client, replies, "status", {})), **SESSION_KWARGS).root
-    noop = read_json(run_loop_stream(MODE_SELECT, ids, None, kept_base, tmp_path / "noop", _sandbox(),
-                                     candidates={2: [worse]}))
+    kept_base = runner.run_session(
+        first,
+        "LEARN",
+        0,
+        launcher=ScriptedLauncher(lambda client, replies: call_and_record(client, replies, "status", {})),
+        **SESSION_KWARGS,
+    ).root
+    noop = read_json(
+        run_loop_stream(
+            MODE_SELECT, ids, None, kept_base, tmp_path / "noop", _sandbox(), candidates={2: [worse]}
+        )
+    )
     assert noop["round1"]["source"] == noop["rounds"][0]["round1_source"] == {"kind": ROUND1_FROM_BASE}
 
 
 @needs_sandbox
 def test_the_cli_takes_one_recorded_source_and_needs_the_round_one_program(
-        loop_store: tuple[LearnStore, str, str], tmp_path: Path) -> None:  # noqa: F811
+    loop_store: tuple[LearnStore, str, str], tmp_path: Path
+) -> None:  # noqa: F811
     _, first, second = loop_store
     root1 = _round_one(first)
     program1 = root1 / "final" / "fix.py"
     worse = _write(tmp_path, "worse.py", WORSE)
-    common = ["--mode", MODE_SELECT, "--instances", first, second, "--round1-session", str(root1),
-              "--candidates", f"2={worse}", "--threads", "1"]
-    for extra in (["--round1-from-final", "--round1-from-record", str(tmp_path / "r.json")], ["--round1-from-final"]):
+    common = [
+        "--mode",
+        MODE_SELECT,
+        "--instances",
+        first,
+        second,
+        "--round1-session",
+        str(root1),
+        "--candidates",
+        f"2={worse}",
+        "--threads",
+        "1",
+    ]
+    for extra in (
+        ["--round1-from-final", "--round1-from-record", str(tmp_path / "r.json")],
+        ["--round1-from-final"],
+    ):
         with pytest.raises(SystemExit):
-            loop_stream.main([*common, *extra, *(["--round1-program", str(program1)] if len(extra) > 1 else []),
-                              "--out", str(tmp_path / "x")])
+            loop_stream.main(
+                [
+                    *common,
+                    *extra,
+                    *(["--round1-program", str(program1)] if len(extra) > 1 else []),
+                    "--out",
+                    str(tmp_path / "x"),
+                ]
+            )
     assert not (tmp_path / "x").exists()
     out = tmp_path / "cli"
-    assert loop_stream.main([*common, "--round1-program", str(program1), "--round1-from-final", "--out", str(out)]) == 0
+    assert (
+        loop_stream.main(
+            [*common, "--round1-program", str(program1), "--round1-from-final", "--out", str(out)]
+        )
+        == 0
+    )
     (path,) = list(out.glob("loop_checked_selection_*.json"))
     assert read_json(path)["round1"]["source"]["kind"] == ROUND1_FROM_FINAL

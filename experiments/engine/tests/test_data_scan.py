@@ -45,9 +45,12 @@ def test_grammar_has_the_published_size_and_lengths() -> None:
     assert len(commands) == 20910 == len(set(commands))
     assert max(len(c.split()) for c in commands) == S.MAX_CMD
     assert max(len(S.interpret(c)) for c in commands) == S.OUT_SLOTS
-    assert sum(S.has_primitive(c, "addprim_jump") for c in commands) == 7706 + 1  # the test file and "jump" alone
-    assert S.has_primitive("walk around right", "around_right") and not S.has_primitive("walk right around left",
-                                                                                         "around_right")
+    assert (
+        sum(S.has_primitive(c, "addprim_jump") for c in commands) == 7706 + 1
+    )  # the test file and "jump" alone
+    assert S.has_primitive("walk around right", "around_right") and not S.has_primitive(
+        "walk right around left", "around_right"
+    )
 
 
 def test_rows_encode_decode_and_score() -> None:
@@ -57,7 +60,7 @@ def test_rows_encode_decode_and_score() -> None:
     assert S.decode(x) == commands
     assert S.actions_of(y) == [S.interpret(c) for c in commands]
     assert int((y[0] != S.IGNORE).sum()) == S.OUT_SLOTS and int((y[0] == S.END).sum()) == S.OUT_SLOTS - 1
-    assert x[0, 0] == S.BOS and x[0, 2] == S.SEP and np.all(x[0, 3:3 + S.OUT_SLOTS] == S.OUT)
+    assert x[0, 0] == S.BOS and x[0, 2] == S.SEP and np.all(x[0, 3 : 3 + S.OUT_SLOTS] == S.OUT)
     pred = np.where(y == S.IGNORE, 0, y)
     assert S.row_correct(y, pred).all() and S.token_accuracy(y, pred) == 1.0
     pred[1, np.flatnonzero(y[1] != S.IGNORE)[-1]] = 0  # the last OUT slot (END) predicted as an action
@@ -76,8 +79,13 @@ def test_splits_have_the_prereg_sizes_and_are_disjoint(fake_raw: Path) -> None:
     built = S.build_condition_splits(fake_raw, "addprim_jump")
     S.check_disjoint(built)
     sizes = {name: len(arrays["y"]) for name, arrays in built.private.items()}
-    assert sizes == {"train": 13203 - 3000 + 1467, "old_check": 1000, "old_select": 1000, "V_check": 2569,
-                     "V_select": 2569}
+    assert sizes == {
+        "train": 13203 - 3000 + 1467,
+        "old_check": 1000,
+        "old_select": 1000,
+        "V_check": 2569,
+        "V_select": 2569,
+    }
     assert len(built.sealed["y"]) == 2568 + 1000
     train = built.private["train"]
     assert int((train["part"] == S.PART_PRIM).sum()) == 1467
@@ -91,7 +99,10 @@ def test_splits_have_the_prereg_sizes_and_are_disjoint(fake_raw: Path) -> None:
     assert all(np.array_equal(again.private[k]["x"], v["x"]) for k, v in built.private.items())
     ar = S.build_condition_splits(fake_raw, "around_right")
     n_new = ar.record["n_new_commands"]
-    assert len(ar.private["V_check"]["y"]) + len(ar.private["V_select"]["y"]) + ar.record["sealed_sizes"]["new"] == n_new
+    assert (
+        len(ar.private["V_check"]["y"]) + len(ar.private["V_select"]["y"]) + ar.record["sealed_sizes"]["new"]
+        == n_new
+    )
     assert ar.record["n_primitive_rows_in_train"] == 0 and len(ar.private["V_select"]["y"]) == -(-n_new // 3)
 
 
@@ -104,10 +115,15 @@ def test_raw_copy_store_write_verify_and_refusals(fake_raw: Path) -> None:
     B.write_base({"note": "test"})
     manifest = B.write_condition(B.build_condition("addprim_jump"), {"note": "test"})
     assert manifest["split_sizes"]["V_select"] == 2569 and manifest["test"]["n"] == 3568
-    assert read_dataset_json(S.DATASET, "addprim_jump")["forward_sha256"] == read_dataset_json(S.DATASET)[
-        "forward_sha256"]
+    assert (
+        read_dataset_json(S.DATASET, "addprim_jump")["forward_sha256"]
+        == read_dataset_json(S.DATASET)["forward_sha256"]
+    )
     sealed = sealed_test_path(S.DATASET, "addprim_jump")
-    assert stat.S_IMODE(os.stat(sealed).st_mode) == 0o600 and stat.S_IMODE(os.stat(sealed.parent).st_mode) == 0o700
+    assert (
+        stat.S_IMODE(os.stat(sealed).st_mode) == 0o600
+        and stat.S_IMODE(os.stat(sealed.parent).st_mode) == 0o700
+    )
     assert all(value["match"] for value in B.verify_condition("addprim_jump").values())
     with pytest.raises(FileExistsError):
         B.write_condition(B.build_condition("addprim_jump"), {})

@@ -402,7 +402,9 @@ def _plan(
     batch_size: int,
 ) -> tuple[dict[str, np.ndarray], dict[str, Any], dict[str, Any]]:
     """Evidence arrays, task and private record (without id and time) of one student's instance."""
-    from cryowisp.models.export import fewshot_models_dir  # imports torch; kept out of module import (CODE_AUDIT section 4)
+    from cryowisp.models.export import (
+        fewshot_models_dir,  # imports torch; kept out of module import (CODE_AUDIT section 4)
+    )
 
     train_classes = [int(c) for c in row["train_classes"]]
     new_classes = new_classes_of(len(names), train_classes)
@@ -555,7 +557,9 @@ def build_fewshot_instances(
     some ``seeds``. An active instance of the same (dataset, model id, train classes) is reused when a rebuild gives
     the same evidence, task and inputs, and refused otherwise.
     """
-    from cryowisp.models.export import read_fewshot_index  # imports torch; kept out of module import (CODE_AUDIT section 4)
+    from cryowisp.models.export import (
+        read_fewshot_index,  # imports torch; kept out of module import (CODE_AUDIT section 4)
+    )
 
     train = [int(c) for c in train_classes]
     students = [

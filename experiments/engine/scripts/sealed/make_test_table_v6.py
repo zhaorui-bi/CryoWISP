@@ -90,16 +90,20 @@ def read_records(paths: Sequence[Path]) -> dict[str, dict[str, Any]]:
     return out
 
 
-def check_records(records: Mapping[str, Mapping[str, Any]], entries: Sequence[SF.Final], mode: str,
-                  list_sha: str) -> None:
+def check_records(
+    records: Mapping[str, Mapping[str, Any]], entries: Sequence[SF.Final], mode: str, list_sha: str
+) -> None:
     """The checks that stop the table (module docstring), except the per-image ones."""
     names = {e.name for e in entries}
     if set(records) != names:
         raise TableError(f"records {sorted(set(records) ^ names)} do not match the list")
     for entry in entries:
         record = records[entry.name]
-        for key, ours in (("instance_id", entry.instance_id), ("child_sha256", entry.child_sha256),
-                          ("readout", entry.readout)):
+        for key, ours in (
+            ("instance_id", entry.instance_id),
+            ("child_sha256", entry.child_sha256),
+            ("readout", entry.readout),
+        ):
             if record[key] != ours:
                 raise TableError(f"{entry.name}: {key} {record[key]!r} != list {ours!r}")
         if record["mode"] != mode:
@@ -128,27 +132,41 @@ def correctness(record: Mapping[str, Any]) -> dict[str, np.ndarray]:
 def entry_row(record: Mapping[str, Any], bits: Mapping[str, np.ndarray] | None) -> dict[str, Any]:
     """One entry's row of the table."""
     row: dict[str, Any] = {
-        "name": record["name"], "instance_id": record["instance_id"], "condition": record["condition"],
-        "child_sha256": record["child_sha256"], "gain": float(record["gain"]), "clean": float(record["clean"]),
+        "name": record["name"],
+        "instance_id": record["instance_id"],
+        "condition": record["condition"],
+        "child_sha256": record["child_sha256"],
+        "gain": float(record["gain"]),
+        "clean": float(record["clean"]),
         "joint": float(record["joint"]),
-        "fixed": int(record["readouts"]["fixed"]), "broken": int(record["readouts"]["broken"]),
-        "fixed_clean": int(record["readouts_clean"]["fixed"]), "broken_clean": int(record["readouts_clean"]["broken"]),
-        "base_acc": float(record["readouts"]["base_acc"]), "child_acc": float(record["readouts"]["child_acc"]),
+        "fixed": int(record["readouts"]["fixed"]),
+        "broken": int(record["readouts"]["broken"]),
+        "fixed_clean": int(record["readouts_clean"]["fixed"]),
+        "broken_clean": int(record["readouts_clean"]["broken"]),
+        "base_acc": float(record["readouts"]["base_acc"]),
+        "child_acc": float(record["readouts"]["child_acc"]),
         "base_acc_clean": float(record["readouts_clean"]["base_acc"]),
         "child_acc_clean": float(record["readouts_clean"]["child_acc"]),
     }
     if bits is not None:
         d_gain = bits["child_cond"].astype(np.int8) - bits["base_cond"].astype(np.int8)
         d_clean = bits["child_clean"].astype(np.int8) - bits["base_clean"].astype(np.int8)
-        row["intervals"] = {"gain": interval(d_gain), "clean": interval(d_clean), "joint": interval(d_gain + d_clean)}
+        row["intervals"] = {
+            "gain": interval(d_gain),
+            "clean": interval(d_clean),
+            "joint": interval(d_gain + d_clean),
+        }
     if record.get("secondary"):
         row["secondary_gain"] = {s: float(part["gain"]) for s, part in sorted(record["secondary"].items())}
     return row
 
 
-def readings(rows: Mapping[str, Mapping[str, Any]], roles: Sequence[Mapping[str, Any]],
-             bits: Mapping[str, Mapping[str, np.ndarray]] | None, dev_rows: Mapping[str, Mapping[str, Any]] | None
-             ) -> dict[str, Any]:
+def readings(
+    rows: Mapping[str, Mapping[str, Any]],
+    roles: Sequence[Mapping[str, Any]],
+    bits: Mapping[str, Mapping[str, np.ndarray]] | None,
+    dev_rows: Mapping[str, Mapping[str, Any]] | None,
+) -> dict[str, Any]:
     """B at test level and the comparison with fine-tuning, per LEARN final (module docstring)."""
     out: dict[str, Any] = {}
     for condition in G:
@@ -158,7 +176,9 @@ def readings(rows: Mapping[str, Mapping[str, Any]], roles: Sequence[Mapping[str,
         main_roles = [r for r in mine if r["key"].startswith("main_")]
         arm3 = [r for r in mine if r.get("arm") == "3"]
         if len(finals) != 2 or len(bar_roles) != 1 or len(main_roles) != 1:
-            raise TableError(f"{condition}: roles {len(finals)} finals, {len(bar_roles)} bar, {len(main_roles)} main")
+            raise TableError(
+                f"{condition}: roles {len(finals)} finals, {len(bar_roles)} bar, {len(main_roles)} main"
+            )
         bar_source, main = rows[bar_roles[0]["entry"]], rows[main_roles[0]["entry"]]
         bar = bar_source["joint"] + B_MARGIN
         ft = {r["key"]: rows[r["entry"]]["joint"] for r in arm3}
@@ -166,37 +186,63 @@ def readings(rows: Mapping[str, Mapping[str, Any]], roles: Sequence[Mapping[str,
         per_final = {}
         for role in finals:
             row = rows[role["entry"]]
-            checks = {"gain": at_least(row["gain"], G[condition]), "clean": at_least(row["clean"], B_CLEAN),
-                      "joint": at_least(row["joint"], bar)}
+            checks = {
+                "gain": at_least(row["gain"], G[condition]),
+                "clean": at_least(row["clean"], B_CLEAN),
+                "joint": at_least(row["joint"], bar),
+            }
             reading: dict[str, Any] = {
-                "entry": role["entry"], "gain": row["gain"], "clean": row["clean"], "joint": row["joint"],
-                "B_checks": checks, "B_met": all(checks.values()),
-                "joint_minus_best_ft": row["joint"] - ft[best_ft_key], "best_ft": best_ft_key,
+                "entry": role["entry"],
+                "gain": row["gain"],
+                "clean": row["clean"],
+                "joint": row["joint"],
+                "B_checks": checks,
+                "B_met": all(checks.values()),
+                "joint_minus_best_ft": row["joint"] - ft[best_ft_key],
+                "best_ft": best_ft_key,
                 "above_every_ft": all(row["joint"] > v for v in ft.values()),
                 "joint_minus_main": row["joint"] - main["joint"],
             }
             if bits is not None:
                 f, m = bits[role["entry"]], bits[main_roles[0]["entry"]]
-                d = (f["child_cond"].astype(np.int8) - m["child_cond"].astype(np.int8)) \
-                    + (f["child_clean"].astype(np.int8) - m["child_clean"].astype(np.int8))
+                d = (f["child_cond"].astype(np.int8) - m["child_cond"].astype(np.int8)) + (
+                    f["child_clean"].astype(np.int8) - m["child_clean"].astype(np.int8)
+                )
                 diff = interval(d)
                 if abs(diff["point"] - reading["joint_minus_main"]) > 1e-6:
-                    raise TableError(f"{role['entry']}: paired point {diff['point']} != {reading['joint_minus_main']}")
+                    raise TableError(
+                        f"{role['entry']}: paired point {diff['point']} != {reading['joint_minus_main']}"
+                    )
                 reading["joint_minus_main_interval"] = diff
             if dev_rows is not None:
                 dev = dev_rows[role["entry"]]
                 dev_bar = dev_rows[bar_roles[0]["entry"]]["joint"] + B_MARGIN
-                dev_met = (at_least(dev["gain"], G[condition]) and at_least(dev["clean"], B_CLEAN)
-                           and at_least(dev["joint"], dev_bar))
-                reading["dev"] = {"gain": dev["gain"], "clean": dev["clean"], "joint": dev["joint"], "bar": dev_bar,
-                                  "B_met": dev_met}
+                dev_met = (
+                    at_least(dev["gain"], G[condition])
+                    and at_least(dev["clean"], B_CLEAN)
+                    and at_least(dev["joint"], dev_bar)
+                )
+                reading["dev"] = {
+                    "gain": dev["gain"],
+                    "clean": dev["clean"],
+                    "joint": dev["joint"],
+                    "bar": dev_bar,
+                    "B_met": dev_met,
+                }
                 reading["dev_test_agree"] = dev_met == reading["B_met"]
             per_final[role["key"]] = reading
-        out[condition] = {"G": G[condition], "bar": bar, "bar_source": bar_roles[0]["entry"],
-                          "bar_source_joint": bar_source["joint"], "dev_bar_of_record": DEV_BAR[condition],
-                          "main_control": main_roles[0]["entry"], "main_joint": main["joint"],
-                          "ft_joints": ft, "finals": per_final,
-                          "B_met": f"{sum(r['B_met'] for r in per_final.values())} of {len(per_final)}"}
+        out[condition] = {
+            "G": G[condition],
+            "bar": bar,
+            "bar_source": bar_roles[0]["entry"],
+            "bar_source_joint": bar_source["joint"],
+            "dev_bar_of_record": DEV_BAR[condition],
+            "main_control": main_roles[0]["entry"],
+            "main_joint": main["joint"],
+            "ft_joints": ft,
+            "finals": per_final,
+            "B_met": f"{sum(r['B_met'] for r in per_final.values())} of {len(per_final)}",
+        }
     return out
 
 
@@ -221,7 +267,10 @@ def build(list_path: Path, mode: str, results: Path | None, dev_records: Sequenc
         bits = {name: correctness(record) for name, record in records.items()}
         by_instance: dict[str, set[tuple[str, str]]] = {}
         for name, record in records.items():
-            key = (record["per_image"]["base_correct_sha256"], record["per_image_clean"]["base_correct_sha256"])
+            key = (
+                record["per_image"]["base_correct_sha256"],
+                record["per_image_clean"]["base_correct_sha256"],
+            )
             by_instance.setdefault(record["instance_id"], set()).add(key)
         if any(len(keys) != 1 for keys in by_instance.values()):
             raise TableError("entries on one instance differ in base correctness")
@@ -231,11 +280,19 @@ def build(list_path: Path, mode: str, results: Path | None, dev_records: Sequenc
         records, bits = dev, None
     rows = {name: entry_row(record, bits[name] if bits else None) for name, record in records.items()}
     dev_rows = {name: entry_row(record, None) for name, record in dev.items()} if dev is not None else None
-    return {"schema": SCHEMA, "mode": mode, "list": str(list_path), "list_sha256": list_sha,
-            "list_status": parsed["status"], "results": str(results) if results else None,
-            "dev_records": [str(p) for p in dev_records], "n_primary": N_PRIMARY[mode],
-            "interval": "paired 95% normal approximation of the per-image difference (T05's rule)",
-            "entries": [rows[e.name] for e in entries], "readings": readings(rows, roles, bits, dev_rows)}
+    return {
+        "schema": SCHEMA,
+        "mode": mode,
+        "list": str(list_path),
+        "list_sha256": list_sha,
+        "list_status": parsed["status"],
+        "results": str(results) if results else None,
+        "dev_records": [str(p) for p in dev_records],
+        "n_primary": N_PRIMARY[mode],
+        "interval": "paired 95% normal approximation of the per-image difference (T05's rule)",
+        "entries": [rows[e.name] for e in entries],
+        "readings": readings(rows, roles, bits, dev_rows),
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:

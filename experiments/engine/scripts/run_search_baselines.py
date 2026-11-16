@@ -38,15 +38,21 @@ class Refusal(Exception):
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     """Command-line options (see the module docstring)."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--instance", action="append", default=[], help="instance id from index.json (repeatable)")
+    parser.add_argument(
+        "--instance", action="append", default=[], help="instance id from index.json (repeatable)"
+    )
     parser.add_argument("--dataset", help="only index entries of this dataset (not with --instance)")
     parser.add_argument(
-        "--split-role", choices=SPLIT_ROLES, help="index entries of this role, default dev (not with --instance)"
+        "--split-role",
+        choices=SPLIT_ROLES,
+        help="index entries of this role, default dev (not with --instance)",
     )
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
     parser.add_argument("--seed", type=int, default=0, help="run seed (search randomness; directory name)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for BLAS")
-    parser.add_argument("--allow-main", action="store_true", help="permit main instances (after the freeze only)")
+    parser.add_argument(
+        "--allow-main", action="store_true", help="permit main instances (after the freeze only)"
+    )
     parser.add_argument("--dry-run", action="store_true", help="print the checked selection and exit")
     return parser.parse_args(argv)
 
@@ -59,7 +65,9 @@ def select_entries(index: dict[str, Any], args: argparse.Namespace) -> list[dict
     by_id = {str(entry["instance_id"]): entry for entry in entries}
     if args.instance:
         if args.dataset is not None or args.split_role is not None:
-            raise Refusal("--dataset and --split-role select from the index and cannot be combined with --instance")
+            raise Refusal(
+                "--dataset and --split-role select from the index and cannot be combined with --instance"
+            )
         bad = [value for value in args.instance if not SAFE_ID.fullmatch(value) or value in {".", ".."}]
         missing = [value for value in args.instance if value not in by_id]
         if bad or missing:
@@ -67,7 +75,9 @@ def select_entries(index: dict[str, Any], args: argparse.Namespace) -> list[dict
         return [by_id[value] for value in dict.fromkeys(args.instance)]
     role = args.split_role or "dev"
     if role == "main" and not args.allow_main:
-        raise Refusal("--split-role main needs --allow-main, which is reserved for runs after the pre-registration freeze")
+        raise Refusal(
+            "--split-role main needs --allow-main, which is reserved for runs after the pre-registration freeze"
+        )
     return [
         entry
         for entry in entries
@@ -90,7 +100,9 @@ def check_roles(entries: list[dict[str, Any]], instances_root: Path, allow_main:
         if role not in SPLIT_ROLES:
             problems.append(f"{instance_id}: private.json split_role {role!r} is not 'dev' or 'main'")
         elif role != entry.get("split_role"):
-            problems.append(f"{instance_id}: private.json split_role {role!r} != index.json {entry.get('split_role')!r}")
+            problems.append(
+                f"{instance_id}: private.json split_role {role!r} != index.json {entry.get('split_role')!r}"
+            )
         elif role == "main":
             main.append(instance_id)
         dirs.append(instance_dir)
@@ -122,8 +134,11 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_REFUSED
     for entry in entries:
         target = "" if entry.get("target") is None else f" target {entry['target']}"
-        print(f"{entry['instance_id']} {entry.get('dataset')} {entry.get('arch')} {entry['split_role']} seed "
-              f"{entry.get('seed')} {entry.get('evidence_rule')}{target}", flush=True)
+        print(
+            f"{entry['instance_id']} {entry.get('dataset')} {entry.get('arch')} {entry['split_role']} seed "
+            f"{entry.get('seed')} {entry.get('evidence_rule')}{target}",
+            flush=True,
+        )
     if args.dry_run:
         return 0
 

@@ -31,7 +31,6 @@ delivered tensors cast to float32 once.
 from __future__ import annotations
 
 import dataclasses
-
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -43,7 +42,14 @@ import torch.nn.functional as F
 from cryowisp.baselines.instance_io import Instance
 
 from .runner import CandidatePatch, Evidence, Generator, MethodSpec, execute_run, read_model_spec
-from .torch_forward import BN_FAMILIES, Architecture, architecture_from, assert_parity, bn_features, images_tensor
+from .torch_forward import (
+    BN_FAMILIES,
+    Architecture,
+    architecture_from,
+    assert_parity,
+    bn_features,
+    images_tensor,
+)
 
 BN_ADAPT_PRIORS: tuple[int, ...] = (0, 16, 32, 64, 128, 256, 512, 1024)
 """Prior strengths N of bn_adapt, in query order (N = 0 replaces the statistics)."""

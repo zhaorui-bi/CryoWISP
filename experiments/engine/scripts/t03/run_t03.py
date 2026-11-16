@@ -94,21 +94,50 @@ def versions() -> dict[str, Any]:
     import torchvision
 
     blas = numpy.show_config(mode="dicts").get("Build Dependencies", {}).get("blas")
-    return {"python": sys.version, "platform": platform.platform(), "numpy": numpy.__version__,
-            "numpy_blas": blas, "torch": torch.__version__, "torchvision": torchvision.__version__,
-            "pillow": PIL.__version__, "pyarrow": pyarrow.__version__,
-            "torch_threads": torch.get_num_threads(), "torch_interop_threads": torch.get_num_interop_threads(),
-            "torch_parallel_info": torch.__config__.parallel_info().splitlines()[:12]}
+    return {
+        "python": sys.version,
+        "platform": platform.platform(),
+        "numpy": numpy.__version__,
+        "numpy_blas": blas,
+        "torch": torch.__version__,
+        "torchvision": torchvision.__version__,
+        "pillow": PIL.__version__,
+        "pyarrow": pyarrow.__version__,
+        "torch_threads": torch.get_num_threads(),
+        "torch_interop_threads": torch.get_num_interop_threads(),
+        "torch_parallel_info": torch.__config__.parallel_info().splitlines()[:12],
+    }
 
 
-def run_probe(python: Path, script: Path, forward: Path, params: Path, inputs: Path, labels: Path, n: int,
-              out: Path) -> dict[str, Any]:
+def run_probe(
+    python: Path, script: Path, forward: Path, params: Path, inputs: Path, labels: Path, n: int, out: Path
+) -> dict[str, Any]:
     """One cost probe in a fresh process; the parent's wall time from launch to exit is added."""
     env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
     start = time.perf_counter()
-    completed = subprocess.run([str(python), "-I", str(script), "--forward", str(forward), "--params", str(params),
-                                "--inputs", str(inputs), "--labels", str(labels), "--n", str(n), "--out", str(out)],
-                               env=env, capture_output=True, text=True, check=False)
+    completed = subprocess.run(
+        [
+            str(python),
+            "-I",
+            str(script),
+            "--forward",
+            str(forward),
+            "--params",
+            str(params),
+            "--inputs",
+            str(inputs),
+            "--labels",
+            str(labels),
+            "--n",
+            str(n),
+            "--out",
+            str(out),
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     wall = time.perf_counter() - start
     if completed.returncode != 0:
         raise RuntimeError(f"cost probe n={n} failed ({completed.returncode}): {completed.stderr[-4000:]}")
@@ -139,7 +168,9 @@ def main() -> None:
         raise SystemExit("--smoke and --smoke-expected-rows go together")
     for name in THREAD_VARS:
         if os.environ.get(name) != str(args.threads):
-            raise SystemExit(f"{name} must be {args.threads} in the environment (got {os.environ.get(name)!r})")
+            raise SystemExit(
+                f"{name} must be {args.threads} in the environment (got {os.environ.get(name)!r})"
+            )
     torch.set_num_threads(args.threads)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=False)
@@ -164,7 +195,9 @@ def main() -> None:
 
     categories = list(ResNet18_Weights.IMAGENET1K_V1.meta["categories"])
     first_names = [names.split(",")[0].strip() for _, names in classes]
-    class_order["torchvision_categories_equal_first_name"] = int(sum(a == b for a, b in zip(first_names, categories)))
+    class_order["torchvision_categories_equal_first_name"] = int(
+        sum(a == b for a, b in zip(first_names, categories))
+    )
     counts = I.shard_row_counts(root / "data", shards)
     rows = I.d_rows(counts, shards, expected_rows=expected_rows)
     log(handle, f"{sum(counts)} rows in {len(shards)} shards; D has {len(rows)} rows")
@@ -175,8 +208,11 @@ def main() -> None:
     entries = []
     start = time.perf_counter()
     for position, record in enumerate(I.read_d_records(root / "data", rows)):
-        if (record.global_index, record.shard, record.row) != (rows[position].global_index, rows[position].shard,
-                                                              rows[position].row):
+        if (record.global_index, record.shard, record.row) != (
+            rows[position].global_index,
+            rows[position].shard,
+            rows[position].row,
+        ):
             raise RuntimeError(f"D record {position} is out of order")
         x[position] = I.preprocess(record.image_bytes, transform)
         labels[position] = record.label
@@ -184,13 +220,22 @@ def main() -> None:
     if len(entries) != len(rows):
         raise RuntimeError(f"read {len(entries)} D records, expected {len(rows)}")
     steps["read_and_preprocess_s"] = time.perf_counter() - start
-    d_meta = {"repo_id": I.REPO_ID, "revision": I.REVISION, "rule": f"global row % {I.D_STRIDE} == 0",
-              "n_rows": len(entries), "n_val_rows": int(sum(counts)), "manifest_sha256": I.file_sha256(
-                  root / I.MANIFEST), "smoke": bool(args.smoke)}
+    d_meta = {
+        "repo_id": I.REPO_ID,
+        "revision": I.REVISION,
+        "rule": f"global row % {I.D_STRIDE} == 0",
+        "n_rows": len(entries),
+        "n_val_rows": int(sum(counts)),
+        "manifest_sha256": I.file_sha256(root / I.MANIFEST),
+        "smoke": bool(args.smoke),
+    }
     d_index_sha = I.write_d_index(out / "d_index.jsonl", entries, d_meta)
     np.save(work / "d_inputs.npy", x)
     np.save(work / "d_labels.npy", labels)
-    log(handle, f"D read and preprocessed in {steps['read_and_preprocess_s']:.1f} s; d_index sha256 {d_index_sha}")
+    log(
+        handle,
+        f"D read and preprocessed in {steps['read_and_preprocess_s']:.1f} s; d_index sha256 {d_index_sha}",
+    )
 
     # The model, its params file and forward.py.
     params = N.imagenet_params(args.weights)
@@ -209,7 +254,10 @@ def main() -> None:
     log(handle, f"forward.py run 1: {steps['forward_base_run1_s']:.1f} s")
     run2, steps["forward_base_run2_s"] = timed(forward, params, x)
     run_reloaded, steps["forward_reloaded_s"] = timed(forward, reloaded, x)
-    log(handle, f"forward.py run 2 and reloaded: {steps['forward_base_run2_s']:.1f} s, {steps['forward_reloaded_s']:.1f} s")
+    log(
+        handle,
+        f"forward.py run 2 and reloaded: {steps['forward_base_run2_s']:.1f} s, {steps['forward_reloaded_s']:.1f} s",
+    )
 
     # Torch rebuilds of the base.
     model64 = N.build_resnet18native(params, torch.float64)
@@ -245,24 +293,55 @@ def main() -> None:
         "fixed_edit": edit_record,
         "fixed_edit_ops": [dict(op) for op in T.FIXED_EDIT_OPS],
         "edited_parity": edited_parity,
-        "edit_effect": {"max_abs_logit_change": float(delta.max()),
-                        "rows_with_argmax_change": int(np.count_nonzero(edited_fwd.argmax(1) != run1.argmax(1)))},
-        "verdict": "pass" if (save_record["same_sha256"] and save_record["arrays_bitwise_equal"] and reloaded_equal
-                              and edited_parity["verdict"] == "pass") else "fail",
+        "edit_effect": {
+            "max_abs_logit_change": float(delta.max()),
+            "rows_with_argmax_change": int(np.count_nonzero(edited_fwd.argmax(1) != run1.argmax(1))),
+        },
+        "verdict": "pass"
+        if (
+            save_record["same_sha256"]
+            and save_record["arrays_bitwise_equal"]
+            and reloaded_equal
+            and edited_parity["verdict"] == "pass"
+        )
+        else "fail",
     }
     same_runs = T.bitwise_equal(run1, run2)
-    item3 = {"bitwise_equal": bool(same_runs), "run1_logits_sha256": array_sha256(run1),
-             "run2_logits_sha256": array_sha256(run2), "verdict": "pass" if same_runs else "fail"}
+    item3 = {
+        "bitwise_equal": bool(same_runs),
+        "run1_logits_sha256": array_sha256(run1),
+        "run2_logits_sha256": array_sha256(run2),
+        "verdict": "pass" if same_runs else "fail",
+    }
     item4 = T.accuracy_record(run1, labels)
     item4["torch_float32_top1_percent"] = T.accuracy_record(ref32, labels)["top1_percent"]
-    np.savez(out / "logits.npz", forward_base=run1, torch64_base=ref64, torch32_base=ref32, forward_edited=edited_fwd,
-             torch64_edited=edited64, torch32_edited=edited32, labels=labels,
-             global_index=np.array([e["global_index"] for e in entries], dtype=np.int64))
-    log(handle, f"items: (1) {item1['verdict']} (2) {item2['verdict']} (3) {item3['verdict']} (4) {item4['verdict']} "
-                f"top1 {item4['top1_percent']:.2f}")
-    partial = {"note": "pass items before the cost probes; t03_summary.json supersedes this file when present",
-               "items": {"1_parity": item1, "2_save_reload_and_edit": item2, "3_determinism": item3,
-                         "4_accuracy": item4}, "steps_s": steps, "smoke": bool(args.smoke)}
+    np.savez(
+        out / "logits.npz",
+        forward_base=run1,
+        torch64_base=ref64,
+        torch32_base=ref32,
+        forward_edited=edited_fwd,
+        torch64_edited=edited64,
+        torch32_edited=edited32,
+        labels=labels,
+        global_index=np.array([e["global_index"] for e in entries], dtype=np.int64),
+    )
+    log(
+        handle,
+        f"items: (1) {item1['verdict']} (2) {item2['verdict']} (3) {item3['verdict']} (4) {item4['verdict']} "
+        f"top1 {item4['top1_percent']:.2f}",
+    )
+    partial = {
+        "note": "pass items before the cost probes; t03_summary.json supersedes this file when present",
+        "items": {
+            "1_parity": item1,
+            "2_save_reload_and_edit": item2,
+            "3_determinism": item3,
+            "4_accuracy": item4,
+        },
+        "steps_s": steps,
+        "smoke": bool(args.smoke),
+    }
     (out / "t03_items_partial.json").write_text(json.dumps(partial, indent=2) + "\n", encoding="utf-8")
 
     # Cost: fresh numpy-only processes at the inherited thread settings.
@@ -270,31 +349,51 @@ def main() -> None:
     sizes = PROBE_SIZES if not args.smoke else (len(rows), min(SMOKE_SMALL_PROBE, len(rows)))
     probes = {}
     for n in sizes:
-        probe = run_probe(Path(sys.executable), probe_script, out / "forward.py", work / "model.npz",
-                          work / "d_inputs.npy", work / "d_labels.npy", n, out / f"cost_probe_{n}.json")
-        probe["logits_equal_main_run"] = probe["logits_sha256"] == hashlib.sha256(
-            np.ascontiguousarray(run1[:n]).tobytes()).hexdigest()
+        probe = run_probe(
+            Path(sys.executable),
+            probe_script,
+            out / "forward.py",
+            work / "model.npz",
+            work / "d_inputs.npy",
+            work / "d_labels.npy",
+            n,
+            out / f"cost_probe_{n}.json",
+        )
+        probe["logits_equal_main_run"] = (
+            probe["logits_sha256"] == hashlib.sha256(np.ascontiguousarray(run1[:n]).tobytes()).hexdigest()
+        )
         probes[str(n)] = probe
-        log(handle, f"probe n={n}: forward {probe['forward_s']:.1f} s, peak RSS {probe['vm_hwm_bytes'] / 2**30:.2f} "
-                    f"GiB, logits equal the main run {probe['logits_equal_main_run']}")
+        log(
+            handle,
+            f"probe n={n}: forward {probe['forward_s']:.1f} s, peak RSS {probe['vm_hwm_bytes'] / 2**30:.2f} "
+            f"GiB, logits equal the main run {probe['logits_equal_main_run']}",
+        )
     main_probe = probes[str(sizes[0])]
     per_image = main_probe["forward_s_per_image"]
     per_image_with_inputs = (main_probe["forward_s"] + main_probe["load_inputs_s"]) / main_probe["n_images"]
-    fixed_overhead = main_probe["process_wall_s"] - main_probe["forward_s"] - main_probe["load_inputs_s"] - main_probe[
-        "check_s"]
+    fixed_overhead = (
+        main_probe["process_wall_s"]
+        - main_probe["forward_s"]
+        - main_probe["load_inputs_s"]
+        - main_probe["check_s"]
+    )
     n_in_wall = int(max(0.0, PROGRAM_WALL_S - fixed_overhead) // per_image_with_inputs)
     node_bytes = args.mem_gb * 1e9
     rss_limit = node_bytes / READOUTS_PER_NODE
     elapsed = time.perf_counter() - started
     cost = {
-        "settings": {"ncpus": args.ncpus, "mem_gb": args.mem_gb, "walltime_s": args.walltime_s,
-                     "threads": {name: os.environ.get(name) for name in THREAD_VARS},
-                     "torch_threads": torch.get_num_threads()},
+        "settings": {
+            "ncpus": args.ncpus,
+            "mem_gb": args.mem_gb,
+            "walltime_s": args.walltime_s,
+            "threads": {name: os.environ.get(name) for name in THREAD_VARS},
+            "torch_threads": torch.get_num_threads(),
+        },
         "forward_s_per_image": per_image,
         "forward_s_per_image_with_input_load": per_image_with_inputs,
         "probe_peak_rss_bytes": {n: p["vm_hwm_bytes"] for n, p in probes.items()},
         "probe_peak_rss_source": "VmHWM of the probe process (/proc/self/status); its ru_maxrss is not used because "
-                                 "Linux carries the parent's peak across exec into it",
+        "Linux carries the parent's peak across exec into it",
         "probe_vm_peak_bytes": {n: p["vm_peak_bytes"] for n, p in probes.items()},
         "check_images": main_probe["n_images"],
         "check_forward_s": main_probe["forward_s"],
@@ -304,8 +403,8 @@ def main() -> None:
         "program_fixed_overhead_s": fixed_overhead,
         "evidence_images_in_program_wall": n_in_wall,
         "evidence_rule": "floor((PROGRAM_WALL_S - fixed overhead) / per-image time with input load), from the "
-                         f"{main_probe['n_images']}-image probe; fixed overhead = interpreter start, numpy import, "
-                         "forward.py and params load",
+        f"{main_probe['n_images']}-image probe; fixed overhead = interpreter start, numpy import, "
+        "forward.py and params load",
         "params_file_bytes": save_record["file_bytes"],
         "main_process_peak_rss_bytes": peak_rss_bytes(),
         "main_forward_runs_s": {k: v for k, v in steps.items() if k.startswith("forward_")},
@@ -314,8 +413,8 @@ def main() -> None:
         "sandbox_cell_timeout_s": SANDBOX_CELL_TIMEOUT_S,
         "readout_rss_limit_bytes": rss_limit,
         "fit_rule": f"a forward.py readout at {args.threads} threads has peak RSS <= the job's memory / "
-                    f"{READOUTS_PER_NODE} (two readouts per {args.ncpus}-core node), and the run finished inside its "
-                    "walltime; the 300 s and sandbox numbers inform T04 and do not decide T03",
+        f"{READOUTS_PER_NODE} (two readouts per {args.ncpus}-core node), and the run finished inside its "
+        "walltime; the 300 s and sandbox numbers inform T04 and do not decide T03",
         "elapsed_s_at_summary": elapsed,
     }
     rss_fits = all(p["vm_hwm_bytes"] <= rss_limit for p in probes.values())
@@ -325,10 +424,12 @@ def main() -> None:
     cost["verdict"] = "fits" if (rss_fits and time_fits) else "does not fit"
     cost["t04_flags"] = {
         "check_forward_within_program_wall": bool(main_probe["forward_s"] <= PROGRAM_WALL_S),
-        "probe_vm_peak_within_sandbox_limit": bool(all(p["vm_peak_bytes"] <= SANDBOX_MEMORY_BYTES
-                                                       for p in probes.values())),
-        "probe_rss_within_sandbox_limit": bool(all(p["vm_hwm_bytes"] <= SANDBOX_MEMORY_BYTES
-                                                   for p in probes.values())),
+        "probe_vm_peak_within_sandbox_limit": bool(
+            all(p["vm_peak_bytes"] <= SANDBOX_MEMORY_BYTES for p in probes.values())
+        ),
+        "probe_rss_within_sandbox_limit": bool(
+            all(p["vm_hwm_bytes"] <= SANDBOX_MEMORY_BYTES for p in probes.values())
+        ),
     }
 
     items = {"1_parity": item1, "2_save_reload_and_edit": item2, "3_determinism": item3, "4_accuracy": item4}
@@ -342,19 +443,41 @@ def main() -> None:
         "bottlenecks": bottlenecks,
         "pass_items": items,
         "cost": cost,
-        "data": {**d_meta, "d_index_file": "d_index.jsonl", "d_index_sha256": d_index_sha,
-                 "d_inputs_sha256": array_sha256(x), "d_labels_sha256": array_sha256(labels),
-                 "shard_row_counts": dict(zip(shards, counts)), "classes": class_order,
-                 "preprocessing": repr(transform), "label_assumption": "HF label index = torchvision class index"},
-        "model": {"arch": N.ARCH, "weights_file": args.weights.name, "weights_sha256": weights_sha,
-                  "weights_sha256_expected": M.WEIGHTS_SHA256, "params_sha256": save_record["params_sha256"],
-                  "n_parameters": int(sum(v.size for v in params.values())), "n_tensors": len(params),
-                  "forward_sha256": forward_sha, "forward_chunk": 16, "spec_schema": N.SPEC_SCHEMA,
-                  "torchvision_check": torchvision_check},
+        "data": {
+            **d_meta,
+            "d_index_file": "d_index.jsonl",
+            "d_index_sha256": d_index_sha,
+            "d_inputs_sha256": array_sha256(x),
+            "d_labels_sha256": array_sha256(labels),
+            "shard_row_counts": dict(zip(shards, counts)),
+            "classes": class_order,
+            "preprocessing": repr(transform),
+            "label_assumption": "HF label index = torchvision class index",
+        },
+        "model": {
+            "arch": N.ARCH,
+            "weights_file": args.weights.name,
+            "weights_sha256": weights_sha,
+            "weights_sha256_expected": M.WEIGHTS_SHA256,
+            "params_sha256": save_record["params_sha256"],
+            "n_parameters": int(sum(v.size for v in params.values())),
+            "n_tensors": len(params),
+            "forward_sha256": forward_sha,
+            "forward_chunk": 16,
+            "spec_schema": N.SPEC_SCHEMA,
+            "torchvision_check": torchvision_check,
+        },
         "steps_s": steps,
-        "run": {"code_commit": args.code_commit, "job_id": args.job_id, "host": socket.gethostname(),
-                "started": datetime.datetime.fromtimestamp(started_wall).astimezone().isoformat(timespec="seconds"),
-                "elapsed_s": time.perf_counter() - started, "argv": sys.argv},
+        "run": {
+            "code_commit": args.code_commit,
+            "job_id": args.job_id,
+            "host": socket.gethostname(),
+            "started": datetime.datetime.fromtimestamp(started_wall)
+            .astimezone()
+            .isoformat(timespec="seconds"),
+            "elapsed_s": time.perf_counter() - started,
+            "argv": sys.argv,
+        },
         "versions": versions(),
     }
     (out / "t03_summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
@@ -365,14 +488,16 @@ def main() -> None:
 
 def summary_markdown(s: dict[str, Any]) -> str:
     """A short human-readable view of the summary (the JSON is the record)."""
-    i1, i2, i3, i4 = (s["pass_items"][k] for k in ("1_parity", "2_save_reload_and_edit", "3_determinism",
-                                                      "4_accuracy"))
+    i1, i2, i3, i4 = (
+        s["pass_items"][k] for k in ("1_parity", "2_save_reload_and_edit", "3_determinism", "4_accuracy")
+    )
     c = s["cost"]
     gib = 2**30
     lines = [
         "# T03 native ImageNet precheck" + (" (SMOKE, synthetic data)" if s["smoke"] else ""),
         "",
-        f"Outcome: **{s['outcome']}**" + (f" (bottlenecks: {', '.join(s['bottlenecks'])})" if s["bottlenecks"] else ""),
+        f"Outcome: **{s['outcome']}**"
+        + (f" (bottlenecks: {', '.join(s['bottlenecks'])})" if s["bottlenecks"] else ""),
         f"Job {s['run']['job_id'] or 'none'} on {s['run']['host']}, code {s['run']['code_commit']}, "
         f"elapsed {s['run']['elapsed_s']:.0f} s.",
         f"Weights sha256 {s['model']['weights_sha256']}; params_sha256 {s['model']['params_sha256']}; "
@@ -395,14 +520,17 @@ def summary_markdown(s: dict[str, Any]) -> str:
         f"{i4['band'][0]:.3f} to {i4['band'][1]:.3f}; SE {i4['binomial_se_percent']:.2f}); top-5 "
         f"{i4['top5_percent']:.1f}%.",
         "",
-        "## Cost (" + f"{c['settings']['ncpus']} cores, {c['settings']['threads']['OMP_NUM_THREADS']} threads)",
+        "## Cost ("
+        + f"{c['settings']['ncpus']} cores, {c['settings']['threads']['OMP_NUM_THREADS']} threads)",
         "",
         f"- forward.py per image: {c['forward_s_per_image']:.3f} s; a {c['check_images']}-image check: "
         f"{c['check_forward_s']:.1f} s forward, {c['check_process_wall_s']:.1f} s process wall (fresh numpy-only "
         "process).",
-        "- peak RSS per probe (GiB): " + ", ".join(f"{n} images {v / gib:.2f}" for n, v in
-                                                     c["probe_peak_rss_bytes"].items()) + "; VmPeak (GiB): " +
-        ", ".join(f"{n} images {v / gib:.2f}" for n, v in c["probe_vm_peak_bytes"].items()) + ".",
+        "- peak RSS per probe (GiB): "
+        + ", ".join(f"{n} images {v / gib:.2f}" for n, v in c["probe_peak_rss_bytes"].items())
+        + "; VmPeak (GiB): "
+        + ", ".join(f"{n} images {v / gib:.2f}" for n, v in c["probe_vm_peak_bytes"].items())
+        + ".",
         f"- evidence images a program can forward in {c['program_wall_s']:.0f} s: {c['evidence_images_in_program_wall']} "
         f"(fixed overhead {c['program_fixed_overhead_s']:.1f} s).",
         f"- params file: {c['params_file_bytes']} bytes.",

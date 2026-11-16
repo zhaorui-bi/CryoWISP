@@ -76,7 +76,12 @@ def test_select_pairs_records_a_shortfall_without_relaxing() -> None:
 
 def test_targets_on_toy_store(toy_store: ToyStore) -> None:  # noqa: F811
     outcomes = run_target_selection(toy_store.dataset, selection=DEV_PLAN)
-    assert [(o.split_role, o.seed) for o in outcomes] == [("dev", 100), ("dev", 101), ("main", 0), ("main", 1)]
+    assert [(o.split_role, o.seed) for o in outcomes] == [
+        ("dev", 100),
+        ("dev", 101),
+        ("main", 0),
+        ("main", 1),
+    ]
     for seed in (2, 3, 4):
         assert not targets_path(toy_store.dataset, toy_store.ids("base")[seed]).exists()
     for outcome in outcomes:
@@ -91,15 +96,21 @@ def test_targets_on_toy_store(toy_store: ToyStore) -> None:  # noqa: F811
         first, second = record["chosen"]
         assert (first["rank"], first["vselect_count"], first["vselect_n_a"]) == (1, 30, 100)
         assert (first["vevidence_count"], first["vcheck_count"]) == (20, 12)
-        assert (second["rank"], second["vselect_count"], second["vevidence_count"], second["vcheck_count"]) == (
-            4, 20, 17, 11)
+        assert (
+            second["rank"],
+            second["vselect_count"],
+            second["vevidence_count"],
+            second["vcheck_count"],
+        ) == (4, 20, 17, 11)
         by_pair = {(r["a"], r["b"]): r for r in record["ranked_pairs"]}
         assert by_pair[(1, 0)]["reasons"] == ["V_check count 5 < 10"]
         assert by_pair[(2, 3)]["reasons"] == ["V_evidence count 10 < k_fail 16"]
         assert by_pair[(1, 0)]["rank"] == 2 and by_pair[(2, 3)]["rank"] == 3
 
 
-def test_split_role_filter_and_ceiling_models_get_no_targets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_split_role_filter_and_ceiling_models_get_no_targets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     store = build_toy_store(tmp_path / "store", ceiling_seeds=(0, 1))
     store.activate(monkeypatch)
     dev_only = run_target_selection(store.dataset, selection=DEV_PLAN, split_roles=("dev",))

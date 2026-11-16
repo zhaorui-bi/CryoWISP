@@ -19,7 +19,15 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from test_evalkit_instances_store import CLASSES, N_CLASSES, PLAN, ToyStore, add_condition, make_split, toy_params
+from test_evalkit_instances_store import (
+    CLASSES,
+    N_CLASSES,
+    PLAN,
+    ToyStore,
+    add_condition,
+    make_split,
+    toy_params,
+)
 
 from cryowisp.common.identity import params_sha256, save_params
 from cryowisp.evalkit.companions import build_replay
@@ -67,13 +75,25 @@ def _model_spec(model_id: str) -> dict[str, object]:
     return {
         "schema": "cryowisp.model_spec.v0",
         "model_id": model_id,
-        "input": {"shape": [1, 4, 4], "dtype": "uint8", "preprocess": "x/255", "layout": "NCHW, flatten row-major"},
+        "input": {
+            "shape": [1, 4, 4],
+            "dtype": "uint8",
+            "preprocess": "x/255",
+            "layout": "NCHW, flatten row-major",
+        },
         "classes": CLASSES,
         "layers": [
             {"name": "fc1", "op": "linear", "weight": "fc1.weight", "bias": None, "shape_w": [8, 16]},
-            {"name": "bn1", "op": "batchnorm_eval", "weight": "bn1.weight", "bias": "bn1.bias",
-             "running_mean": "bn1.running_mean", "running_var": "bn1.running_var", "eps": BN_EPS,
-             "computes": "h = (h - running_mean) / sqrt(running_var + eps) * weight + bias"},
+            {
+                "name": "bn1",
+                "op": "batchnorm_eval",
+                "weight": "bn1.weight",
+                "bias": "bn1.bias",
+                "running_mean": "bn1.running_mean",
+                "running_var": "bn1.running_var",
+                "eps": BN_EPS,
+                "computes": "h = (h - running_mean) / sqrt(running_var + eps) * weight + bias",
+            },
             {"op": "relu"},
             {"name": "fc2", "op": "linear", "weight": "fc2.weight", "bias": "fc2.bias", "shape_w": [4, 8]},
         ],
@@ -100,10 +120,21 @@ def build_store(root: Path) -> ToyStore:
     (data / "forward.py").write_text(FORWARD_SOURCE)
     forward, forward_sha = load_forward(data / "forward.py")
     meta = {
-        "dataset": dataset, "class_names": CLASSES, "image_shape": [1, 4, 4], "norm": {"mean": [0.1], "std": [0.3]},
-        "split_seed": 20261103, "forward_sha256": forward_sha,
-        "splits": {split: {"path": f"splits/{split}.npz", "n": int(len(arrays["y"])), "sha256": params_sha256(arrays)}
-                   for split, arrays in splits.items() if split != "test"},
+        "dataset": dataset,
+        "class_names": CLASSES,
+        "image_shape": [1, 4, 4],
+        "norm": {"mean": [0.1], "std": [0.3]},
+        "split_seed": 20261103,
+        "forward_sha256": forward_sha,
+        "splits": {
+            split: {
+                "path": f"splits/{split}.npz",
+                "n": int(len(arrays["y"])),
+                "sha256": params_sha256(arrays),
+            }
+            for split, arrays in splits.items()
+            if split != "test"
+        },
         "test": {"location": f"$CRYOWISP_SEALED/{dataset}/test.npz", "sha256": params_sha256(splits["test"])},
     }
     (data / "dataset.json").write_text(json.dumps(meta, indent=2))
@@ -117,11 +148,29 @@ def build_store(root: Path) -> ToyStore:
         (model_dir / "model_spec.json").write_text(json.dumps(_model_spec(model_id), indent=2))
         y_select = splits["V_select"]["y"]
         pred = predict(forward, params, splits["V_select"]["x"], 64)
-        confusion = np.bincount(y_select * N_CLASSES + pred, minlength=N_CLASSES**2).reshape(N_CLASSES, N_CLASSES)
-        (model_dir / "private.json").write_text(json.dumps({"seed": seed, "role": "dev", "params_sha256": digest,
-                                                            "vselect_confusion": confusion.tolist()}))
-        rows.append({"model_id": model_id, "seed": seed, "arch": "toy_bn_mlp", "role": "dev", "params_sha256": digest,
-                     "vselect_acc": float(np.mean(pred == y_select))})
+        confusion = np.bincount(y_select * N_CLASSES + pred, minlength=N_CLASSES**2).reshape(
+            N_CLASSES, N_CLASSES
+        )
+        (model_dir / "private.json").write_text(
+            json.dumps(
+                {
+                    "seed": seed,
+                    "role": "dev",
+                    "params_sha256": digest,
+                    "vselect_confusion": confusion.tolist(),
+                }
+            )
+        )
+        rows.append(
+            {
+                "model_id": model_id,
+                "seed": seed,
+                "arch": "toy_bn_mlp",
+                "role": "dev",
+                "params_sha256": digest,
+                "vselect_acc": float(np.mean(pred == y_select)),
+            }
+        )
     (data / "models" / "index.json").write_text(json.dumps(rows, indent=2))
     return ToyStore(root=root, dataset=dataset, models=rows)
 
@@ -144,8 +193,9 @@ def build_e10_store(root: Path, monkeypatch: pytest.MonkeyPatch) -> E10Store:
     ids: dict[tuple[str, int], str] = {}
     for corruption, condition in zip(e10.STREAM_CORRUPTIONS, e10.STREAM_CONDITIONS):
         add_condition(store, name=condition, corruption=corruption)
-        for outcome in build_deployment_instances(store.dataset, condition, selection=SELECTION, decoys=DECOYS,
-                                                  split_roles=("dev",)):
+        for outcome in build_deployment_instances(
+            store.dataset, condition, selection=SELECTION, decoys=DECOYS, split_roles=("dev",)
+        ):
             ids[(condition, outcome.seed)] = outcome.instance_id
     build_replay(store.dataset, n=8)
     return E10Store(store, ids)

@@ -60,8 +60,8 @@ from cryowisp.baselines.instance_io import Instance
 from cryowisp.common.identity import params_sha256
 from cryowisp.evalkit.patch_check import predict
 from cryowisp.evalkit.targets import deployment_splits, load_checked_split
-from cryowisp.harness.arms import PROGRAM_LIMIT_FIELDS
 from cryowisp.harness import fewshot, graphnew, policyskill, seqskill
+from cryowisp.harness.arms import PROGRAM_LIMIT_FIELDS
 from cryowisp.harness.clean import load_replay, source_name
 from cryowisp.patch import Limits
 from cryowisp.sandbox.program import PROGRAM_WALL_S

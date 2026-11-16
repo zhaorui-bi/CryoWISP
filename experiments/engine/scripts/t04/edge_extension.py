@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from cryowisp.common.paths import relocate_run_path
+
 NO_EDGE = ("prior_shift", "ridge_last", "tie_inputs", "input_stats")
 """References without a conservative edge (the amendment's list)."""
 DIAGNOSTIC = ("ft_large",)
@@ -66,8 +67,14 @@ def decide(record: Mapping[str, Any], run: Mapping[str, Any], label: str) -> dic
     not, the trigger, and the extension grid."""
     method = record["method"]
     sel = record["selection"]
-    out: dict[str, Any] = {"condition": record["condition"], "instance": record["instance_id"], "method": method,
-                           "label": label, "primary": sel.get("primary_patch_id"), "kept": sel.get("patch_id")}
+    out: dict[str, Any] = {
+        "condition": record["condition"],
+        "instance": record["instance_id"],
+        "method": method,
+        "label": label,
+        "primary": sel.get("primary_patch_id"),
+        "kept": sel.get("patch_id"),
+    }
     if method in NO_EDGE or method in DIAGNOSTIC:
         return out | {"extended": False, "reason": "no conservative edge (not extended by the amendment)"}
     configs = {c["patch_id"]: c["config"] for c in run["candidates"]}
@@ -88,18 +95,28 @@ def decide(record: Mapping[str, Any], run: Mapping[str, Any], label: str) -> dic
     out |= {"edge": f"{edge_kind} {key} = {edge:g}", "edge_key": key}
     if not triggers:
         both_base = out["primary"] is None and out["kept"] is None
-        return out | {"extended": False,
-                      "reason": "primary and kept are the base" if both_base else "primary and kept off the edge"}
+        return out | {
+            "extended": False,
+            "reason": "primary and kept are the base" if both_base else "primary and kept off the edge",
+        }
     new = [dict(c) | {key: scaled(c[key], factor, key)} for c in order]
     old = [json.dumps(c, sort_keys=True) for c in order]
     repeats = [i for i, c in enumerate(new) if json.dumps(c, sort_keys=True) in old]
-    return out | {"extended": True, "trigger": triggers, "rule": f"{key} {rule}", "extension_label": EXTENSION_LABEL,
-                  "configs": new, "repeats_of_source": repeats}
+    return out | {
+        "extended": True,
+        "trigger": triggers,
+        "rule": f"{key} {rule}",
+        "extension_label": EXTENSION_LABEL,
+        "configs": new,
+        "repeats_of_source": repeats,
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--devreadouts", required=True, type=Path, help="runs/devreadouts/t04 of the T04 store")
+    parser.add_argument(
+        "--devreadouts", required=True, type=Path, help="runs/devreadouts/t04 of the T04 store"
+    )
     parser.add_argument("--store", required=True, type=Path, help="the T04 store root")
     parser.add_argument("--conditions", nargs="+", default=["gaussian_noise_s3", "contrast_s4"])
     parser.add_argument("--out", type=Path, help="write the decisions as JSON here")
@@ -108,7 +125,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     for condition in args.conditions:
         kept = sorted((args.devreadouts / condition).glob("kept_*.jsonl"))
         for path in kept:
-            files.append({"file": f"{condition}/{path.name}", "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+            files.append(
+                {"file": f"{condition}/{path.name}", "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            )
             for line in path.read_text().splitlines():
                 record = json.loads(line)
                 if record["condition"] != condition:
@@ -118,9 +137,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                     raise EdgeError(f"{path}: run {run_path} is not <method>/<label>/<seed>/run.json")
                 decisions.append(decide(record, json.loads(run_path.read_text()), run_path.parts[-3]))
     extended = [d for d in decisions if d["extended"]]
-    result = {"rule": "PREREG T04 amendment, edge extension of the reference grids (main 9f0baa9)",
-              "n_kept_files": len(files), "n_records": len(decisions), "n_extended": len(extended),
-              "kept_files": files, "decisions": decisions}
+    result = {
+        "rule": "PREREG T04 amendment, edge extension of the reference grids (main 9f0baa9)",
+        "n_kept_files": len(files),
+        "n_records": len(decisions),
+        "n_extended": len(extended),
+        "kept_files": files,
+        "decisions": decisions,
+    }
     if args.out:
         args.out.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n")
     print(f"{len(files)} kept files, {len(decisions)} records, {len(extended)} extended pairs")
@@ -129,9 +153,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not d["extended"]:
             print(f"  not extended  {head}: {d['reason']}" + (f" ({d['edge']})" if "edge" in d else ""))
     for d in extended:
-        print(f"  EXTENDED      {d['condition']} {d['method']}/{d['label']} -> {d['method']}/{EXTENSION_LABEL}: "
-              f"{d['edge']}; trigger {'; '.join(d['trigger'])}; {d['rule']}; repeats of the source grid at "
-              f"{d['repeats_of_source']}")
+        print(
+            f"  EXTENDED      {d['condition']} {d['method']}/{d['label']} -> {d['method']}/{EXTENSION_LABEL}: "
+            f"{d['edge']}; trigger {'; '.join(d['trigger'])}; {d['rule']}; repeats of the source grid at "
+            f"{d['repeats_of_source']}"
+        )
         print(f"                new configs {json.dumps(d['configs'], sort_keys=True)}")
     return 0
 

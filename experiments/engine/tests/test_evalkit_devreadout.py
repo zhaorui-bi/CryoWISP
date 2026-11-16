@@ -41,7 +41,10 @@ def test_dev_readout_matches_a_direct_computation_on_v_select(toy_store: ToyStor
     expected = sealed_readout(y, base_pred, child_pred, n_classes=len(instance.task["classes"]))
     assert record["split"] == "V_select" and record["n"] == len(y)
     assert record["readouts"]["delta_acc"] == expected["delta_acc"]
-    assert record["readouts"]["fixed"] == expected["fixed"] and record["readouts"]["broken"] == expected["broken"]
+    assert (
+        record["readouts"]["fixed"] == expected["fixed"]
+        and record["readouts"]["broken"] == expected["broken"]
+    )
     noop = devreadout.dev_readout(instance, dict(instance.params))
     assert noop["readouts"]["delta_acc"] == 0 and noop["readouts"]["fixed"] == noop["readouts"]["broken"] == 0
 
@@ -68,7 +71,12 @@ def test_dev_readout_refuses_main_superseded_and_bad_children(toy_store: ToyStor
 
 def _write_run(run_dir: Path, instance_id: str, final: dict[str, object], enforced: bool = True) -> Path:
     run_dir.mkdir(parents=True, exist_ok=True)
-    run = {"instance": {"instance_id": instance_id}, "method": "toy", "flags": {"edit_limits_enforced": enforced}, "final": final}
+    run = {
+        "instance": {"instance_id": instance_id},
+        "method": "toy",
+        "flags": {"edit_limits_enforced": enforced},
+        "final": final,
+    }
     path = run_dir / "run.json"
     path.write_text(json.dumps(run))
     return path
@@ -79,8 +87,15 @@ def test_readout_run_rebuilds_the_final_child_and_checks_its_hash(toy_store: Toy
     child = _shifted_child(dict(dev.params))
     run_dir = toy_store.runs / "toy" / dev.instance_id / "arm" / "0"
     write_delta_patch(run_dir / "q1", dev.params_sha256, dev.params, child, "toy", "toy")
-    final = {"is_base_noop": False, "dir": "q1", "score": 5, "fixed": 6, "broken": 1, "edit_size": 1,
-             "child_sha256": params_sha256(child)}
+    final = {
+        "is_base_noop": False,
+        "dir": "q1",
+        "score": 5,
+        "fixed": 6,
+        "broken": 1,
+        "edit_size": 1,
+        "child_sha256": params_sha256(child),
+    }
     record = devreadout.readout_run(_write_run(run_dir, dev.instance_id, final))
     assert record["readouts"]["delta_acc"] == devreadout.dev_readout(dev, child)["readouts"]["delta_acc"]
     assert record["vcheck"] == {"score": 5, "fixed": 6, "broken": 1}
@@ -90,8 +105,15 @@ def test_readout_run_rebuilds_the_final_child_and_checks_its_hash(toy_store: Toy
         devreadout.readout_run(_write_run(run_dir, dev.instance_id, final))
 
     noop_dir = toy_store.runs / "toy" / dev.instance_id / "noop" / "0"
-    noop = {"is_base_noop": True, "dir": None, "score": 0, "fixed": 0, "broken": 0, "edit_size": 0,
-            "child_sha256": dev.params_sha256}
+    noop = {
+        "is_base_noop": True,
+        "dir": None,
+        "score": 0,
+        "fixed": 0,
+        "broken": 0,
+        "edit_size": 0,
+        "child_sha256": dev.params_sha256,
+    }
     record = devreadout.readout_run(_write_run(noop_dir, dev.instance_id, noop))
     assert record["readouts"]["delta_acc"] == 0 and record["is_base_noop"]
     noop["child_sha256"] = "1" * 64
@@ -128,8 +150,17 @@ def test_saved_children_for_decoy_and_rewrite_are_loaded_and_hash_checked(toy_st
     run_dir = toy_store.runs / "harness" / dev.instance_id / "rewrite"
     (run_dir / "final").mkdir(parents=True)
     digest = save_params(run_dir / "final" / "model.npz", child)
-    final = {"is_base_noop": False, "dir": "final", "parent": "zeros", "model": "final/model.npz", "score": 4,
-             "fixed": 5, "broken": 1, "edit_size": 9, "child_sha256": digest}
+    final = {
+        "is_base_noop": False,
+        "dir": "final",
+        "parent": "zeros",
+        "model": "final/model.npz",
+        "score": 4,
+        "fixed": 5,
+        "broken": 1,
+        "edit_size": 9,
+        "child_sha256": digest,
+    }
     record = devreadout.readout_run(_write_run(run_dir, dev.instance_id, final, enforced=False))
     assert record["readouts"]["delta_acc"] == devreadout.dev_readout(dev, child)["readouts"]["delta_acc"]
     final["parent"] = "decoy_readdressed"
@@ -156,8 +187,16 @@ def test_a_harness_final_is_rebuilt_with_the_session_s_own_limits(toy_store: Toy
     child["fc2.weight"] += np.float32(0.01)
     run_dir = toy_store.runs / "sessions" / "s_learn"
     write_delta_patch(run_dir / "final", dev.params_sha256, dev.params, child, "toy", "toy")
-    final = {"is_base_noop": False, "dir": "final", "parent": "instance", "score": 3, "fixed": 4, "broken": 1,
-             "edit_size": 32, "child_sha256": params_sha256(child)}
+    final = {
+        "is_base_noop": False,
+        "dir": "final",
+        "parent": "instance",
+        "score": 3,
+        "fixed": 4,
+        "broken": 1,
+        "edit_size": 32,
+        "child_sha256": params_sha256(child),
+    }
     run_path = _write_run(run_dir, dev.instance_id, final)
     program_limits = asdict(Limits(max_changed_frac=0.2, max_edit_frac=None))
     (run_dir / "session.json").write_text(json.dumps({"arm": "LEARN", "limits": program_limits}))
@@ -193,8 +232,15 @@ def test_an_e10_reference_final_is_rebuilt_with_the_e10_program_limits(toy_store
     child["fc2.weight"] += np.float32(0.01)
     run_dir = toy_store.runs / "baselines" / dev.instance_id / "grad_sparse19_sal" / "e10" / "0"
     write_delta_patch(run_dir / "q0", dev.params_sha256, dev.params, child, "toy", "toy")
-    final = {"is_base_noop": False, "dir": "q0", "score": 3, "fixed": 4, "broken": 1, "edit_size": 32,
-             "child_sha256": params_sha256(child)}
+    final = {
+        "is_base_noop": False,
+        "dir": "q0",
+        "score": 3,
+        "fixed": 4,
+        "broken": 1,
+        "edit_size": 32,
+        "child_sha256": params_sha256(child),
+    }
     run_path = _write_run(run_dir, dev.instance_id, final)
     program = asdict(e10_program_limits(dev.task["limits"], len(dev.params)))
 
@@ -210,6 +256,8 @@ def test_an_e10_reference_final_is_rebuilt_with_the_e10_program_limits(toy_store
     write(dev.task["limits"])
     with pytest.raises(devreadout.DevReadoutError, match="E10 program limits"):
         devreadout.readout_run(run_path)
-    write(program, None)  # without the E10 source the default limits apply, and the executor refuses the patch
+    write(
+        program, None
+    )  # without the E10 source the default limits apply, and the executor refuses the patch
     with pytest.raises(PatchError):
         devreadout.readout_run(run_path)

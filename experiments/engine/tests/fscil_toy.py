@@ -32,16 +32,106 @@ from cryowisp.models.export import fewshot_models_dir, write_fewshot_index
 from cryowisp.models.forward_gen import render_resnet20_forward, write_forward
 
 CIFAR100_FINE_NAMES: tuple[str, ...] = (
-    "apple", "aquarium_fish", "baby", "bear", "beaver", "bed", "bee", "beetle", "bicycle", "bottle", "bowl", "boy",
-    "bridge", "bus", "butterfly", "camel", "can", "castle", "caterpillar", "cattle", "chair", "chimpanzee", "clock",
-    "cloud", "cockroach", "couch", "crab", "crocodile", "cup", "dinosaur", "dolphin", "elephant", "flatfish", "forest",
-    "fox", "girl", "hamster", "house", "kangaroo", "keyboard", "lamp", "lawn_mower", "leopard", "lion", "lizard",
-    "lobster", "man", "maple_tree", "motorcycle", "mountain", "mouse", "mushroom", "oak_tree", "orange", "orchid",
-    "otter", "palm_tree", "pear", "pickup_truck", "pine_tree", "plain", "plate", "poppy", "porcupine", "possum",
-    "rabbit", "raccoon", "ray", "road", "rocket", "rose", "sea", "seal", "shark", "shrew", "skunk", "skyscraper",
-    "snail", "snake", "spider", "squirrel", "streetcar", "sunflower", "sweet_pepper", "table", "tank", "telephone",
-    "television", "tiger", "tractor", "train", "trout", "tulip", "turtle", "wardrobe", "whale", "willow_tree", "wolf",
-    "woman", "worm",
+    "apple",
+    "aquarium_fish",
+    "baby",
+    "bear",
+    "beaver",
+    "bed",
+    "bee",
+    "beetle",
+    "bicycle",
+    "bottle",
+    "bowl",
+    "boy",
+    "bridge",
+    "bus",
+    "butterfly",
+    "camel",
+    "can",
+    "castle",
+    "caterpillar",
+    "cattle",
+    "chair",
+    "chimpanzee",
+    "clock",
+    "cloud",
+    "cockroach",
+    "couch",
+    "crab",
+    "crocodile",
+    "cup",
+    "dinosaur",
+    "dolphin",
+    "elephant",
+    "flatfish",
+    "forest",
+    "fox",
+    "girl",
+    "hamster",
+    "house",
+    "kangaroo",
+    "keyboard",
+    "lamp",
+    "lawn_mower",
+    "leopard",
+    "lion",
+    "lizard",
+    "lobster",
+    "man",
+    "maple_tree",
+    "motorcycle",
+    "mountain",
+    "mouse",
+    "mushroom",
+    "oak_tree",
+    "orange",
+    "orchid",
+    "otter",
+    "palm_tree",
+    "pear",
+    "pickup_truck",
+    "pine_tree",
+    "plain",
+    "plate",
+    "poppy",
+    "porcupine",
+    "possum",
+    "rabbit",
+    "raccoon",
+    "ray",
+    "road",
+    "rocket",
+    "rose",
+    "sea",
+    "seal",
+    "shark",
+    "shrew",
+    "skunk",
+    "skyscraper",
+    "snail",
+    "snake",
+    "spider",
+    "squirrel",
+    "streetcar",
+    "sunflower",
+    "sweet_pepper",
+    "table",
+    "tank",
+    "telephone",
+    "television",
+    "tiger",
+    "tractor",
+    "train",
+    "trout",
+    "tulip",
+    "turtle",
+    "wardrobe",
+    "whale",
+    "willow_tree",
+    "wolf",
+    "woman",
+    "worm",
 )
 """CIFAR-100 fine label names in label order (the official meta file's fine_label_names)."""
 
@@ -93,7 +183,13 @@ def toy_spec(shapes: dict[str, tuple[int, ...]], model_id: str) -> dict:
         "tensors": {name: list(shape) for name, shape in shapes.items()},
         "layers": [
             {"op": "resnet20_encoder", "description": "toy stand-in for the stem, 9 blocks and the pool"},
-            {"op": FS.HEAD_OP, "weight": FS.HEAD_TENSOR, "shape": [FS.N_CLASSES, 64], "scale": 16.0, "eps": 1e-12},
+            {
+                "op": FS.HEAD_OP,
+                "weight": FS.HEAD_TENSOR,
+                "shape": [FS.N_CLASSES, 64],
+                "scale": 16.0,
+                "eps": 1e-12,
+            },
         ],
     }
 
@@ -130,34 +226,73 @@ def build_toy_fscil_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> To
         start += len(y)
         arrays = {"x": x, "y": y, "idx": idx}
         sha = store.save_split(store.split_path(dataset, split), arrays)
-        meta_splits[split] = {"path": f"splits/{split}.npz", "sha256": sha, "n": int(len(y)),
-                              "class_counts": np.bincount(y, minlength=FS.N_CLASSES).astype(int).tolist()}
-    forward_sha = write_forward(store.forward_path(dataset), render_resnet20_forward(
-        MEAN, STD, FS.N_CLASSES, 16.0, 1e-5, 1e-12, input_shape=SHAPE))
-    store.write_json(store.dataset_json_path(dataset), {
-        "schema": "cryowisp.dataset.fscil.v1", "dataset": dataset, "task": "fscil", "toy": True,
-        "class_names": list(CIFAR100_FINE_NAMES), "n_classes": FS.N_CLASSES, "image_shape": list(SHAPE),
-        "forward_sha256": forward_sha, "forward_path": "forward.py",
-        "normalization": {"mean": list(MEAN), "std": list(STD)}, "splits": meta_splits,
-    })
+        meta_splits[split] = {
+            "path": f"splits/{split}.npz",
+            "sha256": sha,
+            "n": int(len(y)),
+            "class_counts": np.bincount(y, minlength=FS.N_CLASSES).astype(int).tolist(),
+        }
+    forward_sha = write_forward(
+        store.forward_path(dataset),
+        render_resnet20_forward(MEAN, STD, FS.N_CLASSES, 16.0, 1e-5, 1e-12, input_shape=SHAPE),
+    )
+    store.write_json(
+        store.dataset_json_path(dataset),
+        {
+            "schema": "cryowisp.dataset.fscil.v1",
+            "dataset": dataset,
+            "task": "fscil",
+            "toy": True,
+            "class_names": list(CIFAR100_FINE_NAMES),
+            "n_classes": FS.N_CLASSES,
+            "image_shape": list(SHAPE),
+            "forward_sha256": forward_sha,
+            "forward_path": "forward.py",
+            "normalization": {"mean": list(MEAN), "std": list(STD)},
+            "splits": meta_splits,
+        },
+    )
     shapes = _forward_module(store.forward_path(dataset))["expected_shapes"]()
     params = random_resnet20(rng, shapes)
     model_id = "m0f5c0a11"
     folder = fewshot_models_dir(dataset) / model_id
     folder.mkdir(parents=True)
     digest = save_params(folder / "model.npz", params)
-    (folder / "model_spec.json").write_text(json.dumps(toy_spec(shapes, model_id), indent=2, sort_keys=True) + "\n",
-                                            encoding="utf-8")
-    (folder / "private.json").write_text(json.dumps({
-        "role": FS.BASE_ROLE, "train_classes": list(range(FS.N_BASE_CLASSES)), "seed": TOY_SEED, "toy": True,
-    }, indent=2) + "\n", encoding="utf-8")
-    write_fewshot_index(dataset, [{
-        "model_id": model_id, "seed": TOY_SEED, "arch": FS.ARCH, "role": FS.BASE_ROLE, "params_sha256": digest,
-        "vselect_acc": 0.0, "train_classes": list(range(FS.N_BASE_CLASSES)), "vselect_acc_train_classes": 0.0,
-    }])
+    (folder / "model_spec.json").write_text(
+        json.dumps(toy_spec(shapes, model_id), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (folder / "private.json").write_text(
+        json.dumps(
+            {
+                "role": FS.BASE_ROLE,
+                "train_classes": list(range(FS.N_BASE_CLASSES)),
+                "seed": TOY_SEED,
+                "toy": True,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    write_fewshot_index(
+        dataset,
+        [
+            {
+                "model_id": model_id,
+                "seed": TOY_SEED,
+                "arch": FS.ARCH,
+                "role": FS.BASE_ROLE,
+                "params_sha256": digest,
+                "vselect_acc": 0.0,
+                "train_classes": list(range(FS.N_BASE_CLASSES)),
+                "vselect_acc_train_classes": 0.0,
+            }
+        ],
+    )
     assert digest == params_sha256(params)
-    return ToyFscil(dataset=dataset, base_model_id=model_id, base_params=params, base_params_sha256=digest,
-                    root=tmp_path)
+    return ToyFscil(
+        dataset=dataset, base_model_id=model_id, base_params=params, base_params_sha256=digest, root=tmp_path
+    )
 
 
 @pytest.fixture()
@@ -169,22 +304,51 @@ def toy_fscil(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ToyFscil:
 def add_toy_allclass(toy: ToyFscil, seed: int = TOY_SEED) -> str:
     """Add a random fscil_allclass student (all 100 train classes) to the toy store; returns its model id."""
     rng = np.random.default_rng(11)
-    params = {name: (value + 0.05 * rng.standard_normal(value.shape)).astype(np.float32)
-              if not name.endswith("running_var") else value.copy() for name, value in toy.base_params.items()}
+    params = {
+        name: (value + 0.05 * rng.standard_normal(value.shape)).astype(np.float32)
+        if not name.endswith("running_var")
+        else value.copy()
+        for name, value in toy.base_params.items()
+    }
     model_id = "m0a11c1a5"
     folder = fewshot_models_dir(toy.dataset) / model_id
     folder.mkdir(parents=True)
     digest = save_params(folder / "model.npz", params)
-    base_spec = json.loads((fewshot_models_dir(toy.dataset) / toy.base_model_id / "model_spec.json").read_text(
-        encoding="utf-8"))
-    (folder / "model_spec.json").write_text(json.dumps({**base_spec, "model_id": model_id}, indent=2, sort_keys=True)
-                                            + "\n", encoding="utf-8")
-    (folder / "private.json").write_text(json.dumps({
-        "role": FS.ALLCLASS_ROLE, "train_classes": list(range(FS.N_CLASSES)), "seed": seed, "toy": True,
-    }, indent=2) + "\n", encoding="utf-8")
+    base_spec = json.loads(
+        (fewshot_models_dir(toy.dataset) / toy.base_model_id / "model_spec.json").read_text(encoding="utf-8")
+    )
+    (folder / "model_spec.json").write_text(
+        json.dumps({**base_spec, "model_id": model_id}, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (folder / "private.json").write_text(
+        json.dumps(
+            {
+                "role": FS.ALLCLASS_ROLE,
+                "train_classes": list(range(FS.N_CLASSES)),
+                "seed": seed,
+                "toy": True,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     from cryowisp.models.export import read_fewshot_index
-    write_fewshot_index(toy.dataset, [*read_fewshot_index(toy.dataset), {
-        "model_id": model_id, "seed": seed, "arch": FS.ARCH, "role": FS.ALLCLASS_ROLE, "params_sha256": digest,
-        "vselect_acc": 0.0, "train_classes": list(range(FS.N_CLASSES)), "vselect_acc_train_classes": 0.0,
-    }])
+
+    write_fewshot_index(
+        toy.dataset,
+        [
+            *read_fewshot_index(toy.dataset),
+            {
+                "model_id": model_id,
+                "seed": seed,
+                "arch": FS.ARCH,
+                "role": FS.ALLCLASS_ROLE,
+                "params_sha256": digest,
+                "vselect_acc": 0.0,
+                "train_classes": list(range(FS.N_CLASSES)),
+                "vselect_acc_train_classes": 0.0,
+            },
+        ],
+    )
     return model_id

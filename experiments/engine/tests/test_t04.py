@@ -25,7 +25,7 @@ from cryowisp.harness import t04 as H
 from cryowisp.models import resnet18native as N
 from cryowisp.models import resnet18up as M
 
-OFFICIAL_FUNCTIONS = '''import os
+OFFICIAL_FUNCTIONS = """import os
 import wand  # never executed by load_official
 
 def gaussian_noise(x, severity=1):
@@ -44,7 +44,7 @@ def contrast(x, severity=1):
 
 for name in []:
     raise SystemExit("the loop is never executed")
-'''
+"""
 """The two functions as the official file at OFFICIAL_COMMIT writes them, inside a file whose other lines must not run."""
 
 
@@ -86,7 +86,9 @@ def _params(seed: int) -> dict[str, np.ndarray]:
 def test_row_rule_partitions_the_validation_rows_and_matches_the_prereg_hashes() -> None:
     dev, test = T.dev_rows(), T.test_rows()
     assert len(dev) == T.N_DEV == 12_000 and len(test) == T.N_TEST == 38_000
-    assert not set(dev.tolist()) & set(test.tolist()) and len(set(dev.tolist()) | set(test.tolist())) == 50_000
+    assert (
+        not set(dev.tolist()) & set(test.tolist()) and len(set(dev.tolist()) | set(test.tolist())) == 50_000
+    )
     assert set(range(0, 50_000, 50)) <= set(dev.tolist())
     record = T.row_record()
     assert record["dev"]["sha256"] == "8abf52d92ec992161fc084d42fd5d4b8a3a85cafb58f743ffad78fe639d999b9"
@@ -103,9 +105,13 @@ def test_split_rule_covers_every_class_in_v_select_and_v_check() -> None:
     assert sorted(np.concatenate(list(splits.values())).tolist()) == dev.tolist()
     for split in T.COVERED_SPLITS:
         assert len({labels[int(r)] for r in splits[split]}) == T.N_CLASSES
-    assert {k: v.tolist() for k, v in T.split_rows(labels).items()} == {k: v.tolist() for k, v in splits.items()}
+    assert {k: v.tolist() for k, v in T.split_rows(labels).items()} == {
+        k: v.tolist() for k, v in splits.items()
+    }
     record = T.row_record(labels)
-    assert set(record["splits"]) == {s for s, _ in T.SPLIT_SIZES} and sum(record["d_by_split"].values()) == 1000
+    assert (
+        set(record["splits"]) == {s for s, _ in T.SPLIT_SIZES} and sum(record["d_by_split"].values()) == 1000
+    )
     short = dict(labels)
     for row in [r for r, c in labels.items() if c == 7][1:]:
         short[row] = 8
@@ -183,7 +189,9 @@ def test_official_file_of_record_when_present() -> None:
 
     path = os.environ.get("CRYOWISP_T04_OFFICIAL")
     if not path:
-        pytest.skip("set CRYOWISP_T04_OFFICIAL to the official make_imagenet_c.py to check the file of record")
+        pytest.skip(
+            "set CRYOWISP_T04_OFFICIAL to the official make_imagenet_c.py to check the file of record"
+        )
     official = T.load_official(Path(path))
     T.check_official_constants(official)
 
@@ -228,8 +236,10 @@ def test_u8_forward_matches_torch_and_the_float_path() -> None:
     assert np.max(np.abs(ours - ref64) / np.maximum(1.0, np.abs(ref64))) < 1e-6
     mean = np.array(M.IMAGENET_MEAN, dtype=np.float32).reshape(1, 3, 1, 1)
     std = np.array(M.IMAGENET_STD, dtype=np.float32).reshape(1, 3, 1, 1)
-    float_path = N.eval_logits(N.build_resnet18native(params, torch.float64),
-                               ((x.astype(np.float32) / 255.0 - mean) / std).astype(np.float32))
+    float_path = N.eval_logits(
+        N.build_resnet18native(params, torch.float64),
+        ((x.astype(np.float32) / 255.0 - mean) / std).astype(np.float32),
+    )
     assert np.max(np.abs(float_path - ref64)) < 1e-4
 
 
@@ -251,7 +261,9 @@ def test_harness_student_check_timeouts_and_lookups() -> None:
     params = _params(8)
     summary = H.check_student(params)
     assert summary["n_tensors"] == 102 and summary["n_batchnorm_stat_entries"] == 9_600
-    small = dict(params, **{"fc.weight": np.zeros((10, 512), np.float32), "fc.bias": np.zeros(10, np.float32)})
+    small = dict(
+        params, **{"fc.weight": np.zeros((10, 512), np.float32), "fc.bias": np.zeros(10, np.float32)}
+    )
     with pytest.raises(H.T04HarnessError):
         H.check_student(small)
     private = {"dataset": H.DATASET, "evidence_rule": "evidence-v1"}
@@ -277,11 +289,22 @@ def test_cli_dispatch_for_t04(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="runs with t04"):
         C.run_method(instance, "grad_last", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True)
     with pytest.raises(ValueError, match="not two of them"):
-        C.run_method(instance, "grad_last", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True, e12=True,
-                     t04=True)
+        C.run_method(
+            instance,
+            "grad_last",
+            tmp_path,
+            run_seed=0,
+            allow_main=False,
+            joint=True,
+            e10=True,
+            e12=True,
+            t04=True,
+        )
     other = SimpleNamespace(private={"dataset": "cifar10_r20"})
     with pytest.raises(ValueError, match="need a in1k_t04"):
-        C.run_method(other, "grad_last", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True, t04=True)
+        C.run_method(
+            other, "grad_last", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True, t04=True
+        )
     assert FT.F1_DATASET_METHODS[FT.F1_T04_DATASET] == FT.F1_DATASET_METHODS[FT.F1_E12_DATASET]
     assert FT.F1_DATASET_REUSED[FT.F1_T04_DATASET]["full"] == ("grad_full", "t04g2")
 
@@ -303,34 +326,49 @@ def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     order = np.random.default_rng(0).permutation(dev)
     splits, start = {}, 0
     for split, n in sizes.items():
-        splits[split] = np.sort(order[start:start + n])
+        splits[split] = np.sort(order[start : start + n])
         start += n
     monkeypatch.setattr(T, "dev_rows", lambda: dev)
     monkeypatch.setattr(T, "split_rows", lambda labels: splits)
     rng = np.random.default_rng(1)
     labels = {int(r): int(rng.integers(0, 1000)) for r in dev}
-    for split in ("V_check", "V_select"):  # classes 0 .. 7 in each, so a readout over READOUT_CLASSES sees them all
+    for split in (
+        "V_check",
+        "V_select",
+    ):  # classes 0 .. 7 in each, so a readout over READOUT_CLASSES sees them all
         for k, row in enumerate(splits[split]):
             labels[int(row)] = k
 
     def records(data_dir: Path, rows):
-        assert data_dir.name == T.SHARD_DIR and (data_dir.parent / "classes.py").is_file()  # the snapshot layout
+        assert (
+            data_dir.name == T.SHARD_DIR and (data_dir.parent / "classes.py").is_file()
+        )  # the snapshot layout
         for row in T.check_dev_rows(rows):
             data = _jpeg(rng, 240 + row % 7, 300)
             import hashlib
 
-            yield V.DRecord(row, "shard", row, labels[row], hashlib.sha256(data).hexdigest(), f"img{row}.JPEG", data)
+            yield V.DRecord(
+                row, "shard", row, labels[row], hashlib.sha256(data).hexdigest(), f"img{row}.JPEG", data
+            )
 
     monkeypatch.setattr(T, "read_dev_records", records)
     data_dir = tmp_path / "shards"
     data_dir.mkdir()
     lines = [f'    "n{i:08d}": "thing {i}",' for i in range(1000)]
     lines[5] = '    "n00000005": "rapeseed",'
-    (data_dir / "classes.py").write_text("IMAGENET2012_CLASSES = OrderedDict({\n" + "\n".join(lines) + "\n})\n")
+    (data_dir / "classes.py").write_text(
+        "IMAGENET2012_CLASSES = OrderedDict({\n" + "\n".join(lines) + "\n})\n"
+    )
     monkeypatch.setattr(N, "imagenet_params", lambda path: _params(11))
     weights = tmp_path / "weights.pth"
     weights.write_bytes(b"not a real file")
-    return {"data_dir": data_dir, "weights": weights, "B": B, "official": _official(tmp_path), "tmp": tmp_path}
+    return {
+        "data_dir": data_dir,
+        "weights": weights,
+        "B": B,
+        "official": _official(tmp_path),
+        "tmp": tmp_path,
+    }
 
 
 def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -361,8 +399,13 @@ def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch
     clean = load_split(T.DATASET, "V_check")
     assert np.array_equal(cond["y"], clean["y"]) and not np.array_equal(cond["x"], clean["x"])
     outcomes = build_deployment_instances(
-        T.DATASET, "gaussian_noise_s3", selection=SeedSelection(main=(), dev=(100, 101)), decoys={100: 101, 101: 100},
-        split_roles=("dev",), batch_size=16)
+        T.DATASET,
+        "gaussian_noise_s3",
+        selection=SeedSelection(main=(), dev=(100, 101)),
+        decoys={100: 101, 101: 100},
+        split_roles=("dev",),
+        batch_size=16,
+    )
     assert sorted(o.seed for o in outcomes) == [100, 101]
     assert all(o.status == "created" for o in outcomes)
     instance_dir = tiny_store["tmp"] / "private" / "instances" / outcomes[0].instance_id
@@ -374,12 +417,28 @@ def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch
     # the timing of record, with the large-sample step timing that sizes R37's large-sample jobs
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("t04_store", Path(__file__).parents[1] / "scripts/t04/t04_store.py")
+    spec = importlib.util.spec_from_file_location(
+        "t04_store", Path(__file__).parents[1] / "scripts/t04/t04_store.py"
+    )
     store_cli = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(store_cli)
     timing_path = tiny_store["tmp"] / "timing.json"
-    assert store_cli.main(["timing", "--out", str(timing_path), "--repeats", "1", "--train-threads", "2",
-                           "--train-steps", "1"]) == 0
+    assert (
+        store_cli.main(
+            [
+                "timing",
+                "--out",
+                str(timing_path),
+                "--repeats",
+                "1",
+                "--train-threads",
+                "2",
+                "--train-steps",
+                "1",
+            ]
+        )
+        == 0
+    )
     timing = json.loads(timing_path.read_text())
     assert timing["rows_per_check"] == 16 and timing["session_wall_limit_min"] == 120
     step = timing["large_ft_step_s"]["2"]
@@ -388,8 +447,15 @@ def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch
     from cryowisp.harness import runner
     from cryowisp.harness.finalize import STATUS_DRY_RUN
 
-    result = runner.run_session(H.find("gaussian_noise_s3", 100), "LEARN", 1, effort="max", wall_timeout_s=8100.0,
-                                dry_run=True, retention_floor_frac=0.25)  # 8 clean rows here, 4,000 on NSCC
+    result = runner.run_session(
+        H.find("gaussian_noise_s3", 100),
+        "LEARN",
+        1,
+        effort="max",
+        wall_timeout_s=8100.0,
+        dry_run=True,
+        retention_floor_frac=0.25,
+    )  # 8 clean rows here, 4,000 on NSCC
     if "t04" in str(Path(__file__).resolve().parents[1]).lower():
         # this checkout's own path holds the leak token "t04" (the dataset id's part), and the sandbox self-test
         # rightly finds it in the mount table; NSCC mounts the code at CryoWISP-nsess. That must be the only failure.
@@ -401,8 +467,11 @@ def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch
     session = json.loads((result.root / "session.json").read_text())
     assert session["leak_scan"]["passed"]
     assert session["mcp"]["tool_timeout_ms"] >= 1_200_000 and session["mcp"]["connect_timeout_ms"] >= 900_000
-    assert (session["limits"]["max_ops"], session["limits"]["max_rel_frob"], session["limits"]["max_changed_frac"]) \
-        == (102, 0.5, 0.2)
+    assert (
+        session["limits"]["max_ops"],
+        session["limits"]["max_rel_frob"],
+        session["limits"]["max_changed_frac"],
+    ) == (102, 0.5, 0.2)
     assert set(H.leak_words()) <= set(session["forbidden_strings"]["text"])
     shown = " ".join(p.read_text() for p in (result.root / "prompts").glob("*.md"))
     assert scan_for_tokens(shown, set(H.leak_words())) == []
@@ -423,28 +492,68 @@ def test_tiny_store_reference_arms(tiny_store: dict, monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(T, "load_official", lambda path: tiny_store["official"])
     B.build_condition("contrast", 4, Path("unused"), {}, {"chosen": 4})
     outcomes = build_deployment_instances(
-        T.DATASET, "contrast_s4", selection=SeedSelection(main=(), dev=(100, 101)), decoys={100: 101, 101: 100},
-        split_roles=("dev",), batch_size=16)
+        T.DATASET,
+        "contrast_s4",
+        selection=SeedSelection(main=(), dev=(100, 101)),
+        decoys={100: 101, 101: 100},
+        split_roles=("dev",),
+        batch_size=16,
+    )
     from cryowisp.evalkit.instances import instances_root
 
     instance = load_instance(instances_root() / next(o.instance_id for o in outcomes if o.seed == 100))
-    record = C.run_method(instance, "bn_adapt", tiny_store["tmp"] / "runs" / "bn", run_seed=0, allow_main=False,
-                          joint=True, e10=True, t04=True)
+    record = C.run_method(
+        instance,
+        "bn_adapt",
+        tiny_store["tmp"] / "runs" / "bn",
+        run_seed=0,
+        allow_main=False,
+        joint=True,
+        e10=True,
+        t04=True,
+    )
     assert record["status"] == "complete" and record["queries_used"] >= 1
     # the edge extension (PREREG T04 amendment, main 9f0baa9): the same reference on its extension grid
-    edge = C.run_method(instance, "bn_adapt", tiny_store["tmp"] / "runs" / "bn_edge", run_seed=0, allow_main=False,
-                        joint=True, e10=True, t04=True, edge=True)
+    edge = C.run_method(
+        instance,
+        "bn_adapt",
+        tiny_store["tmp"] / "runs" / "bn_edge",
+        run_seed=0,
+        allow_main=False,
+        joint=True,
+        e10=True,
+        t04=True,
+        edge=True,
+    )
     assert edge["status"] == "complete" and edge["config"]["grid"]["name"] == "t04_edge"
-    assert [c["config"] for c in edge["candidates"]] == [{"N": n} for n in (0, 256, 512, 1024, 2048, 4096, 8192, 16384)]
-    spec = importlib.util.spec_from_file_location("t04_large_ft", Path(__file__).parents[1] / "scripts/t04/large_ft.py")
+    assert [c["config"] for c in edge["candidates"]] == [
+        {"N": n} for n in (0, 256, 512, 1024, 2048, 4096, 8192, 16384)
+    ]
+    spec = importlib.util.spec_from_file_location(
+        "t04_large_ft", Path(__file__).parents[1] / "scripts/t04/large_ft.py"
+    )
     large = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(large)
     monkeypatch.setattr(large, "STEP_CHECKPOINTS", (1, 2))
     monkeypatch.setattr(large, "HALF_BATCH", 4)
     assert large.main(["--instance", instance.instance_id]) == 0
-    run = json.loads((tiny_store["tmp"] / "runs" / "baselines" / instance.instance_id / "ft_large" / "t04" / "0" /
-                      "run.json").read_text())
-    assert run["evidence"]["rule"] == large.RULE and run["evidence"]["n_rand"] == 72 and run["evidence"]["n_replay"] == 64
+    run = json.loads(
+        (
+            tiny_store["tmp"]
+            / "runs"
+            / "baselines"
+            / instance.instance_id
+            / "ft_large"
+            / "t04"
+            / "0"
+            / "run.json"
+        ).read_text()
+    )
+    assert (
+        run["evidence"]["rule"] == large.RULE
+        and run["evidence"]["n_rand"] == 72
+        and run["evidence"]["n_replay"] == 64
+    )
     assert run["queries_used"] == 4 and run["limits_source"].startswith("e10_program_limits")
     # the kept-pick dev readout every R37 fitting job runs on its own runs (V_select and its clean companion)
     from cryowisp.evalkit import devreadout
@@ -452,12 +561,28 @@ def test_tiny_store_reference_arms(tiny_store: dict, monkeypatch: pytest.MonkeyP
     # the tiny V_select holds classes 0 .. 7 only; the real one holds all 1,000 (T.split_rows), which the per-class
     # readout requires
     real = devreadout.split_readouts
-    monkeypatch.setattr(devreadout, "split_readouts",
-                        lambda data, base, child, target, n_classes: real(data, base, child, target, READOUT_CLASSES))
+    monkeypatch.setattr(
+        devreadout,
+        "split_readouts",
+        lambda data, base, child, target, n_classes: real(data, base, child, target, READOUT_CLASSES),
+    )
     out = tiny_store["tmp"] / "kept.jsonl"
-    assert devreadout.main([str(tiny_store["tmp"] / "runs" / "bn"), str(tiny_store["tmp"] / "runs" / "bn_edge"),
-                            str(tiny_store["tmp"] / "runs" / "baselines"),
-                            "--retention-floor", "-20", "--label", "t04-kept", "--out", str(out)]) == 0
+    assert (
+        devreadout.main(
+            [
+                str(tiny_store["tmp"] / "runs" / "bn"),
+                str(tiny_store["tmp"] / "runs" / "bn_edge"),
+                str(tiny_store["tmp"] / "runs" / "baselines"),
+                "--retention-floor",
+                "-20",
+                "--label",
+                "t04-kept",
+                "--out",
+                str(out),
+            ]
+        )
+        == 0
+    )
     records = [json.loads(line) for line in out.read_text().splitlines()]
     assert sorted(r["method"] for r in records) == ["bn_adapt", "bn_adapt", "ft_large"]
     for r in records:

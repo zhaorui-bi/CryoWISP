@@ -153,7 +153,13 @@ from cryowisp.evalkit import devreadout
 from cryowisp.evalkit.companions import load_clean_rows
 from cryowisp.evalkit.instances import instances_root
 from cryowisp.evalkit.metrics import Candidate, choose_final
-from cryowisp.evalkit.sealed import REGISTRY_NAME, _append_registry, _exclusive_lock, manifest_sha256, read_registry
+from cryowisp.evalkit.sealed import (
+    REGISTRY_NAME,
+    _append_registry,
+    _exclusive_lock,
+    manifest_sha256,
+    read_registry,
+)
 from cryowisp.evalkit.targets import (
     DEPLOY_CONDITION,
     check_image_arrays,

@@ -28,7 +28,13 @@ SPEC = {
     "input": {"shape": [C, H, W], "layout": "NCHW, flatten row-major"},
     "layers": [
         {"op": "flatten", "order": "C, H, W (row-major)"},
-        {"name": "fc1", "op": "linear", "weight": "fc1.weight", "bias": "fc1.bias", "shape_w": [6, C * H * W]},
+        {
+            "name": "fc1",
+            "op": "linear",
+            "weight": "fc1.weight",
+            "bias": "fc1.bias",
+            "shape_w": [6, C * H * W],
+        },
         {"op": "relu"},
         {"name": "fc2", "op": "linear", "weight": "fc2.weight", "bias": "fc2.bias", "shape_w": [4, 6]},
     ],
@@ -54,8 +60,13 @@ def _params() -> dict[str, np.ndarray]:
 def _tie_child(params: dict[str, np.ndarray], strength: float) -> dict[str, np.ndarray]:
     """The executor's channel tie: every input position is grouped with the same pixel of the other channels."""
     groups = [p % (H * W) for p in range(C * H * W)]
-    patch = {"schema": SCHEMA, "parent_sha256": params_sha256(params), "hypothesis": "tie", "predicted_effect": "tie",
-             "ops": [{"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": groups, "strength": strength}]}
+    patch = {
+        "schema": SCHEMA,
+        "parent_sha256": params_sha256(params),
+        "hypothesis": "tie",
+        "predicted_effect": "tie",
+        "ops": [{"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": groups, "strength": strength}],
+    }
     return apply_patch(params, patch, None, Limits().without_size_limits(), params_sha256(params)).child
 
 
@@ -107,14 +118,18 @@ def _masked_tie_child(base: dict[str, np.ndarray], mask: np.ndarray) -> dict[str
     layer = cp.first_layer(SPEC, base)
     w64 = base["fc1.weight"].astype(np.float64).reshape(layer.view_shape)
     d = cp.channel_difference(base["fc1.weight"], layer)
-    return dict(base, **{"fc1.weight": (w64 - np.where(mask, 1.0, 0.0) * d).reshape(6, -1).astype(np.float32)})
+    return dict(
+        base, **{"fc1.weight": (w64 - np.where(mask, 1.0, 0.0) * d).reshape(6, -1).astype(np.float32)}
+    )
 
 
 @pytest.mark.parametrize("where", ["units", "pixels"])
 def test_an_uneven_tie_reads_as_a_tie_in_the_local_fits(where: str) -> None:
     base = _params()
     layer = cp.first_layer(SPEC, base)
-    mask = np.arange(6)[:, None, None, None] < 3 if where == "units" else np.arange(H)[None, None, :, None] < 2
+    mask = (
+        np.arange(6)[:, None, None, None] < 3 if where == "units" else np.arange(H)[None, None, :, None] < 2
+    )
     child = _masked_tie_child(base, mask)
     tie = cp.tie_geometry(base["fc1.weight"], child["fc1.weight"], layer)
     # The uniform global fit sees a partial tie; the local fits see all of it.
@@ -142,7 +157,9 @@ def test_an_anti_tie_is_flagged_and_signed() -> None:
     d = cp.channel_difference(base["fc1.weight"], layer).reshape(6, -1)
     child = dict(base, **{"fc1.weight": (base["fc1.weight"].astype(np.float64) + 0.3 * d).astype(np.float32)})
     tie = cp.tie_geometry(base["fc1.weight"], child["fc1.weight"], layer)
-    assert tie["s_eff"] == pytest.approx(-0.3, abs=1e-6) and tie["channel_spread_ratio"] == pytest.approx(1.3, abs=1e-6)
+    assert tie["s_eff"] == pytest.approx(-0.3, abs=1e-6) and tie["channel_spread_ratio"] == pytest.approx(
+        1.3, abs=1e-6
+    )
     assert tie["tie_fraction"] == pytest.approx(1.0, abs=1e-6)  # cos^2: sign-blind by definition
     assert tie["signed_tie_fraction"] == pytest.approx(-1.0, abs=1e-6) and cp.FLAG_ANTI_TIE in tie["flags"]
     local = tie["local"]["per_unit_spatial"]
@@ -150,13 +167,26 @@ def test_an_anti_tie_is_flagged_and_signed() -> None:
     assert local["explained_fraction_tie_sign"] == 0.0 and local["share_groups_negative"] == 1.0
     tie_local, _ = cp.decompose_local(base, child, layer)
     assert np.array_equal(tie_local["fc1.weight"], base["fc1.weight"])  # no tie-signed part to keep
-    assert cp.FLAG_ANTI_TIE not in cp.tie_geometry(base["fc1.weight"], _tie_child(base, 0.3)["fc1.weight"], layer)["flags"]
+    assert (
+        cp.FLAG_ANTI_TIE
+        not in cp.tie_geometry(base["fc1.weight"], _tie_child(base, 0.3)["fc1.weight"], layer)["flags"]
+    )
 
 
 def test_first_layer_is_resolved_from_the_spec_or_refused() -> None:
     conv_params = {"conv1.weight": np.zeros((5, 3, 3, 3), np.float32), "conv1.bias": np.zeros(5, np.float32)}
-    conv_spec = {"input": {"shape": [3, 8, 8]}, "layers": [{"name": "conv1", "op": "conv2d", "weight": "conv1.weight",
-                                                            "bias": "conv1.bias", "shape_w": [5, 3, 3, 3]}]}
+    conv_spec = {
+        "input": {"shape": [3, 8, 8]},
+        "layers": [
+            {
+                "name": "conv1",
+                "op": "conv2d",
+                "weight": "conv1.weight",
+                "bias": "conv1.bias",
+                "shape_w": [5, 3, 3, 3],
+            }
+        ],
+    }
     assert cp.first_layer(conv_spec, conv_params).view_shape == (5, 3, 3, 3)
     bad_channels = json.loads(json.dumps(conv_spec))
     bad_channels["input"]["shape"] = [1, 8, 8]
@@ -185,8 +215,12 @@ def _instances(store: ToyStore) -> dict[str, Instance]:
 def _write_run(run_dir: Path, instance_id: str, final: dict[str, object]) -> Path:
     """A run record; the toy fixing child is larger than the edit limits allow, so it is run as a label-fit reference."""
     run_dir.mkdir(parents=True, exist_ok=True)
-    run = {"instance": {"instance_id": instance_id}, "method": "toy", "flags": {"edit_limits_enforced": False},
-           "final": final}
+    run = {
+        "instance": {"instance_id": instance_id},
+        "method": "toy",
+        "flags": {"edit_limits_enforced": False},
+        "final": final,
+    }
     (run_dir / "run.json").write_text(json.dumps(run))
     return run_dir / "run.json"
 
@@ -194,14 +228,28 @@ def _write_run(run_dir: Path, instance_id: str, final: dict[str, object]) -> Pat
 def _patch_run(store: ToyStore, instance: Instance, name: str, child: dict[str, np.ndarray]) -> Path:
     run_dir = store.runs / "toy" / instance.instance_id / name
     write_delta_patch(run_dir / "q1", instance.params_sha256, instance.params, child, "toy", "toy")
-    final = {"is_base_noop": False, "dir": "q1", "score": 1, "fixed": 1, "broken": 0, "edit_size": 1,
-             "child_sha256": params_sha256(child)}
+    final = {
+        "is_base_noop": False,
+        "dir": "q1",
+        "score": 1,
+        "fixed": 1,
+        "broken": 0,
+        "edit_size": 1,
+        "child_sha256": params_sha256(child),
+    }
     return _write_run(run_dir, instance.instance_id, final)
 
 
 def _noop_run(store: ToyStore, instance: Instance) -> Path:
-    final = {"is_base_noop": True, "dir": None, "score": 0, "fixed": 0, "broken": 0, "edit_size": 0,
-             "child_sha256": instance.params_sha256}
+    final = {
+        "is_base_noop": True,
+        "dir": None,
+        "score": 0,
+        "fixed": 0,
+        "broken": 0,
+        "edit_size": 0,
+        "child_sha256": instance.params_sha256,
+    }
     return _write_run(store.runs / "toy" / instance.instance_id / "noop", instance.instance_id, final)
 
 
@@ -210,8 +258,16 @@ def test_a_run_compared_with_itself(toy_store: ToyStore, capsys: pytest.CaptureF
     run = _patch_run(toy_store, dev, "fix", fixing_child(dict(dev.params)))
     record = cp.compare_runs(run.parent, run)
     fs = record["function_space"]
-    assert fs["fixed"]["run"] > 0 and fs["fixed"]["jaccard"] == 1.0 and fs["fixed"]["intersection_over_run"] == 1.0
-    assert fs["agreement_run_ref"] == {"all": 1.0, "base_errors": 1.0, "n_base_errors": fs["agreement_run_ref"]["n_base_errors"]}
+    assert (
+        fs["fixed"]["run"] > 0
+        and fs["fixed"]["jaccard"] == 1.0
+        and fs["fixed"]["intersection_over_run"] == 1.0
+    )
+    assert fs["agreement_run_ref"] == {
+        "all": 1.0,
+        "base_errors": 1.0,
+        "n_base_errors": fs["agreement_run_ref"]["n_base_errors"],
+    }
     assert fs["paired_run_minus_ref"]["difference"] == 0.0
     expected = devreadout.dev_readout(dev, fixing_child(dict(dev.params)))["readouts"]
     assert fs["run"]["readouts"] == expected and fs["ref"]["readouts"] == expected
@@ -219,7 +275,9 @@ def test_a_run_compared_with_itself(toy_store: ToyStore, capsys: pytest.CaptureF
     assert cos["all_parameters"] == pytest.approx(1.0) and cos["first_layer"] == pytest.approx(1.0)
     # The toy model has one input channel, so D is zero and the tie direction is empty (flagged, not silent).
     tie = record["weight_space"]["run"]["tie"]
-    assert cp.FLAG_CHANNEL_DIFFERENCE_ZERO in tie["flags"] and tie["s_eff"] == 0.0 and tie["tie_fraction"] == 0.0
+    assert (
+        cp.FLAG_CHANNEL_DIFFERENCE_ZERO in tie["flags"] and tie["s_eff"] == 0.0 and tie["tie_fraction"] == 0.0
+    )
     assert record["decomposition"]["agreement_residual_with_base"] < 1.0
     assert record["op_summary"]["applicable"] and record["op_summary"]["by_op"] == {"add": 2}
 
@@ -300,27 +358,50 @@ def test_base_noop_run_has_zero_deltas_and_a_flagged_tie_fraction(toy_store: Toy
     # The run is the base, so the paired difference is minus the ref's net gain, and the decomposition is of the run.
     paired, n = fs["paired_run_minus_ref"], fs["n"]
     assert fs["fixed"]["ref"] > 0
-    assert paired["ref_wrong_run_right"] == fs["broken"]["ref"] and paired["ref_right_run_wrong"] == fs["fixed"]["ref"]
-    assert paired["difference"] == pytest.approx((fs["broken"]["ref"] - fs["fixed"]["ref"]) / n) and paired["difference"] < 0
+    assert (
+        paired["ref_wrong_run_right"] == fs["broken"]["ref"]
+        and paired["ref_right_run_wrong"] == fs["fixed"]["ref"]
+    )
+    assert (
+        paired["difference"] == pytest.approx((fs["broken"]["ref"] - fs["fixed"]["ref"]) / n)
+        and paired["difference"] < 0
+    )
     assert record["decomposition"]["agreement_residual_with_base"] == 1.0
     assert record["decomposition"]["agreement_residual_local_with_base"] == 1.0
 
 
-def _write_tie_run(store: ToyStore, instance: Instance, strength: float, groups: list[int]) -> tuple[Path, dict[str, np.ndarray]]:
+def _write_tie_run(
+    store: ToyStore, instance: Instance, strength: float, groups: list[int]
+) -> tuple[Path, dict[str, np.ndarray]]:
     """A run whose final patch is one executor tie op on fc1.weight, with the child it rebuilds to."""
     run_dir = store.runs / "toy" / instance.instance_id / "tie"
     (run_dir / "q1").mkdir(parents=True, exist_ok=True)
-    patch = {"schema": SCHEMA, "parent_sha256": instance.params_sha256, "hypothesis": "tie", "predicted_effect": "tie",
-             "ops": [{"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": groups, "strength": strength}]}
+    patch = {
+        "schema": SCHEMA,
+        "parent_sha256": instance.params_sha256,
+        "hypothesis": "tie",
+        "predicted_effect": "tie",
+        "ops": [{"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": groups, "strength": strength}],
+    }
     (run_dir / "q1" / "patch.json").write_text(json.dumps(patch))
-    child = apply_patch(instance.params, patch, None, Limits().without_size_limits(), instance.params_sha256).child
-    final = {"is_base_noop": False, "dir": "q1", "score": 0, "fixed": 0, "broken": 0, "edit_size": 1,
-             "child_sha256": params_sha256(child)}
+    child = apply_patch(
+        instance.params, patch, None, Limits().without_size_limits(), instance.params_sha256
+    ).child
+    final = {
+        "is_base_noop": False,
+        "dir": "q1",
+        "score": 0,
+        "fixed": 0,
+        "broken": 0,
+        "edit_size": 1,
+        "child_sha256": params_sha256(child),
+    }
     return _write_run(run_dir, instance.instance_id, final), child
 
 
 def test_end_to_end_tie_run_against_a_fixing_ref_on_a_two_channel_view(
-    toy_store: ToyStore, monkeypatch: pytest.MonkeyPatch  # noqa: F811
+    toy_store: ToyStore,
+    monkeypatch: pytest.MonkeyPatch,  # noqa: F811
 ) -> None:
     """The toy fc1 reads 16 inputs; viewed as (2, 2, 4) they have a channel axis, so a tie run has a real D."""
     dev = _instances(toy_store)["dev100"]
@@ -332,7 +413,9 @@ def test_end_to_end_tie_run_against_a_fixing_ref_on_a_two_channel_view(
     record = cp.compare_runs(run, ref)
 
     tie = record["weight_space"]["run"]["tie"]
-    assert tie["s_eff"] == pytest.approx(0.4, abs=1e-6) and tie["tie_fraction"] == pytest.approx(1.0, abs=1e-6)
+    assert tie["s_eff"] == pytest.approx(0.4, abs=1e-6) and tie["tie_fraction"] == pytest.approx(
+        1.0, abs=1e-6
+    )
     assert tie["local"]["per_unit_spatial"]["explained_fraction_tie_sign"] == pytest.approx(1.0, abs=1e-6)
     assert record["op_summary"]["by_op_tensor"] == {"tie:fc1.weight": 1}
     dc = record["decomposition"]
@@ -343,10 +426,12 @@ def test_end_to_end_tie_run_against_a_fixing_ref_on_a_two_channel_view(
     y = data["y"]
     run_pred = predict(dev.forward, tie_child, data["x"], 64)
     ref_pred = predict(dev.forward, fixing_child(dict(dev.params)), data["x"], 64)
-    gain, loss = int(np.sum((run_pred == y) & (ref_pred != y))), int(np.sum((run_pred != y) & (ref_pred == y)))
+    gain, loss = (
+        int(np.sum((run_pred == y) & (ref_pred != y))),
+        int(np.sum((run_pred != y) & (ref_pred == y))),
+    )
     paired = record["function_space"]["paired_run_minus_ref"]
     assert (paired["ref_wrong_run_right"], paired["ref_right_run_wrong"]) == (gain, loss) and gain != loss
     assert paired["difference"] == pytest.approx((gain - loss) / len(y))
     swapped = cp.compare_runs(ref, run)["function_space"]["paired_run_minus_ref"]
     assert swapped["difference"] == pytest.approx(-paired["difference"])
-

@@ -37,14 +37,25 @@ E12_METHODS = ("ft_bn", "lora_r4", "lora_r16", "ft_full_noreplay", "ft_full_lwf"
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--instance", action="append", required=True,
-                        help="E11, E12 or T04 dev instance id (repeatable, one dataset per invocation)")
-    parser.add_argument("--methods", nargs="+", choices=sorted(set(METHODS) | set(E12_METHODS)),
-                        help="default: the six of the instances' dataset")
+    parser.add_argument(
+        "--instance",
+        action="append",
+        required=True,
+        help="E11, E12 or T04 dev instance id (repeatable, one dataset per invocation)",
+    )
+    parser.add_argument(
+        "--methods",
+        nargs="+",
+        choices=sorted(set(METHODS) | set(E12_METHODS)),
+        help="default: the six of the instances' dataset",
+    )
     parser.add_argument("--seed", type=int, default=0, help="run seed (LoRA's A draw; directory name)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
-    parser.add_argument("--t04-edge", action="store_true",
-                        help="T04 edge extension (every lr divided by 10), run label t04g3; needs --methods")
+    parser.add_argument(
+        "--t04-edge",
+        action="store_true",
+        help="T04 edge extension (every lr divided by 10), run label t04g3; needs --methods",
+    )
     return parser.parse_args(argv)
 
 
@@ -54,12 +65,19 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import EXIT_REFUSED, load_checked_instances, refusal_message, summary_line
-    from cryowisp.baselines.fit.cli import T04_EDGE_LABEL
+    from cryowisp.baselines.fit.cli import (
+        EXIT_REFUSED,
+        T04_EDGE_LABEL,
+        load_checked_instances,
+        refusal_message,
+        summary_line,
+    )
     from cryowisp.baselines.fit.ftcompare import (
         F1_DATASET_METHODS,
         F1_E12_DATASET,
@@ -72,7 +90,9 @@ def main(argv: list[str] | None = None) -> int:
     from cryowisp.baselines.fit.runner import SplitRoleError, baseline_run_dir
 
     if set(METHODS) != set(F1_METHODS) or set(E12_METHODS) != set(F1_DATASET_METHODS[F1_E12_DATASET]):
-        raise RuntimeError(f"script methods {METHODS}, {E12_METHODS} differ from the library's {F1_DATASET_METHODS}")
+        raise RuntimeError(
+            f"script methods {METHODS}, {E12_METHODS} differ from the library's {F1_DATASET_METHODS}"
+        )
     try:
         instances = load_checked_instances(list(dict.fromkeys(args.instance)), allow_main=False)
         datasets = {i.private.get("dataset") for i in instances}
@@ -83,20 +103,25 @@ def main(argv: list[str] | None = None) -> int:
             raise F1Error(f"one invocation takes instances of one dataset, got {sorted(datasets)}")
         (dataset,) = datasets
         if args.t04_edge and (dataset != F1_T04_DATASET or not args.methods):
-            raise F1Error(f"--t04-edge runs named methods on {F1_T04_DATASET} instances (got {dataset}, "
-                          f"methods {args.methods})")
+            raise F1Error(
+                f"--t04-edge runs named methods on {F1_T04_DATASET} instances (got {dataset}, "
+                f"methods {args.methods})"
+            )
         methods = list(args.methods) if args.methods else list(F1_DATASET_METHODS[dataset])
         unfit = [m for m in methods if m not in F1_DATASET_METHODS[dataset]]
         if unfit:
-            raise F1Error(f"{unfit} are not F1 methods on {dataset}; expected some of {F1_DATASET_METHODS[dataset]}")
+            raise F1Error(
+                f"{unfit} are not F1 methods on {dataset}; expected some of {F1_DATASET_METHODS[dataset]}"
+            )
     except (SplitRoleError, F1Error) as error:
         print(refusal_message(error), file=sys.stderr)
         return EXIT_REFUSED
     print(f"instances: {[instance.instance_id for instance in instances]}", flush=True)
     for instance in instances:
         for method in methods:
-            run_dir = baseline_run_dir(instance.instance_id, method, args.seed,
-                                       T04_EDGE_LABEL if args.t04_edge else F1_LABEL)
+            run_dir = baseline_run_dir(
+                instance.instance_id, method, args.seed, T04_EDGE_LABEL if args.t04_edge else F1_LABEL
+            )
             record = run_f1(instance, method, run_dir, run_seed=args.seed, edge=args.t04_edge)
             print(summary_line(record), flush=True)
             print(f"  -> {run_dir}", flush=True)

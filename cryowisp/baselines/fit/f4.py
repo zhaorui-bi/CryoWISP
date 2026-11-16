@@ -27,13 +27,28 @@ from typing import Any
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 from cryowisp.baselines.instance_io import Instance
 
 from . import checked_reference_stream as CRS
-from .ftcompare import FT_LRS, LORA_ALPHA_OVER_RANK, LORA_LRS, LWF_WEIGHTS, REG_STEPS, lora_targets, lwf_penalty, regularized_checkpoints
-from .grad import ADAM_BETAS, ADAM_EPS, STEP_CHECKPOINTS, _check_frozen_entries, adam_checkpoints, evidence_loss
+from .ftcompare import (
+    FT_LRS,
+    LORA_ALPHA_OVER_RANK,
+    LORA_LRS,
+    LWF_WEIGHTS,
+    REG_STEPS,
+    lora_targets,
+    lwf_penalty,
+    regularized_checkpoints,
+)
+from .grad import (
+    ADAM_BETAS,
+    ADAM_EPS,
+    STEP_CHECKPOINTS,
+    _check_frozen_entries,
+    adam_checkpoints,
+    evidence_loss,
+)
 from .runner import CandidatePatch, Evidence, Generator, MethodSpec, read_model_spec
 from .torch_forward import (
     RESNET20A,

@@ -31,7 +31,11 @@ def test_fewshot_students_train_on_their_classes_and_stay_out_of_the_dataset_ind
     assert read_fewshot_index("cifar10") == sorted(rows, key=lambda r: r["arch"])
     train_y = store.load_split("cifar10", "train")["y"]
     for row in rows:
-        assert tuple(row) == FEWSHOT_INDEX_KEYS and row["role"] == "dev" and row["train_classes"] == [0, 1, 2, 3, 4]
+        assert (
+            tuple(row) == FEWSHOT_INDEX_KEYS
+            and row["role"] == "dev"
+            and row["train_classes"] == [0, 1, 2, 3, 4]
+        )
         folder = fewshot_models_dir("cifar10") / row["model_id"]
         private = json.loads((folder / "private.json").read_text())
         assert private["family"] == "fewshot" and private["new_classes"] == [5, 6, 7, 8, 9]
@@ -39,7 +43,9 @@ def test_fewshot_students_train_on_their_classes_and_stay_out_of_the_dataset_ind
         assert private["arch"] == row["arch"] == private["training_config"]["arch"]
         assert private["parity"]["max_abs_diff"] <= 1e-4
         confusion = np.asarray(private["vselect_confusion"])
-        assert row["vselect_acc_train_classes"] == pytest.approx(np.trace(confusion[:5, :5]) / confusion[:5].sum())
+        assert row["vselect_acc_train_classes"] == pytest.approx(
+            np.trace(confusion[:5, :5]) / confusion[:5].sum()
+        )
         spec = json.loads((folder / "model_spec.json").read_text())
         assert len(spec["classes"]) == 10 and spec["layers"][-1]["op"] == "linear"
         assert row["model_id"] in all_model_ids("cifar10")
@@ -50,7 +56,9 @@ def test_fewshot_students_train_on_their_classes_and_stay_out_of_the_dataset_ind
             trainer.train_fewshot("cnn", 101, bad)
 
 
-def test_fewshot_index_refuses_other_keys_and_duplicates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fewshot_index_refuses_other_keys_and_duplicates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     _make_store(tmp_path / "store", monkeypatch)
     row = dict(zip(FEWSHOT_INDEX_KEYS, ["m0", 100, "cnn", "dev", "0" * 64, 0.4, [0, 1, 2, 3, 4], 0.8]))
     with pytest.raises(ValueError, match="twice"):

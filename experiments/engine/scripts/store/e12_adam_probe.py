@@ -48,10 +48,23 @@ def main(argv: list[str] | None = None) -> int:
     trainable = trainable_tensors(arch, instance.params)
     for repeat in range(args.repeats):
         start = time.perf_counter()
-        adam_checkpoints(arch, instance.params, x, y, trainable=trainable, lr=1e-5, checkpoints=(args.steps,), seed=0)
-        print(json.dumps({"kind": "adam_full", "instance": args.instance, "threads": args.threads,
-                          "mkldnn": torch.backends.mkldnn.enabled, "repeat": repeat, "steps": args.steps,
-                          "s_per_step": round((time.perf_counter() - start) / args.steps, 3)}), flush=True)
+        adam_checkpoints(
+            arch, instance.params, x, y, trainable=trainable, lr=1e-5, checkpoints=(args.steps,), seed=0
+        )
+        print(
+            json.dumps(
+                {
+                    "kind": "adam_full",
+                    "instance": args.instance,
+                    "threads": args.threads,
+                    "mkldnn": torch.backends.mkldnn.enabled,
+                    "repeat": repeat,
+                    "steps": args.steps,
+                    "s_per_step": round((time.perf_counter() - start) / args.steps, 3),
+                }
+            ),
+            flush=True,
+        )
     return 0
 
 

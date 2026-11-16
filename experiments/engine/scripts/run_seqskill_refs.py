@@ -32,7 +32,9 @@ METHODS = ("seq_grad_full", "seq_grad_emb_head", "seq_grad_new_row")
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--instance", action="append", help="seqskill instance id q<8 hex> (repeatable)")
-    parser.add_argument("--condition", help="restrict the index selection to one condition, e.g. new0_substitution")
+    parser.add_argument(
+        "--condition", help="restrict the index selection to one condition, e.g. new0_substitution"
+    )
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
     parser.add_argument("--seed", type=int, default=0, help="run seed (torch seed; directory name)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
@@ -45,7 +47,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)
@@ -58,7 +62,10 @@ def main(argv: list[str] | None = None) -> int:
         raise RuntimeError(f"script methods {METHODS} differ from the library's {SEQ_GRAD_METHODS}")
     ids = list(dict.fromkeys(args.instance)) if args.instance else active_seqskill_ids(args.condition)
     if not ids:
-        print(f"refused: no active seqskill instance of condition {args.condition!r}\nNothing was run.", file=sys.stderr)
+        print(
+            f"refused: no active seqskill instance of condition {args.condition!r}\nNothing was run.",
+            file=sys.stderr,
+        )
         return EXIT_REFUSED
     instances = [load_seqskill_instance(instance_id) for instance_id in ids]
     try:

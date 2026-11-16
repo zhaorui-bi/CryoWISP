@@ -21,7 +21,6 @@ import sys
 import time
 
 
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--instances", nargs="+", required=True)
@@ -29,8 +28,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=5)
     args = parser.parse_args(argv)
     opened: set[str] = set()
-    store_roots = tuple(os.path.realpath(os.environ[name]) + os.sep
-                        for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"))
+    store_roots = tuple(
+        os.path.realpath(os.environ[name]) + os.sep
+        for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS")
+    )
 
     def hook(event: str, hook_args: tuple) -> None:
         if event == "open" and hook_args and isinstance(hook_args[0], (str, bytes, os.PathLike)):
@@ -57,10 +58,18 @@ def main(argv: list[str] | None = None) -> int:
     def emit(**record: object) -> None:
         print(json.dumps(record), flush=True)
 
-    emit(kind="env", threads=args.threads, python=sys.version.split()[0], numpy=np.__version__,
-         torch=torch.__version__, torch_threads=torch.get_num_threads(), nproc=os.cpu_count(),
-         cryowisp_private=os.environ.get("CRYOWISP_PRIVATE"), cryowisp_runs=os.environ.get("CRYOWISP_RUNS"),
-         sealed_entries=len(os.listdir(os.environ["CRYOWISP_SEALED"])))
+    emit(
+        kind="env",
+        threads=args.threads,
+        python=sys.version.split()[0],
+        numpy=np.__version__,
+        torch=torch.__version__,
+        torch_threads=torch.get_num_threads(),
+        nproc=os.cpu_count(),
+        cryowisp_private=os.environ.get("CRYOWISP_PRIVATE"),
+        cryowisp_runs=os.environ.get("CRYOWISP_RUNS"),
+        sealed_entries=len(os.listdir(os.environ["CRYOWISP_SEALED"])),
+    )
     for instance_id in args.instances:
         t0 = time.perf_counter()
         instance = load_checked_instances([instance_id], allow_main=False)[0]
@@ -75,18 +84,34 @@ def main(argv: list[str] | None = None) -> int:
         t3 = time.perf_counter()
         predict(instance.forward, instance.params, clean_check.x, 1024)
         t4 = time.perf_counter()
-        emit(kind="load", instance=instance_id, condition=condition, threads=args.threads,
-             rows=int(len(evidence.y)), n_replay=int(evidence.n_replay), load_s=round(t1 - t0, 2),
-             oracle_base_s=round(t2 - t1, 2), split_load_s=round(t3 - t2, 2),
-             predict_clean_vcheck_s=round(t4 - t3, 2), clean_vcheck_rows=int(len(clean_check.y)))
+        emit(
+            kind="load",
+            instance=instance_id,
+            condition=condition,
+            threads=args.threads,
+            rows=int(len(evidence.y)),
+            n_replay=int(evidence.n_replay),
+            load_s=round(t1 - t0, 2),
+            oracle_base_s=round(t2 - t1, 2),
+            split_load_s=round(t3 - t2, 2),
+            predict_clean_vcheck_s=round(t4 - t3, 2),
+            clean_vcheck_rows=int(len(clean_check.y)),
+        )
         arch = architecture_from(instance.params, read_model_spec(instance))
         x = images_tensor(evidence.x)
         y = torch.from_numpy(evidence.y.astype(np.int64))
         trainable = trainable_tensors(arch, instance.params)
         start = time.perf_counter()
-        adam_checkpoints(arch, instance.params, x, y, trainable=trainable, lr=1e-5, checkpoints=(args.steps,), seed=0)
-        emit(kind="adam_full", instance=instance_id, threads=args.threads, steps=args.steps,
-             s_per_step=round((time.perf_counter() - start) / args.steps, 3))
+        adam_checkpoints(
+            arch, instance.params, x, y, trainable=trainable, lr=1e-5, checkpoints=(args.steps,), seed=0
+        )
+        emit(
+            kind="adam_full",
+            instance=instance_id,
+            threads=args.threads,
+            steps=args.steps,
+            s_per_step=round((time.perf_counter() - start) / args.steps, 3),
+        )
     emit(kind="opened", threads=args.threads, n=len(opened), files=sorted(opened))
     return 0
 

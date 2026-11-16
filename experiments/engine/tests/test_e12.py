@@ -22,14 +22,14 @@ from cryowisp.baselines.fit import ftcompare as FT
 from cryowisp.baselines.fit import rules as RU
 from cryowisp.baselines.fit import torch_forward as TF
 from cryowisp.baselines.fit.runner import Evidence
+from cryowisp.baselines.instance_io import write_delta_patch
 from cryowisp.common.identity import params_sha256
+from cryowisp.evalkit.e10 import e10_program_limits
 from cryowisp.evalkit.instances import condition_leak_tokens, leak_tokens, scan_for_tokens
 from cryowisp.harness import e12 as H
+from cryowisp.harness.arms import applied_limits
 from cryowisp.models import resnet18up as M
 from cryowisp.models.forward_gen import render_resnet18up_forward
-from cryowisp.baselines.instance_io import write_delta_patch
-from cryowisp.evalkit.e10 import e10_program_limits
-from cryowisp.harness.arms import applied_limits
 from cryowisp.patch import Limits, apply_patch, load_patch, task_limits
 from cryowisp.patch.errors import PatchError
 from cryowisp.patch.limits import dense_delta_bytes
@@ -123,7 +123,11 @@ def test_forward_matches_torch_and_torchvision() -> None:
 def test_rebuild_matches_forward_and_trainable_set() -> None:
     params = _student(1)
     arch = _arch(params)
-    assert arch.family == TF.RESNET18UP and arch.resize == R and arch.last_linear_tensors == ("fc.weight", "fc.bias")
+    assert (
+        arch.family == TF.RESNET18UP
+        and arch.resize == R
+        and arch.last_linear_tensors == ("fc.weight", "fc.bias")
+    )
     assert len(arch.conv_layers) == 20 and arch.conv_layers[0] == "conv1" and len(arch.bn_layers) == 20
     x = _images(5, 1)
     assert TF.assert_parity(arch, params, _forward(), x, dtype=torch.float64) < 1e-6
@@ -153,7 +157,11 @@ def test_input_stats_fold_goes_into_bn1_and_is_exact_without_a_shift() -> None:
     std = np.array([0.7, 1.3, 1.1])
     fold = RU.input_stats_fold(arch, params, np.zeros(3), std, 1.0)
     changed = {k for k in params if not np.array_equal(fold.child[k], params[k])}
-    assert changed == {"conv1.weight", "bn1.running_mean", "bn1.weight"}  # PREREG E12 amendment: g into the weight
+    assert changed == {
+        "conv1.weight",
+        "bn1.running_mean",
+        "bn1.weight",
+    }  # PREREG E12 amendment: g into the weight
     target = _kform_logits(params, x, fold.k)
     ours = M.eval_logits(M.build_resnet18up(CONFIG, fold.child, torch.float64), x)
     assert np.max(np.abs(ours - target.numpy())) < 1e-4  # float32 storage of the folded tensors
@@ -185,8 +193,13 @@ def test_input_stats_fold_scales_bn1_weight_and_matches_forward_py_on_the_transf
         changed = {k for k in params if not np.array_equal(fold.child[k], params[k])}
         assert changed == {"conv1.weight", "bn1.running_mean", "bn1.weight"}
         np.testing.assert_array_equal(fold.child["bn1.running_var"], params["bn1.running_var"])
-        patch = {"schema": "cryowisp.patch.v0", "parent_sha256": sha, "hypothesis": "h", "predicted_effect": "p",
-                 "ops": fold.ops}
+        patch = {
+            "schema": "cryowisp.patch.v0",
+            "parent_sha256": sha,
+            "hypothesis": "h",
+            "predicted_effect": "p",
+            "ops": fold.ops,
+        }
         result = apply_patch(params, patch, None, Limits().without_size_limits(), sha)
         assert result.child_sha256 == params_sha256(fold.child), "the expected child must match the executor"
         # forward.py with x'' = k_c (x' - 0) in its own normalisation: (x / 255 - MEAN) / (STD / k_c).
@@ -211,8 +224,15 @@ def test_input_stats_fold_with_a_mean_shift_is_exact_on_interior_bn1_positions()
             shifted = torch.tensor(fold.k).view(1, 3, 1, 1) * (up - torch.tensor(t * mean).view(1, 3, 1, 1))
             target = base.bn1(base.conv1(shifted))
             ours = child.bn1(child.conv1(up))
-        interior = (slice(None), slice(None), slice(2, -2), slice(2, -2))  # conv1 is 7 x 7, stride 2, padding 3
-        assert torch.max(torch.abs(ours[interior] - target[interior])) < 1e-4  # float32 storage of the folded tensors
+        interior = (
+            slice(None),
+            slice(None),
+            slice(2, -2),
+            slice(2, -2),
+        )  # conv1 is 7 x 7, stride 2, padding 3
+        assert (
+            torch.max(torch.abs(ours[interior] - target[interior])) < 1e-4
+        )  # float32 storage of the folded tensors
         assert torch.max(torch.abs(ours - target)) > 1e-3, "the zero-padding border deviation must be visible"
 
 
@@ -220,7 +240,9 @@ def test_dense_delta_bytes_is_the_size_of_the_saved_float64_files(tmp_path: Path
     shapes = [(64, 3, 7, 7), (64,), (10, 512), (512, 256, 3, 3)]
     for i, shape in enumerate(shapes):
         np.save(tmp_path / f"t{i}.npy", np.zeros(shape, dtype=np.float64))
-    assert dense_delta_bytes(shapes) == sum((tmp_path / f"t{i}.npy").stat().st_size for i in range(len(shapes)))
+    assert dense_delta_bytes(shapes) == sum(
+        (tmp_path / f"t{i}.npy").stat().st_size for i in range(len(shapes))
+    )
 
 
 def test_the_file_cap_lets_a_full_float64_delta_of_resnet18_through(tmp_path: Path) -> None:
@@ -234,8 +256,13 @@ def test_the_file_cap_lets_a_full_float64_delta_of_resnet18_through(tmp_path: Pa
     assert ours.max_file_bytes == dense and ours.max_ops == len(params)
     assert e10_program_limits(task, len(params)).max_file_bytes == 64 * 2**20
     assert applied_limits(task, "M2", len(params), dense).max_file_bytes == 64 * 2**20  # patch arms unchanged
-    small = {"w": np.zeros((16, 3, 3, 3), np.float32), "b": np.zeros(16, np.float32)}  # a student whose delta fits
-    assert e10_program_limits(task, 2, dense_delta_bytes(v.shape for v in small.values())) == e10_program_limits(task, 2)
+    small = {
+        "w": np.zeros((16, 3, 3, 3), np.float32),
+        "b": np.zeros(16, np.float32),
+    }  # a student whose delta fits
+    assert e10_program_limits(
+        task, 2, dense_delta_bytes(v.shape for v in small.values())
+    ) == e10_program_limits(task, 2)
     rng = np.random.default_rng(6)
     child = {k: (v + rng.normal(0.0, 1e-3, v.shape)).astype(v.dtype) for k, v in params.items()}
     sha = params_sha256(params)
@@ -244,21 +271,35 @@ def test_the_file_cap_lets_a_full_float64_delta_of_resnet18_through(tmp_path: Pa
     result = apply_patch(params, load_patch(path), path.parent, executor, sha)
     assert result.child_sha256 == params_sha256(child)
     with pytest.raises(PatchError, match="above the limit of 67108864 bytes"):
-        apply_patch(params, load_patch(path), path.parent, e10_program_limits(task, len(params)).without_size_limits(),
-                    sha)
+        apply_patch(
+            params,
+            load_patch(path),
+            path.parent,
+            e10_program_limits(task, len(params)).without_size_limits(),
+            sha,
+        )
 
 
 def _instance(tmp_path: Path, params: dict[str, np.ndarray]) -> SimpleNamespace:
     (tmp_path / "model_spec.json").write_text(json.dumps(_spec(params)))
-    return SimpleNamespace(instance_dir=tmp_path, params=params, forward=_forward(),
-                           private={"dataset": C.E12_DATASET})
+    return SimpleNamespace(
+        instance_dir=tmp_path, params=params, forward=_forward(), private={"dataset": C.E12_DATASET}
+    )
 
 
 def _evidence(seed: int, n_replay: int = 0) -> Evidence:
     n = 64 + n_replay
     x = _images(n, seed)
-    return Evidence(x=x, y=np.arange(n, dtype=np.int64) % 10, n_fail=16, n_rand=48, sha256="0" * 64,
-                    base_pred=np.zeros(n, dtype=np.int64), rule="evidence-v1", n_replay=n_replay)
+    return Evidence(
+        x=x,
+        y=np.arange(n, dtype=np.int64) % 10,
+        n_fail=16,
+        n_rand=48,
+        sha256="0" * 64,
+        base_pred=np.zeros(n, dtype=np.int64),
+        rule="evidence-v1",
+        n_replay=n_replay,
+    )
 
 
 def test_bn_adapt_changes_running_statistics_only(tmp_path: Path) -> None:
@@ -285,8 +326,9 @@ def test_f1_lora_on_convolutions_and_ft_bn(tmp_path: Path) -> None:
     assert float(a["conv1.weight"].detach().abs().max()) <= 1.0 / np.sqrt(147)
     x = torch.from_numpy(_images(4, 4))
     y = torch.arange(4) % 10
-    ((steps, child, _),) = FT.lora_checkpoints(arch, params, x, y, targets=targets, rank=4, lr=1e-3,
-                                               checkpoints=(1,), seed=0)
+    ((steps, child, _),) = FT.lora_checkpoints(
+        arch, params, x, y, targets=targets, rank=4, lr=1e-3, checkpoints=(1,), seed=0
+    )
     assert steps == 1 and all(child[k].shape == params[k].shape for k in params)
     changed = {k for k in params if not np.array_equal(child[k], params[k])}
     assert changed and changed <= set(targets)
@@ -303,10 +345,14 @@ def test_cli_dispatch_for_e12(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="runs with e12"):
         C.run_method(instance, "grad_last", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True)
     with pytest.raises(ValueError, match="LayerNorm"):
-        C.run_method(instance, "tent_ln", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True, e12=True)
+        C.run_method(
+            instance, "tent_ln", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True, e12=True
+        )
     other = SimpleNamespace(private={"dataset": "cifar10_r20"})
     with pytest.raises(ValueError, match="need a cifar10_r18"):
-        C.run_method(other, "grad_last", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True, e12=True)
+        C.run_method(
+            other, "grad_last", tmp_path, run_seed=0, allow_main=False, joint=True, e10=True, e12=True
+        )
 
 
 def test_harness_student_check_and_timeouts() -> None:
@@ -329,8 +375,12 @@ def test_harness_student_check_and_timeouts() -> None:
 
 def test_editor_visible_text_has_no_leak_token() -> None:
     tokens = set(leak_tokens(H.DATASET)) | set(H.leak_words())
-    for condition, corruption in (("gaussian_noise_s5", "gaussian_noise"), ("contrast_s5", "contrast"),
-                                  ("defocus_blur_s5", "defocus_blur"), ("snow_s5", "snow")):
+    for condition, corruption in (
+        ("gaussian_noise_s5", "gaussian_noise"),
+        ("contrast_s5", "contrast"),
+        ("defocus_blur_s5", "defocus_blur"),
+        ("snow_s5", "snow"),
+    ):
         tokens |= set(condition_leak_tokens(condition, {"condition": {"corruption": corruption}}))
     assert scan_for_tokens(_forward_text(), tokens) == []
     assert scan_for_tokens(json.dumps(_spec(_student(6))), tokens) == []

@@ -31,8 +31,8 @@ from cryowisp.harness.arms import arm_spec  # noqa: E402
 from cryowisp.harness.experience import EXPERIENCE_FILE  # noqa: E402
 from cryowisp.harness.instance import InstanceRefused, read_instance_record  # noqa: E402
 from cryowisp.harness.jsonio import read_json  # noqa: E402
-from cryowisp.harness.ledger import CheckLedger  # noqa: E402
 from cryowisp.harness.leaks import HINT_WORDS  # noqa: E402
+from cryowisp.harness.ledger import CheckLedger  # noqa: E402
 from cryowisp.harness.prompts import Budgets, render_system, render_task  # noqa: E402
 from cryowisp.harness.retention import kept_rule_record_rows  # noqa: E402
 from cryowisp.harness.runner import run_session, session_forbidden_strings  # noqa: E402
@@ -42,7 +42,7 @@ from cryowisp.harness.trial import TrialError, assemble  # noqa: E402
 
 # Gives the two untrained instruction words the embedding rows of the trained verbs, found by name in the layout: an
 # architecture-agnostic edit of one tensor.
-COPY = '''HYPOTHESIS = "the untrained instruction words have untrained embedding rows, so the policy misreads them"
+COPY = """HYPOTHESIS = "the untrained instruction words have untrained embedding rows, so the policy misreads them"
 PREDICTED_EFFECT = "new-mission instructions read as the trained verbs; the trained mission is unchanged"
 import numpy as np
 def update(student, experience):
@@ -53,7 +53,7 @@ def update(student, experience):
         delta[words[new]] = emb[words[old]] - emb[words[new]]
     print("copied", len(words))
     return {"word_emb.weight": delta}
-'''
+"""
 FLOOR = -3  # PREREG E14: joint-retain-v1 with S_old >= -3 of the old-mission check episodes
 
 
@@ -63,10 +63,12 @@ def _paragraphs(text: str) -> list[str]:
 
 def _program_cell(programs: dict[str, str]) -> str:
     payload = json.dumps(json.dumps(programs))
-    return ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n"
-            f"print(sorted(json.loads({payload})))\n")
+    return (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        f"print(sorted(json.loads({payload})))\n"
+    )
 
 
 def _runs() -> Path:
@@ -89,8 +91,10 @@ def test_the_harness_names_agree_with_the_evalkit_rule(store) -> None:  # noqa: 
     own = {"evidence_rule": policyskill.POLICYSKILL_RULE}
     assert (policyskill.MCP_TOOL_TIMEOUT_MS, policyskill.MCP_CONNECT_TIMEOUT_MS) == floors
     assert policyskill.mcp_timeouts(own, None, None, (600_000, 120_000)) == floors
-    assert policyskill.mcp_timeouts({"evidence_rule": "evidence-v1"}, None, None, (600_000, 120_000)) == (600_000,
-                                                                                                        120_000)
+    assert policyskill.mcp_timeouts({"evidence_rule": "evidence-v1"}, None, None, (600_000, 120_000)) == (
+        600_000,
+        120_000,
+    )
     with pytest.raises(ValueError, match="at least 1200000"):
         policyskill.mcp_timeouts(own, 600_000, None, (600_000, 120_000))
 
@@ -108,19 +112,37 @@ def test_a_policyskill_id_resolves_and_is_refused_outside_its_session(store, ins
     with pytest.raises(InstanceRefused, match="floor in episodes"):
         run_session(instance_id, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True)
     with pytest.raises(InstanceRefused, match="not a fraction"):
-        run_session(instance_id, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                    retention_floor_frac=0.006)
+        run_session(
+            instance_id,
+            "LEARN",
+            0,
+            effort="low",
+            wall_timeout_s=60.0,
+            dry_run=True,
+            retention_floor_frac=0.006,
+        )
     with pytest.raises(InstanceRefused, match="MCP timeouts"):
-        run_session(instance_id, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                    retention_floor_rows=FLOOR, mcp_tool_timeout_ms=600_000)
+        run_session(
+            instance_id,
+            "LEARN",
+            0,
+            effort="low",
+            wall_timeout_s=60.0,
+            dry_run=True,
+            retention_floor_rows=FLOOR,
+            mcp_tool_timeout_ms=600_000,
+        )
     assert sorted(_runs().rglob("session.json")) == before  # refused before any write
     forbidden = session_forbidden_strings(record)
     assert set(policyskill.private_paths(record.private)) <= set(forbidden.text)
     assert set(policyskill.leak_words()) <= set(forbidden.text)
 
 
-def test_the_learn_view_is_the_evidence_with_the_actions_and_the_missions(store, instance_id: str,  # noqa: F811
-                                                                          tmp_path: Path) -> None:
+def test_the_learn_view_is_the_evidence_with_the_actions_and_the_missions(
+    store,
+    instance_id: str,  # noqa: F811
+    tmp_path: Path,
+) -> None:
     root = policyskill.instance_dir(instance_id)
     session_dir = tmp_path / "session"
     (session_dir / "private").mkdir(parents=True)
@@ -131,11 +153,15 @@ def test_the_learn_view_is_the_evidence_with_the_actions_and_the_missions(store,
     assert sorted(shown) == sorted(policyskill.EXPERIENCE_KEYS)
     assert all(np.array_equal(shown[key], instance.evidence[key]) for key in policyskill.EXPERIENCE_KEYS)
     assert sorted(path.name for path in view.trial_dir.iterdir()) == sorted(
-        ["model.npz", "model_spec.json", "forward.py", "task.json", EXPERIENCE_FILE])
+        ["model.npz", "model_spec.json", "forward.py", "task.json", EXPERIENCE_FILE]
+    )
     record = view.experience
     assert record is not None and record["source"] == policyskill.EXPERIENCE_SOURCE
     assert (record["n_new_demonstrations"], record["n_old"]) == (8, 64)
-    assert record["n_new"] == instance.private["n_new_rows"] and record["logits_max_abs_diff"] <= policyskill.LOGIT_ATOL
+    assert (
+        record["n_new"] == instance.private["n_new_rows"]
+        and record["logits_max_abs_diff"] <= policyskill.LOGIT_ATOL
+    )
     assert record["reserved_word_ids"] == [int(D.WORD_ID[word]) for word in D.RESERVED_WORDS]
     assert view.decoy_model_sha256 is None and view.clean_check is None and view.seqskill is None
     assert view.policyskill == policyskill.session_record(instance.private)
@@ -146,8 +172,9 @@ def test_the_learn_view_is_the_evidence_with_the_actions_and_the_missions(store,
     assert task["actions"] == instance.task["actions"] and task["new_mission"] == instance.task["new_mission"]
     assert task["experience"]["new"]["demonstrations"] == 8 and task["experience"]["old"]["count"] == 64
     assert '"pick" and "up" never occurred' in task["statement"]
-    assert "classifier" not in json.dumps(task["program"]) and "other independently trained policies" in json.dumps(
-        task["program"])
+    assert "classifier" not in json.dumps(
+        task["program"]
+    ) and "other independently trained policies" in json.dumps(task["program"])
     from cryowisp.evalkit import e14 as E
 
     assert view.limits["max_rel_frob"] is None and view.limits["max_changed_frac"] == E.E14_MAX_CHANGED_FRAC
@@ -190,14 +217,22 @@ def test_the_policyskill_prompts_change_only_what_is_false_for_a_policy() -> Non
     assert len(learn_blocks) == len(pol_blocks)
     changed = [index for index, (a, b) in enumerate(zip(learn_blocks, pol_blocks)) if a != b]
     assert changed == [0, 1, 3]  # the title, the role and the kept-rule paragraph
-    assert "new-condition" not in pol and "clean images" not in pol and "classif" not in pol.split("## Rules")[0]
+    assert (
+        "new-condition" not in pol and "clean images" not in pol and "classif" not in pol.split("## Rules")[0]
+    )
     flat = " ".join(pol.split())
-    assert "episodes of the new mission (score_new)" in flat and "episodes of the trained mission (score_old)" in flat
+    assert (
+        "episodes of the new mission (score_new)" in flat
+        and "episodes of the trained mission (score_old)" in flat
+    )
     rule = kept_rule_record_rows(FLOOR, N_EPISODES, policyskill.CHECK_SET)
     kept = " ".join(render_system("LEARN", policyskill=True, kept_rule=rule).split())
     assert "at most 3 more old-mission check-set episodes broken than fixed" in kept
     assert "score_old below -3 is never kept" in kept
-    assert max(len(line) for line in render_system("LEARN", policyskill=True, kept_rule=rule).splitlines()) <= 116
+    assert (
+        max(len(line) for line in render_system("LEARN", policyskill=True, kept_rule=rule).splitlines())
+        <= 116
+    )
     with pytest.raises(ValueError, match="program arm"):
         render_system("M2", policyskill=True)
     with pytest.raises(ValueError, match="not both"):
@@ -207,8 +242,9 @@ def test_the_policyskill_prompts_change_only_what_is_false_for_a_policy() -> Non
     shown = {spec["name"]: spec["description"] for spec in tool_specs(tools, program=True, policyskill=True)}
     assert POLICYSKILL_CHECK_SETS in shown["patch_check"] and PROGRAM_CHECK_SETS not in shown["patch_check"]
     assert "classifier" not in shown["patch_check"] and "updated policy is evaluated" in shown["patch_check"]
-    assert {k: v for k, v in shown.items() if k != "patch_check"} == {k: v for k, v in plain.items()
-                                                                      if k != "patch_check"}
+    assert {k: v for k, v in shown.items() if k != "patch_check"} == {
+        k: v for k, v in plain.items() if k != "patch_check"
+    }
     with pytest.raises(ValueError, match="program arm"):
         tool_specs(arm_spec("M2").tools, policyskill=True)
 
@@ -223,32 +259,46 @@ def test_a_policyskill_learn_session_scores_programs_by_rollouts(store, instance
         ("status", {}),
         ("declare_final", {"program_file": "copy.py", "rationale": "the only program"}),
     ]
-    result, replies = scripted_session(instance_id, "LEARN", steps, retention_floor_rows=FLOOR,
-                                       retention_floor_source={"prereg": "E14", "rule": "S_old >= -3 of 500"})
+    result, replies = scripted_session(
+        instance_id,
+        "LEARN",
+        steps,
+        retention_floor_rows=FLOOR,
+        retention_floor_source={"prereg": "E14", "rule": "S_old >= -3 of 500"},
+    )
     assert result.status == "complete", result.record.get("infra_reasons")
     _, check, status, declared = replies
     assert not check.is_error, check.payload
     assert check.payload["score"] == check.payload["score_new"] + check.payload["score_old"]
-    assert check.payload["tensors"] == ["word_emb.weight"] and check.payload["program_stdout"].startswith("copied")
+    assert check.payload["tensors"] == ["word_emb.weight"] and check.payload["program_stdout"].startswith(
+        "copied"
+    )
     assert declared.payload["valid"]
 
     paths = SessionPaths(result.root)
     session = read_json(paths.session_json)
-    assert session["policyskill"] == policyskill.session_record(load_instance(
-        policyskill.instance_dir(instance_id)).private)
-    assert session["clean_check"] is None and session["decoy_model_id"] is None and session["condition"] is None
+    assert session["policyskill"] == policyskill.session_record(
+        load_instance(policyskill.instance_dir(instance_id)).private
+    )
+    assert (
+        session["clean_check"] is None and session["decoy_model_id"] is None and session["condition"] is None
+    )
     assert session["kept_rule"]["s_old_floor"] == FLOOR and session["kept_rule"]["check_set"] == "old-mission"
     assert session["mcp"]["tool_timeout_ms"] == 1_200_000 and session["mcp"]["connect_timeout_ms"] == 900_000
     assert session["leak_scan"]["passed"] is True
     assert set(policyskill.leak_words()) <= set(session["forbidden_strings"]["text"])
-    assert paths.system_prompt.read_text(encoding="utf-8") == render_system("LEARN", policyskill=True,
-                                                                           kept_rule=session["kept_rule"])
+    assert paths.system_prompt.read_text(encoding="utf-8") == render_system(
+        "LEARN", policyskill=True, kept_rule=session["kept_rule"]
+    )
     entry = read_jsonl(paths.checks_log)[0]
     attempt_dir = result.root / "attempts" / str(entry["attempt"])
     child = ArmApplier(session).apply(read_json(attempt_dir / str(entry["patch_file"])), attempt_dir).child
     assert params_sha256(child) == entry["child_sha256"]
     expected = E.make_e14_oracle(instance_id).query(child, "copy")  # evalkit's own rollout oracle
-    assert (check.payload["score_new"], check.payload["score_old"]) == (expected["score_new"], expected["score_old"])
+    assert (check.payload["score_new"], check.payload["score_old"]) == (
+        expected["score_new"],
+        expected["score_old"],
+    )
     ledger = CheckLedger(session, paths)  # rebuilt from session.json alone, as the MCP server builds it
     assert [row["score"] for row in ledger.checked()] == [check.payload["score"]]
 

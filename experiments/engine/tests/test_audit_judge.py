@@ -21,15 +21,15 @@ from cryowisp.audit.session import audit_session, read_cells, write_report
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "scripts" / "audit_judge.py"
 
-LOAD = '''import numpy as np
+LOAD = """import numpy as np
 ev = np.load("/work/trial/evidence.npz")
 xr, yr = ev["x_rand"], ev["y_rand"]
 H = xr.reshape(len(xr), -1) / 255.0
-'''
+"""
 TORCH = "try:\n    import torch\nexcept ImportError:\n    torch = None\n"
 LSTSQ = "W, *_ = np.linalg.lstsq(H, np.eye(10)[yr], rcond=None)\n"
 
-STAND_IN = r'''#!{python}
+STAND_IN = r"""#!{python}
 import json, os, re, sys, time
 from pathlib import Path
 
@@ -59,7 +59,7 @@ if mode == "fenced":
 envelope = {{"type": "result", "subtype": "success", "is_error": mode == "cli_error", "num_turns": 1,
             "result": reply, "modelUsage": {{"stand-in-model": {{}}}}, "session_id": "s"}}
 print(json.dumps(envelope))
-'''
+"""
 
 
 @pytest.fixture
@@ -95,8 +95,19 @@ def load_report(session: Path) -> dict[str, object]:
 
 def test_judge_command_has_no_tools_settings_or_mcp() -> None:
     assert J.judge_command("claude", "PROMPT") == [
-        "claude", "-p", "PROMPT", "--tools", "", "--setting-sources", "", "--strict-mcp-config",
-        "--disable-slash-commands", "--no-session-persistence", "--output-format", "json"]
+        "claude",
+        "-p",
+        "PROMPT",
+        "--tools",
+        "",
+        "--setting-sources",
+        "",
+        "--strict-mcp-config",
+        "--disable-slash-commands",
+        "--no-session-persistence",
+        "--output-format",
+        "json",
+    ]
     assert J.judge_command("c", "P", model="m", effort="high")[-4:] == ["--model", "m", "--effort", "high"]
 
 
@@ -126,32 +137,54 @@ def test_build_prompt_clips_a_long_flagged_cell_and_omits_others(tmp_path: Path)
     base = len(J.build_prompt(report, cells[:0])[0].encode())
     prompt, shown = J.build_prompt(report, cells, byte_limit=base + 9000)
     assert shown == {"whole": [], "clipped": [1], "omitted": [0]}
-    assert "import torch" in prompt and "[lines omitted]" in prompt and "Cells omitted for length: [0]" in prompt
+    assert (
+        "import torch" in prompt and "[lines omitted]" in prompt and "Cells omitted for length: [0]" in prompt
+    )
     with pytest.raises(J.JudgeError, match="exceed"):
         J.build_prompt(report, cells, byte_limit=1000)
 
 
-@pytest.mark.parametrize("reply, message", [
-    ("not json", "not one JSON object"),
-    ("[1]", "not a JSON object"),
-    ('{"x": 1}', "no decisions list"),
-    ('{"decisions": [1]}', "not a JSON object"),
-    ('{"decisions": [{"flag_id": "F009", "decision": "ALLOWED", "confidence": "high"}]}', "unknown flag id"),
-    ('{"decisions": [{"flag_id": "F001", "decision": "OK", "confidence": "high"}]}', "is not one of"),
-    ('{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "sure"}]}', "is not one of"),
-    ('{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "high", "reason": 3}]}', "strings"),
-    ('{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "high"},'
-     ' {"flag_id": "F001", "decision": "ALLOWED", "confidence": "high"}]}', "two decisions"),
-    ('{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "high"}]}', "no decision for"),
-])
+@pytest.mark.parametrize(
+    "reply, message",
+    [
+        ("not json", "not one JSON object"),
+        ("[1]", "not a JSON object"),
+        ('{"x": 1}', "no decisions list"),
+        ('{"decisions": [1]}', "not a JSON object"),
+        (
+            '{"decisions": [{"flag_id": "F009", "decision": "ALLOWED", "confidence": "high"}]}',
+            "unknown flag id",
+        ),
+        ('{"decisions": [{"flag_id": "F001", "decision": "OK", "confidence": "high"}]}', "is not one of"),
+        (
+            '{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "sure"}]}',
+            "is not one of",
+        ),
+        (
+            '{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "high", "reason": 3}]}',
+            "strings",
+        ),
+        (
+            '{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "high"},'
+            ' {"flag_id": "F001", "decision": "ALLOWED", "confidence": "high"}]}',
+            "two decisions",
+        ),
+        (
+            '{"decisions": [{"flag_id": "F001", "decision": "ALLOWED", "confidence": "high"}]}',
+            "no decision for",
+        ),
+    ],
+)
 def test_parse_decisions_rejects_malformed_replies(reply: str, message: str) -> None:
     with pytest.raises(J.JudgeError, match=message):
         J.parse_decisions(reply, ["F001", "F002"])
 
 
 def test_parse_decisions_accepts_a_fenced_object_and_keeps_flag_order() -> None:
-    reply = ('```json\n{"decisions": [{"flag_id": "F002", "decision": "VIOLATION", "confidence": "low"},'
-             ' {"flag_id": "F001", "decision": "ALLOWED", "confidence": "high", "clause": "c", "reason": "r"}]}\n```')
+    reply = (
+        '```json\n{"decisions": [{"flag_id": "F002", "decision": "VIOLATION", "confidence": "low"},'
+        ' {"flag_id": "F001", "decision": "ALLOWED", "confidence": "high", "clause": "c", "reason": "r"}]}\n```'
+    )
     decisions = J.parse_decisions(reply, ["F001", "F002"])
     assert [(d["flag_id"], d["decision"]) for d in decisions] == [("F001", "ALLOWED"), ("F002", "VIOLATION")]
 
@@ -169,12 +202,26 @@ def test_clean_report_needs_no_judge(tmp_path: Path) -> None:
 def test_soft_flags_resolved_allowed(tmp_path: Path, stand_in: Path) -> None:
     session = make_session(tmp_path / "s", LOAD, TORCH)
     record = J.run_judge(session, claude_bin=str(stand_in), model="judge-model")
-    assert record["status"] == "ok" and record["judge_verdict"] == "ALLOWED" and record["final_verdict"] == "ALLOWED"
+    assert (
+        record["status"] == "ok"
+        and record["judge_verdict"] == "ALLOWED"
+        and record["final_verdict"] == "ALLOWED"
+    )
     assert [d["flag_id"] for d in record["decisions"]] == ["F001"]  # type: ignore[index]
     argv = json.loads((stand_in.parent / "argv.json").read_text())
-    assert argv[0] == "-p" and argv[2:] == ["--tools", "", "--setting-sources", "", "--strict-mcp-config",
-                                            "--disable-slash-commands", "--no-session-persistence",
-                                            "--output-format", "json", "--model", "judge-model"]
+    assert argv[0] == "-p" and argv[2:] == [
+        "--tools",
+        "",
+        "--setting-sources",
+        "",
+        "--strict-mcp-config",
+        "--disable-slash-commands",
+        "--no-session-persistence",
+        "--output-format",
+        "json",
+        "--model",
+        "judge-model",
+    ]
     assert (stand_in.parent / "stdin.txt").read_text() == "devnull"
     prompt = (session / "logs" / J.PROMPT_FILENAME).read_text(encoding="utf-8")
     assert argv[1] == prompt and "<prompt>" in record["command"]  # type: ignore[operator]
@@ -201,11 +248,14 @@ def test_static_violation_stays_final(tmp_path: Path, stand_in: Path) -> None:
     assert record["final_verdict"] == R.VIOLATION
 
 
-@pytest.mark.parametrize("mode, message", [
-    ("garbage", "not one JSON object"),
-    ("exit3", "exited with status 3"),
-    ("cli_error", "reported an error"),
-])
+@pytest.mark.parametrize(
+    "mode, message",
+    [
+        ("garbage", "not one JSON object"),
+        ("exit3", "exited with status 3"),
+        ("cli_error", "reported an error"),
+    ],
+)
 def test_failed_judge_writes_a_failed_record(tmp_path: Path, stand_in: Path, mode: str, message: str) -> None:
     session = make_session(tmp_path / "s", LOAD, TORCH)
     set_mode(stand_in, mode)
@@ -247,7 +297,10 @@ def test_stale_or_foreign_report_is_refused_without_a_record(tmp_path: Path, sta
     (other / "logs" / "audit.json").write_text(json.dumps(report))
     with pytest.raises(J.JudgeError, match="different audit implementation"):
         J.run_judge(other, claude_bin=str(stand_in))
-    assert not (session / "logs" / J.JUDGE_FILENAME).exists() and not (other / "logs" / J.JUDGE_FILENAME).exists()
+    assert (
+        not (session / "logs" / J.JUDGE_FILENAME).exists()
+        and not (other / "logs" / J.JUDGE_FILENAME).exists()
+    )
     with pytest.raises(J.JudgeError, match="does not exist"):
         J.run_judge(tmp_path / "nowhere", claude_bin=str(stand_in))
 
@@ -257,8 +310,14 @@ def test_stale_or_foreign_report_is_refused_without_a_record(tmp_path: Path, sta
 
 def run_script(*args: str) -> subprocess.CompletedProcess[str]:
     env = {key: value for key, value in os.environ.items() if not key.startswith("CRYOWISP_")}
-    return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True, timeout=120, env=env,
-                          check=False)
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), *args],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env=env,
+        check=False,
+    )
 
 
 def test_script_exit_codes(tmp_path: Path, stand_in: Path) -> None:

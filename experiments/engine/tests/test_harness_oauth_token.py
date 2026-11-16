@@ -59,13 +59,16 @@ def test_billing_record_names_the_file_never_the_token(tmp_path: Path) -> None:
 
 
 def test_launcher_sets_the_token_only_with_a_file_and_strips_inherited_credentials(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv(launch.OAUTH_TOKEN_ENV, "inherited-from-parent")
     monkeypatch.setenv(launch.API_KEY_ENV, "inherited-from-parent")
     plain = launch.ClaudeLauncher(_fake_claude(tmp_path))
     env, removed = plain.environment(SESSION)
     assert launch.OAUTH_TOKEN_ENV not in env and launch.OAUTH_TOKEN_ENV in removed
-    tokened = launch.ClaudeLauncher(_fake_claude(tmp_path), oauth_token_file=_secret_file(tmp_path, "tok", TOKEN))
+    tokened = launch.ClaudeLauncher(
+        _fake_claude(tmp_path), oauth_token_file=_secret_file(tmp_path, "tok", TOKEN)
+    )
     env, removed = tokened.environment(SESSION)
     assert env[launch.OAUTH_TOKEN_ENV] == TOKEN and launch.API_KEY_ENV not in env
     assert tokened.billing["mode"] == launch.BILLING_OAUTH_TOKEN_FILE and TOKEN not in repr(tokened.billing)
@@ -73,17 +76,33 @@ def test_launcher_sets_the_token_only_with_a_file_and_strips_inherited_credentia
 
 def test_launcher_refuses_a_bad_file_or_both_files_at_construction(tmp_path: Path) -> None:
     with pytest.raises(launch.OAuthTokenFileError):
-        launch.ClaudeLauncher(_fake_claude(tmp_path),
-                              oauth_token_file=_secret_file(tmp_path, "tok", TOKEN, mode=0o644))
+        launch.ClaudeLauncher(
+            _fake_claude(tmp_path), oauth_token_file=_secret_file(tmp_path, "tok", TOKEN, mode=0o644)
+        )
     with pytest.raises(ValueError, match="not both"):
-        launch.ClaudeLauncher(_fake_claude(tmp_path), api_key_file=_secret_file(tmp_path, "key", KEY),
-                              oauth_token_file=_secret_file(tmp_path, "tok2", TOKEN))
+        launch.ClaudeLauncher(
+            _fake_claude(tmp_path),
+            api_key_file=_secret_file(tmp_path, "key", KEY),
+            oauth_token_file=_secret_file(tmp_path, "tok2", TOKEN),
+        )
 
 
 def test_the_cli_takes_one_billing_file_only() -> None:
     import subprocess
     import sys
+
     script = Path(__file__).resolve().parents[1] / "scripts" / "run_editor_session.py"
-    proc = subprocess.run([sys.executable, str(script), "--api-key-file", "/nonexistent/a",
-                           "--oauth-token-file", "/nonexistent/b", "--help"], capture_output=True, text=True)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--api-key-file",
+            "/nonexistent/a",
+            "--oauth-token-file",
+            "/nonexistent/b",
+            "--help",
+        ],
+        capture_output=True,
+        text=True,
+    )
     assert proc.returncode == 2 and "not allowed with argument" in proc.stderr

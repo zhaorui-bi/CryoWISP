@@ -20,9 +20,19 @@ import numpy as np
 import pytest
 
 from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.evalkit.instances import DEFAULT_DECOYS, BuildOutcome, build_dataset_instances, build_deployment_instances
+from cryowisp.evalkit.instances import (
+    DEFAULT_DECOYS,
+    BuildOutcome,
+    build_dataset_instances,
+    build_deployment_instances,
+)
 from cryowisp.evalkit.patch_check import load_forward, predict
-from cryowisp.evalkit.targets import DEFAULT_DEV_SEEDS, DEFAULT_MAIN_SEEDS, SeedSelection, run_target_selection
+from cryowisp.evalkit.targets import (
+    DEFAULT_DEV_SEEDS,
+    DEFAULT_MAIN_SEEDS,
+    SeedSelection,
+    run_target_selection,
+)
 
 CLASSES = ["alpha", "beta", "gamma", "delta"]
 N_CLASSES = len(CLASSES)
@@ -134,7 +144,12 @@ def _model_spec(model_id: str) -> dict[str, object]:
     return {
         "schema": "cryowisp.model_spec.v0",
         "model_id": model_id,
-        "input": {"shape": [1, 4, 4], "dtype": "uint8", "preprocess": "x/255", "layout": "NCHW, flatten row-major"},
+        "input": {
+            "shape": [1, 4, 4],
+            "dtype": "uint8",
+            "preprocess": "x/255",
+            "layout": "NCHW, flatten row-major",
+        },
         "classes": CLASSES,
         "layers": [
             {"name": "fc1", "op": "linear", "weight": "fc1.weight", "bias": "fc1.bias", "shape_w": [8, 16]},
@@ -212,7 +227,11 @@ def build_toy_store(
         "split_seed": 20261103,
         "forward_sha256": forward_sha,
         "splits": {
-            split: {"path": f"splits/{split}.npz", "n": int(len(arrays["y"])), "sha256": params_sha256(arrays)}
+            split: {
+                "path": f"splits/{split}.npz",
+                "n": int(len(arrays["y"])),
+                "sha256": params_sha256(arrays),
+            }
             for split, arrays in splits.items()
             if split != "test"
         },
@@ -220,7 +239,11 @@ def build_toy_store(
     }
     (data / "dataset.json").write_text(json.dumps(meta, indent=2))
     rows: list[dict[str, object]] = []
-    for role, seeds, tag_base in (("base", main_seeds, 0), ("ceiling", ceiling_seeds, 500), ("dev", dev_seeds, 0)):
+    for role, seeds, tag_base in (
+        ("base", main_seeds, 0),
+        ("ceiling", ceiling_seeds, 500),
+        ("dev", dev_seeds, 0),
+    ):
         for seed in seeds:
             model_id = "m" + hashlib.sha256(f"{dataset}|{role}|{seed}".encode()).hexdigest()[:8]
             params = toy_params(tag_base + seed)
@@ -231,12 +254,25 @@ def build_toy_store(
             pred = predict(forward, params, splits["V_select"]["x"], 64)
             y_select = splits["V_select"]["y"]
             acc = float(np.mean(pred == y_select))
-            confusion = np.bincount(y_select * N_CLASSES + pred, minlength=N_CLASSES**2).reshape(N_CLASSES, N_CLASSES)
-            private = {"seed": seed, "role": role, "params_sha256": digest, "vselect_confusion": confusion.tolist()}
+            confusion = np.bincount(y_select * N_CLASSES + pred, minlength=N_CLASSES**2).reshape(
+                N_CLASSES, N_CLASSES
+            )
+            private = {
+                "seed": seed,
+                "role": role,
+                "params_sha256": digest,
+                "vselect_confusion": confusion.tolist(),
+            }
             (model_dir / "private.json").write_text(json.dumps(private))
             rows.append(
-                {"model_id": model_id, "seed": seed, "arch": "toy_mlp", "role": role, "params_sha256": digest,
-                 "vselect_acc": acc}
+                {
+                    "model_id": model_id,
+                    "seed": seed,
+                    "arch": "toy_mlp",
+                    "role": role,
+                    "params_sha256": digest,
+                    "vselect_acc": acc,
+                }
             )
     (data / "models" / "index.json").write_text(json.dumps(rows, indent=2))
     return ToyStore(root=root, dataset=dataset, models=rows)
@@ -277,7 +313,9 @@ def load_npz(path: Path) -> dict[str, np.ndarray]:
         return {key: archive[key] for key in archive.files}
 
 
-def add_condition(store: ToyStore, name: str = CONDITION, corruption: str = CONDITION_CORRUPTION) -> dict[str, object]:
+def add_condition(
+    store: ToyStore, name: str = CONDITION, corruption: str = CONDITION_CORRUPTION
+) -> dict[str, object]:
     """Write a corrupted copy of every clean split and of the test set with its dataset.json; return that manifest."""
     data = store.private / store.dataset
     clean = json.loads((data / "dataset.json").read_text())
@@ -288,22 +326,35 @@ def add_condition(store: ToyStore, name: str = CONDITION, corruption: str = COND
     for split in clean["splits"]:
         corrupted = corrupt_split(load_npz(data / "splits" / f"{split}.npz"))
         np.savez(folder / "splits" / f"{split}.npz", **corrupted)
-        splits[split] = {"path": f"splits/{split}.npz", "n": int(len(corrupted["y"])),
-                         "sha256": params_sha256(corrupted), "clean_sha256": clean["splits"][split]["sha256"]}
+        splits[split] = {
+            "path": f"splits/{split}.npz",
+            "n": int(len(corrupted["y"])),
+            "sha256": params_sha256(corrupted),
+            "clean_sha256": clean["splits"][split]["sha256"],
+        }
     test = corrupt_split(load_npz(store.sealed / store.dataset / "test.npz"))
     np.savez(condition_test_path(store, name), **test)
     meta = {
         "schema": "cryowisp.dataset.v0",
         "dataset": store.dataset,
-        "condition": {"name": name, "kind": "corruption", "corruption": corruption, "severity": 2, "constant": 3,
-                      "rng": None},
+        "condition": {
+            "name": name,
+            "kind": "corruption",
+            "corruption": corruption,
+            "severity": 2,
+            "constant": 3,
+            "rng": None,
+        },
         "class_names": clean["class_names"],
         "image_shape": clean["image_shape"],
         "norm": clean["norm"],
         "forward_sha256": clean["forward_sha256"],
         "splits": splits,
-        "test": {"location": f"$CRYOWISP_SEALED/{store.dataset}/conditions/{name}/test.npz",
-                 "sha256": params_sha256(test), "clean_sha256": clean["test"]["sha256"]},
+        "test": {
+            "location": f"$CRYOWISP_SEALED/{store.dataset}/conditions/{name}/test.npz",
+            "sha256": params_sha256(test),
+            "clean_sha256": clean["test"]["sha256"],
+        },
     }
     write_condition_meta(store, meta, name)
     return meta
@@ -320,7 +371,9 @@ def build_condition(
     name: str = CONDITION,
 ) -> list[BuildOutcome]:
     """evidence-v1 instances of a named condition, development seed plan and default decoys."""
-    return build_deployment_instances(store.dataset, name, selection=DEV_PLAN, decoys=DEFAULT_DECOYS, split_roles=roles)
+    return build_deployment_instances(
+        store.dataset, name, selection=DEV_PLAN, decoys=DEFAULT_DECOYS, split_roles=roles
+    )
 
 
 def build_v0(
@@ -341,7 +394,9 @@ def build_v1(
     decoys: dict[int, int] = DEFAULT_DECOYS,
 ) -> list[BuildOutcome]:
     """evidence-v1 instances of the condition "deploy"."""
-    return build_deployment_instances(store.dataset, "deploy", selection=selection, decoys=decoys, split_roles=roles)
+    return build_deployment_instances(
+        store.dataset, "deploy", selection=selection, decoys=decoys, split_roles=roles
+    )
 
 
 @pytest.fixture

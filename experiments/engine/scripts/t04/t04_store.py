@@ -64,8 +64,16 @@ def _student(seed: int) -> tuple[dict, object, dict]:
     params = load_params(models_dir(T.DATASET) / entry.model_id / "model.npz")
     if params_sha256(params) != entry.params_sha256:
         raise SystemExit("model.npz hash differs from the index")
-    return params, forward, {"model_id": entry.model_id, "seed": seed, "params_sha256": entry.params_sha256,
-                             "forward_sha256": forward_sha}
+    return (
+        params,
+        forward,
+        {
+            "model_id": entry.model_id,
+            "seed": seed,
+            "params_sha256": entry.params_sha256,
+            "forward_sha256": forward_sha,
+        },
+    )
 
 
 def _d_rows_from_store() -> dict[str, np.ndarray]:
@@ -79,7 +87,9 @@ def _d_rows_from_store() -> dict[str, np.ndarray]:
         if split_sha256(arrays) != meta["splits"][split]["sha256"]:
             raise SystemExit(f"clean {split} differs from its dataset.json hash")
         keep = arrays["idx"] % 50 == 0
-        xs.append(arrays["x"][keep]); ys.append(arrays["y"][keep]); rows.append(arrays["idx"][keep])
+        xs.append(arrays["x"][keep])
+        ys.append(arrays["y"][keep])
+        rows.append(arrays["idx"][keep])
     x, y, idx = np.concatenate(xs), np.concatenate(ys), np.concatenate(rows)
     order = np.argsort(idx, kind="stable")
     if not np.array_equal(idx[order], np.arange(0, 50_000, 50)):
@@ -104,12 +114,26 @@ def cmd_diag(args: argparse.Namespace) -> int:
             accs[severity] = float(np.mean(np.asarray(forward(params, x)).argmax(1) == d["y"]))
             print(f"{corruption} s{severity}: {accs[severity]:.4f}", flush=True)
         by_corruption[corruption] = T.choose_severity(clean_acc, accs)
-    record = {"schema": "cryowisp.t04.severity_diag.v1", "rows": "D: clean dev rows with row % 50 == 0 (1,000)",
-              "d_rows_sha256": T.rows_sha256(d["idx"]), "student": student, "acc_clean_d": clean_acc,
-              "q_min": T.Q_MIN, "min_drop_points": T.MIN_DROP_POINTS, "corruptions": by_corruption,
-              "official": {"file": T.OFFICIAL_FILE, "commit": T.OFFICIAL_COMMIT, "sha256": T.OFFICIAL_SHA256,
-                           "function_sha256": official["_sources"], "constants_check": constants},
-              "libraries": T.image_libraries(), "wall_s": time.time() - started, "run_info": run_info(REPO_ROOT)}
+    record = {
+        "schema": "cryowisp.t04.severity_diag.v1",
+        "rows": "D: clean dev rows with row % 50 == 0 (1,000)",
+        "d_rows_sha256": T.rows_sha256(d["idx"]),
+        "student": student,
+        "acc_clean_d": clean_acc,
+        "q_min": T.Q_MIN,
+        "min_drop_points": T.MIN_DROP_POINTS,
+        "corruptions": by_corruption,
+        "official": {
+            "file": T.OFFICIAL_FILE,
+            "commit": T.OFFICIAL_COMMIT,
+            "sha256": T.OFFICIAL_SHA256,
+            "function_sha256": official["_sources"],
+            "constants_check": constants,
+        },
+        "libraries": T.image_libraries(),
+        "wall_s": time.time() - started,
+        "run_info": run_info(REPO_ROOT),
+    }
     _write_once(Path(args.out), record)
     print(json.dumps({c: r["chosen"] for c, r in by_corruption.items()}))
     return 0
@@ -121,12 +145,21 @@ def cmd_condition(args: argparse.Namespace) -> int:
     if choice["chosen"] is None:
         print(f"the severity rule chose no severity for {args.corruption}; the condition is not run")
         return 0
-    record = dict(choice, diag_file=str(args.diag),
-                  diag_sha256=hashlib.sha256(Path(args.diag).read_bytes()).hexdigest())
-    manifest = B.build_condition(args.corruption, int(choice["chosen"]), Path(args.official), run_info(REPO_ROOT),
-                                 record)
-    print(json.dumps({"condition": manifest["condition"]["name"],
-                      "splits": {s: v["sha256"] for s, v in manifest["splits"].items()}}, indent=1))
+    record = dict(
+        choice, diag_file=str(args.diag), diag_sha256=hashlib.sha256(Path(args.diag).read_bytes()).hexdigest()
+    )
+    manifest = B.build_condition(
+        args.corruption, int(choice["chosen"]), Path(args.official), run_info(REPO_ROOT), record
+    )
+    print(
+        json.dumps(
+            {
+                "condition": manifest["condition"]["name"],
+                "splits": {s: v["sha256"] for s, v in manifest["splits"].items()},
+            },
+            indent=1,
+        )
+    )
     return 0
 
 
@@ -142,12 +175,20 @@ def cmd_base(args: argparse.Namespace) -> int:
     verdicts = {}
     for condition in conditions:
         headroom = 100.0 * (clean - table[condition]["V_select"]["acc"])
-        verdicts[condition] = {"headroom_points": headroom, "passes": bool(headroom >= T.MIN_DROP_POINTS),
-                               "gain_bar_points": T.gain_bar(headroom)}
-    record = {"schema": "cryowisp.t04.base_readouts.v1", "student": student, "accuracy": table,
-              "headroom_rule": f"clean minus condition V_select accuracy >= {T.MIN_DROP_POINTS} points (E10's)",
-              "gain_bar_rule": f"{T.GAIN_SHARE} x headroom, rounded to the nearest 0.5 point", "conditions": verdicts,
-              "run_info": run_info(REPO_ROOT)}
+        verdicts[condition] = {
+            "headroom_points": headroom,
+            "passes": bool(headroom >= T.MIN_DROP_POINTS),
+            "gain_bar_points": T.gain_bar(headroom),
+        }
+    record = {
+        "schema": "cryowisp.t04.base_readouts.v1",
+        "student": student,
+        "accuracy": table,
+        "headroom_rule": f"clean minus condition V_select accuracy >= {T.MIN_DROP_POINTS} points (E10's)",
+        "gain_bar_rule": f"{T.GAIN_SHARE} x headroom, rounded to the nearest 0.5 point",
+        "conditions": verdicts,
+        "run_info": run_info(REPO_ROOT),
+    }
     _write_once(Path(args.out), record)
     print(json.dumps(verdicts, indent=1))
     return 0
@@ -167,13 +208,15 @@ def cmd_timing(args: argparse.Namespace) -> int:
         raise SystemExit(f"{args.out} exists; nothing written")
     params, forward, student = _student(B.SOURCE_SEED)
     condition = sorted(list_conditions(T.DATASET))[0]
-    x = np.concatenate([load_split(T.DATASET, "V_check", condition)["x"], load_split(T.DATASET, "V_check")["x"]])
+    x = np.concatenate(
+        [load_split(T.DATASET, "V_check", condition)["x"], load_split(T.DATASET, "V_check")["x"]]
+    )
     check, program = [], []
     for _ in range(args.repeats):
         load = os.getloadavg()[0]
         started = time.perf_counter()
         for i in range(0, len(x), 1024):
-            np.asarray(forward(params, x[i:i + 1024]))
+            np.asarray(forward(params, x[i : i + 1024]))
         check.append({"s": time.perf_counter() - started, "load_1min_before": load})
         started = time.perf_counter()
         np.asarray(forward(params, x[:128]))
@@ -181,18 +224,42 @@ def cmd_timing(args: argparse.Namespace) -> int:
     worst = max(c["s"] for c in check)
     wall_min = 120 + max(0.0, 8 * worst / 60.0 - 30.0)
     train_step = _train_step_timing(condition, args.train_threads, args.train_steps)
-    record = {"schema": "cryowisp.t04.timing.v1", "student": student, "condition": condition, "rows_per_check": len(x),
-              "threads": {v: os.environ.get(v) for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")},
-              "check_s": check, "worst_check_s": worst, "program_128_rows_s": program,
-              "peak_rss_gib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20,
-              "session_wall_limit_min": int(5 * math.ceil(wall_min / 5)),
-              "wall_rule": "120 min raised by the 8-check prediction time above 30 min, rounded up to 5 min (E11's)",
-              "tool_timeout_fits": bool(300 + worst <= 1200), "connect_timeout_fits": bool(worst <= 900),
-              "large_ft_step_s": train_step, "run_info": run_info(REPO_ROOT)}
+    record = {
+        "schema": "cryowisp.t04.timing.v1",
+        "student": student,
+        "condition": condition,
+        "rows_per_check": len(x),
+        "threads": {
+            v: os.environ.get(v) for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
+        },
+        "check_s": check,
+        "worst_check_s": worst,
+        "program_128_rows_s": program,
+        "peak_rss_gib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20,
+        "session_wall_limit_min": int(5 * math.ceil(wall_min / 5)),
+        "wall_rule": "120 min raised by the 8-check prediction time above 30 min, rounded up to 5 min (E11's)",
+        "tool_timeout_fits": bool(300 + worst <= 1200),
+        "connect_timeout_fits": bool(worst <= 900),
+        "large_ft_step_s": train_step,
+        "run_info": run_info(REPO_ROOT),
+    }
     _write_once(Path(args.out), record)
-    print(json.dumps({k: record[k] for k in ("worst_check_s", "session_wall_limit_min", "peak_rss_gib",
-                                             "tool_timeout_fits", "connect_timeout_fits", "large_ft_step_s")},
-                     indent=1))
+    print(
+        json.dumps(
+            {
+                k: record[k]
+                for k in (
+                    "worst_check_s",
+                    "session_wall_limit_min",
+                    "peak_rss_gib",
+                    "tool_timeout_fits",
+                    "connect_timeout_fits",
+                    "large_ft_step_s",
+                )
+            },
+            indent=1,
+        )
+    )
     return 0
 
 
@@ -206,7 +273,9 @@ def _train_step_timing(condition: str, thread_counts: list[int], steps: int) -> 
     from cryowisp.evalkit.instances import instances_root
     from cryowisp.harness import t04 as H
 
-    spec = importlib.util.spec_from_file_location("t04_large_ft", REPO_ROOT / "scripts" / "t04" / "large_ft.py")
+    spec = importlib.util.spec_from_file_location(
+        "t04_large_ft", REPO_ROOT / "scripts" / "t04" / "large_ft.py"
+    )
     large = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(large)
     ids = H.condition_ids()
@@ -238,8 +307,13 @@ def _train_step_timing(condition: str, thread_counts: list[int], steps: int) -> 
             optimizer.step()
             if i:  # the first step is a warm-up
                 times.append(time.perf_counter() - started)
-        out[str(threads)] = {"steps_s": times, "max_s": max(times), "batch": int(len(yb)), "condition": condition,
-                             "torch_threads": torch.get_num_threads()}
+        out[str(threads)] = {
+            "steps_s": times,
+            "max_s": max(times),
+            "batch": int(len(yb)),
+            "condition": condition,
+            "torch_threads": torch.get_num_threads(),
+        }
     return out
 
 
@@ -254,9 +328,13 @@ def cmd_instances(args: argparse.Namespace) -> int:
             out[condition] = "headroom rule failed; no instance"
             continue
         outcomes = build_deployment_instances(
-            T.DATASET, condition, selection=SeedSelection(main=(), dev=(B.SOURCE_SEED, B.DECOY_SEED)),
-            decoys={B.SOURCE_SEED: B.DECOY_SEED, B.DECOY_SEED: B.SOURCE_SEED}, split_roles=("dev",),
-            batch_size=args.batch_size)
+            T.DATASET,
+            condition,
+            selection=SeedSelection(main=(), dev=(B.SOURCE_SEED, B.DECOY_SEED)),
+            decoys={B.SOURCE_SEED: B.DECOY_SEED, B.DECOY_SEED: B.SOURCE_SEED},
+            split_roles=("dev",),
+            batch_size=args.batch_size,
+        )
         out[condition] = [dataclasses.asdict(outcome) for outcome in outcomes]
     print(json.dumps(out, indent=1, default=str))
     return 0
@@ -294,17 +372,31 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "clean":
         manifest = B.build_clean(args.data_dir, run_info(REPO_ROOT), d_index_path=args.d_index)
-        print(json.dumps({"splits": {s: {k: v[k] for k in ("n", "sha256", "coverage")}
-                                     for s, v in manifest["splits"].items()},
-                          "forward_sha256": manifest["forward_sha256"],
-                          "class_name_changes": manifest["class_name_changes"],
-                          "d_index_check": manifest["d_index_check"]}, indent=1))
+        print(
+            json.dumps(
+                {
+                    "splits": {
+                        s: {k: v[k] for k in ("n", "sha256", "coverage")}
+                        for s, v in manifest["splits"].items()
+                    },
+                    "forward_sha256": manifest["forward_sha256"],
+                    "class_name_changes": manifest["class_name_changes"],
+                    "d_index_check": manifest["d_index_check"],
+                },
+                indent=1,
+            )
+        )
         return 0
     if args.command == "models":
         print(json.dumps(B.build_models(args.weights, run_info(REPO_ROOT)), indent=1))
         return 0
-    return {"diag": cmd_diag, "condition": cmd_condition, "base": cmd_base, "instances": cmd_instances,
-            "timing": cmd_timing}[args.command](args)
+    return {
+        "diag": cmd_diag,
+        "condition": cmd_condition,
+        "base": cmd_base,
+        "instances": cmd_instances,
+        "timing": cmd_timing,
+    }[args.command](args)
 
 
 if __name__ == "__main__":

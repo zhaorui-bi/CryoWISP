@@ -52,27 +52,43 @@ def main(argv: list[str] | None = None) -> int:
     official = O.load_official(args.official)
     dev = json.loads(args.dev_rows.read_text(encoding="utf-8"))
     if dev["official"]["sha256"] != O.OFFICIAL_SHA256 or dev["libraries"] != O.library_versions():
-        raise SystemExit(f"this environment differs from E10's dev rows: {O.library_versions()} vs {dev['libraries']}")
-    record = {"schema": "cryowisp.f2.corrupt_train.v1", "severity": O.SEVERITY,
-              "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
-              "libraries": O.library_versions(),
-              "dev_rows": {"path": str(args.dev_rows), "sha256": O.file_sha256(args.dev_rows)},
-              "reproduction": {}, "rows": {}}
+        raise SystemExit(
+            f"this environment differs from E10's dev rows: {O.library_versions()} vs {dev['libraries']}"
+        )
+    record = {
+        "schema": "cryowisp.f2.corrupt_train.v1",
+        "severity": O.SEVERITY,
+        "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
+        "libraries": O.library_versions(),
+        "dev_rows": {"path": str(args.dev_rows), "sha256": O.file_sha256(args.dev_rows)},
+        "reproduction": {},
+        "rows": {},
+    }
     evidence_path = args.clean_dir / "V_evidence.npz"
     with np.load(evidence_path, allow_pickle=False) as arrays:
         x_evidence = np.ascontiguousarray(arrays["x"])
     for condition in CONDITIONS:
         row = dev["rows"][f"{condition}/V_evidence"]
-        if row["seed"] != DEV_SEEDS_V_EVIDENCE[condition] or row["clean_file_sha256"] != O.file_sha256(evidence_path):
+        if row["seed"] != DEV_SEEDS_V_EVIDENCE[condition] or row["clean_file_sha256"] != O.file_sha256(
+            evidence_path
+        ):
             raise SystemExit(f"{condition}/V_evidence: seed or clean file differs from E10's dev rows")
         again = O.corrupt(official, condition, x_evidence, row["seed"])
         digest = hashlib.sha256(again.tobytes()).hexdigest()
         same = digest == row["x_sha256"]
-        record["reproduction"][condition] = {"split": "V_evidence", "seed": row["seed"], "n": int(len(again)),
-                                             "x_sha256": digest, "e10_x_sha256": row["x_sha256"], "equal": same}
+        record["reproduction"][condition] = {
+            "split": "V_evidence",
+            "seed": row["seed"],
+            "n": int(len(again)),
+            "x_sha256": digest,
+            "e10_x_sha256": row["x_sha256"],
+            "equal": same,
+        }
         print(f"reproduction {condition}/V_evidence seed {row['seed']}: equal {same}", flush=True)
         if not same:
-            raise SystemExit(f"{condition}: the pinned code no longer reproduces E10's V_evidence rows; nothing written")
+            raise SystemExit(
+                f"{condition}: the pinned code no longer reproduces E10's V_evidence rows; nothing written"
+            )
     train_path = args.clean_dir / "train.npz"
     with np.load(train_path, allow_pickle=False) as arrays:
         x = np.ascontiguousarray(arrays["x"])
@@ -87,9 +103,14 @@ def main(argv: list[str] | None = None) -> int:
         np.savez(target, x=out)
         mad = np.abs(out.astype(np.int16) - x.astype(np.int16)).reshape(len(x), -1).mean(axis=1)
         record["rows"][condition] = {
-            "split": "train", "seed": seed, "n": int(len(x)), "clean_file_sha256": O.file_sha256(train_path),
-            "out_file_sha256": O.file_sha256(target), "x_sha256": hashlib.sha256(out.tobytes()).hexdigest(),
-            "median_mad_from_clean": float(np.median(mad)), "seconds": round(time.time() - started, 1),
+            "split": "train",
+            "seed": seed,
+            "n": int(len(x)),
+            "clean_file_sha256": O.file_sha256(train_path),
+            "out_file_sha256": O.file_sha256(target),
+            "x_sha256": hashlib.sha256(out.tobytes()).hexdigest(),
+            "median_mad_from_clean": float(np.median(mad)),
+            "seconds": round(time.time() - started, 1),
         }
         print(f"{condition}/train: {len(x)} rows, median MAD {np.median(mad):.3f}", flush=True)
     text = json.dumps(record, indent=1, sort_keys=True) + "\n"

@@ -71,13 +71,13 @@ from cryowisp.harness.finalize import (
 )
 from cryowisp.harness.instance import InstanceRecord, InstanceRefused, read_instance_record
 from cryowisp.harness.jsonio import file_sha256, text_sha256, utc_now, write_json
-from cryowisp.harness.launch import ClaudeLauncher, LaunchOutcome, Launcher, editor_environment
+from cryowisp.harness.launch import ClaudeLauncher, Launcher, LaunchOutcome, editor_environment
 from cryowisp.harness.leaks import (
     ForbiddenStrings,
     Scanner,
+    exempt_counts,
     forbidden_strings,
     scan_hint_words,
-    exempt_counts,
     scan_label_arrays,
     scan_texts,
     scan_trial,
@@ -91,7 +91,14 @@ from cryowisp.harness.library import (
     write_library,
 )
 from cryowisp.harness.program import MAX_PROGRAM_BYTES
-from cryowisp.harness.prompts import Budgets, fscil_library_files_section, library_files_section, render_system, render_task
+from cryowisp.harness.prompts import (
+    Budgets,
+    fscil_library_files_section,
+    library_files_section,
+    render_system,
+    render_task,
+)
+from cryowisp.harness.provenance import REPO_ROOT, claude_version, code_changed, collect
 from cryowisp.harness.retention import (
     RetentionRuleError,
     check_floor_rows,
@@ -99,10 +106,15 @@ from cryowisp.harness.retention import (
     kept_rule_record,
     kept_rule_record_rows,
 )
-from cryowisp.harness.provenance import REPO_ROOT, claude_version, code_changed, collect
 from cryowisp.harness.session import SESSION_SCHEMA, SessionPaths, new_session_id
 from cryowisp.harness.tools import sandbox_config, tool_specs
-from cryowisp.harness.trial import StudentOverride, TrialError, assemble, check_max_checks, decoy_evidence_source
+from cryowisp.harness.trial import (
+    StudentOverride,
+    TrialError,
+    assemble,
+    check_max_checks,
+    decoy_evidence_source,
+)
 from cryowisp.sandbox import DEFAULT_BWRAP, isolation_selftest
 from cryowisp.sandbox.program import PROGRAM_CLOCK, PROGRAM_WALL_S, driver_sha256
 

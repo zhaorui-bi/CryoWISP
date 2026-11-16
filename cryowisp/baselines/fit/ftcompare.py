@@ -50,7 +50,6 @@ exactly as on E12: ``ft_bn`` for ``ft_ln``, LoRA on the 20 convolutions and fc.w
 from __future__ import annotations
 
 import dataclasses
-
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -61,7 +60,14 @@ import torch.nn.functional as F
 
 from cryowisp.baselines.instance_io import Instance
 
-from .grad import ADAM_BETAS, ADAM_EPS, STEP_CHECKPOINTS, _check_frozen_entries, adam_checkpoints, evidence_loss
+from .grad import (
+    ADAM_BETAS,
+    ADAM_EPS,
+    STEP_CHECKPOINTS,
+    _check_frozen_entries,
+    adam_checkpoints,
+    evidence_loss,
+)
 from .lnrefs import ln_affine
 from .runner import CandidatePatch, Evidence, Generator, MethodSpec, execute_run, read_model_spec
 from .torch_forward import (

@@ -35,7 +35,9 @@ def _threads(n: int) -> None:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(n)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
 
 
 def _write_lines(path: Path, records: list[dict]) -> None:
@@ -86,10 +88,13 @@ def cmd_read(args: argparse.Namespace) -> int:
         record = read_run(path, args.floor)
         records.append(record)
         own, kept = record["own"], record["kept"]
-        print(f"{method}: own {own['patch_id'] or 'base'} gain {own['gain']:+.1f} clean {own['clean']:+.1f} joint "
-              f"{own['joint']:+.1f}; kept {kept['patch_id'] or 'base'} gain {kept['gain']:+.1f} clean "
-              f"{kept['clean']:+.1f} joint {kept['joint']:+.1f} (new success {kept['success_new']:.3f}); "
-              f"{time.perf_counter() - started:.1f} s", flush=True)
+        print(
+            f"{method}: own {own['patch_id'] or 'base'} gain {own['gain']:+.1f} clean {own['clean']:+.1f} joint "
+            f"{own['joint']:+.1f}; kept {kept['patch_id'] or 'base'} gain {kept['gain']:+.1f} clean "
+            f"{kept['clean']:+.1f} joint {kept['joint']:+.1f} (new success {kept['success_new']:.3f}); "
+            f"{time.perf_counter() - started:.1f} s",
+            flush=True,
+        )
     _write_lines(args.out, records)
     return 0
 
@@ -120,12 +125,17 @@ def cmd_bar(args: argparse.Namespace) -> int:
 def cmd_wrapper(args: argparse.Namespace) -> int:
     from cryowisp.evalkit.e14 import e14_wrapper_readout
 
-    record = {"instance_id": args.instance, "label": "PREREG E14 hand-written wrapper, beside the bar (main d744142)",
-              "readout": e14_wrapper_readout(args.instance)}
+    record = {
+        "instance_id": args.instance,
+        "label": "PREREG E14 hand-written wrapper, beside the bar (main d744142)",
+        "readout": e14_wrapper_readout(args.instance),
+    }
     _write_lines(args.out, [record])
     ro = record["readout"]
-    print(f"wrapper: new success {ro['new']['success_child']:.3f} (base {ro['new']['success_base']:.3f}), old "
-          f"{ro['old']['success_child']:.3f} (base {ro['old']['success_base']:.3f}), joint {ro['joint']:+.1f}")
+    print(
+        f"wrapper: new success {ro['new']['success_child']:.3f} (base {ro['new']['success_base']:.3f}), old "
+        f"{ro['old']['success_child']:.3f} (base {ro['old']['success_base']:.3f}), joint {ro['joint']:+.1f}"
+    )
     return 0
 
 
@@ -146,8 +156,9 @@ def main(argv: list[str] | None = None) -> int:
     bar = sub.add_parser("bar")
     bar.add_argument("--reads", nargs="+", required=True)
     bar.add_argument("--out", type=Path, required=True)
-    bar.add_argument("--wrapper", type=Path, default=None,
-                     help="the wrapper record (wrapper --out) to put beside the bar")
+    bar.add_argument(
+        "--wrapper", type=Path, default=None, help="the wrapper record (wrapper --out) to put beside the bar"
+    )
     args = parser.parse_args(argv)
     if args.command != "bar":
         _threads(args.threads)

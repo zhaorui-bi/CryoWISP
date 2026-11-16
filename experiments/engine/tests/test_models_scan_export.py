@@ -23,8 +23,16 @@ from cryowisp.models import train_scan as TS
 from cryowisp.models.export import read_index
 from cryowisp.models.scan_export import build_spec, export_scan_model, import_scan_models
 
-TINY = dataclasses.replace(TS.SIZE_STEPS[0], d_model=16, n_layers=1, d_mlp=32, epochs=2, warmup_steps=2,
-                           log_every_epochs=1, batch_size=512)
+TINY = dataclasses.replace(
+    TS.SIZE_STEPS[0],
+    d_model=16,
+    n_layers=1,
+    d_mlp=32,
+    epochs=2,
+    warmup_steps=2,
+    log_every_epochs=1,
+    batch_size=512,
+)
 
 
 @pytest.fixture
@@ -36,8 +44,13 @@ def test_recipe_is_e5s_and_the_sizes_are_the_prereg_ones() -> None:
     small, large = TS.SIZE_STEPS
     assert (small.d_model, small.n_layers, small.n_heads, small.d_mlp) == (128, 4, 4, 512)
     assert (large.d_model, large.n_layers, large.n_heads, large.d_mlp) == (256, 6, 4, 1024)
-    assert (small.lr, small.batch_size, small.epochs, small.warmup_steps, small.min_lr_ratio) == (1e-3, 256, 800,
-                                                                                                    1000, 0.1)
+    assert (small.lr, small.batch_size, small.epochs, small.warmup_steps, small.min_lr_ratio) == (
+        1e-3,
+        256,
+        800,
+        1000,
+        0.1,
+    )
     assert (small.weight_decay, small.grad_clip, small.beta1, small.beta2) == (0.01, 1.0, 0.9, 0.98)
     assert TS.GATE_EM == 0.95 and TS.HEADROOM_EM_MAX == 0.50
     total = small.total_steps(11670)
@@ -54,7 +67,9 @@ def _train(condition: str, seed: int = 100) -> TS.ScanTrainResult:
 
 def test_training_is_deterministic_and_refuses_new_rows(store: Path) -> None:
     a, b = _train("around_right"), _train("around_right")
-    assert all(torch.equal(p, q) for p, q in zip(a.model.state_dict().values(), b.model.state_dict().values()))
+    assert all(
+        torch.equal(p, q) for p, q in zip(a.model.state_dict().values(), b.model.state_dict().values())
+    )
     train = checked_split("around_right", "train")
     n = len(train["y"])
     assert a.steps == TINY.total_steps(n) and a.rows_seen == 2 * n and len(a.log) == 2
@@ -67,10 +82,19 @@ def test_training_is_deterministic_and_refuses_new_rows(store: Path) -> None:
 def _export(condition: str, root: Path | None, smoke: bool = False) -> dict:
     result = _train(condition)
     return export_scan_model(
-        condition=condition, manifest=read_dataset_json(S.DATASET, condition), base_manifest=read_dataset_json(S.DATASET),
-        seed=100, size_step=0, config=TINY, result=result, determinism={"torch_manual_seed": 100},
+        condition=condition,
+        manifest=read_dataset_json(S.DATASET, condition),
+        base_manifest=read_dataset_json(S.DATASET),
+        seed=100,
+        size_step=0,
+        config=TINY,
+        result=result,
+        determinism={"torch_manual_seed": 100},
         run_info={"versions": {"torch": torch.__version__}, "device": "cpu"},
-        old_select=checked_split(condition, "old_select"), models_root=root, extra_private={"smoke": True} if smoke else None)
+        old_select=checked_split(condition, "old_select"),
+        models_root=root,
+        extra_private={"smoke": True} if smoke else None,
+    )
 
 
 def _fake_run(tmp_path: Path, condition: str, entry: dict, source_root: Path) -> Path:
@@ -79,8 +103,16 @@ def _fake_run(tmp_path: Path, condition: str, entry: dict, source_root: Path) ->
     target.mkdir(parents=True)
     shutil.copytree(source_root / entry["model_id"], target / entry["model_id"])
     write_json(target / "index.json", [entry])
-    write_json(run / "meta.json", {"run_name": "r", "request": "R22-e13", "select": "select=1:ngpus=1",
-                                   "walltime": "01:00:00", "code_digest": "abc"})
+    write_json(
+        run / "meta.json",
+        {
+            "run_name": "r",
+            "request": "R22-e13",
+            "select": "select=1:ngpus=1",
+            "walltime": "01:00:00",
+            "code_digest": "abc",
+        },
+    )
     write_json(run / "exit.json", {"exit_code": 0, "elapsed_s": 1})
     (run / "environment.txt").write_text("0" * 64 + " /x/image.sif\n")
     (run / "job_id.txt").write_text("1.pbs\n")
@@ -116,7 +148,16 @@ def test_import_refuses_smoke_and_a_spec_that_differs(store: Path, tmp_path: Pat
     run = _fake_run(tmp_path, "around_right", entry, root)
     with pytest.raises(ValueError, match="smoke"):
         import_scan_models(run, "around_right")
-    private_file = run / "private" / S.DATASET / "conditions" / "around_right" / "models" / entry["model_id"] / "private.json"
+    private_file = (
+        run
+        / "private"
+        / S.DATASET
+        / "conditions"
+        / "around_right"
+        / "models"
+        / entry["model_id"]
+        / "private.json"
+    )
     private = read_json(private_file)
     private.pop("smoke")
     write_json(private_file, private)

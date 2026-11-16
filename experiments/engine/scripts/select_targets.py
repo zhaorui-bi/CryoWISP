@@ -32,7 +32,9 @@ def _seeds(text: str) -> tuple[int, ...]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse arguments, run target selection and print one line per model and chosen pair."""
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--dataset", required=True, help="dataset directory name under $CRYOWISP_PRIVATE")
     parser.add_argument("--split-role", choices=("dev", "main", "all"), default="all")
     parser.add_argument("--main-seeds", type=_seeds, default=",".join(map(str, DEFAULT_MAIN_SEEDS)))
@@ -42,10 +44,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     selection = SeedSelection(main=args.main_seeds, dev=args.dev_seeds)
     roles = SPLIT_ROLES if args.split_role == "all" else (args.split_role,)
     print(f"{args.dataset}: main seeds {list(selection.main)}, dev seeds {list(selection.dev)}")
-    outcomes = run_target_selection(args.dataset, selection=selection, split_roles=roles, batch_size=args.batch_size)
+    outcomes = run_target_selection(
+        args.dataset, selection=selection, split_roles=roles, batch_size=args.batch_size
+    )
     for outcome in outcomes:
         state = "written" if outcome.written else "unchanged"
-        print(f"{outcome.split_role} {outcome.model_id} seed={outcome.seed} {state} shortfall={outcome.shortfall}")
+        print(
+            f"{outcome.split_role} {outcome.model_id} seed={outcome.seed} {state} shortfall={outcome.shortfall}"
+        )
         for pair in outcome.chosen:
             print(
                 f"  rank {pair['rank']}: ({pair['a']} {pair['a_name']} -> {pair['b']} {pair['b_name']}) "

@@ -73,6 +73,8 @@ def test_training_is_deterministic_on_cpu() -> None:
     x = np.random.default_rng(1).integers(0, 256, (64, 3, 32, 32), dtype=np.uint8)
     y = np.arange(64, dtype=np.int64) % 10
     config = A.HeTrainConfig(epochs=1, batch_size=32)
-    runs = [A.export_params(A.train_resnet20a(config, 7, x, y, 10, MEAN, STD, torch.device("cpu")).model)
-            for _ in range(2)]
+    runs = [
+        A.export_params(A.train_resnet20a(config, 7, x, y, 10, MEAN, STD, torch.device("cpu")).model)
+        for _ in range(2)
+    ]
     assert all(np.array_equal(runs[0][k], runs[1][k]) for k in runs[0])

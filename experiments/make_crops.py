@@ -13,6 +13,7 @@ Old datasets (default 10005 10291 10081): base_train 70% of micrographs; the hel
 New dataset (default 10947): micrograph blocks for new_exp / new_sel / new_fin (engine)
 and new_test (our evaluation).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,8 +32,9 @@ def read_coords(csv_path: Path) -> list[tuple[float, float, float]]:
     rows = []
     with csv_path.open(newline="") as fh:
         for row in csv.DictReader(fh):
-            rows.append((float(row["X-Coordinate"]), float(row["Y-Coordinate"]),
-                         float(row.get("Diameter") or 0)))
+            rows.append(
+                (float(row["X-Coordinate"]), float(row["Y-Coordinate"]), float(row.get("Diameter") or 0))
+            )
     return rows
 
 
@@ -44,14 +46,22 @@ def clamp_center(x: float, y: float, w: int, h: int, box: int) -> tuple[int, int
 
 def save_crop(im: np.ndarray, cx: int, cy: int, box: int, out: Path) -> None:
     half = box // 2
-    patch = im[cy - half:cy - half + box, cx - half:cx - half + box]
+    patch = im[cy - half : cy - half + box, cx - half : cx - half + box]
     out.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(patch).resize((224, 224), Image.BILINEAR).convert("RGB").save(out)
 
 
-def process_micrograph(ds_dir: Path, mgr: Path, coords_csv: Path, diameter: float,
-                       out_dir: Path, tag: str, n_pos: int, n_neg: int,
-                       rng: random.Random) -> dict[str, int]:
+def process_micrograph(
+    ds_dir: Path,
+    mgr: Path,
+    coords_csv: Path,
+    diameter: float,
+    out_dir: Path,
+    tag: str,
+    n_pos: int,
+    n_neg: int,
+    rng: random.Random,
+) -> dict[str, int]:
     im = np.asarray(Image.open(mgr))
     h, w = im.shape[:2]
     box = max(160, min(int(np.ceil(1.5 * diameter)), min(h, w)))
@@ -87,9 +97,11 @@ def process_micrograph(ds_dir: Path, mgr: Path, coords_csv: Path, diameter: floa
 
 def pair_files(ds_dir: Path) -> list[tuple[Path, Path]]:
     mgrs = sorted((ds_dir / "micrographs").glob("*.jpg"))
-    return [(m, ds_dir / "ground_truth" / "particle_coordinates" / f"{m.stem}.csv")
-            for m in mgrs
-            if (ds_dir / "ground_truth" / "particle_coordinates" / f"{m.stem}.csv").exists()]
+    return [
+        (m, ds_dir / "ground_truth" / "particle_coordinates" / f"{m.stem}.csv")
+        for m in mgrs
+        if (ds_dir / "ground_truth" / "particle_coordinates" / f"{m.stem}.csv").exists()
+    ]
 
 
 def dataset_diameter(pairs: list[tuple[Path, Path]]) -> float:
@@ -101,12 +113,19 @@ def dataset_diameter(pairs: list[tuple[Path, Path]]) -> float:
     return float(np.median(diams)) if diams else 120.0
 
 
-def crops_for_role(ds_dir: Path, plist: list[tuple[Path, Path]], diameter: float, role: str,
-                   per_class: int, out: Path, rng: random.Random, summary: dict) -> None:
+def crops_for_role(
+    ds_dir: Path,
+    plist: list[tuple[Path, Path]],
+    diameter: float,
+    role: str,
+    per_class: int,
+    out: Path,
+    rng: random.Random,
+    summary: dict,
+) -> None:
     per = int(np.ceil(per_class / max(1, len(plist))))
     for m, c in plist:
-        r = process_micrograph(ds_dir, m, c, diameter, out / role, f"{ds_dir.name}_{m.stem}",
-                               per, per, rng)
+        r = process_micrograph(ds_dir, m, c, diameter, out / role, f"{ds_dir.name}_{m.stem}", per, per, rng)
         key = f"{ds_dir.name}:{role}"
         a, b = summary.get(key, (0, 0))
         summary[key] = (a + r["pos"], b + r["neg"])
@@ -119,11 +138,26 @@ def main() -> None:
     ap.add_argument("--old-ids", nargs="+", default=["10005", "10291", "10081"])
     ap.add_argument("--new-id", default="10947")
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--train-per-ds", type=int, default=2000, help="crops per class per old dataset in base_train")
-    ap.add_argument("--oldxsf-per-ds", type=int, default=200, help="crops per class per old dataset in old_exp/old_sel/old_fin")
-    ap.add_argument("--oldtest-per-ds", type=int, default=300, help="crops per class per old dataset in old_test")
-    ap.add_argument("--new-per-class", type=int, nargs=4, default=[32, 150, 200, 1000],
-                    metavar=("EXP", "SEL", "FIN", "TEST"), help="crops per class for new_exp/new_sel/new_fin/new_test")
+    ap.add_argument(
+        "--train-per-ds", type=int, default=2000, help="crops per class per old dataset in base_train"
+    )
+    ap.add_argument(
+        "--oldxsf-per-ds",
+        type=int,
+        default=200,
+        help="crops per class per old dataset in old_exp/old_sel/old_fin",
+    )
+    ap.add_argument(
+        "--oldtest-per-ds", type=int, default=300, help="crops per class per old dataset in old_test"
+    )
+    ap.add_argument(
+        "--new-per-class",
+        type=int,
+        nargs=4,
+        default=[32, 150, 200, 1000],
+        metavar=("EXP", "SEL", "FIN", "TEST"),
+        help="crops per class for new_exp/new_sel/new_fin/new_test",
+    )
     args = ap.parse_args()
     rng = random.Random(args.seed)
     out = args.out
@@ -137,13 +171,20 @@ def main() -> None:
         n_train = int(len(pairs) * 0.70)
         train, held = pairs[:n_train], pairs[n_train:]
         q = max(1, len(held) // 4)
-        quarters = [held[i * q:(i + 1) * q] if i < 3 else held[3 * q:] for i in range(4)]
+        quarters = [held[i * q : (i + 1) * q] if i < 3 else held[3 * q :] for i in range(4)]
 
         crops_for_role(ds_dir, train, diam, "base_train", args.train_per_ds, out, rng, summary)
         for role, plist in zip(OLD_ROLES, quarters):
-            crops_for_role(ds_dir, plist, diam, role,
-                           args.oldxsf_per_ds if role != "old_test" else args.oldtest_per_ds,
-                           out, rng, summary)
+            crops_for_role(
+                ds_dir,
+                plist,
+                diam,
+                role,
+                args.oldxsf_per_ds if role != "old_test" else args.oldtest_per_ds,
+                out,
+                rng,
+                summary,
+            )
         print(ds, {"diam": diam, "micro": len(pairs), "train": n_train, "held": len(held)}, flush=True)
 
     ds_dir = args.lite_root / args.new_id
@@ -154,14 +195,15 @@ def main() -> None:
     per_class = dict(zip(("new_exp", "new_sel", "new_fin", "new_test"), args.new_per_class))
     used = 0
     for role in ("new_exp", "new_sel", "new_fin", "new_test"):
-        plist = pairs[used:used + n_micro[role]]
+        plist = pairs[used : used + n_micro[role]]
         used += n_micro[role]
         crops_for_role(ds_dir, plist, diam, role, per_class[role], out, rng, summary)
     print(args.new_id, {"diam": diam, "micro": len(pairs)}, flush=True)
 
     out.mkdir(parents=True, exist_ok=True)
-    (out / "summary.json").write_text(json.dumps(
-        {k: list(v) if isinstance(v, tuple) else v for k, v in summary.items()}, indent=2))
+    (out / "summary.json").write_text(
+        json.dumps({k: list(v) if isinstance(v, tuple) else v for k, v in summary.items()}, indent=2)
+    )
     print("done", flush=True)
 
 

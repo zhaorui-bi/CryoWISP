@@ -57,12 +57,24 @@ def _headroom(seed: int, out: Path) -> dict:
     for condition in list_conditions(D.DATASET):
         acc, sha = accuracy(condition)
         gap = 100.0 * (clean - acc)
-        rows[condition] = {"vselect_acc": acc, "vselect_sha256": sha, "gap_points": gap,
-                           "runs": gap >= HEADROOM_POINTS}
-    record = {"schema": "cryowisp.e10.headroom.v1", "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
-              "V_select (PREREG E10, before any instance)", "model_id": entry.model_id, "seed": seed,
-              "params_sha256": entry.params_sha256, "forward_sha256": forward_sha,
-              "clean_vselect_acc": clean, "clean_vselect_sha256": clean_sha, "conditions": rows}
+        rows[condition] = {
+            "vselect_acc": acc,
+            "vselect_sha256": sha,
+            "gap_points": gap,
+            "runs": gap >= HEADROOM_POINTS,
+        }
+    record = {
+        "schema": "cryowisp.e10.headroom.v1",
+        "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
+        "V_select (PREREG E10, before any instance)",
+        "model_id": entry.model_id,
+        "seed": seed,
+        "params_sha256": entry.params_sha256,
+        "forward_sha256": forward_sha,
+        "clean_vselect_acc": clean,
+        "clean_vselect_sha256": clean_sha,
+        "conditions": rows,
+    }
     text = json.dumps(record, indent=1, sort_keys=True) + "\n"
     with open(out, "x", encoding="utf-8") as handle:
         handle.write(text)
@@ -90,14 +102,30 @@ def main(argv: list[str] | None = None) -> int:
     info = run_info(REPO_ROOT)
     if args.group == "clean":
         manifest = D.build_clean(info)
-        print(json.dumps({"dataset": manifest["dataset"], "forward_sha256": manifest["forward_sha256"],
-                          "splits": {k: v["sha256"] for k, v in manifest["splits"].items()}}, indent=1))
+        print(
+            json.dumps(
+                {
+                    "dataset": manifest["dataset"],
+                    "forward_sha256": manifest["forward_sha256"],
+                    "splits": {k: v["sha256"] for k, v in manifest["splits"].items()},
+                },
+                indent=1,
+            )
+        )
     elif args.group == "condition":
         for corruption in args.corruptions:
-            manifest = D.build_condition(corruption, args.staged, args.staged / "dev_rows.json", args.fidelity,
-                                         args.install, info)
-            print(json.dumps({"condition": manifest["condition"]["name"],
-                              "splits": {k: v["sha256"] for k, v in manifest["splits"].items()}}, indent=1))
+            manifest = D.build_condition(
+                corruption, args.staged, args.staged / "dev_rows.json", args.fidelity, args.install, info
+            )
+            print(
+                json.dumps(
+                    {
+                        "condition": manifest["condition"]["name"],
+                        "splits": {k: v["sha256"] for k, v in manifest["splits"].items()},
+                    },
+                    indent=1,
+                )
+            )
     elif args.group == "import":
         print(json.dumps(E.import_e10_models(args.run_dir, args.note), indent=1))
     else:

@@ -76,39 +76,61 @@ def test_a_named_condition_resolves_to_its_own_files(condition_store: ToyStore) 
     splits = deployment_splits(condition_store.dataset, CONDITION)
     folder = condition_dir(condition_store) / "splits"
     assert (splits.v_evidence, splits.v_check, splits.v_select) == (
-        folder / "V_evidence.npz", folder / "V_check.npz", folder / "V_select.npz"
+        folder / "V_evidence.npz",
+        folder / "V_check.npz",
+        folder / "V_select.npz",
     )
     assert splits.test == condition_test_path(condition_store)
     assert (splits.v_evidence_sha256, splits.v_check_sha256, splits.v_select_sha256, splits.test_sha256) == (
-        meta["splits"]["V_evidence"]["sha256"], meta["splits"]["V_check"]["sha256"],
-        meta["splits"]["V_select"]["sha256"], meta["test"]["sha256"],
+        meta["splits"]["V_evidence"]["sha256"],
+        meta["splits"]["V_check"]["sha256"],
+        meta["splits"]["V_select"]["sha256"],
+        meta["test"]["sha256"],
     )
     deploy = deployment_splits(condition_store.dataset, "deploy")
     assert deploy.v_check == condition_store.private / condition_store.dataset / "splits" / "V_check.npz"
     assert deploy.test == condition_store.sealed / condition_store.dataset / "test.npz"
     assert store_condition("deploy") is None and store_condition(CONDITION) == CONDITION
-    with pytest.raises(LookupError, match=r"'toyfog_s1' is not in the data store; known: \['deploy', 'toyblur_s2'\]"):
+    with pytest.raises(
+        LookupError, match=r"'toyfog_s1' is not in the data store; known: \['deploy', 'toyblur_s2'\]"
+    ):
         deployment_splits(condition_store.dataset, "toyfog_s1")
 
 
 MISMATCHES: dict[str, tuple[Callable[[ToyStore], None], str]] = {
-    "class_names": (lambda s: _edit_meta(s, lambda m: m.update(class_names=m["class_names"][::-1])),
-                    "class_names differs from the clean dataset.json"),
-    "image_shape": (lambda s: _edit_meta(s, lambda m: m.update(image_shape=[1, 2, 8])),
-                    "image_shape differs from the clean dataset.json"),
-    "forward_sha256": (lambda s: _edit_meta(s, lambda m: m.update(forward_sha256="0" * 64)),
-                       "forward_sha256 differs from the clean dataset.json"),
-    "y_order": (lambda s: _rewrite_split(s, "V_check", lambda a: {**a, "y": np.roll(a["y"], 1)}),
-                "V_check y differs from the clean split's"),
-    "idx": (lambda s: _rewrite_split(s, "V_evidence", lambda a: {**a, "idx": a["idx"] + 1}),
-            "V_evidence idx differs from the clean split's"),
-    "train_y": (lambda s: _rewrite_split(s, "train", lambda a: {**a, "y": (a["y"] + 1) % 4}),
-                "train y differs from the clean split's"),
+    "class_names": (
+        lambda s: _edit_meta(s, lambda m: m.update(class_names=m["class_names"][::-1])),
+        "class_names differs from the clean dataset.json",
+    ),
+    "image_shape": (
+        lambda s: _edit_meta(s, lambda m: m.update(image_shape=[1, 2, 8])),
+        "image_shape differs from the clean dataset.json",
+    ),
+    "forward_sha256": (
+        lambda s: _edit_meta(s, lambda m: m.update(forward_sha256="0" * 64)),
+        "forward_sha256 differs from the clean dataset.json",
+    ),
+    "y_order": (
+        lambda s: _rewrite_split(s, "V_check", lambda a: {**a, "y": np.roll(a["y"], 1)}),
+        "V_check y differs from the clean split's",
+    ),
+    "idx": (
+        lambda s: _rewrite_split(s, "V_evidence", lambda a: {**a, "idx": a["idx"] + 1}),
+        "V_evidence idx differs from the clean split's",
+    ),
+    "train_y": (
+        lambda s: _rewrite_split(s, "train", lambda a: {**a, "y": (a["y"] + 1) % 4}),
+        "train y differs from the clean split's",
+    ),
     "missing_split": (lambda s: _edit_meta(s, lambda m: m["splits"].pop("V_select")), "no V_select split"),
-    "split_clean_hash": (lambda s: _edit_meta(s, lambda m: m["splits"]["V_check"].update(clean_sha256="1" * 64)),
-                         "V_check clean_sha256 is not the clean split's content hash"),
-    "test_clean_hash": (lambda s: _edit_meta(s, lambda m: m["test"].update(clean_sha256="2" * 64)),
-                        "test clean_sha256 is not the clean test's content hash"),
+    "split_clean_hash": (
+        lambda s: _edit_meta(s, lambda m: m["splits"]["V_check"].update(clean_sha256="1" * 64)),
+        "V_check clean_sha256 is not the clean split's content hash",
+    ),
+    "test_clean_hash": (
+        lambda s: _edit_meta(s, lambda m: m["test"].update(clean_sha256="2" * 64)),
+        "test clean_sha256 is not the clean test's content hash",
+    ),
 }
 
 
@@ -215,7 +237,11 @@ def test_dev_readout_of_a_condition_instance_reads_the_condition_v_select(condit
     base_pred = predict(instance.forward, instance.params, v_select["x"], 64)
     child_pred = predict(instance.forward, child, v_select["x"], 64)
     expected = sealed_readout(v_select["y"], base_pred, child_pred, n_classes=4)
-    assert record["condition"] == CONDITION and record["split"] == "V_select" and record["n"] == len(v_select["y"])
+    assert (
+        record["condition"] == CONDITION
+        and record["split"] == "V_select"
+        and record["n"] == len(v_select["y"])
+    )
     assert record["readouts"] == dict(expected)
     assert record["readouts"]["delta_acc"] > 0 and record["readouts"]["broken"] == 0
 
@@ -235,7 +261,10 @@ def test_drawn_conditions_add_their_transform_and_name_stems() -> None:
     tokens = condition_leak_tokens("blur5_d1", {"condition": {"transform": "blur5"}})
     assert {"blur5_d1", "blur5", "blur", "d1"} <= set(tokens)
     assert set(condition_leak_tokens("gamma_d1", {"condition": {"transform": "gamma"}})) == {
-        "gamma_d1", "gamma", "d1", *CONDITION_LEAK_WORDS
+        "gamma_d1",
+        "gamma",
+        "d1",
+        *CONDITION_LEAK_WORDS,
     }
 
 
@@ -247,5 +276,6 @@ def test_drawn_conditions_are_dev_only(toy_store: ToyStore) -> None:  # noqa: F8
 
     for roles in (("main",), ("dev", "main")):
         with pytest.raises(ValueError, match="dev-only"):
-            build_deployment_instances(toy_store.dataset, "gamma_d1", selection=DEV_PLAN, decoys={},
-                                       split_roles=roles)
+            build_deployment_instances(
+                toy_store.dataset, "gamma_d1", selection=DEV_PLAN, decoys={}, split_roles=roles
+            )

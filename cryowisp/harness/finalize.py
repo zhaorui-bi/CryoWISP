@@ -58,24 +58,31 @@ import shutil
 import signal
 import time
 from collections.abc import Mapping, Sequence
-from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from cryowisp.common.identity import params_sha256, save_params
 from cryowisp.evalkit.metrics import Candidate, choose_final
-from cryowisp.harness.arms import APPLY_BY_INDEX_TO_REAL, APPLY_ZERO, arm_spec
-from cryowisp.harness.jsonio import append_jsonl, file_sha256, iter_lines, read_json, read_jsonl, utc_now, write_json
-from cryowisp.harness.launch import KILL_REASON_WALL, LaunchOutcome
 from cryowisp.harness import fscil, loop
+from cryowisp.harness.arms import APPLY_BY_INDEX_TO_REAL, APPLY_ZERO, arm_spec
+from cryowisp.harness.jsonio import (
+    append_jsonl,
+    file_sha256,
+    iter_lines,
+    read_json,
+    read_jsonl,
+    utc_now,
+    write_json,
+)
+from cryowisp.harness.launch import KILL_REASON_WALL, LaunchOutcome
 from cryowisp.harness.ledger import CHECK_RECORD_SCHEMA, JOINT_REPLAY_FIELDS, CheckLedger
 from cryowisp.harness.program import DELTAS_FILE, DERIVED_PATCH, RUN_RECORD
 from cryowisp.harness.retention import KEPT_RULE_RETAIN, session_floor
 from cryowisp.harness.session import MANIFEST_SCHEMA, SESSION_RESULT_SCHEMA, SessionPaths, manifest_path
 from cryowisp.harness.stream import StreamSummary, infra_reasons, parse_stream
 from cryowisp.harness.tools import last_valid_declaration
-from cryowisp.patch import Limits, apply_patch_file, load_patch
+from cryowisp.patch import apply_patch_file, load_patch
 from cryowisp.sandbox import recover_interrupted_cell
 
 STATUS_COMPLETE = "complete"

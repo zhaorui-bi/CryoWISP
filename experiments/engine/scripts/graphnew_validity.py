@@ -32,12 +32,24 @@ def main() -> int:
     data = (json.dumps(report, indent=2) + "\n").encode("utf-8")
     out.write_bytes(data)
     keys = ("diff_points", "paired_se_points", "only_b_right", "only_a_right", "acc_a", "acc_b")
-    print(json.dumps({"file": str(out), "sha256": hashlib.sha256(data).hexdigest(), "gate": report["gate"],
-                      "V1": report["V1"], "V2": {k: report["V2"][k] for k in keys},
-                      "V3": {k: report["V3"][k] for k in keys} | {"R": report["V3"]["R"]},
-                      "reference_new_class": {k: report["reference_new_class"][k]
-                                              for k in ("acc_pooled", "acc_balanced", "acc_base_pooled")},
-                      "old_select": report["old_select"]}, indent=2))
+    print(
+        json.dumps(
+            {
+                "file": str(out),
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "gate": report["gate"],
+                "V1": report["V1"],
+                "V2": {k: report["V2"][k] for k in keys},
+                "V3": {k: report["V3"][k] for k in keys} | {"R": report["V3"]["R"]},
+                "reference_new_class": {
+                    k: report["reference_new_class"][k]
+                    for k in ("acc_pooled", "acc_balanced", "acc_base_pooled")
+                },
+                "old_select": report["old_select"],
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

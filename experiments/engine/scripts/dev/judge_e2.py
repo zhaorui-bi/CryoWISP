@@ -33,10 +33,12 @@ def pts(value: float | None) -> str:
 
 
 def line(tag: str, full: dict) -> str:
-    return (f"{tag} all {pts(full['delta_all'])} new {pts(full['delta_new'])} old {pts(full['delta_old'])}  worst old "
-            f"class {full['worst_old_class']} {pts(full['worst_old_class_delta'])}  acc all "
-            f"{100.0 * full['acc_all_child']:.2f}% new {100.0 * full['acc_new_child']:.2f}%  n all/new/old "
-            f"{full['n_all']}/{full['n_new']}/{full['n_old']}")
+    return (
+        f"{tag} all {pts(full['delta_all'])} new {pts(full['delta_new'])} old {pts(full['delta_old'])}  worst old "
+        f"class {full['worst_old_class']} {pts(full['worst_old_class_delta'])}  acc all "
+        f"{100.0 * full['acc_all_child']:.2f}% new {100.0 * full['acc_new_child']:.2f}%  n all/new/old "
+        f"{full['n_all']}/{full['n_new']}/{full['n_old']}"
+    )
 
 
 def retention_pick(checks: list[dict], floor: int = S_OLD_FLOOR) -> tuple[dict | None, int]:
@@ -48,7 +50,9 @@ def retention_pick(checks: list[dict], floor: int = S_OLD_FLOOR) -> tuple[dict |
         if int(check["score_old"]) >= floor:
             eligible.append(check)
     base = {"score": 0, "n_changed": 0, "query_index": -1, "patch_id": None}
-    chosen = min([base, *eligible], key=lambda c: (-int(c["score"]), int(c["n_changed"]), int(c["query_index"])))
+    chosen = min(
+        [base, *eligible], key=lambda c: (-int(c["score"]), int(c["n_changed"]), int(c["query_index"]))
+    )
     return (None if chosen["patch_id"] is None else chosen), len(eligible)
 
 
@@ -62,29 +66,43 @@ def main() -> None:
     info = json.loads((out / "info.json").read_text())
     final = info["final"]
     print(f"== {args.session_id}  instance {info['instance_id']}  ({info['dataset']})")
-    print(f"   final: noop {final.get('is_base_noop')}  query {final.get('query_index')}  program {final.get('patch_id')}")
+    print(
+        f"   final: noop {final.get('is_base_noop')}  query {final.get('query_index')}  program {final.get('patch_id')}"
+    )
     if final.get("vcheck"):
         vc = final["vcheck"]
-        print(f"   V_check: score_new {vc.get('score_new')}  score_old {vc.get('score_old')}  S_joint {vc.get('score')}")
+        print(
+            f"   V_check: score_new {vc.get('score_new')}  score_old {vc.get('score_old')}  S_joint {vc.get('score')}"
+        )
     if final.get("readouts_fewshot"):
         full = final["readouts_fewshot"]
         print(line("   E2 V_select:", full))
         if args.best_ref_all is not None:
-            checks = {"all>=best_ref+2": 100.0 * full["delta_all"] >= args.best_ref_all + 2.0,
-                      "old>=-1.0": 100.0 * full["delta_old"] >= -1.0}
-            print(f"   E2 {'SUPPORTED' if all(checks.values()) else 'not supported'} (best reference all "
-                  f"{args.best_ref_all:+.2f}): {checks}")
-    session_checks = Path(os.environ["CRYOWISP_RUNS"]) / "sessions" / args.session_id / "logs" / "checks.jsonl"
+            checks = {
+                "all>=best_ref+2": 100.0 * full["delta_all"] >= args.best_ref_all + 2.0,
+                "old>=-1.0": 100.0 * full["delta_old"] >= -1.0,
+            }
+            print(
+                f"   E2 {'SUPPORTED' if all(checks.values()) else 'not supported'} (best reference all "
+                f"{args.best_ref_all:+.2f}): {checks}"
+            )
+    session_checks = (
+        Path(os.environ["CRYOWISP_RUNS"]) / "sessions" / args.session_id / "logs" / "checks.jsonl"
+    )
     checks = [json.loads(raw) for raw in session_checks.read_text().splitlines() if raw.strip()]
     chosen, n_eligible = retention_pick(checks)
     if chosen is None:
-        print(f"   supplement (S_old >= {S_OLD_FLOOR}): base ({n_eligible}/{len(checks)} eligible, none with S_joint > 0)")
+        print(
+            f"   supplement (S_old >= {S_OLD_FLOOR}): base ({n_eligible}/{len(checks)} eligible, none with S_joint > 0)"
+        )
     else:
         rows = [row for row in info["trajectory"] if int(row["query_index"]) == int(chosen["query_index"])]
         if len(rows) != 1:
             raise SystemExit(f"query {chosen['query_index']}: {len(rows)} trajectory rows")
-        print(f"   supplement (S_old >= {S_OLD_FLOOR}): q{chosen['query_index']} {chosen.get('program_file')} "
-              f"({n_eligible}/{len(checks)} eligible)  V_check S_new {chosen['score_new']} S_old {chosen['score_old']}")
+        print(
+            f"   supplement (S_old >= {S_OLD_FLOOR}): q{chosen['query_index']} {chosen.get('program_file')} "
+            f"({n_eligible}/{len(checks)} eligible)  V_check S_new {chosen['score_new']} S_old {chosen['score_old']}"
+        )
         print(line("   supplement V_select:", rows[0]["readouts_fewshot"]))
     for ref_file in args.refs:
         for raw in Path(ref_file).read_text().splitlines():
@@ -104,7 +122,12 @@ def main() -> None:
         if record.get("status") != "ok":
             print(f"   transfer {target}: {record.get('status')} {record.get('messages')}")
             continue
-        print(line(f"   transfer {target} within_limits {record.get('within_limits')}:", record["readouts_fewshot"]))
+        print(
+            line(
+                f"   transfer {target} within_limits {record.get('within_limits')}:",
+                record["readouts_fewshot"],
+            )
+        )
 
 
 if __name__ == "__main__":

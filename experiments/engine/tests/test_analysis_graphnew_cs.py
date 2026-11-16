@@ -38,8 +38,13 @@ def test_propagations_reach_unlabelled_nodes_and_keep_seeds() -> None:
         out = outputs[name].numpy()
         assert out.shape == (n, c) and out.min() >= 0 and out.max() <= 1
         assert out[0].argmax() == 1 and out[5].argmax() == 2
-    smooth = C.smooth_only(C.normalized_adjacencies(indptr, indices, n), C.softmax64(logits), seeds, labels,
-                           {"A": "DAD", "alpha": 0.0, "num_propagations": 3})
+    smooth = C.smooth_only(
+        C.normalized_adjacencies(indptr, indices, n),
+        C.softmax64(logits),
+        seeds,
+        labels,
+        {"A": "DAD", "alpha": 0.0, "num_propagations": 3},
+    )
     expected = torch.softmax(torch.from_numpy(logits), 1)
     expected[0] = torch.tensor([0.0, 1.0, 0.0], dtype=torch.float64)
     expected[5] = torch.tensor([0.0, 0.0, 1.0], dtype=torch.float64)

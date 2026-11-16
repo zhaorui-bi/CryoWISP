@@ -46,8 +46,11 @@ def parse_spec(spec: str) -> tuple[str, str, int]:
 def utilization(result: dict[str, Any]) -> float | None:
     """The larger five-hour or seven-day utilization of the session's last rate-limit event, if it reported one."""
     event = (result.get("stream") or {}).get("rate_limit_last") or {}
-    values = [float(window["utilization"]) for window in (event.get("five_hour"), event.get("seven_day"))
-              if isinstance(window, dict) and window.get("utilization") is not None]
+    values = [
+        float(window["utilization"])
+        for window in (event.get("five_hour"), event.get("seven_day"))
+        if isinstance(window, dict) and window.get("utilization") is not None
+    ]
     return max(values) if values else None
 
 
@@ -75,20 +78,40 @@ def _matching(sessions: Path, names: Sequence[str], instance: str, arm: str, rep
 def run_one(spec: tuple[str, str, int], args: argparse.Namespace, sessions: Path) -> dict[str, Any]:
     """Launch one session and return its log record (``stop_reason`` is None when the chain may continue)."""
     instance, arm, repeat = spec
-    command = [sys.executable, str(args.runner), "--instance", instance, "--arm", arm, "--repeat", str(repeat),
-               "--effort", args.effort, "--wall-timeout-min", str(args.wall_timeout_min)]
+    command = [
+        sys.executable,
+        str(args.runner),
+        "--instance",
+        instance,
+        "--arm",
+        arm,
+        "--repeat",
+        str(repeat),
+        "--effort",
+        args.effort,
+        "--wall-timeout-min",
+        str(args.wall_timeout_min),
+    ]
     if args.dry_run:
         command.append("--dry-run")
     before = _dirs(sessions)
     out_path = args.log.with_name(f"{args.log.stem}.{instance}_{arm}_r{repeat}.out")
-    record: dict[str, Any] = {"spec": f"{instance}:{arm}:{repeat}", "started": _now(), "command": command[1:],
-                              "output": str(out_path)}
+    record: dict[str, Any] = {
+        "spec": f"{instance}:{arm}:{repeat}",
+        "started": _now(),
+        "command": command[1:],
+        "output": str(out_path),
+    }
     with out_path.open("w", encoding="utf-8") as out:
-        record["exit_code"] = subprocess.run(command, stdout=out, stderr=subprocess.STDOUT, check=False).returncode
+        record["exit_code"] = subprocess.run(
+            command, stdout=out, stderr=subprocess.STDOUT, check=False
+        ).returncode
     record["ended"] = _now()
     new = _matching(sessions, sorted(_dirs(sessions) - before), instance, arm, repeat)
     if len(new) != 1:
-        record["stop_reason"] = f"expected one new session directory for this spec under {sessions}, found {len(new)}: {new}"
+        record["stop_reason"] = (
+            f"expected one new session directory for this spec under {sessions}, found {len(new)}: {new}"
+        )
         return record
     root = sessions / new[0]
     record["root"] = str(root)
@@ -99,9 +122,16 @@ def run_one(spec: tuple[str, str, int], args: argparse.Namespace, sessions: Path
     result = json.loads(result_path.read_text(encoding="utf-8"))
     final = result.get("final") or {}
     stream = result.get("stream") or {}
-    record.update(status=result.get("status"), infra=result.get("infra"), score=final.get("score"),
-                  is_base_noop=final.get("is_base_noop"), wall_s=result.get("wall_s"), tokens=result.get("tokens"),
-                  rate_limit_last=stream.get("rate_limit_last"), utilization=utilization(result))
+    record.update(
+        status=result.get("status"),
+        infra=result.get("infra"),
+        score=final.get("score"),
+        is_base_noop=final.get("is_base_noop"),
+        wall_s=result.get("wall_s"),
+        tokens=result.get("tokens"),
+        rate_limit_last=stream.get("rate_limit_last"),
+        utilization=utilization(result),
+    )
     if result.get("infra"):
         record["stop_reason"] = f"INFRA: {result.get('infra_reasons')}"
     elif record["utilization"] is not None and record["utilization"] >= args.stop_at:
@@ -117,8 +147,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--log", type=Path, required=True, help="JSON-lines log, appended to")
     parser.add_argument("--effort", required=True)
     parser.add_argument("--wall-timeout-min", type=float, required=True)
-    parser.add_argument("--stop-at", type=float, default=0.95, help="stop at this five-hour or seven-day utilization")
-    parser.add_argument("--dry-run", action="store_true", help="pass --dry-run to the runner (no Claude Code)")
+    parser.add_argument(
+        "--stop-at", type=float, default=0.95, help="stop at this five-hour or seven-day utilization"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="pass --dry-run to the runner (no Claude Code)"
+    )
     parser.add_argument("--runner", type=Path, default=RUNNER, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     sessions = Path(os.environ["CRYOWISP_RUNS"]) / ("dry_runs" if args.dry_run else "sessions")
@@ -128,10 +162,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         record["index"] = index
         with args.log.open("a", encoding="utf-8") as log:
             log.write(json.dumps(record, sort_keys=True) + "\n")
-        print(f"{record['ended']} {record['spec']} exit {record['exit_code']} status {record.get('status')} "
-              f"S {record.get('score')} utilization {record.get('utilization')} stop {record['stop_reason']}", flush=True)
+        print(
+            f"{record['ended']} {record['spec']} exit {record['exit_code']} status {record.get('status')} "
+            f"S {record.get('score')} utilization {record.get('utilization')} stop {record['stop_reason']}",
+            flush=True,
+        )
         if record["stop_reason"] is not None:
-            remaining = [f"{i}:{a}:{r}" for i, a, r in args.specs[index + 1:]]
+            remaining = [f"{i}:{a}:{r}" for i, a, r in args.specs[index + 1 :]]
             if remaining:
                 print(f"chain stopped; not launched: {remaining}", flush=True)
             return 2

@@ -41,7 +41,9 @@ def forward_source(n_nodes: int) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--install", type=Path, help="downloaded official arxiv.zip to install into the raw store")
+    parser.add_argument(
+        "--install", type=Path, help="downloaded official arxiv.zip to install into the raw store"
+    )
     parser.add_argument("--fetch-note", help="how the zip was fetched (required with --install)")
     parser.add_argument("--verify", action="store_true", help="re-derive from the raw zip and compare hashes")
     args = parser.parse_args(argv)
@@ -59,8 +61,16 @@ def main(argv: list[str] | None = None) -> int:
             n_nodes = built.manifest["graph"]["n_nodes"]
             source_ok = forward_path(built.dataset).read_text(encoding="utf-8") == forward_source(n_nodes)
             ok = ok and source_ok and all(value["match"] for value in report.values())
-            print(json.dumps({"dataset": built.dataset, **{key: value["match"] for key, value in report.items()},
-                              "forward": source_ok}, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "dataset": built.dataset,
+                        **{key: value["match"] for key, value in report.items()},
+                        "forward": source_ok,
+                    },
+                    indent=2,
+                )
+            )
         return 0 if ok else 1
     from cryowisp.data.sources import provenance_path
     from cryowisp.data.store import read_json
@@ -68,12 +78,27 @@ def main(argv: list[str] | None = None) -> int:
     provenance = read_json(provenance_path())["sources"][A.SOURCE]
     info = run_info(REPO_ROOT)
     for built in builds:
-        forward_sha = write_forward(forward_path(built.dataset), forward_source(built.manifest["graph"]["n_nodes"]))
+        forward_sha = write_forward(
+            forward_path(built.dataset), forward_source(built.manifest["graph"]["n_nodes"])
+        )
         manifest = A.write(built, forward_sha, provenance, info)
-        graphs = {key: {k: manifest[key][k] for k in ("sha256", "n_nodes", "nnz", "n_undirected_edges")}
-                  for key in ("graph", "train_graph") if key in manifest}
-        print(json.dumps({"dataset": built.dataset, "split_sizes": manifest["split_sizes"], **graphs,
-                          "test_n": manifest["test"]["n"], "forward_sha256": forward_sha}, indent=2))
+        graphs = {
+            key: {k: manifest[key][k] for k in ("sha256", "n_nodes", "nnz", "n_undirected_edges")}
+            for key in ("graph", "train_graph")
+            if key in manifest
+        }
+        print(
+            json.dumps(
+                {
+                    "dataset": built.dataset,
+                    "split_sizes": manifest["split_sizes"],
+                    **graphs,
+                    "test_n": manifest["test"]["n"],
+                    "forward_sha256": forward_sha,
+                },
+                indent=2,
+            )
+        )
     return 0
 
 

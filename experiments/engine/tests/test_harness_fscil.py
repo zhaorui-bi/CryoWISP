@@ -37,7 +37,7 @@ from cryowisp.harness import fscil, seqskill
 from cryowisp.harness.applying import ArmApplier
 from cryowisp.harness.arms import applied_limits, arm_spec
 from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import file_sha256, read_json
+from cryowisp.harness.jsonio import read_json
 from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.library import LIBRARY_INDEX_FILE
 from cryowisp.harness.prompts import PROMPT_DIR, render_system
@@ -52,11 +52,18 @@ from cryowisp.sandbox.program import ProgramSandbox
 
 # The repo is mounted into every session, so its path must hold none of the self-test's dataset tokens.
 REPO_TOKENS = scan_for_tokens(str(Path(__file__).resolve().parents[1]), leak_tokens(FS.DATASET))
-needs_neutral_repo = pytest.mark.skipif(bool(REPO_TOKENS), reason=(
-    f"the repo path holds {REPO_TOKENS}: an fscil session's sandbox self-test refuses it (it reads the session's "
-    "mounts, the repo among them); run these tests from a worktree whose path holds none"))
+needs_neutral_repo = pytest.mark.skipif(
+    bool(REPO_TOKENS),
+    reason=(
+        f"the repo path holds {REPO_TOKENS}: an fscil session's sandbox self-test refuses it (it reads the session's "
+        "mounts, the repo among them); run these tests from a worktree whose path holds none"
+    ),
+)
 HEAD = ["fc.weight"]
-R_TOY, D_TOY = -10.0, 0.0  # the toy floors (the toy has no PREREG floor): about -12 rows at session 2, no clamp
+R_TOY, D_TOY = (
+    -10.0,
+    0.0,
+)  # the toy floors (the toy has no PREREG floor): about -12 rows at session 2, no clamp
 SOURCE = {"rule": "PREREG E9 joint_retain_floor", "R": R_TOY, "d": D_TOY, "n": 1}
 WHY = {"hypothesis": "a limit probe", "predicted_effect": "accepted or refused by the limits"}
 PLACEHOLDER = {"placeholder": True, "note": "a stand-in floor for a dry run, not the PREREG E9 floor"}
@@ -74,7 +81,7 @@ KEPT_TEMPLATE_SHA256 = {
     "system_LEARN_seqskill_rule.md": "0650d491e314fc99246e91e40024b119fd379c19e104678b933889a6ccf0adcf",
     "task_LEARN_seqskill_rule.md": "d64730fb5bdb1723e2ef01908a06f1a1186b44ba7cced9e361c347e958bd7328",
 }
-PROGRAM_TEMPLATE = '''HYPOTHESIS = "a class is recognised when its head row points at the mean feature of its images"
+PROGRAM_TEMPLATE = """HYPOTHESIS = "a class is recognised when its head row points at the mean feature of its images"
 PREDICTED_EFFECT = "the check images of the new classes become correct and few earlier images break"
 import numpy as np
 IMAGES = np.frombuffer(bytes.fromhex("{images}"), dtype=np.uint8).reshape({shape})
@@ -103,7 +110,7 @@ def update(student, experience):
             delta[c] = -2.0 * weight[c]
     print("rows", new)
     return {{head: delta}}
-'''
+"""
 
 
 def imprint_program(spoil_first_class: int | None = None) -> str:
@@ -114,22 +121,32 @@ def imprint_program(spoil_first_class: int | None = None) -> str:
     v_check = data_store.load_split(FS.DATASET, "V_check")
     keep = v_check["y"] >= FS.N_BASE_CLASSES
     images = np.ascontiguousarray(v_check["x"][keep]).astype(np.uint8)
-    return PROGRAM_TEMPLATE.format(images=images.tobytes().hex(), shape=(-1, *images.shape[1:]),
-                                   labels=v_check["y"][keep].astype(int).tolist(), spoil=spoil_first_class)
+    return PROGRAM_TEMPLATE.format(
+        images=images.tobytes().hex(),
+        shape=(-1, *images.shape[1:]),
+        labels=v_check["y"][keep].astype(int).tolist(),
+        spoil=spoil_first_class,
+    )
 
 
 def program_cell(programs: dict[str, str]) -> str:
     payload = json.dumps(json.dumps(programs))
-    return ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n"
-            f"print(sorted(json.loads({payload})))\n")
+    return (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        f"print(sorted(json.loads({payload})))\n"
+    )
 
 
 def learn_steps(program: str, name: str = "imprint.py") -> list[tuple[str, dict[str, Any]]]:
     """The scripted editor: write the program, check it, read the status and declare it."""
-    return [("python", {"code": program_cell({name: program})}), ("patch_check", {"program_file": name}),
-            ("status", {}), ("declare_final", {"program_file": name, "rationale": "the only program"})]
+    return [
+        ("python", {"code": program_cell({name: program})}),
+        ("patch_check", {"program_file": name}),
+        ("status", {}),
+        ("declare_final", {"program_file": name, "rationale": "the only program"}),
+    ]
 
 
 def toy_floor(session: int) -> int:
@@ -162,7 +179,9 @@ def chain4(toy: ToyFscil, cid: str) -> list[str]:
     save_params(parent, toy.base_params)
     ids = [cid]
     for t in (3, 4):
-        row = FS.build_fscil_instance(t, lineage="X", parent_params=parent, parent_instance=ids[-1], run_id="r0")
+        row = FS.build_fscil_instance(
+            t, lineage="X", parent_params=parent, parent_instance=ids[-1], run_id="r0"
+        )
         ids.append(str(row["instance_id"]))
     return ids
 
@@ -171,8 +190,13 @@ def chain4(toy: ToyFscil, cid: str) -> list[str]:
 def learned(toy: ToyFscil, cid: str) -> tuple[Any, list[Any], str]:
     """One scripted LEARN session at session 2 under the toy floor: (result, replies, program)."""
     program = imprint_program()
-    result, replies = scripted_session(cid, "LEARN", learn_steps(program), retention_floor_rows=toy_floor(2),
-                                       retention_floor_source=toy_source(2))
+    result, replies = scripted_session(
+        cid,
+        "LEARN",
+        learn_steps(program),
+        retention_floor_rows=toy_floor(2),
+        retention_floor_source=toy_source(2),
+    )
     return result, replies, program
 
 
@@ -196,14 +220,23 @@ def test_fscil_names_agree_with_the_evalkit_rule(tmp_path: Path, monkeypatch: py
         fscil.instance_dir("g0123abcd")
 
 
-def test_the_fscil_templates_derive_from_the_fewshot_ones_and_the_kept_ones_are_unchanged(toy: ToyFscil) -> None:
-    for name, digest in KEPT_TEMPLATE_SHA256.items():  # the fewshot, seqskill and rule_only templates are untouched
+def test_the_fscil_templates_derive_from_the_fewshot_ones_and_the_kept_ones_are_unchanged(
+    toy: ToyFscil,
+) -> None:
+    for (
+        name,
+        digest,
+    ) in KEPT_TEMPLATE_SHA256.items():  # the fewshot, seqskill and rule_only templates are untouched
         assert hashlib.sha256((PROMPT_DIR / name).read_bytes()).hexdigest() == digest
-    assert render_system("LEARN", fewshot=True) == (PROMPT_DIR / "system_LEARN_fewshot.md").read_text(encoding="utf-8")
+    assert render_system("LEARN", fewshot=True) == (PROMPT_DIR / "system_LEARN_fewshot.md").read_text(
+        encoding="utf-8"
+    )
     assert render_system("LEARN", seqskill=True) == (PROMPT_DIR / "system_LEARN_seqskill.md").read_text(
-        encoding="utf-8")
+        encoding="utf-8"
+    )
     assert render_system("LEARN", seqskill=True, seqskill_variant=seqskill.RULE_ONLY) == (
-        PROMPT_DIR / "system_LEARN_seqskill_rule.md").read_text(encoding="utf-8")
+        PROMPT_DIR / "system_LEARN_seqskill_rule.md"
+    ).read_text(encoding="utf-8")
     few = (PROMPT_DIR / "system_LEARN_fewshot.md").read_text(encoding="utf-8")
     inc = (PROMPT_DIR / "system_LEARN_fscil.md").read_text(encoding="utf-8")
     few_blocks, inc_blocks = _paragraphs(few), _paragraphs(inc)
@@ -211,7 +244,10 @@ def test_the_fscil_templates_derive_from_the_fewshot_ones_and_the_kept_ones_are_
     assert len(few_blocks) == len(inc_blocks) and len(changed) == 2  # the role and the kept rule's body
     assert inc_blocks[changed[1] - 1] == "## What is kept"
     assert "sessions" in inc_blocks[changed[0]] and "seen so far" in inc_blocks[changed[0]]
-    assert "earlier sessions" in inc_blocks[changed[1]] and "prediction rule of this session" in inc_blocks[changed[1]]
+    assert (
+        "earlier sessions" in inc_blocks[changed[1]]
+        and "prediction rule of this session" in inc_blocks[changed[1]]
+    )
     assert max(len(line) for line in inc.splitlines()) <= 116
     task_few = (PROMPT_DIR / "task_LEARN.md").read_text(encoding="utf-8").split("\n- ")
     task_inc = (PROMPT_DIR / "task_LEARN_fscil.md").read_text(encoding="utf-8").split("\n- ")
@@ -225,11 +261,19 @@ def test_the_fscil_templates_derive_from_the_fewshot_ones_and_the_kept_ones_are_
         render_system("M2", fscil=True)
     with pytest.raises(ValueError, match="not both"):
         render_system("LEARN", fewshot=True, fscil=True)
-    stated = " ".join(render_system("LEARN", fscil=True, kept_rule=kept_rule_record_rows(
-        -12, 120, fscil.CHECK_SET, SOURCE)).split())
-    assert "score_old is at least -12 (at most 12 more old-class check-set images broken than fixed)" in stated
-    zero = " ".join(render_system("LEARN", fscil=True, kept_rule=kept_rule_record_rows(
-        0, 1800, fscil.CHECK_SET, SOURCE)).split())
+    stated = " ".join(
+        render_system(
+            "LEARN", fscil=True, kept_rule=kept_rule_record_rows(-12, 120, fscil.CHECK_SET, SOURCE)
+        ).split()
+    )
+    assert (
+        "score_old is at least -12 (at most 12 more old-class check-set images broken than fixed)" in stated
+    )
+    zero = " ".join(
+        render_system(
+            "LEARN", fscil=True, kept_rule=kept_rule_record_rows(0, 1800, fscil.CHECK_SET, SOURCE)
+        ).split()
+    )
     assert "score_old is at least 0 (at most 0 more old-class check-set images broken than fixed)" in zero
     assert "with score_old below 0 is never kept" in zero
 
@@ -240,10 +284,16 @@ def test_the_fscil_tools_name_the_session_check_sets() -> None:
     shown = {spec["name"]: spec["description"] for spec in tool_specs(tools, program=True, fscil=True)}
     assert shown["patch_check"] == plain["patch_check"].replace(PROGRAM_CHECK_SETS, FSCIL_CHECK_SETS)
     assert shown["patch_check"] != plain["patch_check"]
-    assert {k: v for k, v in shown.items() if k != "patch_check"} == {k: v for k, v in plain.items()
-                                                                      if k != "patch_check"}
-    assert "score_old of at least 0" in {spec["name"]: spec["description"] for spec in tool_specs(
-        tools, program=True, fscil=True, s_old_floor=0)}["declare_final"]
+    assert {k: v for k, v in shown.items() if k != "patch_check"} == {
+        k: v for k, v in plain.items() if k != "patch_check"
+    }
+    assert (
+        "score_old of at least 0"
+        in {
+            spec["name"]: spec["description"]
+            for spec in tool_specs(tools, program=True, fscil=True, s_old_floor=0)
+        }["declare_final"]
+    )
     with pytest.raises(ValueError, match="program arm"):
         tool_specs(arm_spec("M2").tools, fscil=True)
 
@@ -271,13 +321,16 @@ def test_an_fscil_id_resolves_and_every_refusal_comes_before_a_write(toy: ToyFsc
     assert sorted(path.name for path in runs.iterdir()) == before  # nothing written
 
 
-def test_the_learn_view_holds_three_parts_at_sessions_2_and_4(toy: ToyFscil, chain4: list[str],
-                                                             tmp_path: Path) -> None:
+def test_the_learn_view_holds_three_parts_at_sessions_2_and_4(
+    toy: ToyFscil, chain4: list[str], tmp_path: Path
+) -> None:
     for t, instance_id in zip((2, 4), (chain4[0], chain4[2])):
         instance = load_instance(fscil.instance_dir(instance_id))
         (tmp_path / f"v{t}" / "private").mkdir(parents=True)
         view = assemble(instance.instance_dir, "LEARN", tmp_path / f"v{t}")
-        assert sorted(view.files) == sorted(TRIAL_FILES) and view.fscil == fscil.session_record(instance.private)
+        assert sorted(view.files) == sorted(TRIAL_FILES) and view.fscil == fscil.session_record(
+            instance.private
+        )
         with np.load(view.trial_dir / "experience.npz", allow_pickle=False) as archive:
             arrays = {key: archive[key] for key in archive.files}
         assert sorted(arrays) == sorted(fscil.EXPERIENCE_KEYS)
@@ -293,7 +346,9 @@ def test_the_learn_view_holds_three_parts_at_sessions_2_and_4(toy: ToyFscil, cha
                 np.testing.assert_array_equal(arrays[f"pred_{part}"], expected)
                 assert int(arrays[f"pred_{part}"].max()) < FS.n_seen(t)
         task = read_json(view.trial_dir / "task.json")
-        assert task["experience"]["new"]["count"] == 25 and task["experience"]["prev"]["count"] == 25 * (t - 2)
+        assert task["experience"]["new"]["count"] == 25 and task["experience"]["prev"]["count"] == 25 * (
+            t - 2
+        )
         assert task["experience"]["old"]["count"] == FS.N_REPLAY
         assert view.experience["session"] == t and view.experience["n_seen"] == FS.n_seen(t)
         spec = read_json(view.trial_dir / "model_spec.json")
@@ -306,27 +361,55 @@ def test_the_fscil_limits_exempt_the_head_and_allow_one_op_per_tensor(toy: ToyFs
     n_tensors = len(instance.params)
     limits = fscil.program_limits(instance.task["limits"], n_tensors)
     assert limits == applied_limits(instance.task["limits"], "LEARN", n_tensors)
-    assert list(limits.rel_frob_exempt) == HEAD == fscil.head_tensors(read_json(instance.instance_dir /
-                                                                               "model_spec.json"))
+    assert (
+        list(limits.rel_frob_exempt)
+        == HEAD
+        == fscil.head_tensors(read_json(instance.instance_dir / "model_spec.json"))
+    )
     assert limits.max_ops == n_tensors > 64 and limits.max_rel_frob == 0.5 and limits.max_changed_frac == 0.2
 
     def patch(tensor: str, scale: float) -> dict:
         value = instance.params[tensor]
-        return {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, **WHY,
-                "ops": [{"op": "add", "tensor": tensor, "index": [[0] * value.ndim],
-                         "values": [scale * float(np.linalg.norm(value))]}]}
+        return {
+            "schema": "cryowisp.patch.v0",
+            "parent_sha256": instance.params_sha256,
+            **WHY,
+            "ops": [
+                {
+                    "op": "add",
+                    "tensor": tensor,
+                    "index": [[0] * value.ndim],
+                    "values": [scale * float(np.linalg.norm(value))],
+                }
+            ],
+        }
 
-    apply_patch(instance.params, patch("fc.weight", 3.0), None, limits, instance.params_sha256)  # the head: exempt
+    apply_patch(
+        instance.params, patch("fc.weight", 3.0), None, limits, instance.params_sha256
+    )  # the head: exempt
     conv = next(name for name, value in instance.params.items() if value.ndim == 4)
     with pytest.raises(PatchError, match="rel"):
         apply_patch(instance.params, patch(conv, 3.0), None, limits, instance.params_sha256)
-    every = {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, **WHY,
-             "ops": [{"op": "add", "tensor": name, "index": [[0] * value.ndim], "values": [0.0]}
-                     for name, value in instance.params.items()]}
-    apply_patch(instance.params, every, None, limits, instance.params_sha256)  # one op per tensor fits max_ops
+    every = {
+        "schema": "cryowisp.patch.v0",
+        "parent_sha256": instance.params_sha256,
+        **WHY,
+        "ops": [
+            {"op": "add", "tensor": name, "index": [[0] * value.ndim], "values": [0.0]}
+            for name, value in instance.params.items()
+        ],
+    }
+    apply_patch(
+        instance.params, every, None, limits, instance.params_sha256
+    )  # one op per tensor fits max_ops
     with pytest.raises(PatchError):
-        apply_patch(instance.params, {**every, "ops": [*every["ops"], every["ops"][0]]}, None, limits,
-                    instance.params_sha256)
+        apply_patch(
+            instance.params,
+            {**every, "ops": [*every["ops"], every["ops"][0]]},
+            None,
+            limits,
+            instance.params_sha256,
+        )
 
 
 def test_the_fscil_strings_hold_the_chain_and_pass_the_class_names(toy: ToyFscil, chain4: list[str]) -> None:
@@ -336,7 +419,9 @@ def test_the_fscil_strings_hold_the_chain_and_pass_the_class_names(toy: ToyFscil
     forbidden = session_forbidden_strings(record, extra_tokens=tokens)
     assert set(fscil.leak_words(tokens)) <= set(forbidden.text)
     assert set(chain4) <= set(forbidden.selftest) and {"fscil", "seed"} <= set(forbidden.selftest)
-    assert record.private["vcheck_path"] in forbidden.text and record.private["oldcheck_path"] in forbidden.text
+    assert (
+        record.private["vcheck_path"] in forbidden.text and record.private["oldcheck_path"] in forbidden.text
+    )
     names = "the plain, plate, poppy, porcupine and possum images, then apple and aquarium_fish"
     assert fscil.scan(names, forbidden.text) == []
     assert fscil.scan(f"the fscil store and {chain4[0]}", forbidden.text) == sorted(["fscil", chain4[0]])
@@ -346,15 +431,24 @@ def test_the_fscil_strings_hold_the_chain_and_pass_the_class_names(toy: ToyFscil
 @needs_neutral_repo
 def test_a_floor_of_zero_runs_and_keeps_only_a_program_with_no_net_old_loss(toy: ToyFscil, cid: str) -> None:
     source = {**toy_source(2), "floor_t": 0, "d": 0.05}
-    dry = run_session(cid, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True, retention_floor_rows=0,
-                      retention_floor_source=source)
+    dry = run_session(
+        cid,
+        "LEARN",
+        0,
+        effort="low",
+        wall_timeout_s=60.0,
+        dry_run=True,
+        retention_floor_rows=0,
+        retention_floor_source=source,
+    )
     assert dry.status == "dry_run" and dry.record["selftest"]["status"] == "pass", dry.record
     session = read_json(SessionPaths(dry.root).session_json)
     assert session["kept_rule"]["s_old_floor"] == 0
     stated = " ".join(SessionPaths(dry.root).system_prompt.read_text(encoding="utf-8").split())
     assert "score_old is at least 0 (at most 0 more old-class check-set images broken than fixed)" in stated
-    result, replies = scripted_session(cid, "LEARN", learn_steps(imprint_program()), retention_floor_rows=0,
-                                       retention_floor_source=source)
+    result, replies = scripted_session(
+        cid, "LEARN", learn_steps(imprint_program()), retention_floor_rows=0, retention_floor_source=source
+    )
     assert result.status == "complete", result.record.get("infra_reasons")
     check = replies[1].payload
     assert check["score"] > 0 and check["score_old"] < 0  # kept under the toy floor, not under 0
@@ -365,13 +459,22 @@ def test_a_floor_of_zero_runs_and_keeps_only_a_program_with_no_net_old_loss(toy:
 @needs_sandbox
 @needs_neutral_repo
 def test_an_fscil_dry_run_records_its_placeholder_floor(toy: ToyFscil, cid: str) -> None:
-    result = run_session(cid, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                         retention_floor_rows=-12, retention_floor_source=PLACEHOLDER)
+    result = run_session(
+        cid,
+        "LEARN",
+        0,
+        effort="low",
+        wall_timeout_s=60.0,
+        dry_run=True,
+        retention_floor_rows=-12,
+        retention_floor_source=PLACEHOLDER,
+    )
     assert result.status == "dry_run", result.record
     assert result.root.parent.name == "dry_runs"
     session = read_json(SessionPaths(result.root).session_json)
-    assert session["kept_rule"] == kept_rule_record_rows(-12, int(session["fscil"]["n_vcheck_old"]),
-                                                         fscil.CHECK_SET, PLACEHOLDER)
+    assert session["kept_rule"] == kept_rule_record_rows(
+        -12, int(session["fscil"]["n_vcheck_old"]), fscil.CHECK_SET, PLACEHOLDER
+    )
     assert session["leak_scan"]["passed"] is True and result.record["selftest"]["status"] == "pass"
     assert sorted(result.record["trial_files"]) == sorted(TRIAL_FILES)
     assert session["model_id"] == toy.base_model_id and session["fscil"]["session"] == 2
@@ -380,7 +483,8 @@ def test_an_fscil_dry_run_records_its_placeholder_floor(toy: ToyFscil, cid: str)
 @needs_sandbox
 @needs_neutral_repo
 def test_a_scripted_learn_session_scores_programs_under_the_session_mask(
-        toy: ToyFscil, cid: str, learned: tuple[Any, list[Any], str], tmp_path: Path) -> None:
+    toy: ToyFscil, cid: str, learned: tuple[Any, list[Any], str], tmp_path: Path
+) -> None:
     result, replies, program = learned
     assert result.status == "complete", result.record.get("infra_reasons")
     cell, check, _, declared = replies
@@ -394,12 +498,16 @@ def test_a_scripted_learn_session_scores_programs_under_the_session_mask(
     session = read_json(paths.session_json)
     instance = load_instance(fscil.instance_dir(cid))
     assert session["fscil"] == fscil.session_record(instance.private) and session["clean_check"] is None
-    assert session["kept_rule"] == kept_rule_record_rows(toy_floor(2), int(instance.private["n_vcheck_old"]),
-                                                         fscil.CHECK_SET, toy_source(2))
-    assert session["model_id"] == toy.base_model_id and session["n_vcheck"] == fscil.vcheck_rows(instance.private)
+    assert session["kept_rule"] == kept_rule_record_rows(
+        toy_floor(2), int(instance.private["n_vcheck_old"]), fscil.CHECK_SET, toy_source(2)
+    )
+    assert session["model_id"] == toy.base_model_id and session["n_vcheck"] == fscil.vcheck_rows(
+        instance.private
+    )
     assert session["leak_scan"]["passed"] is True and "fscil" in session["leak_scan"]["tokens"]
-    assert paths.system_prompt.read_text(encoding="utf-8") == render_system("LEARN", fscil=True,
-                                                                            kept_rule=session["kept_rule"])
+    assert paths.system_prompt.read_text(encoding="utf-8") == render_system(
+        "LEARN", fscil=True, kept_rule=session["kept_rule"]
+    )
     task_prompt = paths.task_prompt.read_text(encoding="utf-8")
     assert "This is session 2" in task_prompt and "`x_prev`" in task_prompt and "60 (plain)" in task_prompt
     assert LIBRARY_INDEX_FILE not in task_prompt
@@ -407,12 +515,20 @@ def test_a_scripted_learn_session_scores_programs_under_the_session_mask(
     attempt_dir = result.root / "attempts" / str(entry["attempt"])
     child = ArmApplier(session).apply(read_json(attempt_dir / str(entry["patch_file"])), attempt_dir).child
     assert params_sha256(child) == entry["child_sha256"]
-    expected = FS.make_fscil_oracle(cid).query(child, "imprint")  # evalkit's own oracle under the session mask
-    assert (check.payload["score_new"], check.payload["score_old"]) == (expected["score_new"], expected["score_old"])
+    expected = FS.make_fscil_oracle(cid).query(
+        child, "imprint"
+    )  # evalkit's own oracle under the session mask
+    assert (check.payload["score_new"], check.payload["score_old"]) == (
+        expected["score_new"],
+        expected["score_old"],
+    )
     ledger = CheckLedger(session, paths)  # rebuilt from session.json alone, as the MCP server builds it
     assert [row["score"] for row in ledger.checked()] == [check.payload["score"]] == [entry["score"]]
     final = read_json(paths.final / "selection.json")["final"]
-    assert final["kind"] == "checked" and final["program"]["sha256"] == hashlib.sha256(program.encode()).hexdigest()
+    assert (
+        final["kind"] == "checked"
+        and final["program"]["sha256"] == hashlib.sha256(program.encode()).hexdigest()
+    )
 
     info = session_info(result.root)
     row = info["trajectory"][0]
@@ -423,8 +539,9 @@ def test_a_scripted_learn_session_scores_programs_under_the_session_mask(
     assert "x_prev" in info["access"]["evidence_arrays"]
     json.dumps(info, allow_nan=False, default=str)
     dev = readout_run(result.root / "run.json")
-    assert dev["rule"] == FS.FSCIL_RULE and dev["readouts_fscil"] == json.loads(json.dumps(
-        fscil.readout(instance, child)["readouts_fscil"]))
+    assert dev["rule"] == FS.FSCIL_RULE and dev["readouts_fscil"] == json.loads(
+        json.dumps(fscil.readout(instance, child)["readouts_fscil"])
+    )
     json.dumps(dev, allow_nan=False)
 
     path = tmp_path / "imprint.py"
@@ -433,31 +550,53 @@ def test_a_scripted_learn_session_scores_programs_under_the_session_mask(
     (record_path,) = run_transfer(path, [cid], tmp_path / "transfer", sandbox)
     record = json.loads(record_path.read_text())
     assert record["status"] == "ok" and record["within_limits"] is True and record["tensors"] == HEAD
-    assert record["experience"]["source"] == fscil.EXPERIENCE_SOURCE and record["limits"]["rel_frob_exempt"] == HEAD
+    assert (
+        record["experience"]["source"] == fscil.EXPERIENCE_SOURCE
+        and record["limits"]["rel_frob_exempt"] == HEAD
+    )
     assert record["readout_source"] == FS.FSCIL_RULE and record["readouts_fscil"]["session"] == 2
-    assert record["child_sha256"] == entry["child_sha256"]  # the same program on the same student: the same child
+    assert (
+        record["child_sha256"] == entry["child_sha256"]
+    )  # the same program on the same student: the same child
 
 
 @needs_sandbox
 @needs_neutral_repo
 def test_the_library_of_session_3_is_the_lineage_kept_program(
-        toy: ToyFscil, cid: str, learned: tuple[Any, list[Any], str], tmp_path: Path) -> None:
+    toy: ToyFscil, cid: str, learned: tuple[Any, list[Any], str], tmp_path: Path
+) -> None:
     result, replies, program = learned
     child_path = result.root / "final" / "model.npz"
-    row = FS.build_fscil_instance(3, lineage="T", parent_params=child_path, parent_instance=cid,
-                                  run_id=result.session_id)
+    row = FS.build_fscil_instance(
+        3, lineage="T", parent_params=child_path, parent_instance=cid, run_id=result.session_id
+    )
     target = str(row["instance_id"])
     entries = fscil.library_entries([result.session_id], toy_sessions_dir(), target_instance_id=target)
     (entry,) = entries
     check = replies[1].payload
     assert (entry["label"], entry["session"], entry["file"], entry["status"]) == (
-        "session 2", 2, "library_program_1.py", "complete")
+        "session 2",
+        2,
+        "library_program_1.py",
+        "complete",
+    )
     assert (entry["score"], entry["score_new"], entry["score_old"]) == (
-        check["score"], check["score_new"], check["score_old"])
+        check["score"],
+        check["score_new"],
+        check["score_old"],
+    )
     assert entry["_bytes"] == program.encode()
-    dry = run_session(target, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                      retention_floor_rows=toy_floor(3), retention_floor_source=toy_source(3),
-                      library_sessions=[result.session_id])
+    dry = run_session(
+        target,
+        "LEARN",
+        0,
+        effort="low",
+        wall_timeout_s=60.0,
+        dry_run=True,
+        retention_floor_rows=toy_floor(3),
+        retention_floor_source=toy_source(3),
+        library_sessions=[result.session_id],
+    )
     assert dry.status == "dry_run" and dry.record["selftest"]["status"] == "pass", dry.record
     trial = SessionPaths(dry.root).trial
     assert (trial / "library_program_1.py").read_bytes() == program.encode()
@@ -465,17 +604,30 @@ def test_the_library_of_session_3_is_the_lineage_kept_program(
     assert [item["label"] for item in index["programs"]] == ["session 2"]
     assert result.session_id not in json.dumps(index) and cid not in json.dumps(index)
     session = read_json(SessionPaths(dry.root).session_json)
-    assert result.session_id in session["forbidden_strings"]["text"] and cid in session["forbidden_strings"]["text"]
+    assert (
+        result.session_id in session["forbidden_strings"]["text"]
+        and cid in session["forbidden_strings"]["text"]
+    )
     assert session["library"]["entries"][0]["status"] == "complete"
     task_prompt = SessionPaths(dry.root).task_prompt.read_text(encoding="utf-8")
     assert "This is session 3" in task_prompt and "library_program_1.py" in task_prompt
     assert "kept in session 2 of this classifier" in " ".join(task_prompt.split("## Tools")[0].split())
     with pytest.raises(fscil.FscilHarnessError, match="final child"):  # the lineage did not go on from it
-        fscil.library_entries([result.session_id], toy_sessions_dir(), target_instance_id=row_on_base(toy, cid))
+        fscil.library_entries(
+            [result.session_id], toy_sessions_dir(), target_instance_id=row_on_base(toy, cid)
+        )
     with pytest.raises(InstanceRefused, match="library"):
-        run_session(target, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                    retention_floor_rows=toy_floor(3), retention_floor_source=toy_source(3),
-                    library_sessions=[dry.root.name])
+        run_session(
+            target,
+            "LEARN",
+            0,
+            effort="low",
+            wall_timeout_s=60.0,
+            dry_run=True,
+            retention_floor_rows=toy_floor(3),
+            retention_floor_source=toy_source(3),
+            library_sessions=[dry.root.name],
+        )
 
 
 def toy_sessions_dir() -> Path:
@@ -489,5 +641,8 @@ def row_on_base(toy: ToyFscil, cid: str) -> str:
         save_params(parent, toy.base_params)
     other = FS.build_fscil_instance(2, lineage="Y", run_id="r1")["instance_id"]
     assert other == cid
-    return str(FS.build_fscil_instance(3, lineage="Y", parent_params=parent, parent_instance=cid,
-                                       run_id="r1")["instance_id"])
+    return str(
+        FS.build_fscil_instance(3, lineage="Y", parent_params=parent, parent_instance=cid, run_id="r1")[
+            "instance_id"
+        ]
+    )

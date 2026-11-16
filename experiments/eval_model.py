@@ -5,6 +5,7 @@ Usage:
   eval_model.py --model model.pt --folders dir1 dir2 ...
   eval_model.py --model model.pt --npz final.npz --condition new|old|both
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,7 +32,7 @@ def load_model(path: Path) -> torch.nn.Module:
 def forward_labels(model: torch.nn.Module, x: np.ndarray, batch: int = 256) -> np.ndarray:
     preds = []
     for i in range(0, len(x), batch):
-        t = torch.from_numpy(x[i:i + batch].astype(np.float32) / 255.0)
+        t = torch.from_numpy(x[i : i + batch].astype(np.float32) / 255.0)
         t = (t - IMAGENET_MEAN) / IMAGENET_STD
         preds.append(model(t).argmax(1).numpy())
     return np.concatenate(preds)

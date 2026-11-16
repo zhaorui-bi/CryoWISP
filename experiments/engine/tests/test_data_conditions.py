@@ -99,7 +99,11 @@ def test_generator_rules() -> None:
 
 def test_corrupt_split_keeps_rows() -> None:
     cond = C.CONDITIONS["gaussian_noise_s3"]
-    arrays = {"x": _images(9, 4), "y": np.arange(9, dtype=np.int64) % 10, "idx": np.arange(100, 109, dtype=np.int64)}
+    arrays = {
+        "x": _images(9, 4),
+        "y": np.arange(9, dtype=np.int64) % 10,
+        "idx": np.arange(100, 109, dtype=np.int64),
+    }
     out = C.corrupt_split(arrays, cond, "V_evidence")
     assert np.array_equal(out["y"], arrays["y"]) and np.array_equal(out["idx"], arrays["idx"])
     assert out["x"].shape == arrays["x"].shape and out["x"].dtype == np.uint8
@@ -126,7 +130,11 @@ def clean_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np
         }
         digest = store.save_split(store.split_path("cifar10", split), arrays)
         splits_meta[split] = {"path": f"splits/{split}.npz", "n": n, "sha256": digest}
-    test = {"x": _images(30, 99), "y": np.arange(30, dtype=np.int64) % 10, "idx": np.arange(30, dtype=np.int64)}
+    test = {
+        "x": _images(30, 99),
+        "y": np.arange(30, dtype=np.int64) % 10,
+        "idx": np.arange(30, dtype=np.int64),
+    }
     manifest = {
         "schema": "cryowisp.dataset.v0",
         "dataset": "cifar10",
@@ -157,13 +165,17 @@ def test_build_write_verify_cycle(clean_store: dict[str, np.ndarray], tmp_path: 
         assert entry["clean_sha256"] == clean["splits"][split]["sha256"] != entry["sha256"]
         on_disk = store.load_split("cifar10", split, "gaussian_noise_s3")
         clean_arrays = store.load_split("cifar10", split)
-        assert np.array_equal(on_disk["y"], clean_arrays["y"]) and np.array_equal(on_disk["idx"], clean_arrays["idx"])
+        assert np.array_equal(on_disk["y"], clean_arrays["y"]) and np.array_equal(
+            on_disk["idx"], clean_arrays["idx"]
+        )
     sealed = store.sealed_test_path("cifar10", "gaussian_noise_s3")
     assert sealed == tmp_path / "sealed" / "cifar10" / "conditions" / "gaussian_noise_s3" / "test.npz"
     assert stat.S_IMODE(sealed.stat().st_mode) == 0o600
     for directory in (sealed.parent, sealed.parent.parent, sealed.parent.parent.parent):
         assert stat.S_IMODE(directory.stat().st_mode) == 0o700
-    assert not (tmp_path / "private" / "cifar10" / "conditions" / "gaussian_noise_s3" / "splits" / "test.npz").exists()
+    assert not (
+        tmp_path / "private" / "cifar10" / "conditions" / "gaussian_noise_s3" / "splits" / "test.npz"
+    ).exists()
 
     report = C.verify_condition(C.build_from_store("gaussian_noise_s3", clean_store))
     assert all(entry["match"] for entry in report.values())

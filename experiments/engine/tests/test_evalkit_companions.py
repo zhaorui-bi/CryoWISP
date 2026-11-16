@@ -67,8 +67,12 @@ def test_companion_has_the_condition_rows_with_clean_images(condition_store: Toy
     assert rows.clean_sha256 == params_sha256(clean) and rows.condition_sha256 == params_sha256(shifted)
 
 
-@pytest.mark.parametrize(("condition", "split"), [("deploy", "V_check"), (CONDITION, "train"), (CONDITION, "test")])
-def test_companion_refuses_deploy_and_other_splits(condition_store: ToyStore, condition: str, split: str) -> None:
+@pytest.mark.parametrize(
+    ("condition", "split"), [("deploy", "V_check"), (CONDITION, "train"), (CONDITION, "test")]
+)
+def test_companion_refuses_deploy_and_other_splits(
+    condition_store: ToyStore, condition: str, split: str
+) -> None:
     with pytest.raises(CompanionError):
         clean_companion(condition_store.dataset, condition, split)
 
@@ -98,7 +102,10 @@ def test_joint_oracle_scores_both_sets_under_one_budget(condition_store: ToyStor
     oracle = make_joint_oracle(instance, budget=2)
     child = fixing_child(dict(instance.params))
     parts = {}
-    for name, data in (("new", _shifted(condition_store, "V_check")), ("old", _clean(condition_store, "V_check"))):
+    for name, data in (
+        ("new", _shifted(condition_store, "V_check")),
+        ("old", _clean(condition_store, "V_check")),
+    ):
         single = PatchCheckOracle(data["x"], data["y"], instance.forward, instance.params, None, 1)
         parts[name] = single.query(child, "single")
     entry = oracle.query(child, "p1")
@@ -143,10 +150,17 @@ def test_clean_flag_on_a_base_noop_run(condition_store: ToyStore, tmp_path: Path
     instance = _dev_instance(condition_store)
     run_dir = tmp_path / "run"
     run_dir.mkdir()
-    final = {"is_base_noop": True, "child_sha256": instance.params_sha256, "score": 0, "fixed": 0, "broken": 0,
-             "edit_size": 0}
-    (run_dir / "run.json").write_text(json.dumps({"instance": {"instance_id": instance.instance_id},
-                                                  "method": "TEST", "final": final}))
+    final = {
+        "is_base_noop": True,
+        "child_sha256": instance.params_sha256,
+        "score": 0,
+        "fixed": 0,
+        "broken": 0,
+        "edit_size": 0,
+    }
+    (run_dir / "run.json").write_text(
+        json.dumps({"instance": {"instance_id": instance.instance_id}, "method": "TEST", "final": final})
+    )
     record = devreadout.readout_run(run_dir / "run.json", clean=True)
     assert record["readouts"]["delta_acc"] == 0 and record["readouts_clean"]["delta_acc"] == 0
     assert record["n_clean"] == len(_clean(condition_store, "V_select")["y"])

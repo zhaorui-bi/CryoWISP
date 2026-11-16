@@ -40,15 +40,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--until", type=int, default=9)
     parser.add_argument("--base-seed", type=int, default=100)
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--placeholder-floor", type=int, default=None,
-                        help="a dry run's stand-in floor when no floor is stated yet")
+    parser.add_argument(
+        "--placeholder-floor",
+        type=int,
+        default=None,
+        help="a dry run's stand-in floor when no floor is stated yet",
+    )
     args = parser.parse_args(argv)
     from cryowisp.evalkit.fscil import base_student
     from cryowisp.harness import fscil_lineage as L
 
     base = base_student(args.base_seed)
-    if args.lineage in L.LINEAGES_V2 and (args.refs is not None or args.floors is not None
-                                         or args.placeholder_floor is not None):
+    if args.lineage in L.LINEAGES_V2 and (
+        args.refs is not None or args.floors is not None or args.placeholder_floor is not None
+    ):
         raise SystemExit(f"lineage {args.lineage} keeps by fscil-retain-v2 and reads no floors")
     table = None
     if args.refs is not None:
@@ -58,11 +63,24 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         if args.lineage not in ("T", "T2"):
             raise SystemExit("only T's and T2's session 2 have a dry run")
-        result = L.dry_run(floors=table, placeholder_floor=args.placeholder_floor, base_seed=args.base_seed,
-                           lineage=args.lineage)
-        print(json.dumps({"session_id": result.session_id, "status": result.status, "root": str(result.root),
-                          "selftest": result.record.get("selftest"), "trial_files": result.record.get("trial_files")},
-                         indent=1))
+        result = L.dry_run(
+            floors=table,
+            placeholder_floor=args.placeholder_floor,
+            base_seed=args.base_seed,
+            lineage=args.lineage,
+        )
+        print(
+            json.dumps(
+                {
+                    "session_id": result.session_id,
+                    "status": result.status,
+                    "root": str(result.root),
+                    "selftest": result.record.get("selftest"),
+                    "trial_files": result.record.get("trial_files"),
+                },
+                indent=1,
+            )
+        )
         return 0 if result.status == "dry_run" else 1
     if args.placeholder_floor is not None:
         raise SystemExit("--placeholder-floor is for a dry run only")

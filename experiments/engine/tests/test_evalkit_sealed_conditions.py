@@ -43,8 +43,15 @@ def _manifest(store: ToyStore, tmp_path: Path, instance_id: str) -> Path:
         "schema": "cryowisp.sealed_manifest.v0",
         "created_at": "2026-11-03T12:00:00+00:00",
         "note": "condition test",
-        "entries": [{"instance_id": instance_id, "arm": "M2", "repeat": 0, "child_params_path": str(child_path),
-                     "child_params_sha256": digest}],
+        "entries": [
+            {
+                "instance_id": instance_id,
+                "arm": "M2",
+                "repeat": 0,
+                "child_params_path": str(child_path),
+                "child_params_sha256": digest,
+            }
+        ],
     }
     path = tmp_path / "manifest.json"
     path.write_text(json.dumps(payload, indent=2))
@@ -57,7 +64,8 @@ def _events(store: ToyStore) -> list[str]:
 
 
 def test_a_condition_instance_is_read_on_the_condition_test_set(
-    toy_store: ToyStore, tmp_path: Path  # noqa: F811
+    toy_store: ToyStore,
+    tmp_path: Path,  # noqa: F811
 ) -> None:
     instance_id = _main_seed0(toy_store)
     results_path, count = sealed.evaluate_manifest(_manifest(toy_store, tmp_path, instance_id))
@@ -78,7 +86,9 @@ def test_a_condition_instance_is_read_on_the_condition_test_set(
 
 @pytest.mark.parametrize("key", ["y", "idx"])
 def test_a_condition_test_set_out_of_line_with_the_clean_one_is_refused(
-    toy_store: ToyStore, tmp_path: Path, key: str  # noqa: F811
+    toy_store: ToyStore,
+    tmp_path: Path,
+    key: str,  # noqa: F811
 ) -> None:
     instance_id = _main_seed0(toy_store)
     path = condition_test_path(toy_store)

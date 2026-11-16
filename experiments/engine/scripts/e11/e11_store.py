@@ -78,12 +78,23 @@ def _headroom(seed: int, out: Path) -> dict:
     for condition in list_conditions(D.DATASET):
         acc, sha = accuracy(condition)
         gap = 100.0 * (clean - acc)
-        rows[condition] = {"vselect_acc": acc, "vselect_sha256": sha, "gap_points": gap,
-                           "runs": gap >= HEADROOM_POINTS}
-    record = {"schema": "cryowisp.e11.headroom.v1", "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
-              "V_select (PREREG E11 on E10's rule, before any instance)", **student, "seed": seed,
-              "forward_sha256": forward_sha, "clean_vselect_acc": clean, "clean_vselect_sha256": clean_sha,
-              "conditions": rows}
+        rows[condition] = {
+            "vselect_acc": acc,
+            "vselect_sha256": sha,
+            "gap_points": gap,
+            "runs": gap >= HEADROOM_POINTS,
+        }
+    record = {
+        "schema": "cryowisp.e11.headroom.v1",
+        "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
+        "V_select (PREREG E11 on E10's rule, before any instance)",
+        **student,
+        "seed": seed,
+        "forward_sha256": forward_sha,
+        "clean_vselect_acc": clean,
+        "clean_vselect_sha256": clean_sha,
+        "conditions": rows,
+    }
     _write_once(out, record)
     return record
 
@@ -101,10 +112,19 @@ def _timing(seed: int, out: Path | None) -> dict:
         started = time.perf_counter()
         forward(params, x)
         times.append(time.perf_counter() - started)
-    record = {"schema": "cryowisp.e11.forward_timing.v1", **student, "seed": seed, "forward_sha256": forward_sha,
-              "rows": f"the first {TIMING_ROWS} rows of {D.DATASET}/train", "threads": threads,
-              "repeats_s": times, "best_s": min(times), "numpy": np.__version__, "cpu_count": os.cpu_count(),
-              "host": os.uname().nodename}
+    record = {
+        "schema": "cryowisp.e11.forward_timing.v1",
+        **student,
+        "seed": seed,
+        "forward_sha256": forward_sha,
+        "rows": f"the first {TIMING_ROWS} rows of {D.DATASET}/train",
+        "threads": threads,
+        "repeats_s": times,
+        "best_s": min(times),
+        "numpy": np.__version__,
+        "cpu_count": os.cpu_count(),
+        "host": os.uname().nodename,
+    }
     if out is not None:
         if out.exists():
             raise SystemExit(f"{out} exists; nothing written")
@@ -132,14 +152,29 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.group == "clean":
         manifest = D.build_clean(run_info(REPO_ROOT))
-        print(json.dumps({"dataset": manifest["dataset"], "forward_sha256": manifest["forward_sha256"],
-                          "splits": {k: v["sha256"] for k, v in manifest["splits"].items()}}, indent=1))
+        print(
+            json.dumps(
+                {
+                    "dataset": manifest["dataset"],
+                    "forward_sha256": manifest["forward_sha256"],
+                    "splits": {k: v["sha256"] for k, v in manifest["splits"].items()},
+                },
+                indent=1,
+            )
+        )
     elif args.group == "condition":
         info = run_info(REPO_ROOT)
         for condition in args.conditions:
             manifest = D.build_condition(condition, info)
-            print(json.dumps({"condition": manifest["condition"]["name"],
-                              "splits": {k: v["sha256"] for k, v in manifest["splits"].items()}}, indent=1))
+            print(
+                json.dumps(
+                    {
+                        "condition": manifest["condition"]["name"],
+                        "splits": {k: v["sha256"] for k, v in manifest["splits"].items()},
+                    },
+                    indent=1,
+                )
+            )
     elif args.group == "import":
         print(json.dumps(E.import_e11_models(args.run_dir, args.note), indent=1))
     elif args.group == "headroom":

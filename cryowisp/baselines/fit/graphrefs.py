@@ -58,7 +58,13 @@ import torch.nn.functional as F
 from cryowisp.baselines.instance_io import Instance
 from cryowisp.common.identity import Params, params_sha256
 from cryowisp.data.arxiv_classes import file_sha256
-from cryowisp.evalkit.graphnew import GRAPH_FILE, GRAPHNEW_RULE, graphnew_program_limits, head_tensors, predict_nodes
+from cryowisp.evalkit.graphnew import (
+    GRAPH_FILE,
+    GRAPHNEW_RULE,
+    graphnew_program_limits,
+    head_tensors,
+    predict_nodes,
+)
 from cryowisp.evalkit.patch_check import ForwardFn
 from cryowisp.models.gcn import BN_PARTS, _SymmetricSpMM, check_symmetric, graph_tensors
 from cryowisp.models.parity import FLOAT32_STEP, check_logit_parity

@@ -23,7 +23,7 @@ from cryowisp.evalkit import fewshot as F
 from cryowisp.evalkit import graphnew as GN
 from cryowisp.models import gcn as G
 from cryowisp.models import gcn_export as E
-from cryowisp.models.export import fewshot_models_dir, write_fewshot_index
+from cryowisp.models.export import write_fewshot_index
 from cryowisp.models.forward_gen import render_gcn_forward, write_forward
 from cryowisp.patch import Limits
 
@@ -46,8 +46,11 @@ def build_toy_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, hidden: int
     rng = np.random.default_rng(5)
     n = N_TRAIN + N_VALID + N_TEST
     order = rng.permutation(n)
-    split_idx = {"train": np.sort(order[:N_TRAIN]), "valid": np.sort(order[N_TRAIN:N_TRAIN + N_VALID]),
-                 "test": np.sort(order[N_TRAIN + N_VALID:])}
+    split_idx = {
+        "train": np.sort(order[:N_TRAIN]),
+        "valid": np.sort(order[N_TRAIN : N_TRAIN + N_VALID]),
+        "test": np.sort(order[N_TRAIN + N_VALID :]),
+    }
     years = np.empty(n, dtype=np.int64)
     years[split_idx["train"]] = rng.integers(2010, 2018, N_TRAIN)
     years[split_idx["valid"]] = 2018
@@ -56,12 +59,20 @@ def build_toy_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, hidden: int
     features = rng.standard_normal((n, N_FEAT)).astype(np.float32) + labels[:, None].astype(np.float32) / 7
     edges = rng.integers(0, n, size=(1200, 2))
     edges = edges[edges[:, 0] != edges[:, 1]]
-    raw = A.RawGraph(features=features, labels=labels, years=years, edges=edges, split_idx=split_idx,
-                     class_names=tuple(f"cs.C{chr(65 + i // 26)}{chr(65 + i % 26)}" for i in range(A.N_CLASSES)))
+    raw = A.RawGraph(
+        features=features,
+        labels=labels,
+        years=years,
+        edges=edges,
+        split_idx=split_idx,
+        class_names=tuple(f"cs.C{chr(65 + i // 26)}{chr(65 + i % 26)}" for i in range(A.N_CLASSES)),
+    )
     built = A.build_inductive(raw)
     dataset = built.dataset
-    sha = write_forward(forward_path(dataset), render_gcn_forward(built.manifest["graph"]["n_nodes"], N_FEAT,
-                                                                  A.N_CLASSES, 1e-5))
+    sha = write_forward(
+        forward_path(dataset),
+        render_gcn_forward(built.manifest["graph"]["n_nodes"], N_FEAT, A.N_CLASSES, 1e-5),
+    )
     A.write(built, sha, {"toy": True}, {"toy": True})
     manifest = read_dataset_json(dataset)
     draw = K.write_class_draw(dataset)
@@ -69,10 +80,20 @@ def build_toy_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, hidden: int
     graph, nodes, block = E.training_graph(dataset, "newclass", manifest)
     x, y, used = E.training_nodes(dataset, "newclass", manifest, nodes, draw["train_classes"])
     result = G.train_gcn(config, 0, graph, x, y, A.N_CLASSES, torch.device("cpu"))
-    row = E.export_gcn_model(dataset=dataset, manifest=manifest, role="newclass", seed=100, config=config,
-                             result=result, training_splits=used, train_graph=block, determinism={},
-                             run_info={"toy": True}, extra_private={"class_draw": K.class_draw_block(dataset)},
-                             train_classes=draw["train_classes"])
+    row = E.export_gcn_model(
+        dataset=dataset,
+        manifest=manifest,
+        role="newclass",
+        seed=100,
+        config=config,
+        result=result,
+        training_splits=used,
+        train_graph=block,
+        determinism={},
+        run_info={"toy": True},
+        extra_private={"class_draw": K.class_draw_block(dataset)},
+        train_classes=draw["train_classes"],
+    )
     write_fewshot_index(dataset, [row])
     return {"dataset": dataset, "draw": draw, "row": row, "built": built}
 
@@ -94,7 +115,9 @@ def test_build_writes_a_loadable_current_instance(store: dict) -> None:
     assert sorted(ev) == sorted(GN.EVIDENCE_KEYS) and ev["x_new"].dtype == np.int64
     built = store["built"]
     v_ev, replay = built.splits["V_evidence"], built.splits["old_replay"]
-    assert set(ev["x_new"].tolist()) <= set(v_ev["x"].tolist()) and set(ev["y_new"].tolist()) == set(task["new_classes"])
+    assert set(ev["x_new"].tolist()) <= set(v_ev["x"].tolist()) and set(ev["y_new"].tolist()) == set(
+        task["new_classes"]
+    )
     assert set(ev["x_old"].tolist()) <= set(replay["x"].tolist())
     assert set(ev["y_old"].tolist()) <= set(task["train_classes"]) and ev["x_old"].size == GN.N_REPLAY
     logits = instance.forward(dict(instance.params), np.concatenate([ev["x_new"], ev["x_old"]]))
@@ -142,18 +165,25 @@ def test_leak_scan_whole_words_and_codes() -> None:
     assert GN.graphnew_scan("the valid split") == ["valid"]
     assert "cs.lg" in GN.graphnew_scan("class cs.LG")
     assert "arxiv" in GN.graphnew_scan("ogbn-arxiv")
-    task = GN.build_graphnew_task([str(i) for i in range(40)], list(range(32)), list(range(32, 40)), Limits(), 100, 8)
+    task = GN.build_graphnew_task(
+        [str(i) for i in range(40)], list(range(32)), list(range(32, 40)), Limits(), 100, 8
+    )
     assert GN.graphnew_scan(json.dumps(task)) == []
 
 
 def test_head_and_program_limits() -> None:
-    spec = {"layers": [{"op": "graph_conv", "weight": "conv1.weight", "bias": "conv1.bias"},
-                       {"op": "graph_conv", "weight": "conv3.weight", "bias": "conv3.bias"}]}
+    spec = {
+        "layers": [
+            {"op": "graph_conv", "weight": "conv1.weight", "bias": "conv1.bias"},
+            {"op": "graph_conv", "weight": "conv3.weight", "bias": "conv3.bias"},
+        ]
+    }
     assert GN.head_tensors(spec) == ["conv3.weight", "conv3.bias"]
     with pytest.raises(GN.GraphnewError):
         GN.head_tensors({"layers": [{"op": "linear", "weight": "w", "bias": "b"}]})
-    stated = GN.build_graphnew_task([str(i) for i in range(40)], list(range(32)), list(range(32, 40)),
-                                    GN.graphnew_limits(spec), 100, 8)["limits"]
+    stated = GN.build_graphnew_task(
+        [str(i) for i in range(40)], list(range(32)), list(range(32, 40)), GN.graphnew_limits(spec), 100, 8
+    )["limits"]
     limits = GN.graphnew_program_limits(stated, 14)
     assert limits.max_changed_frac == GN.GRAPHNEW_MAX_CHANGED_FRAC == 0.20
     assert set(limits.rel_frob_exempt) == {"conv3.weight", "conv3.bias"} and limits.max_ops >= 14
@@ -170,8 +200,11 @@ def test_category_codes_match_the_raw_zip() -> None:
     import gzip
     import io
 
-    with zipfile.ZipFile(path) as archive, archive.open(A.MEMBERS["classes"]) as handle, \
-            gzip.GzipFile(fileobj=handle) as unzipped:
+    with (
+        zipfile.ZipFile(path) as archive,
+        archive.open(A.MEMBERS["classes"]) as handle,
+        gzip.GzipFile(fileobj=handle) as unzipped,
+    ):
         lines = io.TextIOWrapper(unzipped, encoding="ascii").read().strip().splitlines()[1:]
     codes = sorted(A.class_name(line.split(",", 1)[1]).lower() for line in lines)
     assert codes == sorted(GN.ARXIV_CATEGORY_CODES) and len(codes) == A.N_CLASSES

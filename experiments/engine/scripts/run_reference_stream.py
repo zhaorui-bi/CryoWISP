@@ -28,13 +28,21 @@ EXIT_REFUSED = 2
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--instances", nargs="+", required=True, help="one dev instance per round, in round order")
-    parser.add_argument("--frozen-from", nargs="+", metavar="ID",
-                        help="take each round's configuration from the E1 joint run on the instance of its condition "
-                             "among these (default: the round's own instance)")
+    parser.add_argument(
+        "--instances", nargs="+", required=True, help="one dev instance per round, in round order"
+    )
+    parser.add_argument(
+        "--frozen-from",
+        nargs="+",
+        metavar="ID",
+        help="take each round's configuration from the E1 joint run on the instance of its condition "
+        "among these (default: the round's own instance)",
+    )
     parser.add_argument("--methods", nargs="+", default=["grad_last", "ridge_last", "grad_full"])
     parser.add_argument("--variants", nargs="+", default=["replay", "cumulative"])
-    parser.add_argument("--out", type=Path, help="directory for the records (default $CRYOWISP_RUNS/reference_streams)")
+    parser.add_argument(
+        "--out", type=Path, help="directory for the records (default $CRYOWISP_RUNS/reference_streams)"
+    )
     parser.add_argument("--seed", type=int, default=0, help="run seed of the E1 joint runs and of the fits")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
     return parser.parse_args(argv)
@@ -50,7 +58,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)
@@ -59,20 +69,27 @@ def main(argv: list[str] | None = None) -> int:
 
     unknown = sorted(set(args.methods) - set(METHODS)) + sorted(set(args.variants) - set(VARIANTS))
     if unknown:
-        print(f"refused: unknown methods or variants {unknown}; methods {METHODS}, variants {VARIANTS}",
-              file=sys.stderr)
+        print(
+            f"refused: unknown methods or variants {unknown}; methods {METHODS}, variants {VARIANTS}",
+            file=sys.stderr,
+        )
         return EXIT_REFUSED
     out = args.out if args.out is not None else runs_dir() / "reference_streams"
     for method in args.methods:
         for variant in args.variants:
-            path = run_reference_stream(method, variant, args.instances, out, frozen_from=args.frozen_from,
-                                        run_seed=args.seed)
+            path = run_reference_stream(
+                method, variant, args.instances, out, frozen_from=args.frozen_from, run_seed=args.seed
+            )
             summary = json.loads(path.read_text())["summary"]
-            gains = {name: _points(row["gain_after_last_round"]) for name, row in summary["conditions"].items()}
-            print(f"{method} {variant}: mean gain {_points(summary['mean_gain_after_last_round'])} points, clean "
-                  f"{_points(summary['clean_delta_acc_mean_after_last_round'])}, max forgetting "
-                  f"{_points(summary['max_forgetting'])}, rounds ok {summary['n_rounds_ok']}; gains {gains}",
-                  flush=True)
+            gains = {
+                name: _points(row["gain_after_last_round"]) for name, row in summary["conditions"].items()
+            }
+            print(
+                f"{method} {variant}: mean gain {_points(summary['mean_gain_after_last_round'])} points, clean "
+                f"{_points(summary['clean_delta_acc_mean_after_last_round'])}, max forgetting "
+                f"{_points(summary['max_forgetting'])}, rounds ok {summary['n_rounds_ok']}; gains {gains}",
+                flush=True,
+            )
             print(f"  -> {path}", flush=True)
     return 0
 

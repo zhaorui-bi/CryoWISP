@@ -59,8 +59,9 @@ def test_billing_record_never_holds_the_key(tmp_path: Path) -> None:
     assert KEY not in repr(record)
 
 
-def test_launcher_sets_the_key_only_with_a_file_and_strips_inherited_keys(tmp_path: Path,
-                                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+def test_launcher_sets_the_key_only_with_a_file_and_strips_inherited_keys(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "inherited-from-parent")
     plain = launch.ClaudeLauncher(_fake_claude(tmp_path))
     env, removed = plain.environment(SESSION)

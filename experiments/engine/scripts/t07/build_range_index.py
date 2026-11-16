@@ -25,7 +25,9 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 def _commit() -> str:
-    head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], check=True, capture_output=True, text=True)
+    head = subprocess.run(
+        ["git", "-C", str(REPO), "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+    )
     return head.stdout.strip()
 
 
@@ -36,8 +38,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--check", action="store_true", help="build and check only; write nothing")
     args = parser.parse_args(argv)
     install = sealed_dir() / RI.INSTALL_REL
-    run_info = {"script": "scripts/t07/build_range_index.py", "spec": args.spec, "commit": _commit(),
-                "utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
+    run_info = {
+        "script": "scripts/t07/build_range_index.py",
+        "spec": args.spec,
+        "commit": _commit(),
+        "utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
     datasets = args.dataset or list(RI.DATASETS)
     built = {dataset: RI.build_index(dataset, install, run_info, write=False) for dataset in datasets}
     for dataset, manifests in built.items():  # every dataset checked before any file is written
@@ -46,9 +52,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         for manifest in manifests:
             path = RI.index_path(dataset, manifest["set"])
             written = file_sha256(path)[:12] if not args.check else "not written"
-            print(f"{dataset} {manifest['set']}: test {manifest['test']['rows']} sha256 "
-                  f"{manifest['test']['sha256'][:12]}, dev x {manifest['dev']['x_sha256'][:12]}, file {written}",
-                  flush=True)
+            print(
+                f"{dataset} {manifest['set']}: test {manifest['test']['rows']} sha256 "
+                f"{manifest['test']['sha256'][:12]}, dev x {manifest['dev']['x_sha256'][:12]}, file {written}",
+                flush=True,
+            )
     print(f"{'checked' if args.check else 'wrote'} {sum(map(len, built.values()))} index files", flush=True)
     return 0
 

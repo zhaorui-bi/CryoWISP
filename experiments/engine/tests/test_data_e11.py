@@ -34,15 +34,30 @@ RUN = {"git": "test", "code_sha256": "test", "versions": {}}
 
 def _arrays(n: int, seed: int) -> dict[str, np.ndarray]:
     rng = np.random.default_rng(seed)
-    return {"x": rng.integers(0, 256, size=(n, 3, 32, 32), dtype=np.uint8),
-            "y": rng.integers(0, 10, size=n).astype(np.int64), "idx": np.arange(n, dtype=np.int64)}
+    return {
+        "x": rng.integers(0, 256, size=(n, 3, 32, 32), dtype=np.uint8),
+        "y": rng.integers(0, 10, size=n).astype(np.int64),
+        "idx": np.arange(n, dtype=np.int64),
+    }
 
 
 def _manifest(dataset: str, splits: dict, **extra) -> dict:
-    return {"schema": "cryowisp.dataset.v0", "dataset": dataset, "source": "CIFAR10", "class_names": CLASSES,
-            "image_shape": [3, 32, 32], "dtype": "uint8", "layout": "NCHW",
-            "norm": {"mean": MEAN, "std": STD, "computed_on": "train"}, "split_seed": 1, "splits": splits,
-            "forward_path": "forward.py", "forward_sha256": "0" * 64, "created_by": RUN, **extra}
+    return {
+        "schema": "cryowisp.dataset.v0",
+        "dataset": dataset,
+        "source": "CIFAR10",
+        "class_names": CLASSES,
+        "image_shape": [3, 32, 32],
+        "dtype": "uint8",
+        "layout": "NCHW",
+        "norm": {"mean": MEAN, "std": STD, "computed_on": "train"},
+        "split_seed": 1,
+        "splits": splits,
+        "forward_path": "forward.py",
+        "forward_sha256": "0" * 64,
+        "created_by": RUN,
+        **extra,
+    }
 
 
 @pytest.fixture()
@@ -53,8 +68,11 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     clean = {}
     for i, (split, n) in enumerate(SIZES.items()):
         arrays = _arrays(n, i)
-        clean[split] = {"sha256": save_split(split_path(D.SOURCE, split), arrays), "n": n,
-                        "class_counts": np.bincount(arrays["y"], minlength=10).tolist()}
+        clean[split] = {
+            "sha256": save_split(split_path(D.SOURCE, split), arrays),
+            "n": n,
+            "class_counts": np.bincount(arrays["y"], minlength=10).tolist(),
+        }
         save_split(split_path(D.CONDITION_SOURCE, split), arrays)
     (dataset_dir(D.SOURCE) / "replay").mkdir()
     (dataset_dir(D.SOURCE) / "replay" / "rows.json").write_text("[1, 2]\n")
@@ -62,17 +80,30 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     write_json(dataset_json_path(D.CONDITION_SOURCE), _manifest(D.CONDITION_SOURCE, clean))
     cond = {}
     for i, split in enumerate(D.CONDITION_SPLITS):
-        cond[split] = {"sha256": save_split(split_path(D.CONDITION_SOURCE, split, CONDITION),
-                                            _arrays(SIZES[split], 10 + i)), "n": SIZES[split]}
-    write_json(dataset_json_path(D.CONDITION_SOURCE, CONDITION), _manifest(
-        D.CONDITION_SOURCE, cond, condition={"name": CONDITION, "corruption": "snow", "severity": 5},
-        test={"location": "sealed", "n": 10}, forward_path="../../forward.py"))
+        cond[split] = {
+            "sha256": save_split(
+                split_path(D.CONDITION_SOURCE, split, CONDITION), _arrays(SIZES[split], 10 + i)
+            ),
+            "n": SIZES[split],
+        }
+    write_json(
+        dataset_json_path(D.CONDITION_SOURCE, CONDITION),
+        _manifest(
+            D.CONDITION_SOURCE,
+            cond,
+            condition={"name": CONDITION, "corruption": "snow", "severity": 5},
+            test={"location": "sealed", "n": 10},
+            forward_path="../../forward.py",
+        ),
+    )
     return tmp_path
 
 
 def test_store_is_a_hash_checked_copy_with_its_own_forward(store: Path) -> None:
     manifest = D.build_clean(RUN)
-    assert manifest["dataset"] == D.DATASET and manifest["forward_sha256"] == file_sha256(forward_path(D.DATASET))
+    assert manifest["dataset"] == D.DATASET and manifest["forward_sha256"] == file_sha256(
+        forward_path(D.DATASET)
+    )
     for split in SIZES:
         assert file_sha256(split_path(D.DATASET, split)) == file_sha256(split_path(D.SOURCE, split))
     text = forward_path(D.DATASET).read_text()
@@ -86,7 +117,8 @@ def test_store_is_a_hash_checked_copy_with_its_own_forward(store: Path) -> None:
     assert cond["test"] == {"location": "sealed", "n": 10}
     for split in D.CONDITION_SPLITS:
         assert file_sha256(split_path(D.DATASET, split, CONDITION)) == file_sha256(
-            split_path(D.CONDITION_SOURCE, split, CONDITION))
+            split_path(D.CONDITION_SOURCE, split, CONDITION)
+        )
     with pytest.raises(D.E11StoreError):
         D.build_condition(CONDITION, RUN)
 
@@ -110,9 +142,19 @@ def _pending(store: Path, seed: int, *, smoke: bool = False) -> Path:
         for p in model.parameters():
             p.add_(0.05 * torch.randn_like(p))
     result = V.CCTTrainResult(model=model, log=[{"epoch": 1, "train_loss": 1.0}], final={}, wall_time_s=1.0)
-    entry = E.export_pending(manifest=manifest, seed=seed, config=V.CCTTrainConfig(), model_config=V.ViTLiteConfig(),
-                             result=result, training_splits=used, x_train=x, determinism={}, run_info=RUN,
-                             models_root=root, extra_private={"smoke": True} if smoke else None)
+    entry = E.export_pending(
+        manifest=manifest,
+        seed=seed,
+        config=V.CCTTrainConfig(),
+        model_config=V.ViTLiteConfig(),
+        result=result,
+        training_splits=used,
+        x_train=x,
+        determinism={},
+        run_info=RUN,
+        models_root=root,
+        extra_private={"smoke": True} if smoke else None,
+    )
     index = root / "index.json"
     rows = json.loads(index.read_text()) if index.exists() else []
     write_json(index, rows + [entry])

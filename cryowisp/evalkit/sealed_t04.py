@@ -85,7 +85,13 @@ from cryowisp.data import store
 from cryowisp.data import t04 as T
 from cryowisp.evalkit import sealed_finals as SF
 from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.evalkit.sealed import REGISTRY_NAME, _append_registry, _exclusive_lock, manifest_sha256, read_registry
+from cryowisp.evalkit.sealed import (
+    REGISTRY_NAME,
+    _append_registry,
+    _exclusive_lock,
+    manifest_sha256,
+    read_registry,
+)
 from cryowisp.evalkit.sealed_range import readout_parts
 from cryowisp.evalkit.targets import file_sha256, read_condition_meta, read_dataset_meta, utc_now
 

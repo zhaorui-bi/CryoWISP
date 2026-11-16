@@ -24,9 +24,13 @@ def test_parameters_have_the_published_checkpoint_layout() -> None:
     model = V.ViTLite(V.ViTLiteConfig(), MEAN, STD)
     assert {k: tuple(v.shape) for k, v in model.state_dict().items()} == shapes
     assert [round(getattr(b.drop_path, "drop_prob", 0.0), 6) for b in model.classifier.blocks] == [
-        round(0.1 * i / 6, 6) for i in range(7)]
+        round(0.1 * i / 6, 6) for i in range(7)
+    ]
     assert model.classifier.dropout.p == 0.1 and model.classifier.blocks[0].self_attn.attn_drop.p == 0.0
-    assert model.classifier.blocks[3].self_attn.proj_drop.p == 0.1 and model.classifier.blocks[3].dropout2.p == 0.1
+    assert (
+        model.classifier.blocks[3].self_attn.proj_drop.p == 0.1
+        and model.classifier.blocks[3].dropout2.p == 0.1
+    )
     assert torch.equal(model.classifier.class_emb, torch.zeros(1, 1, 256))
     assert model.classifier.blocks[0].self_attn.qkv.bias is None
 
@@ -36,7 +40,8 @@ def test_raw_images_are_normalised_inside_and_export_round_trips() -> None:
     model = V.ViTLite(V.ViTLiteConfig(), MEAN, STD).double().eval()
     x = _images(8)
     z = (torch.from_numpy(x).double() / 255.0 - torch.tensor(MEAN, dtype=torch.float64).view(1, 3, 1, 1)) / (
-        torch.tensor(STD, dtype=torch.float64).view(1, 3, 1, 1))
+        torch.tensor(STD, dtype=torch.float64).view(1, 3, 1, 1)
+    )
     with torch.no_grad():
         assert torch.allclose(model(torch.from_numpy(x)), model.forward_normalized(z), rtol=0, atol=1e-12)
         feats = model.features(torch.from_numpy(x))
@@ -51,8 +56,14 @@ def test_raw_images_are_normalised_inside_and_export_round_trips() -> None:
 
 def test_epoch_lr_is_the_scripts_schedule() -> None:
     c = V.CCTTrainConfig()
-    assert [round(V.epoch_lr(c, e), 10) for e in range(6)] == [1e-4, 1.25e-4, round(5e-4 / 3, 10), 2.5e-4, 5e-4,
-                                                               5e-4]
+    assert [round(V.epoch_lr(c, e), 10) for e in range(6)] == [
+        1e-4,
+        1.25e-4,
+        round(5e-4 / 3, 10),
+        2.5e-4,
+        5e-4,
+        5e-4,
+    ]
     assert math.isclose(V.epoch_lr(c, 199), 5e-4 * 0.5 * (1 + math.cos(math.pi * 194 / 195)))
     assert V.epoch_lr(c, 102) < V.epoch_lr(c, 101)
 

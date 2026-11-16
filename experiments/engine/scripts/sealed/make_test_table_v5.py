@@ -57,10 +57,32 @@ NETWORKS = ("llm_gaussian_noise", "llm_contrast", "ft_gaussian_noise", "ft_contr
 CONDITIONS = ("gaussian_noise", "contrast")
 MODES = ("sealed", "dev")
 POINTS_TOL, ACC_TOL = 1e-9, 1e-12
-CELL_FIELDS = ("delta_points", "ci95", "boot_sd", "label", "fixed", "broken", "worst_class_delta_points", "base_acc",
-               "child_acc", "n", "base_loss_from_clean_points", "recovered_share")
-POINT_FIELDS = ("delta_points", "label", "fixed", "broken", "worst_class_delta_points", "base_acc", "child_acc", "n",
-                "base_loss_from_clean_points", "recovered_share")
+CELL_FIELDS = (
+    "delta_points",
+    "ci95",
+    "boot_sd",
+    "label",
+    "fixed",
+    "broken",
+    "worst_class_delta_points",
+    "base_acc",
+    "child_acc",
+    "n",
+    "base_loss_from_clean_points",
+    "recovered_share",
+)
+POINT_FIELDS = (
+    "delta_points",
+    "label",
+    "fixed",
+    "broken",
+    "worst_class_delta_points",
+    "base_acc",
+    "child_acc",
+    "n",
+    "base_loss_from_clean_points",
+    "recovered_share",
+)
 
 
 class TableError(RuntimeError):
@@ -83,8 +105,9 @@ def entries_of(list_path: Path) -> dict[str, dict[str, Any]]:
     return {e["name"]: e for block in ("finals", "references") for e in parsed[block]}
 
 
-def load_records(paths: Sequence[Path], mode: str, lists: Mapping[str, Path], wanted: Mapping[str, str]
-                 ) -> dict[str, dict[str, Any]]:
+def load_records(
+    paths: Sequence[Path], mode: str, lists: Mapping[str, Path], wanted: Mapping[str, str]
+) -> dict[str, dict[str, Any]]:
     """Records by name for the names in ``wanted`` (name -> list file name), each checked against its list entry."""
     listed = {name: entries_of(path) for name, path in lists.items()}
     shas = {name: manifest_sha256(_json(path)) for name, path in lists.items()}
@@ -105,8 +128,13 @@ def load_records(paths: Sequence[Path], mode: str, lists: Mapping[str, Path], wa
             if record.get("mode") != mode:
                 raise TableError(f"{where}: mode {record.get('mode')!r}, expected {mode!r}")
             if mode == "sealed" and record.get("list_sha256") != shas[list_name]:
-                raise TableError(f"{where}: list_sha256 {record.get('list_sha256')!r}, {list_name} is {shas[list_name]}")
-            if record.get("instance_id") != entry["instance_id"] or record.get("child_sha256") != entry["child_sha256"]:
+                raise TableError(
+                    f"{where}: list_sha256 {record.get('list_sha256')!r}, {list_name} is {shas[list_name]}"
+                )
+            if (
+                record.get("instance_id") != entry["instance_id"]
+                or record.get("child_sha256") != entry["child_sha256"]
+            ):
                 raise TableError(f"{where}: instance or child differs from the {list_name} entry")
             if name in records and records[name] != record:
                 raise TableError(f"{where}: two different records")
@@ -133,21 +161,38 @@ def cell_data(cell: Mapping[str, Any], record: Mapping[str, Any], mode: str) -> 
             if hashlib.sha256(bits[key].encode("ascii")).hexdigest() != bits[f"{key}_sha256"]:
                 raise TableError(f"{cell['entry']}: {key} does not hash to its record")
         base, child = decode_bits(bits["base_correct"], n), decode_bits(bits["child_correct"], n)
-        if int(np.sum(child & ~base)) != int(readouts["fixed"]) or int(np.sum(base & ~child)) != int(readouts["broken"]):
+        if int(np.sum(child & ~base)) != int(readouts["fixed"]) or int(np.sum(base & ~child)) != int(
+            readouts["broken"]
+        ):
             raise TableError(f"{cell['entry']}: per-image bits do not give the readout's fixed and broken")
         values = child.astype(np.int64) - base.astype(np.int64)
-        return {"readouts": readouts, "n": n, "values": values, "base": base, "child": child,
-                "base_sha256": bits["base_correct_sha256"], "interval": "paired image bootstrap (per-image record)"}
+        return {
+            "readouts": readouts,
+            "n": n,
+            "values": values,
+            "base": base,
+            "child": child,
+            "base_sha256": bits["base_correct_sha256"],
+            "interval": "paired image bootstrap (per-image record)",
+        }
     fixed, broken = int(readouts["fixed"]), int(readouts["broken"])
     values = np.zeros(n, np.int64)
     values[:fixed] = 1
-    values[fixed:fixed + broken] = -1
-    return {"readouts": readouts, "n": n, "values": values, "base": None, "child": None, "base_sha256": None,
-            "interval": "bootstrap of the canonical vector (counts-only record)"}
+    values[fixed : fixed + broken] = -1
+    return {
+        "readouts": readouts,
+        "n": n,
+        "values": values,
+        "base": None,
+        "child": None,
+        "base_sha256": None,
+        "interval": "bootstrap of the canonical vector (counts-only record)",
+    }
 
 
-def build(reuse: Mapping[str, Any], records: Mapping[str, Mapping[str, Any]], t07: Mapping[str, Any], mode: str
-          ) -> dict[str, Any]:
+def build(
+    reuse: Mapping[str, Any], records: Mapping[str, Mapping[str, Any]], t07: Mapping[str, Any], mode: str
+) -> dict[str, Any]:
     sets = list(t07["sets"])
     cells = {(c["arch"], c["network"], c["set"]): c for c in reuse["cells"]}
     if sorted(cells) != sorted((a, nw, s) for a in ARCHS for nw in NETWORKS for s in sets):
@@ -176,31 +221,59 @@ def build(reuse: Mapping[str, Any], records: Mapping[str, Mapping[str, Any]], t0
                 d, c = data[(arch, nw, s)], cells[(arch, nw, s)]
                 ro = d["readouts"]
                 boot = T.boot_contrast(d["values"], index)
-                if not math.isclose(boot["point"], 100.0 * float(ro["delta_acc"]), rel_tol=0.0, abs_tol=POINTS_TOL):
+                if not math.isclose(
+                    boot["point"], 100.0 * float(ro["delta_acc"]), rel_tol=0.0, abs_tol=POINTS_TOL
+                ):
                     raise TableError(f"{arch} {nw} {s}: bootstrap point {boot['point']} != readout change")
-                headroom, share = T.recovered_share(boot["point"], base_acc[(arch, "clean")], base_acc[(arch, s)])
-                rows.append({"arch": arch, "network": nw, "set": s, "group": T.C.group_of(s),
-                             "severity": T.C.severity_of(s), "delta_points": boot["point"], "ci95": boot["ci95"],
-                             "boot_sd": boot["boot_sd"], "label": T.label(boot["point"], boot["ci95"]),
-                             "fixed": int(ro["fixed"]), "broken": int(ro["broken"]),
-                             "worst_class_delta_points": 100.0 * float(ro["worst_class_delta"]),
-                             "base_acc": float(ro["base_acc"]), "child_acc": float(ro["child_acc"]), "n": int(ro["n"]),
-                             "base_loss_from_clean_points": headroom, "recovered_share": share,
-                             "source": {k: c[k] for k in ("status", "list", "entry", "field")},
-                             "interval": d["interval"]})
+                headroom, share = T.recovered_share(
+                    boot["point"], base_acc[(arch, "clean")], base_acc[(arch, s)]
+                )
+                rows.append(
+                    {
+                        "arch": arch,
+                        "network": nw,
+                        "set": s,
+                        "group": T.C.group_of(s),
+                        "severity": T.C.severity_of(s),
+                        "delta_points": boot["point"],
+                        "ci95": boot["ci95"],
+                        "boot_sd": boot["boot_sd"],
+                        "label": T.label(boot["point"], boot["ci95"]),
+                        "fixed": int(ro["fixed"]),
+                        "broken": int(ro["broken"]),
+                        "worst_class_delta_points": 100.0 * float(ro["worst_class_delta"]),
+                        "base_acc": float(ro["base_acc"]),
+                        "child_acc": float(ro["child_acc"]),
+                        "n": int(ro["n"]),
+                        "base_loss_from_clean_points": headroom,
+                        "recovered_share": share,
+                        "source": {k: c[k] for k in ("status", "list", "entry", "field")},
+                        "interval": d["interval"],
+                    }
+                )
     llm_vs_ft: list[dict[str, Any]] = []
     for arch in ARCHS:
         for condition in CONDITIONS:
             for s in sets:
                 a, b = data[(arch, f"llm_{condition}", s)], data[(arch, f"ft_{condition}", s)]
-                row: dict[str, Any] = {"arch": arch, "condition": condition, "set": s, "group": T.C.group_of(s), "n": n}
+                row: dict[str, Any] = {
+                    "arch": arch,
+                    "condition": condition,
+                    "set": s,
+                    "group": T.C.group_of(s),
+                    "n": n,
+                }
                 if a["child"] is not None and b["child"] is not None:
                     boot = T.boot_contrast(a["child"].astype(np.int64) - b["child"].astype(np.int64), index)
                     row.update(llm_minus_ft_points=boot["point"], ci95=boot["ci95"], paired=True)
                 else:
                     point = 100.0 * (float(a["readouts"]["child_acc"]) - float(b["readouts"]["child_acc"]))
-                    row.update(llm_minus_ft_points=point, ci95=None, paired=False,
-                               note="point only: a counts-only earlier record has no per-image correctness")
+                    row.update(
+                        llm_minus_ft_points=point,
+                        ci95=None,
+                        paired=False,
+                        note="point only: a counts-only earlier record has no per-image correctness",
+                    )
                 llm_vs_ft.append(row)
     return {"n": n, "sets": sets, "rows": rows, "llm_minus_ft": llm_vs_ft}
 
@@ -212,19 +285,25 @@ def readings(table: Mapping[str, Any], t07: Mapping[str, Any]) -> dict[str, Any]
     for arch in ARCHS:
         for nw in NETWORKS:
             rows = [r for r in table["rows"] if (r["arch"], r["network"]) == (arch, nw)]
-            changed = [{"set": r["set"], "dev": dev[(arch, nw, r["set"])]["label"], "test": r["label"]}
-                       for r in rows if dev[(arch, nw, r["set"])]["label"] != r["label"]]
+            changed = [
+                {"set": r["set"], "dev": dev[(arch, nw, r["set"])]["label"], "test": r["label"]}
+                for r in rows
+                if dev[(arch, nw, r["set"])]["label"] != r["label"]
+            ]
             out[f"{arch} {nw}"] = {
                 "help_sets": [r["set"] for r in rows if r["label"] == "help"],
                 "harm_sets": [r["set"] for r in rows if r["label"] == "harm"],
-                "n_sets": len(rows), "n_same_label_as_dev": len(rows) - len(changed),
+                "n_sets": len(rows),
+                "n_same_label_as_dev": len(rows) - len(changed),
                 "n_reversed": sum(1 for c in changed if {c["dev"], c["test"]} == {"help", "harm"}),
-                "changed": changed}
+                "changed": changed,
+            }
     return out
 
 
 def reproduction(table: Mapping[str, Any], t07: Mapping[str, Any]) -> list[str]:
     """Dev mode: where the table differs from T07's dev table (every field of new cells and paired rows)."""
+
     def same(a: Any, b: Any) -> bool:
         if isinstance(a, list) and isinstance(b, list):
             return len(a) == len(b) and all(same(x, y) for x, y in zip(a, b))
@@ -238,52 +317,76 @@ def reproduction(table: Mapping[str, Any], t07: Mapping[str, Any]) -> list[str]:
         fields = CELL_FIELDS if r["source"]["status"] == "new" else POINT_FIELDS
         if r["source"]["status"] != "new" and r["label"] != dev[(r["arch"], r["network"], r["set"])]["label"]:
             fields = tuple(f for f in POINT_FIELDS if f != "label")  # a canonical interval may move a label
-            problems.append(f"{r['arch']} {r['network']} {r['set']}: label {r['label']} (canonical interval) vs dev "
-                            f"{dev[(r['arch'], r['network'], r['set'])]['label']} (reused cell; reported, not an error)")
-        problems += [f"{r['arch']} {r['network']} {r['set']} {f}: {r[f]} vs {dev[(r['arch'], r['network'], r['set'])][f]}"
-                     for f in fields if not same(r[f], dev[(r["arch"], r["network"], r["set"])][f])]
+            problems.append(
+                f"{r['arch']} {r['network']} {r['set']}: label {r['label']} (canonical interval) vs dev "
+                f"{dev[(r['arch'], r['network'], r['set'])]['label']} (reused cell; reported, not an error)"
+            )
+        problems += [
+            f"{r['arch']} {r['network']} {r['set']} {f}: {r[f]} vs {dev[(r['arch'], r['network'], r['set'])][f]}"
+            for f in fields
+            if not same(r[f], dev[(r["arch"], r["network"], r["set"])][f])
+        ]
     dev_ft = {(r["arch"], r["condition"], r["set"]): r for r in t07["llm_minus_ft"]}
     for r in table["llm_minus_ft"]:
         ref = dev_ft[(r["arch"], r["condition"], r["set"])]
         keys = ("llm_minus_ft_points", "ci95") if r["paired"] else ("llm_minus_ft_points",)
-        problems += [f"llm_minus_ft {r['arch']} {r['condition']} {r['set']} {k}: {r[k]} vs {ref[k]}"
-                     for k in keys if not same(r[k], ref[k])]
+        problems += [
+            f"llm_minus_ft {r['arch']} {r['condition']} {r['set']} {k}: {r[k]} vs {ref[k]}"
+            for k in keys
+            if not same(r[k], ref[k])
+        ]
     return problems
 
 
 def print_tables(table: Mapping[str, Any], read: Mapping[str, Any], mode: str) -> None:
     for arch in ARCHS:
-        print(f"\n{arch} ({mode}): change in points vs base (95% CI) [label]; n = {table['n']} per set; "
-              "* = interval from a counts-only earlier record")
+        print(
+            f"\n{arch} ({mode}): change in points vs base (95% CI) [label]; n = {table['n']} per set; "
+            "* = interval from a counts-only earlier record"
+        )
         print("set".ljust(22) + "".join(nw.rjust(32) for nw in NETWORKS))
         for s in table["sets"]:
             cells = []
             for nw in NETWORKS:
                 (r,) = [r for r in table["rows"] if (r["arch"], r["network"], r["set"]) == (arch, nw, s)]
                 mark = "" if r["source"]["status"] == "new" else "*"
-                cells.append(f"{r['delta_points']:+.2f} ({r['ci95'][0]:+.2f},{r['ci95'][1]:+.2f}) "
-                             f"{r['label'][:4]}{mark}")
+                cells.append(
+                    f"{r['delta_points']:+.2f} ({r['ci95'][0]:+.2f},{r['ci95'][1]:+.2f}) "
+                    f"{r['label'][:4]}{mark}"
+                )
             print(s.ljust(22) + "".join(c.rjust(32) for c in cells))
-        print(f"\n{arch} ({mode}): final minus fine-tuning, points (paired 95% CI; point only where a side is reused)")
+        print(
+            f"\n{arch} ({mode}): final minus fine-tuning, points (paired 95% CI; point only where a side is reused)"
+        )
         for s in table["sets"]:
             cells = []
             for condition in CONDITIONS:
-                (r,) = [r for r in table["llm_minus_ft"] if (r["arch"], r["condition"], r["set"]) == (arch, condition, s)]
+                (r,) = [
+                    r
+                    for r in table["llm_minus_ft"]
+                    if (r["arch"], r["condition"], r["set"]) == (arch, condition, s)
+                ]
                 ci = f"({r['ci95'][0]:+.2f},{r['ci95'][1]:+.2f})" if r["ci95"] else "(point only)"
                 cells.append(f"{r['llm_minus_ft_points']:+.2f} {ci}")
             print(s.ljust(22) + "".join(c.rjust(32) for c in cells))
     print("\ndev-test label agreement per network (T07 dev table vs this table):")
     for key, r in read.items():
-        print(f"  {key:<24} same {r['n_same_label_as_dev']}/{r['n_sets']}, reversed {r['n_reversed']}; help "
-              f"{len(r['help_sets'])}, harm {len(r['harm_sets'])}")
+        print(
+            f"  {key:<24} same {r['n_same_label_as_dev']}/{r['n_sets']}, reversed {r['n_reversed']}; help "
+            f"{len(r['help_sets'])}, harm {len(r['harm_sets'])}"
+        )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--mode", choices=MODES, required=True)
     parser.add_argument("--list", type=Path, required=True, help="scripts/sealed/finals_v5.json")
     parser.add_argument("--reuse", type=Path, required=True, help="scripts/sealed/finals_v5_reused.json")
-    parser.add_argument("--results", type=Path, nargs="+", required=True, help="v5 records: jsonl files or folders")
+    parser.add_argument(
+        "--results", type=Path, nargs="+", required=True, help="v5 records: jsonl files or folders"
+    )
     parser.add_argument("--earlier-list", type=Path, nargs="+", required=True)
     parser.add_argument("--earlier-results", type=Path, nargs="+", required=True)
     parser.add_argument("--t07", type=Path, required=True, help="T07's t07_table.json of record")
@@ -299,18 +402,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     old_wanted = {c["entry"]: c["list"] for c in reuse["cells"] if c["status"] == "reused"}
     if not set(old_wanted.values()) <= set(earlier):
         raise TableError(f"the reuse map needs {sorted(set(old_wanted.values()))}; given {sorted(earlier)}")
-    records = {**load_records(args.results, args.mode, {args.list.name: args.list}, new_wanted),
-               **load_records(args.earlier_results, args.mode, earlier, old_wanted)}
+    records = {
+        **load_records(args.results, args.mode, {args.list.name: args.list}, new_wanted),
+        **load_records(args.earlier_results, args.mode, earlier, old_wanted),
+    }
     table = build(reuse, records, t07, args.mode)
     read = readings(table, t07)
     out: dict[str, Any] = {
-        "schema": SCHEMA, "mode": args.mode, "list": str(args.list), "list_sha256": manifest_sha256(_json(args.list)),
-        "reuse": str(args.reuse), "t07_record_sha256": T07_RECORD_SHA256,
-        "bootstrap": {"seed": T.BOOT_SEED, "generator": "numpy default_rng", "n_resamples": T.BOOT_RESAMPLES,
-                      "n_images": table["n"], "interval": "percentile 2.5 and 97.5 (numpy linear)"},
-        "rules": {"help": f">= +{T.HELP_POINTS} point and CI above 0", "harm": f"<= -{T.HELP_POINTS} and CI below 0",
-                  "recovered_share": f"change / (base clean acc - base set acc), loss >= {T.HEADROOM_MIN_POINTS}"},
-        **table, "readings": read}
+        "schema": SCHEMA,
+        "mode": args.mode,
+        "list": str(args.list),
+        "list_sha256": manifest_sha256(_json(args.list)),
+        "reuse": str(args.reuse),
+        "t07_record_sha256": T07_RECORD_SHA256,
+        "bootstrap": {
+            "seed": T.BOOT_SEED,
+            "generator": "numpy default_rng",
+            "n_resamples": T.BOOT_RESAMPLES,
+            "n_images": table["n"],
+            "interval": "percentile 2.5 and 97.5 (numpy linear)",
+        },
+        "rules": {
+            "help": f">= +{T.HELP_POINTS} point and CI above 0",
+            "harm": f"<= -{T.HELP_POINTS} and CI below 0",
+            "recovered_share": f"change / (base clean acc - base set acc), loss >= {T.HEADROOM_MIN_POINTS}",
+        },
+        **table,
+        "readings": read,
+    }
     status = 0
     if args.mode == "dev":
         problems = reproduction(table, t07)
@@ -321,8 +440,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.out.write_text(text, encoding="utf-8")
     print_tables(table, read, args.mode)
     if args.mode == "dev":
-        print(f"\nreproduces T07's dev table: {out['reproduces_t07']['equal']} "
-              f"({len(out['reproduces_t07']['differences'])} notes)")
+        print(
+            f"\nreproduces T07's dev table: {out['reproduces_t07']['equal']} "
+            f"({len(out['reproduces_t07']['differences'])} notes)"
+        )
         for p in out["reproduces_t07"]["differences"]:
             print(f"  {p}")
     print(f"-> {args.out} sha256 {hashlib.sha256(text.encode()).hexdigest()}")

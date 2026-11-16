@@ -41,8 +41,8 @@ def main(argv: list[str] | None = None) -> int:
     torch.set_num_threads(args.threads)
     from cryowisp.analysis import graphnew_cs as C
     from cryowisp.common.identity import params_sha256
-    from cryowisp.evalkit.devreadout import json_safe
     from cryowisp.evalkit import graphnew as GN
+    from cryowisp.evalkit.devreadout import json_safe
     from cryowisp.evalkit.fewshot import class_split_readout
 
     started = time.perf_counter()
@@ -54,7 +54,9 @@ def main(argv: list[str] | None = None) -> int:
     private = instance.private
     graph = GN.instance_graph(instance)
     n_nodes = int(private["n_nodes"])
-    logits = np.asarray(instance.forward(dict(instance.params), np.arange(n_nodes, dtype=np.int64)), dtype=np.float64)
+    logits = np.asarray(
+        instance.forward(dict(instance.params), np.arange(n_nodes, dtype=np.int64)), dtype=np.float64
+    )
     evidence = instance.evidence
     seeds = np.concatenate([evidence["x_new"], evidence["x_old"]]).astype(np.int64)
     seed_labels = np.concatenate([evidence["y_new"], evidence["y_old"]]).astype(np.int64)
@@ -71,22 +73,31 @@ def main(argv: list[str] | None = None) -> int:
     for name, output in outputs.items():
         pred = output[torch.from_numpy(v_sel["x"])].numpy().argmax(axis=1)
         readout = class_split_readout(base_pred, pred, y, train_classes, new_classes)
-        balanced = {side: float(np.mean([readout["per_class"][str(c)][f"acc_{side}"] for c in new_classes]))
-                    for side in ("base", "child")}
-        readout["acc_new_balanced_base"], readout["acc_new_balanced_child"] = balanced["base"], balanced["child"]
+        balanced = {
+            side: float(np.mean([readout["per_class"][str(c)][f"acc_{side}"] for c in new_classes]))
+            for side in ("base", "child")
+        }
+        readout["acc_new_balanced_base"], readout["acc_new_balanced_child"] = (
+            balanced["base"],
+            balanced["child"],
+        )
         readout["n_vselect_zero_mass_rows"] = C.zero_rows(output, v_sel["x"])
         variants[name] = {"setting": C.SETTINGS[name], "readout": json_safe(readout)}
     record = {
         "schema": "cryowisp.e7_cs_instrument.v1",
         "prereg": "E7 instrument (label propagation / Correct-and-Smooth on the base softmax); not a reference, "
-                  "never gating, not a weight edit",
+        "never gating, not a weight edit",
         "instance_id": instance.instance_id,
         "params_sha256": instance.params_sha256,
         "graph_file_sha256": private["graph_file_sha256"],
         "evidence_content_sha256": private["evidence_content_sha256"],
         "vselect_content_sha256": private["vselect_content_sha256"],
-        "seeds": {"n": int(seeds.size), "n_new": int(evidence["x_new"].size), "n_replay": int(evidence["x_old"].size),
-                  "rule": "the 144 evidence nodes (LEARN evidence) with their labels; no other label is read"},
+        "seeds": {
+            "n": int(seeds.size),
+            "n_new": int(evidence["x_new"].size),
+            "n_replay": int(evidence["x_old"].size),
+            "rule": "the 144 evidence nodes (LEARN evidence) with their labels; no other label is read",
+        },
         "base_output": "softmax of forward.py logits at every node, float64",
         "source": C.CS_SOURCE,
         "split": "V_select",
@@ -100,10 +111,12 @@ def main(argv: list[str] | None = None) -> int:
         handle.write(text)
     for name, variant in variants.items():
         r = variant["readout"]
-        print(f"{name}: V_select all {100 * r['acc_all_child']:.2f}% ({r['all_points']:+.2f}), new "
-              f"{100 * r['acc_new_child']:.2f}% (balanced {100 * r['acc_new_balanced_child']:.2f}%), old "
-              f"{100 * r['acc_old_child']:.2f}% ({100 * r['delta_old']:+.2f}); zero-mass rows "
-              f"{r['n_vselect_zero_mass_rows']}")
+        print(
+            f"{name}: V_select all {100 * r['acc_all_child']:.2f}% ({r['all_points']:+.2f}), new "
+            f"{100 * r['acc_new_child']:.2f}% (balanced {100 * r['acc_new_balanced_child']:.2f}%), old "
+            f"{100 * r['acc_old_child']:.2f}% ({100 * r['delta_old']:+.2f}); zero-mass rows "
+            f"{r['n_vselect_zero_mass_rows']}"
+        )
     print(f"params {params_sha256(instance.params)[:12]} -> {args.out}")
     return 0
 

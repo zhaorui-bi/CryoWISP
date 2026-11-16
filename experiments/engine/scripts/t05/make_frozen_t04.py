@@ -37,7 +37,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--list", type=Path, required=True)
     parser.add_argument("--roles", type=Path, required=True)
-    parser.add_argument("--exports", type=Path, nargs="+", required=True, help="export records of jobs 51 to 54")
+    parser.add_argument(
+        "--exports", type=Path, nargs="+", required=True, help="export records of jobs 51 to 54"
+    )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.out.exists():
@@ -54,8 +56,15 @@ def main(argv: list[str] | None = None) -> int:
         record = json.loads(path.read_text(encoding="utf-8"))
         if record.get("schema") != "cryowisp.t04.frozen_export.v1" or record.get("list_sha256") != list_sha:
             raise SystemExit(f"{path}: not an export record of list {list_sha}")
-        export_records.append({"file": path.name, "sha256": _sha(path), "code_commit": record["code"]["commit"],
-                               "dirty": record["code"]["dirty"], "n": len(record["entries"])})
+        export_records.append(
+            {
+                "file": path.name,
+                "sha256": _sha(path),
+                "code_commit": record["code"]["commit"],
+                "dirty": record["code"]["dirty"],
+                "n": len(record["entries"]),
+            }
+        )
         for row in record["entries"]:
             if row["name"] in exported:
                 raise SystemExit(f"{row['name']} is exported twice")
@@ -73,28 +82,54 @@ def main(argv: list[str] | None = None) -> int:
         if row is None:
             raise SystemExit(f"{role['condition']} {role['role']}: entry {entry_name} has no export")
         name = "base" if row["is_base"] else entry_name.removeprefix("T04_")
-        network = {"name": name, "path": row["path"], "params_sha256": row["params_sha256"],
-                   "file_sha256": row["file_sha256"], "instance_id": row["instance_id"], "entry": entry_name}
+        network = {
+            "name": name,
+            "path": row["path"],
+            "params_sha256": row["params_sha256"],
+            "file_sha256": row["file_sha256"],
+            "instance_id": row["instance_id"],
+            "entry": entry_name,
+        }
         if name in networks and networks[name]["params_sha256"] != network["params_sha256"]:
             raise SystemExit(f"{name}: two different networks")
         networks.setdefault(name, network)
-        t05_roles.append({"condition": role["condition"], "role": role["role"], "required": role["required"],
-                          "network": name, "child_sha256": role["child_sha256"]})
+        t05_roles.append(
+            {
+                "condition": role["condition"],
+                "role": role["role"],
+                "required": role["required"],
+                "network": name,
+                "child_sha256": role["child_sha256"],
+            }
+        )
     base_rows = [row for row in exported.values() if row["is_base"]]
     if not base_rows or len({row["params_sha256"] for row in base_rows}) != 1:
         raise SystemExit("the exports do not name one base")
     base = base_rows[0]
-    networks.setdefault("base", {"name": "base", "path": base["path"], "params_sha256": base["params_sha256"],
-                                 "file_sha256": base["file_sha256"], "instance_id": base["instance_id"],
-                                 "entry": base["name"]})
+    networks.setdefault(
+        "base",
+        {
+            "name": "base",
+            "path": base["path"],
+            "params_sha256": base["params_sha256"],
+            "file_sha256": base["file_sha256"],
+            "instance_id": base["instance_id"],
+            "entry": base["name"],
+        },
+    )
     ordered = [networks["base"]] + [n for k, n in networks.items() if k != "base"]
-    record = {"schema": SCHEMA, "prereg": "T05 (retention on ImageNetV2)",
-              "list": {"path": str(args.list), "sha256": list_sha, "status": parsed["status"]},
-              "roles_file": {"path": str(args.roles), "sha256": _sha(args.roles)},
-              "export_records": export_records, "networks": ordered, "roles": t05_roles,
-              "note": "Frozen before ImageNetV2 is decoded. Each network is the params file exported for its list "
-                      "entry after the entry's dev check (R37 jobs 51 to 54); a kept pick that is the base reads "
-                      "as the base. ImageNetV2 chooses nothing."}
+    record = {
+        "schema": SCHEMA,
+        "prereg": "T05 (retention on ImageNetV2)",
+        "list": {"path": str(args.list), "sha256": list_sha, "status": parsed["status"]},
+        "roles_file": {"path": str(args.roles), "sha256": _sha(args.roles)},
+        "export_records": export_records,
+        "networks": ordered,
+        "roles": t05_roles,
+        "note": "Frozen before ImageNetV2 is decoded. Each network is the params file exported for its list "
+        "entry after the entry's dev check (R37 jobs 51 to 54); a kept pick that is the base reads "
+        "as the base. ImageNetV2 chooses nothing.",
+    }
     with open(args.out, "x", encoding="utf-8") as handle:
         handle.write(json.dumps(record, indent=1) + "\n")
     print(f"{args.out}: {len(ordered)} networks, {len(t05_roles)} roles")

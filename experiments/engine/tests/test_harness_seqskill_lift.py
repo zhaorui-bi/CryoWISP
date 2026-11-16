@@ -38,16 +38,22 @@ from cryowisp.patch import PatchError, load_patch
 RULE_ONLY = seqskill.RULE_ONLY
 STRINGS = 'HYPOTHESIS = "one large entry"\nPREDICTED_EFFECT = "changes the head only"\nimport numpy as np\n'
 # One entry of head.weight moved by ten times the tensor's norm: rel-Frob about 10, far below the 20% entry cap.
-BIG = STRINGS + '''def update(student, experience):
+BIG = (
+    STRINGS
+    + """def update(student, experience):
     w = student["params"]["head.weight"]
     delta = np.zeros(w.shape, dtype=np.float64)
     delta[0, 0] = 10.0 * float(np.linalg.norm(w))
     return {"head.weight": delta}
-'''
+"""
+)
 # Every entry of every tensor moved a little: every entry changes, far above the 20% entry cap.
-WIDE = STRINGS + '''def update(student, experience):
+WIDE = (
+    STRINGS
+    + """def update(student, experience):
     return {name: np.full(value.shape, 1e-3) for name, value in student["params"].items()}
-'''
+"""
+)
 
 
 @pytest.fixture
@@ -67,9 +73,11 @@ def _view(root: Path, directory: Path, **kwargs):  # type: ignore[no-untyped-def
 
 def _cell(programs: dict[str, str]) -> str:
     payload = json.dumps(json.dumps(programs))
-    return ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n")
+    return (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+    )
 
 
 @pytest.mark.parametrize("variant", [None, RULE_ONLY])
@@ -78,18 +86,26 @@ def test_the_lifted_view_states_no_rel_frob_limit(seq_id: str, tmp_path: Path, v
     plain = _view(root, tmp_path / "plain", seqskill_variant=variant)
     off = _view(root, tmp_path / "off", seqskill_variant=variant, lift_rel_frob=False)
     lifted = _view(root, tmp_path / "lifted", seqskill_variant=variant, lift_rel_frob=True)
-    assert off.files == plain.files and "lift_rel_frob" not in plain.as_dict()  # the default path is unchanged
+    assert (
+        off.files == plain.files and "lift_rel_frob" not in plain.as_dict()
+    )  # the default path is unchanged
     assert plain.limits["max_rel_frob"] == 0.5 and lifted.limits["max_rel_frob"] is None
     assert {k: v for k, v in lifted.limits.items() if k != "max_rel_frob"} == {
-        k: v for k, v in plain.limits.items() if k != "max_rel_frob"}
-    assert lifted.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC and lifted.limits["max_ops"] == plain.limits[
-        "max_ops"]
+        k: v for k, v in plain.limits.items() if k != "max_rel_frob"
+    }
+    assert (
+        lifted.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC
+        and lifted.limits["max_ops"] == plain.limits["max_ops"]
+    )
     assert lifted.as_dict()["lift_rel_frob"] is True and lifted.as_dict()["limits"] == lifted.limits
     # only task.json differs, and in it only the limits and their definitions
     assert {k: v for k, v in lifted.files.items() if k != "task.json"} == {
-        k: v for k, v in plain.files.items() if k != "task.json"}
-    assert sorted(key for key in lifted.task if lifted.task[key] != plain.task[key]) == ["limit_definitions",
-                                                                                       "limits"]
+        k: v for k, v in plain.files.items() if k != "task.json"
+    }
+    assert sorted(key for key in lifted.task if lifted.task[key] != plain.task[key]) == [
+        "limit_definitions",
+        "limits",
+    ]
     assert lifted.task["limits"] == {**plain.task["limits"], "max_rel_frob": None}
     definitions, base = lifted.task["limit_definitions"], plain.task["limit_definitions"]
     assert definitions["max_rel_frob"] == base["max_rel_frob"] + "; null: this limit is not applied"
@@ -101,8 +117,14 @@ def test_the_lifted_view_states_no_rel_frob_limit(seq_id: str, tmp_path: Path, v
     shown = render_task("LEARN", lifted.task, lifted.limits, budgets, seqskill=True, seqskill_variant=variant)
     e5 = render_task("LEARN", plain.task, plain.limits, budgets, seqskill=True, seqskill_variant=variant)
     limits_text = shown.split("## Limits\n", 1)[1]
-    assert "- `max_rel_frob` = not applied: " in limits_text and "null: this limit is not applied" in limits_text
-    assert "- `max_rel_frob` = 0.5" in e5 and "0.5" not in limits_text and "- `max_changed_frac` = 0.2" in limits_text
+    assert (
+        "- `max_rel_frob` = not applied: " in limits_text and "null: this limit is not applied" in limits_text
+    )
+    assert (
+        "- `max_rel_frob` = 0.5" in e5
+        and "0.5" not in limits_text
+        and "- `max_changed_frac` = 0.2" in limits_text
+    )
     assert shown.split("## Limits\n", 1)[0] == e5.split("## Limits\n", 1)[0]
     system = render_system("LEARN", seqskill=True, seqskill_variant=variant)
     assert "frob" not in system.lower() and "0.5" not in system  # nothing there to state
@@ -120,11 +142,15 @@ def test_the_lift_is_refused_outside_a_seqskill_learn_session(seq_id: str, tmp_p
     assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
 
 
-def test_the_lift_is_refused_for_an_evidence_v1_instance(harness_store: HarnessStore,  # noqa: F811
-                                                         tmp_path: Path) -> None:
+def test_the_lift_is_refused_for_an_evidence_v1_instance(
+    harness_store: HarnessStore,  # noqa: F811
+    tmp_path: Path,
+) -> None:
     instance_id = harness_store.dev(100)
     with pytest.raises(InstanceRefused, match="not a seqskill-v1 instance"):
-        run_session(instance_id, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True, lift_rel_frob=True)
+        run_session(
+            instance_id, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True, lift_rel_frob=True
+        )
     assert not list(harness_store.store.runs.rglob("session.json"))  # refused before any write
     (tmp_path / "s" / "private").mkdir(parents=True)
     with pytest.raises(TrialError, match="seqskill-v1 instance only"):
@@ -138,11 +164,15 @@ def _refusal(reply) -> str:  # type: ignore[no-untyped-def]
 
 @needs_sandbox
 def test_a_large_concentrated_update_passes_only_with_the_lift(seq_id: str) -> None:
-    steps = [("python", {"code": _cell({"big.py": BIG, "wide.py": WIDE})}),
-             ("patch_check", {"program_file": "wide.py"}), ("patch_check", {"program_file": "big.py"}),
-             ("declare_final", {"program_file": "big.py", "rationale": "the large entry"})]
-    lifted, replies = scripted_session(seq_id, "LEARN", steps, retention_floor_frac=0.005, seqskill_variant=RULE_ONLY,
-                                       lift_rel_frob=True)
+    steps = [
+        ("python", {"code": _cell({"big.py": BIG, "wide.py": WIDE})}),
+        ("patch_check", {"program_file": "wide.py"}),
+        ("patch_check", {"program_file": "big.py"}),
+        ("declare_final", {"program_file": "big.py", "rationale": "the large entry"}),
+    ]
+    lifted, replies = scripted_session(
+        seq_id, "LEARN", steps, retention_floor_frac=0.005, seqskill_variant=RULE_ONLY, lift_rel_frob=True
+    )
     assert lifted.status == "complete", lifted.record.get("infra_reasons")
     _, wide, big, declared = replies
     refused = _refusal(wide)  # the cap still refuses
@@ -159,7 +189,9 @@ def test_a_large_concentrated_update_passes_only_with_the_lift(seq_id: str) -> N
     attempt_dir = lifted.root / "attempts" / str(entry["attempt"])
     patch = load_patch(attempt_dir / str(entry["patch_file"]))
     result = ArmApplier(session).apply(patch, attempt_dir)
-    assert result.per_tensor["head.weight"]["rel_frob"] > 0.5 and result.changed_frac < PROGRAM_MAX_CHANGED_FRAC
+    assert (
+        result.per_tensor["head.weight"]["rel_frob"] > 0.5 and result.changed_frac < PROGRAM_MAX_CHANGED_FRAC
+    )
     capped = copy.deepcopy(session)
     capped["limits"]["max_rel_frob"] = 0.5
     with pytest.raises(PatchError, match="relative Frobenius"):  # the same update under the limit: refused
@@ -170,15 +202,23 @@ def test_a_large_concentrated_update_passes_only_with_the_lift(seq_id: str) -> N
     final = write_final(paths, ledger, {"kind": KIND_CHECKED, "patch_id": entry["patch_id"]}, None, "test")
     assert final["child_sha256"] == entry["child_sha256"]
     limits, source = run_limits({"session_result": "session_result.json"}, lifted.root)
-    assert limits.max_rel_frob is None and limits.max_changed_frac == PROGRAM_MAX_CHANGED_FRAC and source == (
-        "session.json")
+    assert (
+        limits.max_rel_frob is None
+        and limits.max_changed_frac == PROGRAM_MAX_CHANGED_FRAC
+        and source == ("session.json")
+    )
     info = session_info(lifted.root)
     assert [row["child_sha256"] for row in info["trajectory"]] == [entry["child_sha256"]]
 
     # the same session without the lift refuses the same program at the check, so it is declared unchecked
-    steps = [("python", {"code": _cell({"big.py": BIG})}), ("patch_check", {"program_file": "big.py"}),
-             ("declare_final", {"program_file": "big.py", "rationale": "the large entry"})]
-    plain, replies = scripted_session(seq_id, "LEARN", steps, retention_floor_frac=0.005, seqskill_variant=RULE_ONLY)
+    steps = [
+        ("python", {"code": _cell({"big.py": BIG})}),
+        ("patch_check", {"program_file": "big.py"}),
+        ("declare_final", {"program_file": "big.py", "rationale": "the large entry"}),
+    ]
+    plain, replies = scripted_session(
+        seq_id, "LEARN", steps, retention_floor_frac=0.005, seqskill_variant=RULE_ONLY
+    )
     assert plain.status == "complete", plain.record.get("infra_reasons")
     _, check, declared = replies
     assert "relative Frobenius norm of the change is above the limit 0.5" in _refusal(check)

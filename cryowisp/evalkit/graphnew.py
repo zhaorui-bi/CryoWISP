@@ -62,7 +62,7 @@ from cryowisp.baselines.instance_io import Instance, load_instance
 from cryowisp.common.identity import Params, load_params, params_sha256
 from cryowisp.common.paths import private_dir
 from cryowisp.data import arxiv as A
-from cryowisp.data.arxiv_classes import CLASSES_FILE, class_draw_block, file_sha256
+from cryowisp.data.arxiv_classes import class_draw_block, file_sha256
 from cryowisp.data.registry import SPLIT_SEED
 from cryowisp.data.store import dataset_dir
 from cryowisp.evalkit.evidence import _seed_from_text

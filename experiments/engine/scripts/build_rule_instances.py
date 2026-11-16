@@ -51,11 +51,17 @@ def build(args: argparse.Namespace) -> list[dict[str, Any]]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse, check that each option belongs to the chosen rule, build or reuse, print the rows."""
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--rule", required=True, choices=(SCAN_RULE, POLICY_RULE))
     parser.add_argument("--condition", help=f"{SCAN_RULE}: the SCAN condition (addprim_jump or around_right)")
-    parser.add_argument("--seeds", type=_seeds, help=f"{SCAN_RULE}: only these base seeds (default: every base student)")
-    parser.add_argument("--batch-size", type=int, help=f"{SCAN_RULE}: forward batch size (default {SCAN_DEFAULT_BATCH})")
+    parser.add_argument(
+        "--seeds", type=_seeds, help=f"{SCAN_RULE}: only these base seeds (default: every base student)"
+    )
+    parser.add_argument(
+        "--batch-size", type=int, help=f"{SCAN_RULE}: forward batch size (default {SCAN_DEFAULT_BATCH})"
+    )
     parser.add_argument("--model-id", help=f"{POLICY_RULE}: the gated base student of the E14 models index")
     args = parser.parse_args(argv)
     if args.rule == SCAN_RULE:

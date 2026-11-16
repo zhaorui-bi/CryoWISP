@@ -250,7 +250,13 @@ def experience(instance: Instance) -> tuple[dict[str, np.ndarray], dict[str, Any
     session's classes, ``N_SHOTS`` each; ``y_old`` only base classes; ``y_prev`` the classes of sessions 2 to t - 1,
     ``N_SHOTS`` each, with ``session_prev`` the session of each; the split ids are unique over the three parts.
     """
-    from cryowisp.evalkit.fscil import N_BASE_CLASSES, N_SHOTS, prev_classes, session_classes, session_of_class
+    from cryowisp.evalkit.fscil import (
+        N_BASE_CLASSES,
+        N_SHOTS,
+        prev_classes,
+        session_classes,
+        session_of_class,
+    )
     from cryowisp.evalkit.patch_check import predict
 
     private = instance.private
@@ -626,8 +632,16 @@ def _earlier(t: int) -> str:
 def fscil_statement(names: Sequence[str], session: int) -> str:
     """The LEARN statement of session ``session``: the session, the mask, the classes added now and before, the fact
     that the earlier sessions' updates are in the classifier, the three experience parts and the program to write."""
-    from cryowisp.evalkit.fscil import N_BASE_CLASSES, N_CLASSES, N_REPLAY, N_SHOTS, N_WAYS, n_seen, prev_classes
-    from cryowisp.evalkit.fscil import session_classes
+    from cryowisp.evalkit.fscil import (
+        N_BASE_CLASSES,
+        N_CLASSES,
+        N_REPLAY,
+        N_SHOTS,
+        N_WAYS,
+        n_seen,
+        prev_classes,
+        session_classes,
+    )
 
     t = int(session)
     new, prev, k = session_classes(t), prev_classes(t), n_seen(t)
@@ -858,7 +872,12 @@ def library_entries(session_ids: Sequence[str], sessions_dir: Path, *, target_in
     session (the lineage went on from it). ``version`` "v2" (PREREG E9 v2) takes sources under fscil-retain-v2
     instead, whose kept check is eligible with S > 0, and the entries carry the v2 scores (``V2_LIBRARY_FIELDS``).
     """
-    from cryowisp.harness.library import LIBRARY_PROGRAM_TEMPLATE, MAX_LIBRARY_PROGRAMS, PROGRAM_ARMS, _kept_check
+    from cryowisp.harness.library import (
+        LIBRARY_PROGRAM_TEMPLATE,
+        MAX_LIBRARY_PROGRAMS,
+        PROGRAM_ARMS,
+        _kept_check,
+    )
     from cryowisp.harness.retention import FLOOR_KIND_ROWS, KEPT_RULE_RETAIN, is_placeholder
 
     v2 = check_version(version) == FSCIL_V2

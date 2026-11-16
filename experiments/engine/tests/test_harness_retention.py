@@ -10,15 +10,20 @@ import json
 from typing import Any
 
 import pytest
-
 from test_harness_fixtures import needs_sandbox, read_jsonl  # noqa: F401
 from test_harness_learn import FIX, WORSE, LearnStore, _program_cell, learn_store  # noqa: F401
+
 from cryowisp.harness import runner
 from cryowisp.harness.arms import ARMS, arm_spec
-from cryowisp.harness.finalize import FINAL_RULE_JOINT, FINAL_RULE_JOINT_RETAIN, KIND_BASE, KIND_CHECKED, select_final
+from cryowisp.harness.finalize import (
+    FINAL_RULE_JOINT,
+    FINAL_RULE_JOINT_RETAIN,
+    KIND_BASE,
+    KIND_CHECKED,
+    select_final,
+)
 from cryowisp.harness.jsonio import read_json
 from cryowisp.harness.prompts import PROMPT_DIR, render_system, system_template_name
-from cryowisp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
 from cryowisp.harness.retention import (
     KEPT_RULE_RETAIN,
     RetentionRuleError,
@@ -26,18 +31,25 @@ from cryowisp.harness.retention import (
     s_old_floor,
     session_floor,
 )
+from cryowisp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
 from cryowisp.harness.session import SessionPaths
 from cryowisp.harness.tools import PROGRAM_DESCRIPTIONS, tool_specs
 
 
 def _section(text: str) -> str:
     start = text.index("## What is kept")
-    return text[start:text.index("\n\n## ", start + 1)]
+    return text[start : text.index("\n\n## ", start + 1)]
 
 
 def _entry(name: str, score_new: int, score_old: int, n_changed: int, query: int) -> dict[str, Any]:
-    return {"patch_id": name, "score": score_new + score_old, "score_new": score_new, "score_old": score_old,
-            "n_changed": n_changed, "query_index": query}
+    return {
+        "patch_id": name,
+        "score": score_new + score_old,
+        "score_new": score_new,
+        "score_old": score_old,
+        "n_changed": n_changed,
+        "query_index": query,
+    }
 
 
 def test_the_floor_is_minus_the_rounded_fraction_of_the_rows() -> None:
@@ -46,7 +58,13 @@ def test_the_floor_is_minus_the_rounded_fraction_of_the_rows() -> None:
         with pytest.raises(RetentionRuleError):
             s_old_floor(frac, n_old)
     record = kept_rule_record(0.01, 4000, "clean")
-    assert record == {"name": KEPT_RULE_RETAIN, "frac": 0.01, "n_old": 4000, "check_set": "clean", "s_old_floor": -40}
+    assert record == {
+        "name": KEPT_RULE_RETAIN,
+        "frac": 0.01,
+        "n_old": 4000,
+        "check_set": "clean",
+        "s_old_floor": -40,
+    }
     assert session_floor({"kept_rule": record}) == -40 and session_floor({}) is None
     with pytest.raises(RetentionRuleError):
         session_floor({"kept_rule": record | {"s_old_floor": -39}})
@@ -64,7 +82,10 @@ def test_the_final_pick_leaves_out_programs_below_the_floor() -> None:
     tied = [_entry("a.py", 10, -1, 9, 0), _entry("b.py", 10, -1, 2, 1), _entry("c.py", 30, -50, 1, 2)]
     pick = select_final(tied, budget=8, declared=None, s_old_floor=-20)
     assert pick == {"kind": KIND_CHECKED, "patch_id": "b.py", "query_index": 1}
-    assert select_final([_entry("d.py", 5, -5, 1, 0)], budget=8, declared=None, s_old_floor=-20)["kind"] == KIND_BASE
+    assert (
+        select_final([_entry("d.py", 5, -5, 1, 0)], budget=8, declared=None, s_old_floor=-20)["kind"]
+        == KIND_BASE
+    )
     with pytest.raises(Exception, match="needs checked programs"):
         select_final([], budget=0, declared=None, s_old_floor=-20)
 
@@ -77,7 +98,9 @@ def test_the_system_prompt_changes_only_what_is_kept() -> None:
         floor = -n_old // 100
         assert v1.replace(_section(v1), "") == v2.replace(_section(v2), "")
         kept = " ".join(_section(v2).split())
-        assert f"whose score_old is at least {floor} (at most {-floor} more {check_set} check-set images" in kept
+        assert (
+            f"whose score_old is at least {floor} (at most {-floor} more {check_set} check-set images" in kept
+        )
         assert f"A program with score_old below {floor} is never kept, whatever its score." in kept
         assert f"If no checked program with score_old of at least {floor} has a score > 0" in kept
         assert "If no checked program has a score > 0" not in kept
@@ -96,15 +119,24 @@ def test_declare_final_states_the_floor_and_nothing_else_changes() -> None:
     for a, b in zip(v1, v2):
         if a["name"] == "declare_final":
             assert a["description"] == PROGRAM_DESCRIPTIONS["declare_final"]
-            assert "highest score among those with score_old of at least -40 (the original model if none of them" \
+            assert (
+                "highest score among those with score_old of at least -40 (the original model if none of them"
                 in b["description"]
+            )
         else:
             assert a == b
     few = tool_specs(tools, program=True, fewshot=True, s_old_floor=-20)
-    assert "score_old of at least -20" in [spec for spec in few if spec["name"] == "declare_final"][0]["description"]
+    assert (
+        "score_old of at least -20"
+        in [spec for spec in few if spec["name"] == "declare_final"][0]["description"]
+    )
     digest = hashlib.sha256(json.dumps(v1, sort_keys=True).encode()).hexdigest()
-    assert digest == hashlib.sha256(json.dumps(tool_specs(tools, True, s_old_floor=None), sort_keys=True)
-                                    .encode()).hexdigest()
+    assert (
+        digest
+        == hashlib.sha256(
+            json.dumps(tool_specs(tools, True, s_old_floor=None), sort_keys=True).encode()
+        ).hexdigest()
+    )
     with pytest.raises(ValueError, match="program arm only"):
         tool_specs(arm_spec("M2").tools, program=False, s_old_floor=-40)
 
@@ -113,11 +145,25 @@ def test_the_runner_refuses_the_rule_outside_a_program_arm_before_any_write(lear
     sessions = runner.runs_dir() / runner.SESSIONS_DIR
     before = sorted(sessions.iterdir()) if sessions.exists() else []
     with pytest.raises(ValueError, match="program arm only"):
-        runner.run_session(learn_store.ids[100], "M2", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                           retention_floor_frac=0.01)
+        runner.run_session(
+            learn_store.ids[100],
+            "M2",
+            0,
+            effort="low",
+            wall_timeout_s=60.0,
+            dry_run=True,
+            retention_floor_frac=0.01,
+        )
     with pytest.raises(ValueError, match=r"must lie in \(0, 1\)"):
-        runner.run_session(learn_store.ids[100], "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                           retention_floor_frac=1.5)
+        runner.run_session(
+            learn_store.ids[100],
+            "LEARN",
+            0,
+            effort="low",
+            wall_timeout_s=60.0,
+            dry_run=True,
+            retention_floor_frac=1.5,
+        )
     assert (sorted(sessions.iterdir()) if sessions.exists() else []) == before
 
 
@@ -137,8 +183,16 @@ def test_a_learn_session_under_the_retention_rule(learn_store: LearnStore) -> No
             call_and_record(client, replies, name, arguments)
 
     launcher = ScriptedLauncher(script)
-    result = runner.run_session(learn_store.ids[100], "LEARN", 0, effort="low", wall_timeout_s=300.0,
-                                launcher=launcher, skip_audit=True, retention_floor_frac=0.02)
+    result = runner.run_session(
+        learn_store.ids[100],
+        "LEARN",
+        0,
+        effort="low",
+        wall_timeout_s=300.0,
+        launcher=launcher,
+        skip_audit=True,
+        retention_floor_frac=0.02,
+    )
     assert result.status == "complete", result.record.get("infra_reasons")
     _, fix, worse, declared = launcher.replies
     assert not fix.is_error and not worse.is_error and declared.payload["valid"]
@@ -154,13 +208,17 @@ def test_a_learn_session_under_the_retention_rule(learn_store: LearnStore) -> No
     declare = [spec for spec in listed if spec["name"] == "declare_final"][0]
     assert f"score_old of at least {floor}" in declare["description"]
     selection = read_json(paths.selection_json)
-    assert selection["rule"] == FINAL_RULE_JOINT_RETAIN != FINAL_RULE_JOINT and selection["s_old_floor"] == floor
+    assert (
+        selection["rule"] == FINAL_RULE_JOINT_RETAIN != FINAL_RULE_JOINT and selection["s_old_floor"] == floor
+    )
     checks = read_jsonl(paths.checks_log)
     expected = select_final(checks, budget=8, declared=None, s_old_floor=floor)
     final = result.record["final"]
     assert (final["kind"], final["patch_id"]) == (expected["kind"], expected["patch_id"])
     # on the toy store fix.py gains on both sets and worse.py loses on both, so the floor keeps fix.py; the pick that
     # the floor changes is covered with fixed scores in test_the_final_pick_leaves_out_programs_below_the_floor
-    assert fix.payload["score_old"] >= floor and fix.payload["score"] > 0 and worse.payload["score_old"] < floor
+    assert (
+        fix.payload["score_old"] >= floor and fix.payload["score"] > 0 and worse.payload["score_old"] < floor
+    )
     assert final["kind"] == KIND_CHECKED and final["patch_id"] == "fix.py"
     assert result.record["queries"] == {"used": 2, "consumed": 2, "charged_failures": 0, "budget": 8}

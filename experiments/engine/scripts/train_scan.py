@@ -41,7 +41,15 @@ from cryowisp.models.export import read_index, write_index
 from cryowisp.models.runinfo import run_info
 from cryowisp.models.scan_export import export_scan_model, import_scan_models
 from cryowisp.models.train import configure_determinism
-from cryowisp.models.train_scan import GATE_EM, HEADROOM_EM_MAX, SIZE_STEPS, em_summary, monitor_rows, torch_predict, train_scan
+from cryowisp.models.train_scan import (
+    GATE_EM,
+    HEADROOM_EM_MAX,
+    SIZE_STEPS,
+    em_summary,
+    monitor_rows,
+    torch_predict,
+    train_scan,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -67,8 +75,12 @@ def train_group(args: argparse.Namespace) -> int:
             for step_index in steps:
                 config = SIZE_STEPS[step_index]
                 if args.smoke_epochs is not None:
-                    config = dataclasses.replace(config, epochs=args.smoke_epochs, log_every_epochs=1,
-                                                 warmup_steps=min(config.warmup_steps, 10))
+                    config = dataclasses.replace(
+                        config,
+                        epochs=args.smoke_epochs,
+                        log_every_epochs=1,
+                        warmup_steps=min(config.warmup_steps, 10),
+                    )
                 determinism = configure_determinism(seed)
 
                 def monitor(model: torch.nn.Module, _rows: dict = watch) -> dict[str, Any]:
@@ -76,21 +88,46 @@ def train_group(args: argparse.Namespace) -> int:
                     return {"train_monitor_em": float(right.mean())}
 
                 result = train_scan(config, seed, train, device, monitor=monitor)
-                extra: dict[str, Any] = {"size_steps": [c.as_dict() for c in SIZE_STEPS],
-                                         "train_monitor": f"exact match on {len(watch['y'])} fixed training rows "
-                                         "(default_rng([split_seed, 1311]))"}
+                extra: dict[str, Any] = {
+                    "size_steps": [c.as_dict() for c in SIZE_STEPS],
+                    "train_monitor": f"exact match on {len(watch['y'])} fixed training rows "
+                    "(default_rng([split_seed, 1311]))",
+                }
                 if args.smoke_epochs is not None:
                     extra["smoke"] = True
                 root = None if args.models_root is None else Path(args.models_root) / condition
-                entry = export_scan_model(condition=condition, manifest=manifest, base_manifest=base_manifest,
-                                          seed=seed, size_step=step_index, config=config, result=result,
-                                          determinism=determinism, run_info=info, old_select=old_select,
-                                          models_root=root, extra_private=extra)
+                entry = export_scan_model(
+                    condition=condition,
+                    manifest=manifest,
+                    base_manifest=base_manifest,
+                    seed=seed,
+                    size_step=step_index,
+                    config=config,
+                    result=result,
+                    determinism=determinism,
+                    run_info=info,
+                    old_select=old_select,
+                    models_root=root,
+                    extra_private=extra,
+                )
                 entries.append(entry)
-                print(json.dumps({"condition": condition, "seed": seed, "size_step": step_index,
-                                  "d_model": config.d_model, "n_layers": config.n_layers, "role": entry["role"],
-                                  "old_vselect_em": entry["vselect_acc"], "model_id": entry["model_id"],
-                                  "steps": result.steps, "wall_time_s": round(result.wall_time_s, 1)}), flush=True)
+                print(
+                    json.dumps(
+                        {
+                            "condition": condition,
+                            "seed": seed,
+                            "size_step": step_index,
+                            "d_model": config.d_model,
+                            "n_layers": config.n_layers,
+                            "role": entry["role"],
+                            "old_vselect_em": entry["vselect_acc"],
+                            "model_id": entry["model_id"],
+                            "steps": result.steps,
+                            "wall_time_s": round(result.wall_time_s, 1),
+                        }
+                    ),
+                    flush=True,
+                )
                 if entry["role"] == "base":
                     break
         if args.models_root is not None:
@@ -110,8 +147,8 @@ def import_group(args: argparse.Namespace) -> int:
 
 
 def report_group(args: argparse.Namespace) -> int:
-    from cryowisp.data.store import forward_path, models_dir, read_json
     from cryowisp.common.identity import load_params
+    from cryowisp.data.store import forward_path, models_dir, read_json
     from cryowisp.evalkit.patch_check import predict
     from cryowisp.models.export import load_forward_no_cache
 
@@ -122,18 +159,28 @@ def report_group(args: argparse.Namespace) -> int:
         for entry in read_index(S.DATASET, condition):
             folder = models_dir(S.DATASET, condition) / entry["model_id"]
             private = read_json(folder / "private.json")
-            row = {"condition": condition, **entry, "size_step": private["size_step"],
-                   "d_model": private["model_config"]["d_model"], "n_layers": private["model_config"]["n_layers"],
-                   "gate_em": private["gate"]["em"], "gate_passed": private["gate"]["passed"],
-                   "parity_max_abs_diff": private["parity"]["max_abs_diff"],
-                   "parity_float64_max_rel_diff": private["parity"]["float64"]["max_rel_diff"]}
+            row = {
+                "condition": condition,
+                **entry,
+                "size_step": private["size_step"],
+                "d_model": private["model_config"]["d_model"],
+                "n_layers": private["model_config"]["n_layers"],
+                "gate_em": private["gate"]["em"],
+                "gate_passed": private["gate"]["passed"],
+                "parity_max_abs_diff": private["parity"]["max_abs_diff"],
+                "parity_float64_max_rel_diff": private["parity"]["float64"]["max_rel_diff"],
+            }
             if entry["role"] == "base":
                 pred = predict(forward, load_params(folder / "model.npz"), new_select["x"], 1024)
                 summary = em_summary(new_select, pred)
-                row["headroom"] = {"new_vselect_em": summary["em"], "new_vselect_token_acc": summary["token_acc"],
-                                   "threshold_em_max": HEADROOM_EM_MAX,
-                                   "passed": summary["em"] <= HEADROOM_EM_MAX, "n": summary["n"],
-                                   "by_construction": summary["by_construction"]}
+                row["headroom"] = {
+                    "new_vselect_em": summary["em"],
+                    "new_vselect_token_acc": summary["token_acc"],
+                    "threshold_em_max": HEADROOM_EM_MAX,
+                    "passed": summary["em"] <= HEADROOM_EM_MAX,
+                    "n": summary["n"],
+                    "by_construction": summary["by_construction"],
+                }
             rows.append(row)
     print(json.dumps(rows, indent=2))
     return 0
@@ -145,12 +192,20 @@ def main() -> int:
     parser.add_argument("--condition", choices=S.CONDITIONS, action="append")
     parser.add_argument("--seeds", type=int, nargs="+", default=[100])
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--git-state-file", type=Path, help="git state recorded at submission (code copy without .git)")
-    parser.add_argument("--models-root", type=Path, help="write models here instead of the store (smoke runs)")
+    parser.add_argument(
+        "--git-state-file", type=Path, help="git state recorded at submission (code copy without .git)"
+    )
+    parser.add_argument(
+        "--models-root", type=Path, help="write models here instead of the store (smoke runs)"
+    )
     parser.add_argument("--smoke-epochs", type=int, help="train only this many epochs per size (smoke run)")
-    parser.add_argument("--size-step", type=int, choices=range(len(SIZE_STEPS)),
-                        help=f"train only this size step (0: d 128; 1: d 256, 6 layers); default 0, then 1 if 0 "
-                        f"misses the gate (exact match {GATE_EM} on old V_select)")
+    parser.add_argument(
+        "--size-step",
+        type=int,
+        choices=range(len(SIZE_STEPS)),
+        help=f"train only this size step (0: d 128; 1: d 256, 6 layers); default 0, then 1 if 0 "
+        f"misses the gate (exact match {GATE_EM} on old V_select)",
+    )
     parser.add_argument("--run-dir", type=Path, help="fetched NSCC run directory (--group import)")
     parser.add_argument("--note", help="note stored in each imported model's import block")
     args = parser.parse_args()

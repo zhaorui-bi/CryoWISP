@@ -53,18 +53,30 @@ def reference_label(value: str) -> str:
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--instance", action="append", help="instance id (repeatable); default: select from index")
-    parser.add_argument("--split-role", choices=("dev", "main"), default="dev", help="index selection (default dev)")
+    parser.add_argument(
+        "--instance", action="append", help="instance id (repeatable); default: select from index"
+    )
+    parser.add_argument(
+        "--split-role", choices=("dev", "main"), default="dev", help="index selection (default dev)"
+    )
     parser.add_argument("--dataset", help="restrict the index selection to one dataset")
     parser.add_argument("--reference-patch", required=True, help="patch JSON, patch dir or baseline run dir")
     parser.add_argument(
-        "--ref-label", type=reference_label, help="output label (default for a run: its arm, or <arm>_<session id>)"
+        "--ref-label",
+        type=reference_label,
+        help="output label (default for a run: its arm, or <arm>_<session id>)",
     )
-    parser.add_argument("--session-id", help="B1 session id (default for a baseline run: <instance>/<arm>/<seed>)")
+    parser.add_argument(
+        "--session-id", help="B1 session id (default for a baseline run: <instance>/<arm>/<seed>)"
+    )
     parser.add_argument("--kinds", nargs="+", choices=KINDS, default=list(KINDS))
-    parser.add_argument("--runs", type=int, default=DEFAULT_RUNS, help="control runs per kind (run_index 0..runs-1)")
+    parser.add_argument(
+        "--runs", type=int, default=DEFAULT_RUNS, help="control runs per kind (run_index 0..runs-1)"
+    )
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for BLAS")
-    parser.add_argument("--allow-main", action="store_true", help="permit main instances (only after the freeze)")
+    parser.add_argument(
+        "--allow-main", action="store_true", help="permit main instances (only after the freeze)"
+    )
     return parser.parse_args(argv)
 
 
@@ -76,7 +88,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--runs must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     from cryowisp.baselines.fit.cli import (
         EXIT_REFUSED,
         SelectionError,
@@ -91,7 +105,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         ids = select_instance_ids(args.instance, split_role=args.split_role, dataset=args.dataset)
         if len(ids) > 1 and INSTANCE_FIELD not in args.reference_patch:
-            raise SelectionError(f"{len(ids)} instances selected but --reference-patch lacks {INSTANCE_FIELD}")
+            raise SelectionError(
+                f"{len(ids)} instances selected but --reference-patch lacks {INSTANCE_FIELD}"
+            )
         instances = load_checked_instances(ids, allow_main=args.allow_main)
         plan = []
         for instance in instances:
@@ -102,16 +118,24 @@ def main(argv: list[str] | None = None) -> int:
                 session_id = str(resolved.session_id(instance.instance_id))
                 label = str(resolved.output_label())
                 if not LABEL.fullmatch(label):
-                    raise SelectionError(f"the reference run's output label {label!r} is not a plain path component")
+                    raise SelectionError(
+                        f"the reference run's output label {label!r} is not a plain path component"
+                    )
                 if args.ref_label not in (None, label):
-                    raise SelectionError(f"--ref-label {args.ref_label!r} differs from the reference run's {label!r}")
+                    raise SelectionError(
+                        f"--ref-label {args.ref_label!r} differs from the reference run's {label!r}"
+                    )
                 if args.session_id not in (None, session_id):
-                    raise SelectionError(f"--session-id {args.session_id!r} differs from the run's {session_id!r}")
+                    raise SelectionError(
+                        f"--session-id {args.session_id!r} differs from the run's {session_id!r}"
+                    )
             elif args.ref_label is None or args.session_id is None:
                 raise SelectionError("a bare patch reference needs --ref-label and --session-id")
             else:
                 arm, session_id, label = args.ref_label, args.session_id, args.ref_label
-            load_reference(instance, reference)  # rebuild and hash-check the reference child before any run starts
+            load_reference(
+                instance, reference
+            )  # rebuild and hash-check the reference child before any run starts
             plan.append((instance, reference, arm, session_id, label))
         existing = [
             str(control_run_dir(instance.instance_id, kind, label, run_index))
@@ -121,7 +145,9 @@ def main(argv: list[str] | None = None) -> int:
             if control_run_dir(instance.instance_id, kind, label, run_index).exists()
         ]
         if existing:
-            raise SelectionError(f"control run directories already exist and are never overwritten: {existing}")
+            raise SelectionError(
+                f"control run directories already exist and are never overwritten: {existing}"
+            )
     except (SplitRoleError, SelectionError) as error:
         print(refusal_message(error), file=sys.stderr)
         return EXIT_REFUSED
@@ -153,8 +179,11 @@ def main(argv: list[str] | None = None) -> int:
                 records.append(record)
             if failed:
                 failures.append(f"{instance.instance_id} {kind}[{label}]")
-                print(f"B1 {instance.instance_id} {kind}[{label}] session {session_id}: NOT REPORTED, "
-                      f"{len(failed)} of {args.runs} runs failed: {failed}", flush=True)
+                print(
+                    f"B1 {instance.instance_id} {kind}[{label}] session {session_id}: NOT REPORTED, "
+                    f"{len(failed)} of {args.runs} runs failed: {failed}",
+                    flush=True,
+                )
                 continue
             value = b1_value(records)
             print(

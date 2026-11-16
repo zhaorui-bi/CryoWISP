@@ -27,8 +27,12 @@ from cryowisp.common.identity import params_sha256  # noqa: E402
 
 def toy() -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
     rng = np.random.default_rng(0)
-    base = {"a": rng.normal(size=(2, 3)).astype(np.float32), "b": rng.normal(size=3).astype(np.float32),
-            "c": rng.normal(size=(2, 2)).astype(np.float32), "d": rng.normal(size=4).astype(np.float32)}
+    base = {
+        "a": rng.normal(size=(2, 3)).astype(np.float32),
+        "b": rng.normal(size=3).astype(np.float32),
+        "c": rng.normal(size=(2, 2)).astype(np.float32),
+        "d": rng.normal(size=4).astype(np.float32),
+    }
     child = {k: v.copy() for k, v in base.items()}
     child["a"] = child["a"] * np.float32(1.45)
     child["b"][1] += np.float32(0.5)
@@ -44,7 +48,9 @@ def test_partition_and_arms():
     plus_u = U.replace_tensors(base, child, ("a",))
     minus_u = U.replace_tensors(base, child, ("b", "c"))
     assert np.array_equal(plus_u["a"], child["a"]) and all(np.array_equal(plus_u[k], base[k]) for k in "bcd")
-    assert np.array_equal(minus_u["a"], base["a"]) and all(np.array_equal(minus_u[k], child[k]) for k in "bcd")
+    assert np.array_equal(minus_u["a"], base["a"]) and all(
+        np.array_equal(minus_u[k], child[k]) for k in "bcd"
+    )
     assert params_sha256(U.replace_tensors(base, child, ("a", "b", "c"))) == params_sha256(child)
     plus_u["a"][0, 0] = 99.0  # the arm is a copy: neither the base nor the child changes
     assert base["a"][0, 0] != 99.0 and child["a"][0, 0] != 99.0
@@ -86,41 +92,84 @@ def test_count_rules():
     assert U.at_least_25(1, 4) and not U.at_least_25(0, 4)
 
 
-@pytest.mark.parametrize("n, plus, minus, reading", [
-    (12, 9, 3, U.SUPPORT), (12, 12, 0, U.SUPPORT), (12, 8, 3, U.MIXED), (12, 9, 4, U.MIXED),
-    (12, 3, 9, U.REFUTE), (12, 4, 9, U.MIXED), (12, 3, 8, U.MIXED), (12, 6, 6, U.MIXED),
-    (10, 8, 2, U.SUPPORT), (10, 7, 2, U.MIXED), (10, 8, 3, U.MIXED), (10, 2, 8, U.REFUTE),
-    (4, 3, 1, U.SUPPORT), (4, 2, 1, U.MIXED), (4, 1, 3, U.REFUTE), (4, 2, 2, U.MIXED),
-])
+@pytest.mark.parametrize(
+    "n, plus, minus, reading",
+    [
+        (12, 9, 3, U.SUPPORT),
+        (12, 12, 0, U.SUPPORT),
+        (12, 8, 3, U.MIXED),
+        (12, 9, 4, U.MIXED),
+        (12, 3, 9, U.REFUTE),
+        (12, 4, 9, U.MIXED),
+        (12, 3, 8, U.MIXED),
+        (12, 6, 6, U.MIXED),
+        (10, 8, 2, U.SUPPORT),
+        (10, 7, 2, U.MIXED),
+        (10, 8, 3, U.MIXED),
+        (10, 2, 8, U.REFUTE),
+        (4, 3, 1, U.SUPPORT),
+        (4, 2, 1, U.MIXED),
+        (4, 1, 3, U.REFUTE),
+        (4, 2, 2, U.MIXED),
+    ],
+)
 def test_off_target_reading(n, plus, minus, reading):
     assert U.off_target_reading(n, plus, minus) == reading
 
 
-@pytest.mark.parametrize("share_s5, harm, n_harm, reading", [
-    (0.4999, 0, 12, U.GAIN_COSTS), (0.10, 12, 12, U.GAIN_COSTS), (0.50, 0, 12, U.GAIN_PARTLY),
-    (0.74, 0, 12, U.GAIN_PARTLY), (0.75, 3, 12, U.GAIN_SEPARABLE), (0.75, 4, 12, U.GAIN_PARTLY),
-    (0.90, 2, 10, U.GAIN_SEPARABLE), (0.90, 3, 10, U.GAIN_PARTLY), (1.10, 0, 10, U.GAIN_SEPARABLE),
-])
+@pytest.mark.parametrize(
+    "share_s5, harm, n_harm, reading",
+    [
+        (0.4999, 0, 12, U.GAIN_COSTS),
+        (0.10, 12, 12, U.GAIN_COSTS),
+        (0.50, 0, 12, U.GAIN_PARTLY),
+        (0.74, 0, 12, U.GAIN_PARTLY),
+        (0.75, 3, 12, U.GAIN_SEPARABLE),
+        (0.75, 4, 12, U.GAIN_PARTLY),
+        (0.90, 2, 10, U.GAIN_SEPARABLE),
+        (0.90, 3, 10, U.GAIN_PARTLY),
+        (1.10, 0, 10, U.GAIN_SEPARABLE),
+    ],
+)
 def test_own_gain_reading(share_s5, harm, n_harm, reading):
     assert U.own_gain_reading(share_s5, harm, n_harm) == reading
 
 
-def synthetic(arch: str, plus_harm: int, minus_harm: int, plus_help: int, minus_help: int, minus_s5: float,
-              carrier_harm: int = 0, carrier_help: int = 0) -> tuple[dict, dict]:
+def synthetic(
+    arch: str,
+    plus_harm: int,
+    minus_harm: int,
+    plus_help: int,
+    minus_help: int,
+    minus_s5: float,
+    carrier_harm: int = 0,
+    carrier_help: int = 0,
+) -> tuple[dict, dict]:
     """Labels and changes on the 26 sets: the final as T07 recorded it on S_harm, S_help and its own sets; each arm
     harm on the first k S_harm sets and help on the first k S_help sets, neutral elsewhere."""
     s_harm, s_help = U.S_SETS[arch]["S_harm"], U.S_SETS[arch]["S_help"]
-    final = {s: "harm" if s in s_harm else "help" if s in s_help or s in U.OWN[1:] else "neutral" for s in C.SETS}
+    final = {
+        s: "harm" if s in s_harm else "help" if s in s_help or s in U.OWN[1:] else "neutral" for s in C.SETS
+    }
     final_delta = {s: -3.0 if final[s] == "harm" else 4.0 if final[s] == "help" else 0.2 for s in C.SETS}
     final_delta[U.OWN_MAIN] = 18.0
 
     def arm(k_harm: int, k_help: int) -> dict[str, str]:
-        return {s: "harm" if s in s_harm[:k_harm] else "help" if s in s_help[:k_help] else "neutral" for s in C.SETS}
+        return {
+            s: "harm" if s in s_harm[:k_harm] else "help" if s in s_help[:k_help] else "neutral"
+            for s in C.SETS
+        }
 
-    labels = {"final": final, "base_plus_U": arm(plus_harm, plus_help), "final_minus_U": arm(minus_harm, minus_help)}
-    deltas = {"final": final_delta,
-              "base_plus_U": {s: -2.0 if labels["base_plus_U"][s] == "harm" else 0.0 for s in C.SETS},
-              "final_minus_U": {s: minus_s5 if s == U.OWN_MAIN else 0.0 for s in C.SETS}}
+    labels = {
+        "final": final,
+        "base_plus_U": arm(plus_harm, plus_help),
+        "final_minus_U": arm(minus_harm, minus_help),
+    }
+    deltas = {
+        "final": final_delta,
+        "base_plus_U": {s: -2.0 if labels["base_plus_U"][s] == "harm" else 0.0 for s in C.SETS},
+        "final_minus_U": {s: minus_s5 if s == U.OWN_MAIN else 0.0 for s in C.SETS},
+    }
     if arch == "vit":
         labels["carrier_F"] = arm(carrier_harm, carrier_help)
         deltas["carrier_F"] = {s: 0.0 for s in C.SETS}
@@ -134,8 +183,13 @@ def run(arch: str, *args, **kwargs) -> dict:
 
 def test_readings_support_and_separable():
     out = run("vit", 10, 2, 3, 0, 15.0)
-    assert out["off_target"]["harm"]["reading"] == U.SUPPORT and out["off_target"]["help"]["reading"] == U.SUPPORT
-    assert out["off_target"]["harm"]["base_plus_U_carries"] == 10 and out["off_target"]["harm"]["n_sets"] == 12
+    assert (
+        out["off_target"]["harm"]["reading"] == U.SUPPORT
+        and out["off_target"]["help"]["reading"] == U.SUPPORT
+    )
+    assert (
+        out["off_target"]["harm"]["base_plus_U_carries"] == 10 and out["off_target"]["harm"]["n_sets"] == 12
+    )
     assert out["own_gain"]["share_s5"] == pytest.approx(15.0 / 18.0)
     assert out["own_gain"]["reading"] == U.GAIN_SEPARABLE
     assert "names the first-layer boost" in out["off_target"]["harm"]["statement"]
@@ -145,7 +199,9 @@ def test_readings_support_and_separable():
 
 def test_readings_refutation_and_cost():
     out = run("r18", 2, 9, 1, 4, 7.0)
-    assert out["off_target"]["harm"]["reading"] == U.REFUTE and out["off_target"]["help"]["reading"] == U.REFUTE
+    assert (
+        out["off_target"]["harm"]["reading"] == U.REFUTE and out["off_target"]["help"]["reading"] == U.REFUTE
+    )
     assert out["own_gain"]["reading"] == U.GAIN_COSTS
     assert "does not separate those two on E12" in out["off_target"]["harm"]["statement"]
     assert "carrier_F" not in out
@@ -194,15 +250,24 @@ def test_additivity_residual():
     additive = c_plus + c_minus - c_base  # a final whose effect is the sum of the two parts' effects
     assert U.additivity_values(additive, c_plus, c_minus, c_base).sum() == 0
     index = U.R.boot_index(500)
-    assert U.R.boot_contrast(U.additivity_values(additive, c_plus, c_minus, c_base), index)["ci95"] == [0.0, 0.0]
+    assert U.R.boot_contrast(U.additivity_values(additive, c_plus, c_minus, c_base), index)["ci95"] == [
+        0.0,
+        0.0,
+    ]
     with pytest.raises(U.UError, match="shape"):
         U.additivity_values(c_final[:10], c_plus, c_minus, c_base)
 
 
 def test_preds_lines_digest_is_sorted_sha256sum_text():
     lines = ["b" * 64 + "  runs/x/preds/vit/base/clean.npy", "a" * 64 + "  runs/x/preds/r18/base/clean.npy"]
-    expected = hashlib.sha256(("a" * 64 + "  runs/x/preds/r18/base/clean.npy\n" + "b" * 64
-                               + "  runs/x/preds/vit/base/clean.npy\n").encode()).hexdigest()
+    expected = hashlib.sha256(
+        (
+            "a" * 64
+            + "  runs/x/preds/r18/base/clean.npy\n"
+            + "b" * 64
+            + "  runs/x/preds/vit/base/clean.npy\n"
+        ).encode()
+    ).hexdigest()
     assert U.preds_lines_digest(lines) == expected == U.preds_lines_digest(lines[::-1])
 
 
@@ -210,9 +275,12 @@ def test_same_fields():
     ours = {"fixed": 3, "broken": 1, "n": 20, "base_acc": 0.5, "child_acc": 0.6, "delta": 10.0}
     assert U.same_fields(ours, dict(ours), U.M03_FIELDS_INT, U.M03_FIELDS_FLOAT) == {}
     assert U.same_fields(ours, {**ours, "delta": 10.0 + 1e-13}, U.M03_FIELDS_INT, U.M03_FIELDS_FLOAT) == {}
-    assert set(U.same_fields(ours, {**ours, "delta": 10.001, "broken": 2}, U.M03_FIELDS_INT,
-                             U.M03_FIELDS_FLOAT)) == {"delta", "broken"}
-    assert set(U.same_fields(ours, {k: v for k, v in ours.items() if k != "n"}, U.M03_FIELDS_INT, ())) == {"n"}
+    assert set(
+        U.same_fields(ours, {**ours, "delta": 10.001, "broken": 2}, U.M03_FIELDS_INT, U.M03_FIELDS_FLOAT)
+    ) == {"delta", "broken"}
+    assert set(U.same_fields(ours, {k: v for k, v in ours.items() if k != "n"}, U.M03_FIELDS_INT, ())) == {
+        "n"
+    }
 
 
 def test_design_is_fixed_and_complete():
@@ -229,6 +297,9 @@ def test_design_is_fixed_and_complete():
     assert (len(U.S_SETS["vit"]["S_harm"]), len(U.S_SETS["vit"]["S_help"])) == (12, 4)
     assert (len(U.S_SETS["r18"]["S_harm"]), len(U.S_SETS["r18"]["S_help"])) == (10, 4)
     assert len(U.DESIGN["r18"]["u_tensors"]) == 3 and len(U.DESIGN["r18"]["g_tensors"]) == 8
-    assert U.DESIGN["vit"]["m03"] == {"base_plus_U": ("N_B", "B"), "final_minus_U": ("N_FR", "FR"),
-                                      "carrier_F": ("N_F", "F")}
+    assert U.DESIGN["vit"]["m03"] == {
+        "base_plus_U": ("N_B", "B"),
+        "final_minus_U": ("N_FR", "FR"),
+        "carrier_F": ("N_F", "F"),
+    }
     assert U.OWN == ("contrast_s1", "contrast_s2", "contrast_s3", "contrast_s4", "contrast_s5")

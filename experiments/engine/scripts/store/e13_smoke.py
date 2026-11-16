@@ -47,8 +47,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out-root", type=Path, help="paths: smoke run directories go under here")
     args = parser.parse_args(argv)
     opened: set[str] = set()
-    store_roots = tuple(os.path.realpath(os.environ[name]) + os.sep
-                        for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"))
+    store_roots = tuple(
+        os.path.realpath(os.environ[name]) + os.sep
+        for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS")
+    )
 
     def hook(event: str, hook_args: tuple) -> None:
         if event == "open" and hook_args and isinstance(hook_args[0], (str, bytes, os.PathLike)):
@@ -76,10 +78,20 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(record), flush=True)
 
     settings = R.configure_device(args.device)
-    emit(kind="env", mode=args.mode, threads=args.threads, python=sys.version.split()[0], numpy=np.__version__,
-         torch=torch.__version__, torch_threads=torch.get_num_threads(), nproc=os.cpu_count(), device=settings,
-         cryowisp_private=os.environ.get("CRYOWISP_PRIVATE"), cryowisp_runs=os.environ.get("CRYOWISP_RUNS"),
-         sealed_entries=len(os.listdir(os.environ["CRYOWISP_SEALED"])))
+    emit(
+        kind="env",
+        mode=args.mode,
+        threads=args.threads,
+        python=sys.version.split()[0],
+        numpy=np.__version__,
+        torch=torch.__version__,
+        torch_threads=torch.get_num_threads(),
+        nproc=os.cpu_count(),
+        device=settings,
+        cryowisp_private=os.environ.get("CRYOWISP_PRIVATE"),
+        cryowisp_runs=os.environ.get("CRYOWISP_RUNS"),
+        sealed_entries=len(os.listdir(os.environ["CRYOWISP_SEALED"])),
+    )
     (instance_id,) = K.active_scan_ids(args.condition)
 
     if args.mode == "paths":
@@ -91,10 +103,22 @@ def main(argv: list[str] | None = None) -> int:
         if args.method in R.RULEGEN_METHODS:
             fit_set = R.rulegen_fit_set(args.condition, R.RULEGEN_FITS[R.rulegen_parts(args.method)[0]])
         start = time.perf_counter()
-        record = R.run_reference(instance, args.method, fit_set=fit_set, device=args.device,
-                                 run_dir=args.out_root / instance_id / args.method)
-        emit(kind="paths", instance=instance_id, condition=args.condition, method=args.method,
-             status=record.get("status"), seconds=round(time.perf_counter() - start, 1), summary=summary_line(record))
+        record = R.run_reference(
+            instance,
+            args.method,
+            fit_set=fit_set,
+            device=args.device,
+            run_dir=args.out_root / instance_id / args.method,
+        )
+        emit(
+            kind="paths",
+            instance=instance_id,
+            condition=args.condition,
+            method=args.method,
+            status=record.get("status"),
+            seconds=round(time.perf_counter() - start, 1),
+            summary=summary_line(record),
+        )
         return 0 if record.get("status") == "complete" else 1
 
     t0 = time.perf_counter()
@@ -108,23 +132,60 @@ def main(argv: list[str] | None = None) -> int:
     t3 = time.perf_counter()
     K.scan_readout(instance, dict(instance.params))
     t4 = time.perf_counter()
-    emit(kind="load", instance=instance_id, condition=args.condition, threads=args.threads,
-         rows=int(len(evidence.y)), n_prim=int(evidence.n_rand), n_replay=int(evidence.n_replay),
-         load_s=round(t1 - t0, 2), oracle_base_s=round(t2 - t1, 2), check_s=round(t3 - t2, 2),
-         check_score=int(entry["score"]), check_rows=int(entry["n"]), readout_s=round(t4 - t3, 2))
+    emit(
+        kind="load",
+        instance=instance_id,
+        condition=args.condition,
+        threads=args.threads,
+        rows=int(len(evidence.y)),
+        n_prim=int(evidence.n_rand),
+        n_replay=int(evidence.n_replay),
+        load_s=round(t1 - t0, 2),
+        oracle_base_s=round(t2 - t1, 2),
+        check_s=round(t3 - t2, 2),
+        check_score=int(entry["score"]),
+        check_rows=int(entry["n"]),
+        readout_s=round(t4 - t3, 2),
+    )
     fits = {"experience": (evidence.x, evidence.y)}
     for fit in ("full", "mixed"):
         generated = R.rulegen_fit_set(args.condition, fit)
-        fits[fit] = (np.concatenate([generated["x"], evidence.x]), np.concatenate([generated["y"], evidence.y]))
+        fits[fit] = (
+            np.concatenate([generated["x"], evidence.x]),
+            np.concatenate([generated["y"], evidence.y]),
+        )
     for name, (x, y) in fits.items():
         x_t, y_t = torch.from_numpy(x.astype(np.int64)), torch.from_numpy(y.astype(np.int64))
-        SG.adam_checkpoints(instance.params, x_t, y_t, trainable=sorted(instance.params), lr=1e-3,
-                            checkpoints=(WARMUP_STEPS,), seed=0, device=args.device)
+        SG.adam_checkpoints(
+            instance.params,
+            x_t,
+            y_t,
+            trainable=sorted(instance.params),
+            lr=1e-3,
+            checkpoints=(WARMUP_STEPS,),
+            seed=0,
+            device=args.device,
+        )
         start = time.perf_counter()
-        SG.adam_checkpoints(instance.params, x_t, y_t, trainable=sorted(instance.params), lr=1e-3,
-                            checkpoints=(args.steps,), seed=0, device=args.device)
-        emit(kind="adam_full", fit=name, rows=int(len(y)), threads=args.threads, device=args.device,
-             steps=args.steps, s_per_step=round((time.perf_counter() - start) / args.steps, 4))
+        SG.adam_checkpoints(
+            instance.params,
+            x_t,
+            y_t,
+            trainable=sorted(instance.params),
+            lr=1e-3,
+            checkpoints=(args.steps,),
+            seed=0,
+            device=args.device,
+        )
+        emit(
+            kind="adam_full",
+            fit=name,
+            rows=int(len(y)),
+            threads=args.threads,
+            device=args.device,
+            steps=args.steps,
+            s_per_step=round((time.perf_counter() - start) / args.steps, 4),
+        )
     if args.device == "cuda":
         emit(kind="cuda_memory", max_allocated_gb=round(torch.cuda.max_memory_allocated() / 2**30, 2))
     emit(kind="opened", threads=args.threads, n=len(opened), files=sorted(opened))

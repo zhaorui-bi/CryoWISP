@@ -34,29 +34,65 @@ IDS = tuple(f"i{seed}" for seed in R.TARGET_SEEDS)
 
 
 def _source(sid: str, seed: int, child: str = "child", deltas: str = "deltas") -> R.Source:
-    return R.Source(session_id=sid, condition=COND, instance_id=f"i{seed}", seed=seed, has_program=True,
-                    program_path=f"/x/{sid}.py", program_sha256=f"p{sid}", deltas_sha256=deltas, child_sha256=child,
-                    n_changed=1)
+    return R.Source(
+        session_id=sid,
+        condition=COND,
+        instance_id=f"i{seed}",
+        seed=seed,
+        has_program=True,
+        program_path=f"/x/{sid}.py",
+        program_sha256=f"p{sid}",
+        deltas_sha256=deltas,
+        child_sha256=child,
+        n_changed=1,
+    )
 
 
-def _prog(sid: str, target: str, gain: float, clean: float, *, status: str = "ok", within: bool = True,
-          n_changed: int = 5, child: str = "c", deltas: str = "d", run_status: str = "ok") -> dict[str, Any]:
-    record: dict[str, Any] = {"status": status, "target": {"instance_id": target, "params_sha256": f"w{target}"},
-                              "program": {"sha256": f"p{sid}"},
-                              "run": {"clock": "virtual-v1", "run": {"status": run_status, "duration_s": 1.5}}}
+def _prog(
+    sid: str,
+    target: str,
+    gain: float,
+    clean: float,
+    *,
+    status: str = "ok",
+    within: bool = True,
+    n_changed: int = 5,
+    child: str = "c",
+    deltas: str = "d",
+    run_status: str = "ok",
+) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        "status": status,
+        "target": {"instance_id": target, "params_sha256": f"w{target}"},
+        "program": {"sha256": f"p{sid}"},
+        "run": {"clock": "virtual-v1", "run": {"status": run_status, "duration_s": 1.5}},
+    }
     if status == "ok":
-        record.update(within_limits=within, n_changed=n_changed, child_sha256=child, deltas_sha256=deltas,
-                      readouts={"delta_acc": gain / 100}, readouts_clean={"delta_acc": clean / 100})
+        record.update(
+            within_limits=within,
+            n_changed=n_changed,
+            child_sha256=child,
+            deltas_sha256=deltas,
+            readouts={"delta_acc": gain / 100},
+            readouts_clean={"delta_acc": clean / 100},
+        )
     else:
         record["messages"] = ["it failed"]
     return record
 
 
 def _copy(sid: str, target: str, gain: float, clean: float, deltas: str = "deltas") -> dict[str, Any]:
-    return {"status": "ok", "target": {"instance_id": target, "params_sha256": f"w{target}"},
-            "source": {"program": {"sha256": f"p{sid}"}}, "within_limits": True, "n_changed": 5,
-            "child_sha256": f"f{target}", "deltas_sha256": deltas,
-            "readouts": {"delta_acc": gain / 100}, "readouts_clean": {"delta_acc": clean / 100}}
+    return {
+        "status": "ok",
+        "target": {"instance_id": target, "params_sha256": f"w{target}"},
+        "source": {"program": {"sha256": f"p{sid}"}},
+        "within_limits": True,
+        "n_changed": 5,
+        "child_sha256": f"f{target}",
+        "deltas_sha256": deltas,
+        "readouts": {"delta_acc": gain / 100},
+        "readouts_clean": {"delta_acc": clean / 100},
+    }
 
 
 @pytest.fixture
@@ -73,10 +109,14 @@ def test_cell_status_rules() -> None:
     assert R.program_cell(_prog("s", "i101", 0.0, 0.0, n_changed=0))["status"] == R.STATUS_BASE
     over = R.program_cell(_prog("s", "i101", 30.0, -3.0, within=False))
     assert over["status"] == R.STATUS_LIMIT and over["gain"] is None and over["unbounded_gain"] == 30.0
-    assert R.program_cell(_prog("s", "i101", 0, 0, status="program_failed", run_status="timeout"))["status"] == \
-        R.STATUS_LIMIT
-    assert R.program_cell(_prog("s", "i101", 0, 0, status="program_failed", run_status="error"))["status"] == \
-        R.STATUS_ERROR
+    assert (
+        R.program_cell(_prog("s", "i101", 0, 0, status="program_failed", run_status="timeout"))["status"]
+        == R.STATUS_LIMIT
+    )
+    assert (
+        R.program_cell(_prog("s", "i101", 0, 0, status="program_failed", run_status="error"))["status"]
+        == R.STATUS_ERROR
+    )
     patch = _prog("s", "i101", 0, 0, status="patch_failed")
     patch["n_changed"] = None
     assert R.program_cell(patch)["status"] == R.STATUS_LIMIT
@@ -85,7 +125,9 @@ def test_cell_status_rules() -> None:
 
 def test_the_diagonal_gate_needs_the_sessions_child() -> None:
     source = _source("sa", 100)
-    assert R.diagonal(source, _prog("sa", "i100", 30.0, 0.0, child="child", deltas="deltas"))["passed"] is True
+    assert (
+        R.diagonal(source, _prog("sa", "i100", 30.0, 0.0, child="child", deltas="deltas"))["passed"] is True
+    )
     gate = R.diagonal(source, _prog("sa", "i100", 30.0, 0.0, child="other", deltas="deltas"))
     assert gate["passed"] is False and gate["same_child"] is False and gate["same_deltas"] is True
     last_bits = R.diagonal(source, _prog("sa", "i100", 30.0, 0.0, child="child", deltas="x"))
@@ -99,10 +141,25 @@ def test_the_diagonal_gate_needs_the_sessions_child() -> None:
         R.diagonal(source, _prog("sa", "i101", 30.0, 0.0))
 
 
-def _records(gains: dict[str, float], cleans: dict[str, float], copy_gain: float, sid: str, own: str,
-             own_child: str = "child") -> tuple[dict[str, Any], dict[str, Any]]:
-    program = {t: _prog(sid, t, gains[t], cleans[t], child=own_child if t == own else "c",
-                        deltas="deltas" if t == own else "d") for t in IDS}
+def _records(
+    gains: dict[str, float],
+    cleans: dict[str, float],
+    copy_gain: float,
+    sid: str,
+    own: str,
+    own_child: str = "child",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    program = {
+        t: _prog(
+            sid,
+            t,
+            gains[t],
+            cleans[t],
+            child=own_child if t == own else "c",
+            deltas="deltas" if t == own else "d",
+        )
+        for t in IDS
+    }
     copy = {t: _copy(sid, t, copy_gain, -0.5) for t in IDS if t != own}
     return program, copy
 
@@ -128,7 +185,9 @@ def test_the_fixed_readings() -> None:
     assert a["reuse_share"] == pytest.approx(0.7) and a["program_clean_ok"] == 3
     assert a["c_e3_form"] is False  # share 0.7 meets the ratio, clean only 3 of 5
     assert a["c_per_target_targets"] == ["i101", "i102", "i104"] and a["c_per_target"] is False
-    assert a["copy_mean_gain"] == pytest.approx(-0.25) and a["program_minus_copy_gain"] == pytest.approx(14.25)
+    assert a["copy_mean_gain"] == pytest.approx(-0.25) and a["program_minus_copy_gain"] == pytest.approx(
+        14.25
+    )
     assert a["program_mean_clean"] == pytest.approx(-0.95)
     assert a["program_minus_copy_joint"] == pytest.approx((14.0 - 0.95) - (-0.25 - 0.5))
     assert b["own_seed"] == 101 and b["counted_as_base"]["program"] == ["i105"]
@@ -170,7 +229,9 @@ def test_the_fixed_targets_are_checked_against_the_store() -> None:
         R.check_targets(lambda c, s: lookup[(c, s)])
 
 
-def _session_with_program(root: Path, e3_record: dict[str, Any], source_id: str, program: Path, seed: int) -> Path:
+def _session_with_program(
+    root: Path, e3_record: dict[str, Any], source_id: str, program: Path, seed: int
+) -> Path:
     """``_fake_session`` with the program file in final/ and the session's seed (what T08 reads)."""
     session = _fake_session(root, e3_record, source_id)
     shutil.copyfile(program, session / "final" / "qkv.py")
@@ -197,7 +258,9 @@ def toy_runs(e11_store: V.SyntheticStore, tmp_path: Path) -> dict[str, Any]:
 
 
 @needs_sandbox
-def test_a_seed_101_source_copies_onto_the_other_five_students(toy_runs: dict[str, Any], tmp_path: Path) -> None:
+def test_a_seed_101_source_copies_onto_the_other_five_students(
+    toy_runs: dict[str, Any], tmp_path: Path
+) -> None:
     ids, session = toy_runs["ids"], toy_runs["s101"]
     others = [ids[0], *ids[2:]]
     written = F.run_frozen(session, others, tmp_path / "copy")
@@ -215,8 +278,9 @@ def test_a_seed_101_source_copies_onto_the_other_five_students(toy_runs: dict[st
 
 
 @needs_sandbox
-def test_the_t08_path_on_the_toy_store(toy_runs: dict[str, Any], tmp_path: Path,
-                                       monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_t08_path_on_the_toy_store(
+    toy_runs: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     ids, program = toy_runs["ids"], toy_runs["program"]
     monkeypatch.setattr(R, "CONDITIONS", (PLANT_CONDITION,))
     monkeypatch.setattr(R, "TARGETS", {PLANT_CONDITION: tuple(ids)})
@@ -227,7 +291,9 @@ def test_the_t08_path_on_the_toy_store(toy_runs: dict[str, Any], tmp_path: Path,
     root = tmp_path / "t08"
     for sid, source in sources.items():
         run_transfer(Path(str(source.program_path)), ids, root / "program" / sid, _sandbox())
-        F.run_frozen(toy_runs["sessions"] / sid, [t for t in ids if t != source.instance_id], root / "copy" / sid)
+        F.run_frozen(
+            toy_runs["sessions"] / sid, [t for t in ids if t != source.instance_id], root / "copy" / sid
+        )
     result = R.table(root, toy_runs["sessions"], e3_root=None, f6_root=None)
     cond = result["conditions"][PLANT_CONDITION]
     assert cond["read_sources"] == ["s1000000000000000", "s1010000000000000"]
@@ -240,6 +306,8 @@ def test_the_t08_path_on_the_toy_store(toy_runs: dict[str, Any], tmp_path: Path,
     reading = cond["source_readings"][1]
     others = [t for t in ids if t != ids[1]]
     gains = [rows["s1010000000000000"]["program"][t]["gain"] for t in others]
-    assert reading["own_seed"] == 101 and reading["program_mean_gain"] == pytest.approx(np.mean(gains), abs=1e-4)
+    assert reading["own_seed"] == 101 and reading["program_mean_gain"] == pytest.approx(
+        np.mean(gains), abs=1e-4
+    )
     copy_gains = [rows["s1010000000000000"]["copy"][t]["gain"] for t in others]
     assert reading["program_minus_copy_gain"] == pytest.approx(np.mean(gains) - np.mean(copy_gains), abs=1e-4)

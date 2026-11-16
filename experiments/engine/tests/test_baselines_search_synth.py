@@ -116,7 +116,9 @@ def toy_params(arch: str, rng: np.random.Generator) -> dict[str, np.ndarray]:
         channels = [3, 4, 4, 4]
         for k in range(3):
             fan_in = channels[k] * 9
-            params[f"conv{k + 1}.weight"] = rng.normal(0, np.sqrt(2 / fan_in), (channels[k + 1], channels[k], 3, 3))
+            params[f"conv{k + 1}.weight"] = rng.normal(
+                0, np.sqrt(2 / fan_in), (channels[k + 1], channels[k], 3, 3)
+            )
             params[f"conv{k + 1}.bias"] = rng.normal(0, 0.1, channels[k + 1])
         sizes = [("fc1", 8, 16), ("fc2", N_CLASSES, 8)]
     else:
@@ -137,34 +139,70 @@ def toy_spec(arch: str, params: dict[str, np.ndarray], mean: list[float], std: l
             conv_out = [int(weight.shape[0]), shape[1], shape[2]]
             layers += [
                 {
-                    "name": name, "op": "conv2d", "weight": f"{name}.weight", "bias": f"{name}.bias",
-                    "shape_w": list(weight.shape), "shape_b": [int(weight.shape[0])], "kernel": [3, 3],
-                    "stride": [1, 1], "padding": [1, 1], "padding_mode": "zeros", "dilation": [1, 1], "groups": 1,
-                    "in_shape": shape, "out_shape": conv_out,
+                    "name": name,
+                    "op": "conv2d",
+                    "weight": f"{name}.weight",
+                    "bias": f"{name}.bias",
+                    "shape_w": list(weight.shape),
+                    "shape_b": [int(weight.shape[0])],
+                    "kernel": [3, 3],
+                    "stride": [1, 1],
+                    "padding": [1, 1],
+                    "padding_mode": "zeros",
+                    "dilation": [1, 1],
+                    "groups": 1,
+                    "in_shape": shape,
+                    "out_shape": conv_out,
                 },
                 {"op": "relu"},
             ]
             pooled = [conv_out[0], conv_out[1] // 2, conv_out[2] // 2]
             layers.append(
-                {"op": "maxpool2d", "kernel": [2, 2], "stride": [2, 2], "padding": [0, 0], "ceil_mode": False,
-                 "in_shape": conv_out, "out_shape": pooled}
+                {
+                    "op": "maxpool2d",
+                    "kernel": [2, 2],
+                    "stride": [2, 2],
+                    "padding": [0, 0],
+                    "ceil_mode": False,
+                    "in_shape": conv_out,
+                    "out_shape": pooled,
+                }
             )
             shape = pooled
-    layers.append({"op": "flatten", "order": "C, H, W (row-major)", "in_shape": shape, "out_features": int(np.prod(shape))})
+    layers.append(
+        {
+            "op": "flatten",
+            "order": "C, H, W (row-major)",
+            "in_shape": shape,
+            "out_features": int(np.prod(shape)),
+        }
+    )
     names = ["fc1", "fc2"] if arch == "cnn" else ["fc1", "fc2", "fc3"]
     for position, name in enumerate(names):
         weight = params[f"{name}.weight"]
         layers.append(
-            {"name": name, "op": "linear", "weight": f"{name}.weight", "bias": f"{name}.bias",
-             "shape_w": list(weight.shape), "shape_b": [int(weight.shape[0])]}
+            {
+                "name": name,
+                "op": "linear",
+                "weight": f"{name}.weight",
+                "bias": f"{name}.bias",
+                "shape_w": list(weight.shape),
+                "shape_b": [int(weight.shape[0])],
+            }
         )
         if position < len(names) - 1:
             layers.append({"op": "relu"})
     return {
         "schema": "cryowisp.model_spec.v0",
         "model_id": f"mtoy{arch}",
-        "input": {"shape": list(SHAPES[arch]), "dtype": "uint8", "range": [0, 255], "mean": mean, "std": std,
-                  "layout": "NCHW, flatten row-major"},
+        "input": {
+            "shape": list(SHAPES[arch]),
+            "dtype": "uint8",
+            "range": [0, 255],
+            "mean": mean,
+            "std": std,
+            "layout": "NCHW, flatten row-major",
+        },
         "classes": [f"c{i}" for i in range(N_CLASSES)],
         "layers": layers,
     }
@@ -183,7 +221,9 @@ class Toy:
     std: list[float]
 
 
-def write_toy_instance(root: Path, arch: str, seed: int, instance_id: str, split_role: str | None = "dev") -> Toy:
+def write_toy_instance(
+    root: Path, arch: str, seed: int, instance_id: str, split_role: str | None = "dev"
+) -> Toy:
     """Write a toy instance to ``root/instance_id`` and its fake V_check to ``root/vcheck``."""
     rng = np.random.default_rng(seed)
     shape = SHAPES[arch]
@@ -220,8 +260,12 @@ def write_toy_instance(root: Path, arch: str, seed: int, instance_id: str, split
     save_params(instance_dir / "model.npz", base)
     np.savez(
         instance_dir / "evidence.npz",
-        x_fail=pool[fail], y_fail=y[fail], pred_fail=pred[fail],
-        x_rand=pool[rand], y_rand=y[rand], pred_rand=pred[rand],
+        x_fail=pool[fail],
+        y_fail=y[fail],
+        pred_fail=pred[fail],
+        x_rand=pool[rand],
+        y_rand=y[rand],
+        pred_rand=pred[rand],
         split_ids=np.array([f"toy:{i}" for i in np.concatenate([fail, rand])]),
     )
     spec = toy_spec(arch, base, mean, std)
@@ -292,7 +336,9 @@ def test_toy_instance_loads_and_has_the_failure_definition(toy: Toy) -> None:
 def test_netspec_matches_toy_forward(toy: Toy) -> None:
     instance, counted, sets = _evidence_sets(toy)
     net = parse_spec(toy.spec, toy.params)
-    assert [layer.name for layer in net.dense] == (["fc1", "fc2"] if toy.arch == "cnn" else ["fc1", "fc2", "fc3"])
+    assert [layer.name for layer in net.dense] == (
+        ["fc1", "fc2"] if toy.arch == "cnn" else ["fc1", "fc2", "fc3"]
+    )
     assert check_parity(net, toy.params, toy.forward, sets.x_all, 1e-5) < 1e-5
 
 
@@ -437,7 +483,11 @@ def test_arachne_localisation_matches_brute_force(mlp_toy: Toy) -> None:
     points, refs = [], []
     for index, layer in enumerate(net.dense):
         points.append(np.stack([grad_ratio[index].ravel(), fwd_ratio[index].ravel()], axis=1))
-        refs += [(layer.weight, (r, c)) for r in range(grad_ratio[index].shape[0]) for c in range(grad_ratio[index].shape[1])]
+        refs += [
+            (layer.weight, (r, c))
+            for r in range(grad_ratio[index].shape[0])
+            for c in range(grad_ratio[index].shape[1])
+        ]
     stacked = np.concatenate(points)
     ours = np.array([[g, f] for g, f in zip(loc.grad_ratio, loc.fwd_ratio, strict=True)])
     expected_refs = {refs[i] for i in arachne.pareto_front(stacked)}
@@ -445,7 +495,9 @@ def test_arachne_localisation_matches_brute_force(mlp_toy: Toy) -> None:
     by_ref = {refs[i]: stacked[i] for i in range(len(refs))}
     expected = np.array([by_ref[(ref.tensor, ref.index)] for ref in loc.refs])
     assert np.allclose(ours, expected, rtol=1e-4, atol=1e-9)
-    capped = arachne.localise(net, toy.params, sets, config, np.random.default_rng(5), EditLimits.from_executor())
+    capped = arachne.localise(
+        net, toy.params, sets, config, np.random.default_rng(5), EditLimits.from_executor()
+    )
     assert capped.cap == EditLimits.from_executor().max_changed(toy.params)
     assert [(r.tensor, r.index) for r in capped.refs] == [(r.tensor, r.index) for r in loc.refs][: capped.cap]
 
@@ -453,8 +505,17 @@ def test_arachne_localisation_matches_brute_force(mlp_toy: Toy) -> None:
 def _arachne_problem(toy: Toy):
     instance, counted, sets = _evidence_sets(toy)
     net = parse_spec(toy.spec, instance.params)
-    loc = arachne.localise(net, instance.params, sets, arachne.ArachneConfig(), np.random.default_rng(0), EditLimits.from_executor())
-    problem = arachne.ArachneProblem(instance.params, loc.refs, sets, counted, 10.0, EditLimits.from_executor())
+    loc = arachne.localise(
+        net,
+        instance.params,
+        sets,
+        arachne.ArachneConfig(),
+        np.random.default_rng(0),
+        EditLimits.from_executor(),
+    )
+    problem = arachne.ArachneProblem(
+        instance.params, loc.refs, sets, counted, 10.0, EditLimits.from_executor()
+    )
     return instance, counted, problem
 
 
@@ -516,7 +577,9 @@ def test_care_scores_match_interventions_through_the_instance_forward(toy: Toy) 
             assert scores[position] == pytest.approx(base_mean)
         else:
             assert scores[position] == pytest.approx(float(np.mean(expectations)), abs=1e-5)
-    p_true = softmax(toy.forward(instance.params, sets.x_neg).astype(np.float64))[np.arange(sets.n_neg), sets.y_neg]
+    p_true = softmax(toy.forward(instance.params, sets.x_neg).astype(np.float64))[
+        np.arange(sets.n_neg), sets.y_neg
+    ]
     assert base_mean == pytest.approx(float(p_true.mean()), abs=1e-6)
 
 
@@ -638,26 +701,38 @@ def check_run(record: dict, run_dir: Path, toy: Toy, method: str, budget: int) -
     log = on_disk["oracle_log"]
     valid = [candidate for candidate in on_disk["candidates"] if candidate["valid"]]
     assert on_disk["invalid_patches"] == [
-        {"patch_id": c["patch_id"], "executor_error": c["executor_error"]} for c in on_disk["candidates"] if not c["valid"]
+        {"patch_id": c["patch_id"], "executor_error": c["executor_error"]}
+        for c in on_disk["candidates"]
+        if not c["valid"]
     ]
     assert on_disk["queries_used"] == len(log) == len(valid) <= budget
     assert [entry["patch_id"] for entry in log] == [candidate["patch_id"] for candidate in valid]
     base = load_params(toy.instance_dir / "model.npz")
     for entry, candidate in zip(log, valid, strict=True):
-        applied = apply_patch_file(base, run_dir / entry["patch_id"] / "patch.json", Limits(), params_sha256(base))
+        applied = apply_patch_file(
+            base, run_dir / entry["patch_id"] / "patch.json", Limits(), params_sha256(base)
+        )
         assert applied.child_sha256 == entry["child_sha256"]
         assert candidate["roundtrip_exact"] and candidate["search_limit_violations"] == []
-        assert candidate["executor"]["edit_size"] == entry["n_changed"]  # sparse ops specify only what changes
+        assert (
+            candidate["executor"]["edit_size"] == entry["n_changed"]
+        )  # sparse ops specify only what changes
         assert candidate["executor"]["edit_frac"] <= limits.changed_frac_cap()
         assert candidate["edit"]["within_limits"]
         assert limit_violations(edit_stats(base, applied.child), limits) == []
-        largest = max(candidate["edit"]["rel_frob"].values())  # the executor's float64 sums differ in the last bit
+        largest = max(
+            candidate["edit"]["rel_frob"].values()
+        )  # the executor's float64 sums differ in the last bit
         assert candidate["largest_rel_frob"]["value"] == pytest.approx(largest, rel=1e-12)
-        assert all(candidate["edit"]["ndim"][name] == 2 for name in candidate["edit"]["rel_frob"])  # weights only
+        assert all(
+            candidate["edit"]["ndim"][name] == 2 for name in candidate["edit"]["rel_frob"]
+        )  # weights only
         assert entry["n_changed"] == candidate["edit"]["n_changed"] > 0
         assert entry["fixed_target"] is None and entry["score"] == entry["fixed"] - entry["broken"]
         assert candidate["check"] == entry
-    final = choose_final([Candidate(e["patch_id"], e["score"], e["n_changed"], e["query_index"]) for e in log])
+    final = choose_final(
+        [Candidate(e["patch_id"], e["score"], e["n_changed"], e["query_index"]) for e in log]
+    )
     assert on_disk["final"]["patch_id"] == final.patch_id
     assert on_disk["final"]["score"] == final.score
     assert on_disk["final"]["fixed_target"] is None
@@ -666,10 +741,14 @@ def check_run(record: dict, run_dir: Path, toy: Toy, method: str, budget: int) -
         assert (on_disk["final"]["fixed"], on_disk["final"]["broken"]) == (chosen["fixed"], chosen["broken"])
     search = on_disk["search"]
     eligible = search["trajectory_non_noop_indices"]
-    assert search["selected_trajectory_indices"] == [eligible[p] for p in select_for_query(len(eligible), budget)]
+    assert search["selected_trajectory_indices"] == [
+        eligible[p] for p in select_for_query(len(eligible), budget)
+    ]
     fits = [snap["fitness"] for snap in search["trajectory"]]
     increasing = method == "arachne"
-    assert all((later > earlier) if increasing else (later < earlier) for earlier, later in zip(fits, fits[1:]))
+    assert all(
+        (later > earlier) if increasing else (later < earlier) for earlier, later in zip(fits, fits[1:])
+    )
     if eligible and eligible[-1] == len(fits) - 1:
         assert on_disk["candidates"][-1]["is_method_final_best"]
     counts = on_disk["forward_counts"]
@@ -689,7 +768,9 @@ def test_end_to_end_run(toy: Toy, method: str, tmp_path: Path) -> None:
 def test_runs_are_reproducible(mlp_toy: Toy, tmp_path: Path) -> None:
     logs = []
     for out in ("one", "two"):
-        record = run_search_baseline(mlp_toy.instance_dir, "arachne", 1, out_root=tmp_path / out, options=SMALL)
+        record = run_search_baseline(
+            mlp_toy.instance_dir, "arachne", 1, out_root=tmp_path / out, options=SMALL
+        )
         logs.append([(entry["child_sha256"], entry["score"]) for entry in record["oracle_log"]])
     assert logs[0] == logs[1] and logs[0]
 
@@ -697,11 +778,15 @@ def test_runs_are_reproducible(mlp_toy: Toy, tmp_path: Path) -> None:
 def test_small_budget_subsamples_the_trajectory(mlp_toy: Toy, tmp_path: Path) -> None:
     options = replace(SMALL, query_budget=2)
     record = run_search_baseline(mlp_toy.instance_dir, "arachne", 2, out_root=tmp_path, options=options)
-    on_disk = check_run(record, tmp_path / mlp_toy.instance_dir.name / "arachne" / "2", mlp_toy, "arachne", budget=2)
+    on_disk = check_run(
+        record, tmp_path / mlp_toy.instance_dir.name / "arachne" / "2", mlp_toy, "arachne", budget=2
+    )
     assert on_disk["queries_used"] == min(2, len(on_disk["search"]["trajectory_non_noop_indices"]))
 
 
-def test_oracle_is_built_only_after_the_search(mlp_toy: Toy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_oracle_is_built_only_after_the_search(
+    mlp_toy: Toy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     events: list[str] = []
     real_de, real_oracle = arachne.run_de, runner.make_oracle
 
@@ -736,7 +821,10 @@ def test_runner_refuses_a_task_with_stale_limits(mlp_toy: Toy, tmp_path: Path) -
     copy = tmp_path / "instances" / "itoy_stale"
     shutil.copytree(mlp_toy.instance_dir, copy)
     task = json.loads((copy / "task.json").read_text())
-    task["limits"] = {"max_changed_frac": 0.05, "max_rel_frob": 0.5}  # as written before the edit-limit switch
+    task["limits"] = {
+        "max_changed_frac": 0.05,
+        "max_rel_frob": 0.5,
+    }  # as written before the edit-limit switch
     (copy / "task.json").write_text(json.dumps(task))
     with pytest.raises(ValueError, match="predates a limits change"):
         run_search_baseline(copy, "care", 0, out_root=tmp_path / "runs", options=SMALL)
@@ -761,8 +849,12 @@ def test_an_invalid_patch_is_recorded_and_consumes_no_query(
 
     monkeypatch.setattr(runner, "apply_patch_file", reject_first)
     record = run_search_baseline(mlp_toy.instance_dir, "arachne", 4, out_root=tmp_path, options=SMALL)
-    on_disk = check_run(record, tmp_path / mlp_toy.instance_dir.name / "arachne" / "4", mlp_toy, "arachne", budget=8)
-    assert on_disk["invalid_patches"] == [{"patch_id": "q0", "executor_error": ["op 0 (set fc2.weight): rejected for the test"]}]
+    on_disk = check_run(
+        record, tmp_path / mlp_toy.instance_dir.name / "arachne" / "4", mlp_toy, "arachne", budget=8
+    )
+    assert on_disk["invalid_patches"] == [
+        {"patch_id": "q0", "executor_error": ["op 0 (set fc2.weight): rejected for the test"]}
+    ]
     assert [entry["query_index"] for entry in on_disk["oracle_log"]] == list(range(len(calls) - 1))
     assert on_disk["oracle_log"][0]["patch_id"] == "q1"
     assert not on_disk["flags"]["respects_edit_limits"]
@@ -792,16 +884,28 @@ def _cli_store(tmp_path: Path, source: Toy) -> tuple[dict[str, str], Path]:
     ):
         shutil.copytree(source.instance_dir, private / "instances" / instance_id)
         set_split_role(private / "instances" / instance_id, private_role)
-        entries.append({"instance_id": instance_id, "dataset": "toy", "arch": "mlp", "split_role": index_role,
-                        "seed": 100, "evidence_rule": "evidence-v1"})
+        entries.append(
+            {
+                "instance_id": instance_id,
+                "dataset": "toy",
+                "arch": "mlp",
+                "split_role": index_role,
+                "seed": 100,
+                "evidence_rule": "evidence-v1",
+            }
+        )
     (private / "instances" / "index.json").write_text(json.dumps({"instances": entries}))
-    env = dict(os.environ, CRYOWISP_PRIVATE=str(private), CRYOWISP_RUNS=str(runs), CRYOWISP_SEALED=str(sealed))
+    env = dict(
+        os.environ, CRYOWISP_PRIVATE=str(private), CRYOWISP_RUNS=str(runs), CRYOWISP_SEALED=str(sealed)
+    )
     return env, runs
 
 
 def _cli(env: dict[str, str], *args: str) -> subprocess.CompletedProcess:
     script = REPO / "scripts" / "run_search_baselines.py"
-    return subprocess.run([sys.executable, str(script), *args], env=env, capture_output=True, text=True, timeout=300)
+    return subprocess.run(
+        [sys.executable, str(script), *args], env=env, capture_output=True, text=True, timeout=300
+    )
 
 
 def test_cli_refuses_main_instances(mlp_toy: Toy, tmp_path: Path) -> None:
@@ -844,4 +948,7 @@ def test_cli_rejects_mixed_selection_options(mlp_toy: Toy, tmp_path: Path) -> No
 
 def test_forward_hash_in_private_json_is_the_file_hash(mlp_toy: Toy) -> None:
     private = json.loads((mlp_toy.instance_dir / "private.json").read_text())
-    assert private["forward_sha256"] == hashlib.sha256((mlp_toy.instance_dir / "forward.py").read_bytes()).hexdigest()
+    assert (
+        private["forward_sha256"]
+        == hashlib.sha256((mlp_toy.instance_dir / "forward.py").read_bytes()).hexdigest()
+    )

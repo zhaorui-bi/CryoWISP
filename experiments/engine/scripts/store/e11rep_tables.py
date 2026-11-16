@@ -11,6 +11,7 @@ Gain, clean and joint are V_select points: 100 x delta_acc on the condition spli
 sum. The configuration of a pick comes from its run.json candidate (patch_id). The bar: gain >= 10, clean >= -1.0 and
 joint >= the best kept reference of both grids + 1 (the base when every kept pick is the base).
 """
+
 import json
 import sys
 from pathlib import Path
@@ -54,8 +55,11 @@ def line(tag, r):
     pid, cfg = config_of(r)
     v = r["vcheck"]
     lim = r.get("within_program_limits")
-    return (f"{tag:24s} {r['method']:20s} {g:+8.3f} {c:+8.3f} {j:+8.3f}   V_check S {v['score']:5d} new {v.get('score_new', '-'):>5} "
-            f"old {v.get('score_old', '-'):>4}   {pid} [{fmt_cfg(cfg)}]" + ("" if lim is None else f" limits {lim}"))
+    return (
+        f"{tag:24s} {r['method']:20s} {g:+8.3f} {c:+8.3f} {j:+8.3f}   V_check S {v['score']:5d} new {v.get('score_new', '-'):>5} "
+        f"old {v.get('score_old', '-'):>4}   {pid} [{fmt_cfg(cfg)}]"
+        + ("" if lim is None else f" limits {lim}")
+    )
 
 
 def refs(f_e11, f_e11g2):
@@ -71,8 +75,10 @@ def refs(f_e11, f_e11g2):
     if best is None:
         print("every kept pick is the base; bar joint >= +1.000")
     else:
-        print(f"best kept reference: {best[2]} ({best[1]}) joint {best[0]:+.3f}; bar: gain >= 10, clean >= -1.0, "
-              f"joint >= {best[0] + 1:+.3f}")
+        print(
+            f"best kept reference: {best[2]} ({best[1]}) joint {best[0]:+.3f}; bar: gain >= 10, clean >= -1.0, "
+            f"joint >= {best[0] + 1:+.3f}"
+        )
 
 
 def f1(f_floor, f_own, f_front, g2_floor, g2_own, g2_front):
@@ -115,13 +121,26 @@ def xcheck(f_rec, f_new):
         same_pick = px == py
         same_num = all(abs(u - v) < 1e-9 for u, v in zip(gx, gy))
         vx, vy = x["vcheck"], y["vcheck"]
-        print(f"{x['method']:20s} pick {px}/{py} {'=' if same_pick else '!='}  4090 {gx[0]:+.3f}/{gx[1]:+.3f}/{gx[2]:+.3f}"
-              f"  NSCC {gy[0]:+.3f}/{gy[1]:+.3f}/{gy[2]:+.3f}  {'equal' if same_pick and same_num else 'NOT equal'}"
-              f"  V_check S {vx['score']}/{vy['score']}")
+        print(
+            f"{x['method']:20s} pick {px}/{py} {'=' if same_pick else '!='}  4090 {gx[0]:+.3f}/{gx[1]:+.3f}/{gx[2]:+.3f}"
+            f"  NSCC {gy[0]:+.3f}/{gy[1]:+.3f}/{gy[2]:+.3f}  {'equal' if same_pick and same_num else 'NOT equal'}"
+            f"  V_check S {vx['score']}/{vy['score']}"
+        )
 
 
-E11 = ["grad_last", "grad_full", "ridge_last", "prior_shift", "tie_inputs", "input_stats", "grad_sparse19_sal",
-       "grad_sparse19_traj", "interp", "tent_ln", "sar"]
+E11 = [
+    "grad_last",
+    "grad_full",
+    "ridge_last",
+    "prior_shift",
+    "tie_inputs",
+    "input_stats",
+    "grad_sparse19_sal",
+    "grad_sparse19_traj",
+    "interp",
+    "tent_ln",
+    "sar",
+]
 E11G2 = ["grad_last", "grad_full", "grad_sparse19_sal", "grad_sparse19_traj", "interp"]
 
 
@@ -131,20 +150,30 @@ def checks(rec_root, new_root, instance):
     total = [0, 0, 0]
     for label, methods in (("e11", E11), ("e11g2", E11G2)):
         for m in methods:
-            a = json.loads((Path(rec_root) / "baselines" / instance / m / label / "0" / "run.json").read_text())
-            b = json.loads((Path(new_root) / "baselines" / instance / m / label / "0" / "run.json").read_text())
+            a = json.loads(
+                (Path(rec_root) / "baselines" / instance / m / label / "0" / "run.json").read_text()
+            )
+            b = json.loads(
+                (Path(new_root) / "baselines" / instance / m / label / "0" / "run.json").read_text()
+            )
             la, lb = a.get("oracle_log") or [], b.get("oracle_log") or []
             assert [e["patch_id"] for e in la] == [e["patch_id"] for e in lb], (label, m)
             sha = sum(x["child_sha256"] != y["child_sha256"] for x, y in zip(la, lb))
-            diff = [(x["patch_id"], x["score"], y["score"], x["score_old"], y["score_old"]) for x, y in zip(la, lb)
-                    if (x["score"], x["score_new"], x["score_old"]) != (y["score"], y["score_new"], y["score_old"])]
+            diff = [
+                (x["patch_id"], x["score"], y["score"], x["score_old"], y["score_old"])
+                for x, y in zip(la, lb)
+                if (x["score"], x["score_new"], x["score_old"])
+                != (y["score"], y["score_new"], y["score_old"])
+            ]
             total[0] += len(la)
             total[1] += sha
             total[2] += len(diff)
             fa, fb = a["final"], b["final"]
-            print(f"{label:5s} {m:20s} checks {len(la)}  child sha differ {sha}  S differ {len(diff)}  final "
-                  f"{fa['patch_id']} S {fa['score']} / {fb['patch_id']} S {fb['score']}"
-                  + (f"  (patch, S, S, S_old, S_old) {diff}" if diff else ""))
+            print(
+                f"{label:5s} {m:20s} checks {len(la)}  child sha differ {sha}  S differ {len(diff)}  final "
+                f"{fa['patch_id']} S {fa['score']} / {fb['patch_id']} S {fb['score']}"
+                + (f"  (patch, S, S, S_old, S_old) {diff}" if diff else "")
+            )
     print(f"total checks {total[0]}, child sha256 differ {total[1]}, S/S_new/S_old differ {total[2]}")
 
 

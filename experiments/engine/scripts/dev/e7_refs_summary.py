@@ -82,7 +82,9 @@ def main(argv: list[str] | None = None) -> int:
     refs = [json.loads(line) for line in args.refs.read_text().splitlines() if line.strip()]
     kept = [json.loads(line) for line in args.kept.read_text().splitlines() if line.strip()]
     validity = json.loads(args.validity.read_text())
-    if [r["method"] for r in refs] != [k["method"] for k in kept] or len({r["instance_id"] for r in refs}) != 1:
+    if [r["method"] for r in refs] != [k["method"] for k in kept] or len(
+        {r["instance_id"] for r in refs}
+    ) != 1:
         raise SystemExit("the two readout files must name the same runs of one instance, in the same order")
     r_points = float(validity["V3"]["R"])
     reference_points = 100 * float(validity["V2"]["acc_b"])
@@ -116,10 +118,20 @@ def main(argv: list[str] | None = None) -> int:
         "bar_old_change_points": r_points,
         "not_applicable": best["vselect_all_acc"] >= reference_points - NOT_APPLICABLE_POINTS,
         "not_applicable_threshold_acc": reference_points - NOT_APPLICABLE_POINTS,
-        "flip_rate": {"rule": "median over every reference's checked candidates of (fixed_old + broken_old) / n_c",
-                      "n_checks": len(flips), "d": d, "min": min(flips), "max": max(flips), "n_c": n_c, "n_s": n_s},
-        "floor": {"formula": "round((n_c / 100) x (R - 0.11 + 164.5 x sqrt(d / n_c + d / n_s))), clamped to [-20, 0]",
-                  "value_at_d": value, "floor": kept_floor(value)},
+        "flip_rate": {
+            "rule": "median over every reference's checked candidates of (fixed_old + broken_old) / n_c",
+            "n_checks": len(flips),
+            "d": d,
+            "min": min(flips),
+            "max": max(flips),
+            "n_c": n_c,
+            "n_s": n_s,
+        },
+        "floor": {
+            "formula": "round((n_c / 100) x (R - 0.11 + 164.5 x sqrt(d / n_c + d / n_s))), clamped to [-20, 0]",
+            "value_at_d": value,
+            "floor": kept_floor(value),
+        },
     }
     text = json.dumps(summary, indent=2, sort_keys=True, allow_nan=False) + "\n"
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -128,11 +140,15 @@ def main(argv: list[str] | None = None) -> int:
     for title, table in (("own final", rows), ("kept20", kept_rows)):
         print(f"== {title}")
         for x in table:
-            print(f"{x['method']:<20} {x['final']:<5} {json.dumps(x['config']):<38} S_new {x['S_new']:>5} S_old "
-                  f"{x['S_old']:>5} | all {x['vselect_all_acc']:6.2f}% new {x['vselect_new_acc']:6.2f}% old "
-                  f"{x['vselect_old_change_points']:+6.2f} | limits {x['respects_edit_limits']}")
-    print(f"best {best['method']} {best['vselect_all_acc']:.2f}%; bar {summary['bar_all_class_acc']:.2f}%; not "
-          f"applicable {summary['not_applicable']} (threshold {summary['not_applicable_threshold_acc']:.2f}%)")
+            print(
+                f"{x['method']:<20} {x['final']:<5} {json.dumps(x['config']):<38} S_new {x['S_new']:>5} S_old "
+                f"{x['S_old']:>5} | all {x['vselect_all_acc']:6.2f}% new {x['vselect_new_acc']:6.2f}% old "
+                f"{x['vselect_old_change_points']:+6.2f} | limits {x['respects_edit_limits']}"
+            )
+    print(
+        f"best {best['method']} {best['vselect_all_acc']:.2f}%; bar {summary['bar_all_class_acc']:.2f}%; not "
+        f"applicable {summary['not_applicable']} (threshold {summary['not_applicable_threshold_acc']:.2f}%)"
+    )
     print(f"d {d:.5f} over {len(flips)} checks; floor value {value:.2f} -> {summary['floor']['floor']}")
     print(f"-> {args.out} {sha256(args.out)}")
     return 0

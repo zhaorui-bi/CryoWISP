@@ -12,47 +12,132 @@ import json
 from pathlib import Path
 from typing import Any
 
-from cryowisp.harness.finalize import (KEEPS_FINAL_PATCH, STATUS_COMPLETE, STATUS_CRASHED, STATUS_INFRA, STATUS_TIMED_OUT,
-                                   classify)
+from cryowisp.harness.finalize import (
+    KEEPS_FINAL_PATCH,
+    STATUS_COMPLETE,
+    STATUS_CRASHED,
+    STATUS_INFRA,
+    STATUS_TIMED_OUT,
+    classify,
+)
 from cryowisp.harness.launch import KILL_REASON_WALL, LaunchOutcome
 from cryowisp.harness.stream import infra_reasons, parse_stream
 
 RECORDED: list[dict[str, Any]] = [
-    {"type": "system", "subtype": "init", "model": "claude-opus-5-5", "claude_code_version": "2.1.311",
-     "tools": ["mcp__cryowisp__declare_final", "mcp__cryowisp__patch_check", "mcp__cryowisp__python", "mcp__cryowisp__status"],
-     "mcp_servers": [{"name": "cryowisp", "status": "connected", "source": "dynamic"}], "permissionMode": "default",
-     "apiKeySource": "none"},
-    {"type": "assistant", "message": {"content": [{"type": "tool_use", "id": "toolu_01JymJcc3JEtbajCBzfKA3wZ",
-                                                   "name": "mcp__cryowisp__python", "input": {}}]}},
-    {"type": "rate_limit_event", "rate_limit_info": {
-        "status": "allowed_warning", "resetsAt": 1793736000, "rateLimitType": "seven_day", "utilization": 0.82,
-        "overageStatus": "rejected", "overageDisabledReason": "org_level_disabled", "isUsingOverage": False,
-        "surpassedThreshold": 0.75,
-        "unifiedWindows": {"seven_day": {"utilization": 0.82, "resetsAt": 1793736000, "status": "allowed_warning",
-                                         "surpassedThreshold": 0.75}},
-        "overageEnabled": False}},
-    {"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "toolu_01JymJcc3JEtbajCBzfKA3wZ",
-                                              "is_error": None, "content": "trimmed"}]}},
-    {"type": "assistant", "message": {"content": [{"type": "tool_use", "id": "toolu_0168Xu3gyTMycSWMjiCtJfdS",
-                                                   "name": "mcp__cryowisp__python", "input": {}}]}},
-    {"type": "result", "subtype": "success", "is_error": False, "api_error_status": None, "duration_ms": 44420,
-     "duration_api_ms": 39505, "num_turns": 8, "stop_reason": "end_turn", "total_cost_usd": 0.157107,
-     "usage": {"input_tokens": 16, "cache_creation_input_tokens": 11217, "cache_read_input_tokens": 65235,
-               "output_tokens": 2713, "output_tokens_details": {"thinking_tokens": 506},
-               "service_tier": "standard"},
-     "result": "trimmed"},
+    {
+        "type": "system",
+        "subtype": "init",
+        "model": "claude-opus-5-5",
+        "claude_code_version": "2.1.311",
+        "tools": [
+            "mcp__cryowisp__declare_final",
+            "mcp__cryowisp__patch_check",
+            "mcp__cryowisp__python",
+            "mcp__cryowisp__status",
+        ],
+        "mcp_servers": [{"name": "cryowisp", "status": "connected", "source": "dynamic"}],
+        "permissionMode": "default",
+        "apiKeySource": "none",
+    },
+    {
+        "type": "assistant",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_use",
+                    "id": "toolu_01JymJcc3JEtbajCBzfKA3wZ",
+                    "name": "mcp__cryowisp__python",
+                    "input": {},
+                }
+            ]
+        },
+    },
+    {
+        "type": "rate_limit_event",
+        "rate_limit_info": {
+            "status": "allowed_warning",
+            "resetsAt": 1793736000,
+            "rateLimitType": "seven_day",
+            "utilization": 0.82,
+            "overageStatus": "rejected",
+            "overageDisabledReason": "org_level_disabled",
+            "isUsingOverage": False,
+            "surpassedThreshold": 0.75,
+            "unifiedWindows": {
+                "seven_day": {
+                    "utilization": 0.82,
+                    "resetsAt": 1793736000,
+                    "status": "allowed_warning",
+                    "surpassedThreshold": 0.75,
+                }
+            },
+            "overageEnabled": False,
+        },
+    },
+    {
+        "type": "user",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": "toolu_01JymJcc3JEtbajCBzfKA3wZ",
+                    "is_error": None,
+                    "content": "trimmed",
+                }
+            ]
+        },
+    },
+    {
+        "type": "assistant",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_use",
+                    "id": "toolu_0168Xu3gyTMycSWMjiCtJfdS",
+                    "name": "mcp__cryowisp__python",
+                    "input": {},
+                }
+            ]
+        },
+    },
+    {
+        "type": "result",
+        "subtype": "success",
+        "is_error": False,
+        "api_error_status": None,
+        "duration_ms": 44420,
+        "duration_api_ms": 39505,
+        "num_turns": 8,
+        "stop_reason": "end_turn",
+        "total_cost_usd": 0.157107,
+        "usage": {
+            "input_tokens": 16,
+            "cache_creation_input_tokens": 11217,
+            "cache_read_input_tokens": 65235,
+            "output_tokens": 2713,
+            "output_tokens_details": {"thinking_tokens": 506},
+            "service_tier": "standard",
+        },
+        "result": "trimmed",
+    },
 ]
 
 
 def _write(tmp_path: Path, messages: list[dict[str, Any]], extra_lines: tuple[str, ...] = ()) -> Path:
     path = tmp_path / "transcript.jsonl"
-    path.write_text("".join(json.dumps(m) + "\n" for m in messages) + "".join(f"{line}\n" for line in extra_lines))
+    path.write_text(
+        "".join(json.dumps(m) + "\n" for m in messages) + "".join(f"{line}\n" for line in extra_lines)
+    )
     return path
 
 
 def _launch(**fields: Any) -> LaunchOutcome:
-    return LaunchOutcome(launcher="claude", stream_expected=True, started_at="2026-11-03T00:00:00+00:00",
-                         **{"exit_code": 0, **fields})
+    return LaunchOutcome(
+        launcher="claude",
+        stream_expected=True,
+        started_at="2026-11-03T00:00:00+00:00",
+        **{"exit_code": 0, **fields},
+    )
 
 
 def test_the_recorded_transcript_parses_and_is_a_complete_session(tmp_path: Path) -> None:
@@ -63,8 +148,14 @@ def test_the_recorded_transcript_parses_and_is_a_complete_session(tmp_path: Path
     assert view["tool_calls"] == {"mcp__cryowisp__python": 2} and view["n_tool_errors"] == 0
     assert view["n_rate_limit_events"] == 1
     rate = view["rate_limit_last"]
-    assert rate["status"] == "allowed_warning" and rate["seven_day"]["utilization"] == 0.82 and rate["five_hour"] is None
-    assert view["result"]["usage"]["thinking_tokens"] == 506 and view["result"]["usage"]["output_tokens"] == 2713
+    assert (
+        rate["status"] == "allowed_warning"
+        and rate["seven_day"]["utilization"] == 0.82
+        and rate["five_hour"] is None
+    )
+    assert (
+        view["result"]["usage"]["thinking_tokens"] == 506 and view["result"]["usage"]["output_tokens"] == 2713
+    )
     assert infra_reasons(summary, exit_code=0) == []
     assert classify(_launch(), summary, []) == (STATUS_COMPLETE, [])
 
@@ -100,14 +191,19 @@ def test_a_harness_fault_is_infra_and_a_wall_timeout_is_not(tmp_path: Path) -> N
     summary = parse_stream(_write(tmp_path, _variant("no_result")))
     status, reasons = classify(_launch(exit_code=-15, killed=True, kill_reason=KILL_REASON_WALL), summary, [])
     assert (status, reasons) == (STATUS_TIMED_OUT, [])
-    status, reasons = classify(_launch(), parse_stream(_write(tmp_path, RECORDED)), ["mcp server: ValueError: x"])
+    status, reasons = classify(
+        _launch(), parse_stream(_write(tmp_path, RECORDED)), ["mcp server: ValueError: x"]
+    )
     assert status == STATUS_INFRA and reasons == ["harness_exception: mcp server: ValueError: x"]
 
 
 def test_an_error_result_without_an_api_error_is_a_crash(tmp_path: Path) -> None:
     messages = copy.deepcopy(RECORDED)
     messages[5].update(subtype="error_during_execution", is_error=True)
-    assert classify(_launch(exit_code=1), parse_stream(_write(tmp_path, messages)), []) == (STATUS_CRASHED, [])
+    assert classify(_launch(exit_code=1), parse_stream(_write(tmp_path, messages)), []) == (
+        STATUS_CRASHED,
+        [],
+    )
 
 
 def test_a_missing_transcript_is_empty(tmp_path: Path) -> None:

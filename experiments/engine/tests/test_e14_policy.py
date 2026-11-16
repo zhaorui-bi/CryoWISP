@@ -43,7 +43,9 @@ def test_layout_and_sizes() -> None:
 def test_numpy_forward_parity(forward, rows: np.ndarray, size: str) -> None:
     torch.manual_seed(1)
     model = P.FilmPolicy(P.SIZES[size])
-    with torch.no_grad():  # move FiLM and LayerNorm off their identity initialisation so every path is exercised
+    with (
+        torch.no_grad()
+    ):  # move FiLM and LayerNorm off their identity initialisation so every path is exercised
         for name, tensor in model.named_parameters():
             if name.startswith(("film", "ln.")):
                 tensor.add_(0.3 * torch.randn_like(tensor))
@@ -89,7 +91,9 @@ def test_training_recipe_small(rows: np.ndarray) -> None:
     assert a.reserved_rows_unchanged
     torch.manual_seed(100)
     init = P.export_params(P.FilmPolicy(P.SIZES["base"]))
-    assert np.array_equal(init["word_emb.weight"][list(D.RESERVED_IDS)], pa["word_emb.weight"][list(D.RESERVED_IDS)])
+    assert np.array_equal(
+        init["word_emb.weight"][list(D.RESERVED_IDS)], pa["word_emb.weight"][list(D.RESERVED_IDS)]
+    )
     with pytest.raises(ValueError):
         P.train_policy(config, P.SIZES["base"], rows, np.zeros(len(rows), np.int64), seed=0)
     assert P.lr_at(config, 0, 100) == pytest.approx(config.lr / 2)
@@ -117,6 +121,8 @@ def test_training_recipe_cuda(monkeypatch: pytest.MonkeyPatch) -> None:
     assert all(p.device.type == "cpu" for p in a.model.parameters())
     torch.manual_seed(100)
     init = P.export_params(P.FilmPolicy(P.SIZES["base"]))
-    assert np.array_equal(init["word_emb.weight"][list(D.RESERVED_IDS)], pa["word_emb.weight"][list(D.RESERVED_IDS)])
+    assert np.array_equal(
+        init["word_emb.weight"][list(D.RESERVED_IDS)], pa["word_emb.weight"][list(D.RESERVED_IDS)]
+    )
     cpu = P.export_params(P.train_policy(config, P.SIZES["base"], x, y, seed=100).model)
     assert max(float(np.abs(pa[k] - cpu[k]).max()) for k in pa) < 1e-2  # same math, other kernels

@@ -34,9 +34,13 @@ PATCH_FILES = ("patch.json", "derived_patch.json")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--list", type=Path, required=True)
-    parser.add_argument("--scratch", type=Path, required=True, help="where the stub records go (never a result)")
+    parser.add_argument(
+        "--scratch", type=Path, required=True, help="where the stub records go (never a result)"
+    )
     parser.add_argument("--only", nargs="+")
     args = parser.parse_args()
     store = private_dir().parent.resolve()

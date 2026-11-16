@@ -28,8 +28,10 @@ import numpy as np
 
 from cryowisp.evalkit import sealed_finals as SF
 
-LABEL = ("synthetic rows: the entry's dev rows of record tiled to the sealed row count; memory and time only, the "
-         "readout is not written")
+LABEL = (
+    "synthetic rows: the entry's dev rows of record tiled to the sealed row count; memory and time only, the "
+    "readout is not written"
+)
 
 
 def _rss_mb() -> float:
@@ -46,12 +48,16 @@ def tile(arrays: Mapping[str, np.ndarray], rows: int) -> dict[str, np.ndarray]:
 
 
 def _describe(arrays: Mapping[str, np.ndarray]) -> dict[str, Any]:
-    return {key: {"shape": list(value.shape), "dtype": str(value.dtype), "bytes": int(value.nbytes)}
-            for key, value in arrays.items()}
+    return {
+        key: {"shape": list(value.shape), "dtype": str(value.dtype), "bytes": int(value.nbytes)}
+        for key, value in arrays.items()
+    }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--list", type=Path, required=True)
     parser.add_argument("--name", required=True)
     parser.add_argument("--rows", type=int, required=True)
@@ -75,13 +81,20 @@ def main() -> int:
     seconds = time.monotonic() - start
     rss["peak"] = _rss_mb()
     record = {
-        "label": LABEL, "name": entry.name, "instance_id": entry.instance_id,
-        "dataset": instance.private.get("dataset"), "condition": instance.private.get("condition"),
-        "child_kind": provenance["kind"], "rows": args.rows, "batch_size": args.batch_size,
+        "label": LABEL,
+        "name": entry.name,
+        "instance_id": entry.instance_id,
+        "dataset": instance.private.get("dataset"),
+        "condition": instance.private.get("condition"),
+        "child_kind": provenance["kind"],
+        "rows": args.rows,
+        "batch_size": args.batch_size,
         "arrays": {"condition": _describe(condition), "clean": _describe(clean)},
         "param_bytes": int(sum(v.nbytes for v in instance.params.values())),
-        "max_rss_mb": rss, "read_seconds": seconds,
-        "threads": {name: os.environ.get(name) for name in SF.THREAD_VARIABLES}, "nproc": os.cpu_count(),
+        "max_rss_mb": rss,
+        "read_seconds": seconds,
+        "threads": {name: os.environ.get(name) for name in SF.THREAD_VARIABLES},
+        "nproc": os.cpu_count(),
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("x", encoding="utf-8") as handle:

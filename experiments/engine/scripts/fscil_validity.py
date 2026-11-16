@@ -32,14 +32,27 @@ def main() -> int:
     data = (json.dumps(report, indent=2) + "\n").encode("utf-8")
     out.write_bytes(data)
     keys = ("diff_points", "paired_se_points", "only_b_right", "only_a_right", "acc_a", "acc_b")
-    sessions = {t: {role: {k: v[role][k] for k in ("bal_seen", "bal_new", "bal_old")} for role in v}
-                for t, v in report["per_session"].items()}
-    print(json.dumps({"file": str(out), "sha256": hashlib.sha256(data).hexdigest(), "gate": report["gate"],
-                      "V1": report["V1"],
-                      "V2": {k: report["V2"][k] for k in ("diff_points", "se_points", "bal_a", "bal_b")},
-                      "V3": {k: report["V3"][k] for k in keys} | {"R": report["V3"]["R"]},
-                      "session2_new_classes": {k: report["session2_new_classes"][k] for k in ("bal_reference", "bal_base")},
-                      "per_session": sessions}, indent=2))
+    sessions = {
+        t: {role: {k: v[role][k] for k in ("bal_seen", "bal_new", "bal_old")} for role in v}
+        for t, v in report["per_session"].items()
+    }
+    print(
+        json.dumps(
+            {
+                "file": str(out),
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "gate": report["gate"],
+                "V1": report["V1"],
+                "V2": {k: report["V2"][k] for k in ("diff_points", "se_points", "bal_a", "bal_b")},
+                "V3": {k: report["V3"][k] for k in keys} | {"R": report["V3"]["R"]},
+                "session2_new_classes": {
+                    k: report["session2_new_classes"][k] for k in ("bal_reference", "bal_base")
+                },
+                "per_session": sessions,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

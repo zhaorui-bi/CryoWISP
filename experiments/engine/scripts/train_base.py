@@ -132,15 +132,21 @@ class Trainer:
             self._cache[split] = (x, y, recorded)
         return self._cache[split]
 
-    def train_one(self, role: str, seed: int, split: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    def train_one(
+        self, role: str, seed: int, split: str, extra: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Train, export and index one model."""
         index = read_index(self.dataset, self.condition)
         if any(e["role"] == role and e["seed"] == seed for e in index):
-            raise RuntimeError(f"{self.dataset} {self.condition or ''} {role} seed {seed} is already in index.json")
+            raise RuntimeError(
+                f"{self.dataset} {self.condition or ''} {role} seed {seed} is already in index.json"
+            )
         x_train, y_train, split_sha = self._train_tensors(split)
         determinism = configure_determinism(seed)
         m = self.manifest
-        model = build_model(self.config.arch, m["image_shape"], len(m["class_names"]), m["norm"]["mean"], m["norm"]["std"])
+        model = build_model(
+            self.config.arch, m["image_shape"], len(m["class_names"]), m["norm"]["mean"], m["norm"]["std"]
+        )
         model = model.to(self.device)
         x_mon = torch.from_numpy(self.vselect["x"]).to(self.device)
         y_mon = torch.from_numpy(self.vselect["y"]).to(self.device)
@@ -172,7 +178,9 @@ class Trainer:
         index = read_index(self.dataset, self.condition)
         index.append(entry)
         write_index(self.dataset, index, self.condition)
-        private = json.loads((models_dir(self.dataset, self.condition) / entry["model_id"] / "private.json").read_text())
+        private = json.loads(
+            (models_dir(self.dataset, self.condition) / entry["model_id"] / "private.json").read_text()
+        )
         print(
             f"[{tag}] model {entry['model_id']} V_select acc {entry['vselect_acc']:.4f} "
             f"parity {private['parity']['max_abs_diff']:.2e} wall {private['wall_time_s']:.1f}s",
@@ -191,19 +199,25 @@ class Trainer:
         n_classes = len(self.manifest["class_names"])
         classes = tuple(int(c) for c in train_classes)
         if not classes or list(classes) != sorted(set(classes)) or classes[0] < 0 or classes[-1] >= n_classes:
-            raise ValueError(f"train classes must be sorted distinct labels in 0..{n_classes - 1}, got {classes}")
+            raise ValueError(
+                f"train classes must be sorted distinct labels in 0..{n_classes - 1}, got {classes}"
+            )
         if len(classes) == n_classes:
             raise ValueError("a fewshot student leaves at least one class out")
         index = read_fewshot_index(self.dataset)
         if any((e["arch"], tuple(e["train_classes"]), e["seed"]) == (arch, classes, seed) for e in index):
-            raise RuntimeError(f"{self.dataset} fewshot {arch} classes {list(classes)} seed {seed} is already indexed")
+            raise RuntimeError(
+                f"{self.dataset} fewshot {arch} classes {list(classes)} seed {seed} is already indexed"
+            )
         x_all, y_all, split_sha = self._train_tensors("train")
         keep = torch.isin(y_all, torch.as_tensor(classes, device=y_all.device))
         x_train, y_train = x_all[keep], y_all[keep]
         config = dataclasses.replace(self.config, arch=arch)
         determinism = configure_determinism(seed)
         m = self.manifest
-        model = build_model(arch, m["image_shape"], n_classes, m["norm"]["mean"], m["norm"]["std"]).to(self.device)
+        model = build_model(arch, m["image_shape"], n_classes, m["norm"]["mean"], m["norm"]["std"]).to(
+            self.device
+        )
         monitor = np.isin(self.vselect["y"], classes)
         x_mon = torch.from_numpy(self.vselect["x"][monitor]).to(self.device)
         y_mon = torch.from_numpy(self.vselect["y"][monitor]).to(self.device)
@@ -240,9 +254,13 @@ class Trainer:
             extra_private=extra,
             models_root=fewshot_models_dir(self.dataset),
         )
-        private = json.loads((fewshot_models_dir(self.dataset) / entry["model_id"] / "private.json").read_text())
+        private = json.loads(
+            (fewshot_models_dir(self.dataset) / entry["model_id"] / "private.json").read_text()
+        )
         confusion = np.asarray(private["vselect_confusion"])
-        acc_train_classes = float(np.trace(confusion[np.ix_(classes, classes)]) / confusion[list(classes)].sum())
+        acc_train_classes = float(
+            np.trace(confusion[np.ix_(classes, classes)]) / confusion[list(classes)].sum()
+        )
         row = {**entry, "train_classes": list(classes), "vselect_acc_train_classes": acc_train_classes}
         write_fewshot_index(self.dataset, [*read_fewshot_index(self.dataset), row])
         print(
@@ -272,7 +290,9 @@ def run_fewshot(args: argparse.Namespace) -> int:
         raise ValueError(f"seeds must be distinct non-negative integers, got {seeds}")
     reserved = set(DEFAULT_MAIN_SEEDS) | set(CONFIRMATION_SEEDS)
     if set(seeds) & reserved:
-        raise ValueError(f"seeds {sorted(set(seeds) & reserved)} are main seeds; fewshot students are dev models")
+        raise ValueError(
+            f"seeds {sorted(set(seeds) & reserved)} are main seeds; fewshot students are dev models"
+        )
     arch = args.arch or TRAIN_CONFIGS[args.dataset].arch
     classes = parse_classes(args.train_classes)
     trainer = Trainer(args.dataset, args.device, git_state_file=args.git_state_file)
@@ -318,21 +338,28 @@ def run_shortcut_check(trainer: Trainer, seeds: tuple[int, ...]) -> None:
             check["status"] = "done"
             check["final_rho"] = manifest["colored"]["rho"]
             if decision["triggered"]:
-                check["note"] = "gap still within the threshold after the single pre-registered rebuild; no further change"
+                check["note"] = (
+                    "gap still within the threshold after the single pre-registered rebuild; no further change"
+                )
             write_json(dataset_json_path(dataset), manifest)
             return
         tag = f"attempt1_rho{manifest['colored']['rho']}"
         superseded = dataset_dir(dataset) / "superseded" / tag / "models"
         superseded.mkdir(parents=True)
         for s in seeds:
-            shutil.move(str(dataset_dir(dataset) / "models" / base[s]["model_id"]), str(superseded / base[s]["model_id"]))
+            shutil.move(
+                str(dataset_dir(dataset) / "models" / base[s]["model_id"]),
+                str(superseded / base[s]["model_id"]),
+            )
         write_index(dataset, [e for e in index if not (e["role"] == "base" and e["seed"] in seeds)])
         rebuild = B.rebuild_colored_train(download_and_load("MNIST"), colored.RHO_FALLBACK, tag)
         attempt["rebuild"] = rebuild
         manifest["colored"]["rho"] = colored.RHO_FALLBACK
         manifest["colored"]["train_conflict_fraction"] = rebuild["new_conflict_fraction"]
         manifest["splits"]["train"]["sha256"] = rebuild["new_sha256"]
-        manifest["norm"]["note"] = "computed on the attempt-1 train split (rho 0.99) and kept unchanged by the rule"
+        manifest["norm"]["note"] = (
+            "computed on the attempt-1 train split (rho 0.99) and kept unchanged by the rule"
+        )
         check["status"] = "rebuilt"
         write_json(dataset_json_path(dataset), manifest)
         trainer.reload_manifest()
@@ -344,7 +371,9 @@ def report_condition(dataset: str, condition: str) -> None:
     """Print V_select accuracy of the condition's ceilings and of the clean models on the condition's V_select."""
     for e in read_index(dataset, condition):
         private = json.loads((models_dir(dataset, condition) / e["model_id"] / "private.json").read_text())
-        print(f"{dataset}/{condition} {e['role']:7s} seed {e['seed']:3d} {e['model_id']} V_select {e['vselect_acc']:.4f} wall {private['wall_time_s']:.1f}s")
+        print(
+            f"{dataset}/{condition} {e['role']:7s} seed {e['seed']:3d} {e['model_id']} V_select {e['vselect_acc']:.4f} wall {private['wall_time_s']:.1f}s"
+        )
     path = models_dir(dataset, condition) / "base_eval.json"
     if path.exists():
         for row in json.loads(path.read_text())["models"]:
@@ -359,11 +388,16 @@ def report(dataset: str) -> None:
     index = read_index(dataset)
     for e in index:
         private = json.loads((dataset_dir(dataset) / "models" / e["model_id"] / "private.json").read_text())
-        print(f"{dataset} {e['role']:7s} seed {e['seed']:3d} {e['model_id']} V_select {e['vselect_acc']:.4f} wall {private['wall_time_s']:.1f}s")
+        print(
+            f"{dataset} {e['role']:7s} seed {e['seed']:3d} {e['model_id']} V_select {e['vselect_acc']:.4f} wall {private['wall_time_s']:.1f}s"
+        )
         if e["role"] == "base" and e["seed"] == 0:
             names = read_dataset_json(dataset)["class_names"]
             pairs = top_confusions(np.asarray(private["vselect_confusion"]), 5)
-            print("  top-5 V_select confusions (true -> predicted: count): " + "; ".join(f"{names[a]} -> {names[b]}: {c}" for a, b, c in pairs))
+            print(
+                "  top-5 V_select confusions (true -> predicted: count): "
+                + "; ".join(f"{names[a]} -> {names[b]}: {c}" for a, b, c in pairs)
+            )
 
 
 def run_condition(args: argparse.Namespace) -> int:
@@ -383,13 +417,17 @@ def run_condition(args: argparse.Namespace) -> int:
         return 0
     if args.group == "base_eval":
         if args.seeds:
-            raise SystemExit("base_eval reads the clean main seeds 0 1 and dev seeds 100 101; --seeds is not used")
+            raise SystemExit(
+                "base_eval reads the clean main seeds 0 1 and dev seeds 100 101; --seeds is not used"
+            )
         selection = {"base": DEFAULT_MAIN_SEEDS, "dev": DEV_SEEDS}
         evaluate_on_condition(dataset, condition, selection, run_info(REPO_ROOT, args.git_state_file))
         report_condition(dataset, condition)
         return 0
     if args.group != "ceiling":
-        raise SystemExit(f"--group {args.group} is not defined for a condition (ceiling, base_eval, import, report)")
+        raise SystemExit(
+            f"--group {args.group} is not defined for a condition (ceiling, base_eval, import, report)"
+        )
     seeds = tuple(args.seeds) if args.seeds else DEFAULT_MAIN_SEEDS
     if len(set(seeds)) != len(seeds) or min(seeds) < 0 or set(seeds) & set(DEV_SEEDS):
         raise ValueError(f"ceiling seeds must be distinct non-negative main seeds, got {seeds}")
@@ -404,14 +442,20 @@ def run_condition(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--dataset", required=True, choices=list(DATASETS))
     parser.add_argument("--condition", help=f"a deployment condition ({sorted(CONDITIONS)})")
     parser.add_argument(
-        "--group", choices=["main", "dev", "report", "ceiling", "base_eval", "import", "fewshot"], required=True
+        "--group",
+        choices=["main", "dev", "report", "ceiling", "base_eval", "import", "fewshot"],
+        required=True,
     )
     parser.add_argument("--arch", help="--group fewshot: architecture (default: the dataset's)")
-    parser.add_argument("--train-classes", default="0-4", help="--group fewshot: labels to train on (default 0-4)")
+    parser.add_argument(
+        "--train-classes", default="0-4", help="--group fewshot: labels to train on (default 0-4)"
+    )
     parser.add_argument(
         "--seeds",
         type=int,
@@ -420,8 +464,12 @@ def main() -> int:
         f"confirmation main seeds {list(CONFIRMATION_SEEDS)} only on request)",
     )
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--threads", type=int, help="torch intra-op CPU threads (recorded); default: torch's own")
-    parser.add_argument("--git-state-file", type=Path, help="git state recorded at submission (code copy without .git)")
+    parser.add_argument(
+        "--threads", type=int, help="torch intra-op CPU threads (recorded); default: torch's own"
+    )
+    parser.add_argument(
+        "--git-state-file", type=Path, help="git state recorded at submission (code copy without .git)"
+    )
     parser.add_argument("--run-dir", help="--group import: directory containing an exported training run")
     parser.add_argument("--note", help="--group import: a note stored in each imported model's import block")
     args = parser.parse_args()
@@ -449,7 +497,9 @@ def main() -> int:
     other_roles = {"dev"} if args.group == "main" else {"base", "ceiling"}
     used = {e["seed"] for e in read_index(args.dataset) if e["role"] in other_roles} | reserved
     if set(seeds) & used:
-        raise ValueError(f"seeds {sorted(set(seeds) & used)} belong to the other group; main and dev seeds are disjoint")
+        raise ValueError(
+            f"seeds {sorted(set(seeds) & used)} belong to the other group; main and dev seeds are disjoint"
+        )
     trainer = Trainer(args.dataset, args.device, git_state_file=args.git_state_file)
     is_colored = args.dataset == "colored_mnist"
     if args.group == "dev":
@@ -461,16 +511,22 @@ def main() -> int:
         return 0
     status = trainer.manifest["shortcut_check"]["status"] if is_colored else None
     if status not in (None, "pending", "done"):
-        raise RuntimeError(f"Colored-MNIST shortcut check is in state {status!r}; resolve it before training more")
+        raise RuntimeError(
+            f"Colored-MNIST shortcut check is in state {status!r}; resolve it before training more"
+        )
     for seed in seeds:
-        trainer.train_one("base", seed, "train", colored_extra(trainer.manifest, "base") if is_colored else None)
+        trainer.train_one(
+            "base", seed, "train", colored_extra(trainer.manifest, "base") if is_colored else None
+        )
     if is_colored:
         for seed in seeds:
             trainer.train_one("ceiling", seed, "train_uniform", colored_extra(trainer.manifest, "ceiling"))
         if status == "pending":
             run_shortcut_check(trainer, seeds)
         else:
-            print("shortcut check was decided earlier (dataset.json); these seeds only add models", flush=True)
+            print(
+                "shortcut check was decided earlier (dataset.json); these seeds only add models", flush=True
+            )
     return 0
 
 

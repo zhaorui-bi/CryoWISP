@@ -7,21 +7,38 @@ no editor kernel, and refuses any other program. ``synthesize`` always uses the 
 
 from __future__ import annotations
 
-import platform
 import os
+import platform
 import re
 import shutil
 import sys
 import time
-from importlib.metadata import version
 from dataclasses import asdict
+from importlib.metadata import version
 from pathlib import Path
 
 import numpy as np
 
-from cryowisp.application.bundles import (bind, copy_task, dataset, digest, pack_program, program_bundle,
-                                           program_source, read, sha, task_bundle, write)
-from cryowisp.application.resnet import export_checkpoint, forward_module, load_buffers, reference, reference_logits
+from cryowisp.application.bundles import (
+    bind,
+    copy_task,
+    dataset,
+    digest,
+    pack_program,
+    program_bundle,
+    program_source,
+    read,
+    sha,
+    task_bundle,
+    write,
+)
+from cryowisp.application.resnet import (
+    export_checkpoint,
+    forward_module,
+    load_buffers,
+    reference,
+    reference_logits,
+)
 from cryowisp.common.identity import load_params, params_sha256, save_params
 from cryowisp.harness.program import ProgramProblem, Student, run_update, write_derived_patch
 from cryowisp.harness.session import SessionPaths
@@ -144,6 +161,7 @@ def prepare_run(task: Path, out: Path, sandbox_python: Path | None, *, checks: i
 def doctor(python: Path, *, threads: int = 4, bwrap: Path = DEFAULT_BWRAP) -> dict:
     """Start the real sandbox with ``python`` and check what a program inside can see; raise if anything fails."""
     import tempfile
+
     from cryowisp.sandbox.host import check_bwrap, interpreter_mounts
 
     version_text = check_bwrap(bwrap)

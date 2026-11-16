@@ -27,15 +27,36 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_command_groups_of_hand_commands() -> None:
     g = T.command_groups("jump around left twice and walk opposite right", "addprim_jump", "new")
-    assert g == {"conjunction": "and", "repetition": "twice", "turns": "around", "turn_verb": "no", "words": "8",
-                 "actions": "17-24", "jump_unit": "around", "jump_rep": "twice", "other_phrase": "primitive"}
+    assert g == {
+        "conjunction": "and",
+        "repetition": "twice",
+        "turns": "around",
+        "turn_verb": "no",
+        "words": "8",
+        "actions": "17-24",
+        "jump_unit": "around",
+        "jump_rep": "twice",
+        "other_phrase": "primitive",
+    }
     g = T.command_groups("turn left after jump thrice", "addprim_jump", "new")
-    assert (g["conjunction"], g["repetition"], g["turns"], g["turn_verb"], g["jump_unit"], g["jump_rep"],
-            g["other_phrase"]) == ("after", "thrice", "plain", "yes", "bare", "thrice", "turn")
+    assert (
+        g["conjunction"],
+        g["repetition"],
+        g["turns"],
+        g["turn_verb"],
+        g["jump_unit"],
+        g["jump_rep"],
+        g["other_phrase"],
+    ) == ("after", "thrice", "plain", "yes", "bare", "thrice", "turn")
     g = T.command_groups("jump and jump right twice", "addprim_jump", "new")
     assert (g["jump_unit"], g["jump_rep"], g["other_phrase"]) == ("two_phrases", "two_phrases", "jump")
     g = T.command_groups("look around right thrice after walk around left", "around_right", "new")
-    assert (g["ar_phrases"], g["ar_rep"], g["other_phrase"], g["actions"]) == ("1", "thrice", "around left", "25-48")
+    assert (g["ar_phrases"], g["ar_rep"], g["other_phrase"], g["actions"]) == (
+        "1",
+        "thrice",
+        "around left",
+        "25-48",
+    )
     g = T.command_groups("run around right and jump around right twice", "around_right", "new")
     assert (g["ar_phrases"], g["ar_rep"], g["other_phrase"]) == ("2", "two_phrases", "around right")
     old = T.command_groups("walk twice and look thrice", "addprim_jump", "old")
@@ -91,8 +112,10 @@ def _interpreter(blind_to: str | None, blind_phrase: tuple[str, str] | None = No
         pred = np.where(y == IGNORE, S.END, y)
         for row, command in enumerate(commands):
             words = command.split()
-            blind = (blind_to in words) or (blind_phrase is not None and any(
-                tuple(words[k:k + 2]) == blind_phrase for k in range(len(words) - 1)))
+            blind = (blind_to in words) or (
+                blind_phrase is not None
+                and any(tuple(words[k : k + 2]) == blind_phrase for k in range(len(words) - 1))
+            )
             if blind:
                 pred[row] = S.END
         return pred
@@ -101,7 +124,12 @@ def _interpreter(blind_to: str | None, blind_phrase: tuple[str, str] | None = No
 
 
 def test_rename_wrapper_is_exact_on_consistent_rows_and_breaks_on_inconsistent_ones() -> None:
-    commands = ["jump twice", "jump around left and walk", "look after jump opposite right", "jump and run thrice"]
+    commands = [
+        "jump twice",
+        "jump around left and walk",
+        "look after jump opposite right",
+        "jump and run thrice",
+    ]
     x, y = S.encode(commands)
     predict = _interpreter("jump")
     pred, consistent = T.rename_jump_predictions(predict, x, "auto")
@@ -111,15 +139,21 @@ def test_rename_wrapper_is_exact_on_consistent_rows_and_breaks_on_inconsistent_o
     assert consistent.tolist() == [True, False, True, True]
     right = T.part_readout(y, predict(x), pred, consistent)
     wrong = T.part_readout(y, predict(x), pred, ~consistent)
-    assert right["em_child"] == 1.0 and wrong["em_child"] == 0.0  # I_WALK of the command's own walk read as I_JUMP
+    assert (
+        right["em_child"] == 1.0 and wrong["em_child"] == 0.0
+    )  # I_WALK of the command's own walk read as I_JUMP
     assert T.rename_choice("jump and walk", "auto") == "look"
     with pytest.raises(T.ScanT11Error):
         T.rename_choice("walk twice", "auto")
 
 
 def test_swap_wrapper_renames_around_right_into_around_left() -> None:
-    commands = ["walk around right", "look around right twice after turn left", "run around right and jump around left",
-                "walk opposite right"]
+    commands = [
+        "walk around right",
+        "look around right twice after turn left",
+        "run around right and jump around left",
+        "walk opposite right",
+    ]
     x, y = S.encode(commands)
     predict = _interpreter(None, ("around", "right"))
     pred, applied = T.swap_lr_predictions(predict, x)
@@ -127,7 +161,9 @@ def test_swap_wrapper_renames_around_right_into_around_left() -> None:
     left = T.holds_around_left(commands)
     assert left.tolist() == [False, False, True, False]
     assert T.part_readout(y, predict(x), pred, ~left)["em_child"] == 1.0
-    assert T.part_readout(y, predict(x), pred, left)["em_child"] == 0.0  # swapped row holds around right again
+    assert (
+        T.part_readout(y, predict(x), pred, left)["em_child"] == 0.0
+    )  # swapped row holds around right again
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -171,14 +207,21 @@ def tiny_params(seed: int = 0, d: int = 8) -> dict[str, np.ndarray]:
     return params
 
 
-ROWS = ["jump twice", "walk around left", "look and jump opposite right", "run thrice after turn right",
-        "jump around right twice and walk left"]
+ROWS = [
+    "jump twice",
+    "walk around left",
+    "look and jump opposite right",
+    "run thrice after turn right",
+    "jump around right twice and walk left",
+]
 
 
 def test_default_relabel_moves_every_word_and_action() -> None:
     r = T.default_relabel()
     words = range(len(S.SPECIAL_TOKENS), S.VOCAB_SIZE)
-    assert all(r.token_map[i] != i for i in words) and all(r.token_map[i] == i for i in range(len(S.SPECIAL_TOKENS)))
+    assert all(r.token_map[i] != i for i in words) and all(
+        r.token_map[i] == i for i in range(len(S.SPECIAL_TOKENS))
+    )
     assert all(r.class_map[c] != c for c in range(len(S.ACTIONS))) and r.class_map[S.END] == S.END
     with pytest.raises(T.ScanT11Error):
         T.Relabel(tuple(range(S.VOCAB_SIZE)), (0, 0, 1, 2, 3, 4, 5))
@@ -196,10 +239,14 @@ def test_relabelled_network_computes_the_same_function(forward) -> None:
     pred_back = T.unrelabel_classes(logits_moved.argmax(-1), r)
     assert np.array_equal(pred_back, logits.argmax(-1))
     assert np.array_equal(T.unrelabel_classes(T.relabel_classes(y, r), r), y)
-    deltas = {"tok_emb.weight": np.arange(S.VOCAB_SIZE * 8, dtype=np.float64).reshape(S.VOCAB_SIZE, 8),
-              "head.bias": np.arange(S.N_CLASSES, dtype=np.float64)}
-    relabelled_deltas = {"tok_emb.weight": deltas["tok_emb.weight"][r.token_inverse],
-                         "head.bias": deltas["head.bias"][r.class_inverse]}
+    deltas = {
+        "tok_emb.weight": np.arange(S.VOCAB_SIZE * 8, dtype=np.float64).reshape(S.VOCAB_SIZE, 8),
+        "head.bias": np.arange(S.N_CLASSES, dtype=np.float64),
+    }
+    relabelled_deltas = {
+        "tok_emb.weight": deltas["tok_emb.weight"][r.token_inverse],
+        "head.bias": deltas["head.bias"][r.class_inverse],
+    }
     restored = T.unrelabel_deltas(relabelled_deltas, r)
     assert all(np.array_equal(restored[k], deltas[k]) for k in deltas)
 
@@ -282,7 +329,9 @@ def test_state_comparison_on_vectors() -> None:
     refs = [np.array([[1.0, 0.0]]), np.array([[0.0, 1.0]]), np.array([[1.0, 1.0]])]
     mean = np.array([[2 / 3, 2 / 3]])
     out = T.state_comparison(mean, refs)
-    assert out["cos_to_mean"]["median"] == pytest.approx(1.0) and out["rel_dist_to_mean"]["max"] == pytest.approx(0)
+    assert out["cos_to_mean"]["median"] == pytest.approx(1.0) and out["rel_dist_to_mean"][
+        "max"
+    ] == pytest.approx(0)
     out = T.state_comparison(np.array([[1.0, 0.1]]), refs)
     assert out["nearest"] == {"walk": 1, "look": 0, "run": 0}
 
@@ -300,7 +349,7 @@ def _script():
     return module
 
 
-TOY_PROGRAM = '''
+TOY_PROGRAM = """
 import numpy as np
 HYPOTHESIS = "toy: jump's row to the centroid of walk, look and run; the I_JUMP head row to their mean, bias above"
 PREDICTED_EFFECT = "toy"
@@ -327,7 +376,7 @@ def update(student, experience):
     dB[jc] = B[pc].mean() + 0.5 * b - B[jc]
     print("b", round(b, 6))
     return {"tok_emb.weight": dE, "head.weight": dH, "head.bias": dB}
-'''
+"""
 
 
 @pytest.fixture(scope="module")
@@ -376,7 +425,9 @@ def test_program_rerun_on_the_relabelled_student_gives_the_same_edit(toy_instanc
 
 
 @needs_sandbox
-def test_script_end_to_end_on_the_toy_store(toy_instance, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_script_end_to_end_on_the_toy_store(
+    toy_instance, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A toy final (the toy program through the real program path), one rule-generated reference with its retention
     record, and the walk record, laid out as the real records are; then programs, arms, mech and summary."""
     import json
@@ -401,9 +452,18 @@ def test_script_end_to_end_on_the_toy_store(toy_instance, tmp_path: Path, monkey
     final_dir.mkdir(parents=True)
     program = final_dir / "toy_program.py"
     program.write_text(TOY_PROGRAM)
-    limits = Limits(max_changed_frac=0.2, max_edit_frac=None, max_file_bytes=64 * 2**20, max_ops=70, max_rank=8,
-                    max_rel_frob=None, rel_frob_min_ndim=2)
-    (runs / "sessions" / session / "session.json").write_text(json.dumps({"limits": script.dataclass_dict(limits)}))
+    limits = Limits(
+        max_changed_frac=0.2,
+        max_edit_frac=None,
+        max_file_bytes=64 * 2**20,
+        max_ops=70,
+        max_rank=8,
+        max_rel_frob=None,
+        rel_frob_min_ndim=2,
+    )
+    (runs / "sessions" / session / "session.json").write_text(
+        json.dumps({"limits": script.dataclass_dict(limits)})
+    )
     sandbox = ProgramSandbox(python=SANDBOX_PYTHON, memory_bytes=2 * 2**30, threads=1)
     student, experience_file, _ = stage_student(instance, tmp_path / "student")
     update = run_update(student, experience_file, program, tmp_path / "run", sandbox)
@@ -415,9 +475,18 @@ def test_script_end_to_end_on_the_toy_store(toy_instance, tmp_path: Path, monkey
     (final_dir / "program_run.json").write_text(json.dumps(update.record))
     learn = runs / "devreadouts" / "learn" / session
     learn.mkdir(parents=True)
-    (learn / "info.json").write_text(json.dumps(
-        {"final": {"query_index": 0, "patch_id": program.name, "child_sha256": applied["child_sha256"]},
-         "trajectory": [{"readouts_scan": scan_readout(instance, child)}]}))
+    (learn / "info.json").write_text(
+        json.dumps(
+            {
+                "final": {
+                    "query_index": 0,
+                    "patch_id": program.name,
+                    "child_sha256": applied["child_sha256"],
+                },
+                "trajectory": [{"readouts_scan": scan_readout(instance, child)}],
+            }
+        )
+    )
     # one rule-generated reference and its retention record (a floor that keeps the best check)
     monkeypatch.setattr(R, "STEP_CHECKPOINTS", (1, 2, 3, 4))
     monkeypatch.setattr(R, "N_RULEGEN", 200)
@@ -430,18 +499,38 @@ def test_script_end_to_end_on_the_toy_store(toy_instance, tmp_path: Path, monkey
     (runs / "devreadouts" / "toy_refs.jsonl").write_text(json.dumps(kept) + "\n")
     (runs / "devreadouts" / "toy_walk.json").write_text(json.dumps(R.walk_diagnostic(instance)))
     with_ref = not kept["is_base_noop"]
-    spec = {"instance": instance.instance_id, "session": session, "final_program": program.name, "final_query": 0,
-            "refs": {method: kept["final_patch_id"]} if with_ref else {}, "refs_record": "toy_refs.jsonl",
-            "walk_record": "toy_walk.json"}
+    spec = {
+        "instance": instance.instance_id,
+        "session": session,
+        "final_program": program.name,
+        "final_query": 0,
+        "refs": {method: kept["final_patch_id"]} if with_ref else {},
+        "refs_record": "toy_refs.jsonl",
+        "walk_record": "toy_walk.json",
+    }
     monkeypatch.setattr(script, "CONDITIONS", {"addprim_jump": spec})
-    arms = ("base", "final", "E_only", "H_only", *((f"ref_{method}",) if with_ref else ()), "walk_row",
-            "rename_auto", "rename_walk", "relabelled_program")
+    arms = (
+        "base",
+        "final",
+        "E_only",
+        "H_only",
+        *((f"ref_{method}",) if with_ref else ()),
+        "walk_row",
+        "rename_auto",
+        "rename_walk",
+        "relabelled_program",
+    )
     monkeypatch.setattr(script, "ARMS", {"addprim_jump": arms})
 
     assert script.main(["programs", "--conditions", "addprim_jump"]) == 0
-    reruns = {arm: json.loads(script.rerun_record_path("addprim_jump", arm).read_text())
-              for arm in ("program", "program_relabelled")}
-    assert reruns["program"]["checks"]["deltas_vs_final"]["equal"] and reruns["program"]["checks"]["child_equals_final"]
+    reruns = {
+        arm: json.loads(script.rerun_record_path("addprim_jump", arm).read_text())
+        for arm in ("program", "program_relabelled")
+    }
+    assert (
+        reruns["program"]["checks"]["deltas_vs_final"]["equal"]
+        and reruns["program"]["checks"]["child_equals_final"]
+    )
     assert reruns["program_relabelled"]["staged"]["isomorphism_on_evidence_rows"]["argmax_equal"]
     assert reruns["program_relabelled"]["checks"]["stdout_equal_session"]
     with pytest.raises(script.T11ScanError):  # never repeated
@@ -456,8 +545,11 @@ def test_script_end_to_end_on_the_toy_store(toy_instance, tmp_path: Path, monkey
     assert records["E_only"]["components"]["n_changed"] == records["final"]["n_changed"]
     assert records["relabelled_program"]["new"]["right"] == records["final"]["new"]["right"]
     assert records["E_only"]["old"]["right"] == records["base"]["old"]["right"]
-    assert records["rename_walk"]["consistent_rows"]["n"] + records["rename_walk"]["consistent_rows"][
-        "n_inconsistent"] == records["base"]["new"]["all"]["n"]
+    assert (
+        records["rename_walk"]["consistent_rows"]["n"]
+        + records["rename_walk"]["consistent_rows"]["n_inconsistent"]
+        == records["base"]["new"]["all"]["n"]
+    )
 
     assert script.main(["mech"]) == 0
     m04 = json.loads((runs / "t11scan" / f"m04_{instance.instance_id}.json").read_text())

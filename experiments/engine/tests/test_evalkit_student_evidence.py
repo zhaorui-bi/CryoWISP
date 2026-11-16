@@ -35,7 +35,9 @@ def _perturbed(instance: Instance) -> dict[str, np.ndarray]:
     """The instance's params with every weight scaled and shifted: a student that is in no instance."""
     rng = np.random.default_rng(7)
     return {
-        key: (value * np.float32(0.9) + rng.normal(0, 0.05, value.shape).astype(np.float32)).astype(value.dtype)
+        key: (value * np.float32(0.9) + rng.normal(0, 0.05, value.shape).astype(np.float32)).astype(
+            value.dtype
+        )
         for key, value in instance.params.items()
     }
 
@@ -62,9 +64,11 @@ def test_another_model_gets_the_evidence_of_its_own_instance(condition_instances
     first = condition_instances[0]
     for other in condition_instances[1:]:
         drawn = draw_evidence_for(first, other.params)
-        assert drawn.content_sha256 == other.private["evidence_content_sha256"] != first.private[
-            "evidence_content_sha256"
-        ]
+        assert (
+            drawn.content_sha256
+            == other.private["evidence_content_sha256"]
+            != first.private["evidence_content_sha256"]
+        )
         assert drawn.seed == other.private["evidence_seed"]
 
 
@@ -73,7 +77,9 @@ def test_a_new_student_gets_its_own_errors_and_its_own_stream(condition_instance
     student = _perturbed(instance)
     drawn = draw_evidence_for(instance, student)
     assert drawn.params_sha256 == params_sha256(student) != instance.params_sha256
-    assert drawn.seed == evidence_seed_v1(params_sha256(student), CONDITION) != instance.private["evidence_seed"]
+    assert (
+        drawn.seed == evidence_seed_v1(params_sha256(student), CONDITION) != instance.private["evidence_seed"]
+    )
     v_evidence = load_npz(instance.private["vevidence_path"])
     pred = predict(instance.forward, student, v_evidence["x"], 64)
     rows = drawn.row_ids

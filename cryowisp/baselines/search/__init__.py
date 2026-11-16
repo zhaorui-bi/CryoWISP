@@ -13,7 +13,13 @@ edit limits), ``selection`` (trajectories and the fixed candidate-to-query rule)
 from cryowisp.baselines.search.arachne import ArachneConfig
 from cryowisp.baselines.search.care import CareConfig
 from cryowisp.baselines.search.limits import EditLimits
-from cryowisp.baselines.search.runner import METHODS, RunOptions, SplitRoleError, run_search_baseline, summary_line
+from cryowisp.baselines.search.runner import (
+    METHODS,
+    RunOptions,
+    SplitRoleError,
+    run_search_baseline,
+    summary_line,
+)
 from cryowisp.baselines.search.selection import QUERY_RULE
 
 __all__ = [

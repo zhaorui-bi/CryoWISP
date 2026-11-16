@@ -51,27 +51,28 @@ checked once after the session (``cryowisp.harness.finalize``).
 
 from __future__ import annotations
 
+import shutil
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import shutil
-import time
-
 import numpy as np
 
 from cryowisp.evalkit.evidence import evidence_content_sha256
 from cryowisp.evalkit.patch_check import BudgetExceeded
-from cryowisp.harness.applying import REDACTION_BLIND, EditorRejection, SessionConfigError, blind_rejection_messages
+from cryowisp.harness import fscil, loop
+from cryowisp.harness.applying import (
+    REDACTION_BLIND,
+    EditorRejection,
+    SessionConfigError,
+    blind_rejection_messages,
+)
 from cryowisp.harness.arms import PATCH_CHECK_TOOL, PREDICT_TOOL, arm_spec
 from cryowisp.harness.jsonio import append_jsonl, file_sha256, read_json, read_jsonl, utc_now, write_json
 from cryowisp.harness.launch import LaunchStartError, read_launch_start
-from cryowisp.harness import fscil, loop
-from cryowisp.harness.seqskill import SCAN_RULE
 from cryowisp.harness.ledger import CHECK_RECORD_SCHEMA, CheckLedger
-from cryowisp.harness.retention import session_floor
-from cryowisp.harness.session import SessionPaths
 from cryowisp.harness.program import (
     DELTAS_FILE,
     DERIVED_PATCH,
@@ -84,6 +85,9 @@ from cryowisp.harness.program import (
     run_update,
     write_derived_patch,
 )
+from cryowisp.harness.retention import session_floor
+from cryowisp.harness.seqskill import SCAN_RULE
+from cryowisp.harness.session import SessionPaths
 from cryowisp.harness.snapshot import SnapshotProblem, patch_name, snapshot_file, snapshot_patch
 from cryowisp.patch import PatchError, PatchResult
 from cryowisp.sandbox import DEFAULT_BWRAP, SandboxConfig, SandboxKernel

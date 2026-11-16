@@ -48,9 +48,14 @@ def main(argv: list[str] | None = None) -> int:
     phases["load_instance"] = {"s": time.perf_counter() - started, "peak_rss_mib": _rss_mib()}
     if args.what == "forward":
         t0 = time.perf_counter()
-        logits = instance.forward(dict(instance.params), np.arange(int(instance.private["n_nodes"]), dtype=np.int64))
-        phases["forward_all_nodes"] = {"s": time.perf_counter() - t0, "peak_rss_mib": _rss_mib(),
-                                       "logits_shape": list(np.shape(logits))}
+        logits = instance.forward(
+            dict(instance.params), np.arange(int(instance.private["n_nodes"]), dtype=np.int64)
+        )
+        phases["forward_all_nodes"] = {
+            "s": time.perf_counter() - t0,
+            "peak_rss_mib": _rss_mib(),
+            "logits_shape": list(np.shape(logits)),
+        }
     else:
         t0 = time.perf_counter()
         oracle = GN.make_graphnew_oracle(instance)
@@ -62,8 +67,18 @@ def main(argv: list[str] | None = None) -> int:
         t0 = time.perf_counter()
         oracle.query(child, "memory_probe")  # its score is not read: a probe informs no decision
         phases["one_check"] = {"s": time.perf_counter() - t0, "peak_rss_mib": _rss_mib()}
-    print(json.dumps({"instance_id": instance.instance_id, "what": args.what, "threads": args.threads,
-                      "wall_s": time.perf_counter() - started, "peak_rss_mib": _rss_mib(), "phases": phases}))
+    print(
+        json.dumps(
+            {
+                "instance_id": instance.instance_id,
+                "what": args.what,
+                "threads": args.threads,
+                "wall_s": time.perf_counter() - started,
+                "peak_rss_mib": _rss_mib(),
+                "phases": phases,
+            }
+        )
+    )
     return 0
 
 

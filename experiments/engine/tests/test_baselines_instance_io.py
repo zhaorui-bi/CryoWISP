@@ -46,7 +46,7 @@ def test_patches_over_the_cap_move_the_largest_tensor_to_dense(tmp_path: Path) -
     base = _base(np.random.default_rng(1))
     child = {k: v.copy() for k, v in base.items()}
     child["fc1.weight"].flat[: INDEX_FORM_MAX_ENTRIES - 1] += np.float32(0.01)
-    child["fc2.weight"].flat[: 39_000] += np.float32(0.01)
+    child["fc2.weight"].flat[:39_000] += np.float32(0.01)
     child["fc2.weight"].flat[0] += np.float32(0.02)
     path = write_delta_patch(tmp_path, params_sha256(base), base, child, "h", "e")
     assert path.stat().st_size <= MAX_PATCH_JSON_BYTES

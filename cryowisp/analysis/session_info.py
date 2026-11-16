@@ -68,7 +68,6 @@ import numpy as np
 
 from cryowisp.baselines.instance_io import Instance, load_instance
 from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE, dev_readout, readout_split
-from cryowisp.evalkit.instances import instances_root
 from cryowisp.harness import clean, fewshot, fscil, graphnew, policyskill, seqskill
 from cryowisp.harness.applying import ArmApplier
 from cryowisp.harness.arms import arm_spec

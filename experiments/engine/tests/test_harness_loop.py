@@ -16,10 +16,10 @@ from typing import Any
 
 import numpy as np
 import pytest
-
 from test_evalkit_instances_store import add_condition, build_condition
 from test_harness_fixtures import needs_sandbox
 from test_harness_learn import FIX, STRINGS, WORSE, LearnStore, _program_cell, learn_store  # noqa: F401
+
 from cryowisp.common.identity import load_params, params_sha256
 from cryowisp.evalkit.devreadout import DevReadoutError, readout_run
 from cryowisp.evalkit.patch_check import BudgetExceeded
@@ -62,7 +62,9 @@ SECOND = "toyblur_s3"
 PROGRAM = "HYPOTHESIS = 'h'\nPREDICTED_EFFECT = 'p'\n\ndef update(student, experience):\n    return {}\n"
 # Hidden unit 3 reads the true-class-3 pixel and unit 2 loses it: fixes the (3 -> 2) confusions and changes no
 # prediction on an image of another class, whatever FIX changed for class 0.
-FIX3 = STRINGS + """import numpy as np
+FIX3 = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     print("prev", len(experience["y_prev"]), sorted(set(experience["round_prev"].tolist())))
@@ -70,15 +72,30 @@ def update(student, experience):
     delta[3, 7], delta[2, 7] = 6.0, -6.0
     return {"fc1.weight": delta}
 """
-READ_CELL = ("import json\nimport numpy as np\n"
-             "index = json.load(open('/work/trial/library_index.json'))\n"
-             "print([(r['label'], r['file'], r['kept_update'], r['scores']) for r in index['rounds']])\n"
-             "e = np.load('/work/trial/experience.npz')\n"
-             "print(sorted(e.files), len(e['y_prev']), sorted(set(e['round_prev'].tolist())))\n")
+)
+READ_CELL = (
+    "import json\nimport numpy as np\n"
+    "index = json.load(open('/work/trial/library_index.json'))\n"
+    "print([(r['label'], r['file'], r['kept_update'], r['scores']) for r in index['rounds']])\n"
+    "e = np.load('/work/trial/experience.npz')\n"
+    "print(sorted(e.files), len(e['y_prev']), sorted(set(e['round_prev'].tolist())))\n"
+)
 SESSION_KWARGS = {"effort": "low", "wall_timeout_s": 300.0, "skip_audit": True}
-LOOP_SHOWN_CHECK_KEYS = {"program_file", "query_index", "score_new", "score_old", "score_prev_1", "score",
-                         "queries_remaining", "tensors", "program_stdout", "program_stderr", "duration_s",
-                         "wall_s_elapsed", "wall_s_remaining"}
+LOOP_SHOWN_CHECK_KEYS = {
+    "program_file",
+    "query_index",
+    "score_new",
+    "score_old",
+    "score_prev_1",
+    "score",
+    "queries_remaining",
+    "tensors",
+    "program_stdout",
+    "program_stderr",
+    "duration_s",
+    "wall_s_elapsed",
+    "wall_s_remaining",
+}
 
 
 def _sandbox() -> ProgramSandbox:
@@ -132,14 +149,27 @@ def test_the_final_pick_is_the_best_program_above_both_floors() -> None:
     rule = loop_kept_rule(400, {1: 400})  # floors -1 and -2
 
     def checked(patch_id: str, query_index: int, score: int, old: int, prev: int) -> dict[str, Any]:
-        return {"patch_id": patch_id, "query_index": query_index, "score": score, "score_old": old,
-                "score_prev_1": prev, "score_new": score - old - prev, "n_changed": 10}
+        return {
+            "patch_id": patch_id,
+            "query_index": query_index,
+            "score": score,
+            "score_old": old,
+            "score_prev_1": prev,
+            "score_new": score - old - prev,
+            "n_changed": 10,
+        }
 
     entries = [checked("a.py", 0, 50, -1, -2), checked("b.py", 1, 90, -2, 0), checked("c.py", 2, 70, 0, -3)]
     assert select_final(entries, budget=8, declared=None, loop_rule=rule) == {
-        "kind": KIND_CHECKED, "patch_id": "a.py", "query_index": 0}
+        "kind": KIND_CHECKED,
+        "patch_id": "a.py",
+        "query_index": 0,
+    }
     assert select_final(entries[1:], budget=8, declared=None, loop_rule=rule)["kind"] == KIND_BASE
-    assert select_final([checked("d.py", 0, 0, 0, 0)], budget=8, declared=None, loop_rule=rule)["kind"] == KIND_BASE
+    assert (
+        select_final([checked("d.py", 0, 0, 0, 0)], budget=8, declared=None, loop_rule=rule)["kind"]
+        == KIND_BASE
+    )
     with pytest.raises(FinalizeError, match="not both"):
         select_final(entries, budget=8, declared=None, s_old_floor=-5, loop_rule=rule)
     with pytest.raises(FinalizeError, match="needs checked programs"):
@@ -154,9 +184,11 @@ def test_the_multi_part_check_scores_each_part_against_the_current_student() -> 
     base = {"w": np.eye(2, dtype=np.float32)}
     swap = {"w": np.array([[0.0, 1.0], [1.0, 0.0]], dtype=np.float32)}
     one_hot = np.array([[1, 0], [0, 1]], dtype=np.uint8)
-    parts = {"new": (one_hot[[0, 1, 0]], np.array([1, 1, 0])),  # base wrong on row 0; swap fixes 1, breaks 2
-             "old": (one_hot, np.array([0, 1])),  # base right on both; swap breaks both
-             "prev_1": (one_hot[[0]], np.array([1]))}  # base wrong; swap fixes it
+    parts = {
+        "new": (one_hot[[0, 1, 0]], np.array([1, 1, 0])),  # base wrong on row 0; swap fixes 1, breaks 2
+        "old": (one_hot, np.array([0, 1])),  # base right on both; swap breaks both
+        "prev_1": (one_hot[[0]], np.array([1])),
+    }  # base wrong; swap fixes it
     with pytest.raises(ValueError, match="must be"):
         MultiPartOracle({"old": parts["old"], "new": parts["new"]}, _swap_forward, base, 2)
     oracle = MultiPartOracle(parts, _swap_forward, base, 1)
@@ -164,7 +196,12 @@ def test_the_multi_part_check_scores_each_part_against_the_current_student() -> 
     entry = oracle.query(swap, "swap")
     assert (entry["score_new"], entry["score_old"], entry["score_prev_1"]) == (-1, -2, 1)
     assert {key: entry[key] for key in ("score", "fixed", "broken", "n", "n_base_errors")} == {
-        "score": -2, "fixed": 2, "broken": 4, "n": 6, "n_base_errors": 2}
+        "score": -2,
+        "fixed": 2,
+        "broken": 4,
+        "n": 6,
+        "n_base_errors": 2,
+    }
     assert entry["base_acc"] == pytest.approx(4 / 6) and entry["child_acc"] == pytest.approx(2 / 6)
     assert entry["queries_remaining"] == 0 == oracle.queries_remaining
     with pytest.raises(ValueError, match="already checked"):
@@ -180,7 +217,7 @@ def test_the_prompt_texts_state_both_floors_and_keep_every_other_byte() -> None:
     start = text.index(KEPT_HEADING) + len(KEPT_HEADING)
     end = text.index("\n\n## ", start)
     assert out[:start] == text[:start] and out.endswith(text[end:])
-    section = out[start:out.index("\n\n## ", start)]
+    section = out[start : out.index("\n\n## ", start)]
     flat = " ".join(section.split())
     assert "whose score_old is at least -12 and whose score_prev_k is at least -20" in flat
     assert "A program below either floor is never kept" in flat
@@ -189,32 +226,51 @@ def test_the_prompt_texts_state_both_floors_and_keep_every_other_byte() -> None:
         loop_kept_section(text, loop_kept_rule(4000, {1: 4000, 2: 2000}))
     with pytest.raises(LoopError, match="word for word"):
         loop_kept_section(out, rule)
-    task = ("# Task\n\nDo it.\n\n## Files in /work/trial\n\n- `task.json`: this task as data.\n\n## Tools\n\n"
-            "- `python`: run code.\n")
+    task = (
+        "# Task\n\nDo it.\n\n## Files in /work/trial\n\n- `task.json`: this task as data.\n\n## Tools\n\n"
+        "- `python`: run code.\n"
+    )
     files = loop_files_section(task, 47, 1)
     at = task.index(FILES_ANCHOR)
     assert files.startswith(task[:at]) and files.endswith(task[at:])
-    added = files[at:len(files) - len(task) + at]
+    added = files[at : len(files) - len(task) + at]
     assert "47 labelled examples" in " ".join(added.split()) and LOOP_LIBRARY_INDEX in added
     assert LOOP_LIBRARY_INDEX not in loop_files_section(task, 47, 0)
     assert max(len(line) for line in added.splitlines()) <= 116
     with pytest.raises(LoopError, match="single file list"):
         loop_files_section(task + FILES_ANCHOR, 47, 1)
-    for shown in (flat, added, loop_statement(1), loop_statement(3), LOOP_READOUT, loop_final_selection(rule),
-                  LOOP_STATUS_DESCRIPTION):
+    for shown in (
+        flat,
+        added,
+        loop_statement(1),
+        loop_statement(3),
+        LOOP_READOUT,
+        loop_final_selection(rule),
+        LOOP_STATUS_DESCRIPTION,
+    ):
         assert not [word for word in HINT_WORDS if word in shown.lower()], shown
 
 
-def test_the_round_library_lists_every_round_and_withholds_programs_with_forbidden_strings(tmp_path: Path) -> None:
+def test_the_round_library_lists_every_round_and_withholds_programs_with_forbidden_strings(
+    tmp_path: Path,
+) -> None:
     first = _write(tmp_path, "a.py", PROGRAM)
     third = _write(tmp_path, "c.py", PROGRAM + "# ibb1f3fc6\n")
     scores_3 = {"score_new": 9, "score_old": -2, "score_prev_1": 1, "score_prev_2": 0, "score": 8}
     library = [
-        {"round": 1, "program": {"path": str(first), "sha256": file_sha256(first)},
-         "scores": {"score_new": 5, "score_old": -1, "score": 4}, "source": {"session_id": "sAAAA1111"}},
+        {
+            "round": 1,
+            "program": {"path": str(first), "sha256": file_sha256(first)},
+            "scores": {"score_new": 5, "score_old": -1, "score": 4},
+            "source": {"session_id": "sAAAA1111"},
+        },
         {"round": 2, "program": None, "scores": None, "source": {"session_id": "sBBBB2222"}},
-        {"round": 3, "program": {"path": str(third), "sha256": file_sha256(third)}, "scores": scores_3,
-         "source": {"session_id": "sCCCC3333"}},
+        {
+            "round": 3,
+            "program": {"path": str(third), "sha256": file_sha256(third)},
+            "scores": scores_3,
+            "source": {"session_id": "sCCCC3333"},
+        },
     ]
     withheld = withheld_tokens(library, ["ibb1f3fc6", "toyblur", ""])
     assert withheld == {3: ["ibb1f3fc6"]}
@@ -224,7 +280,10 @@ def test_the_round_library_lists_every_round_and_withholds_programs_with_forbidd
     assert sorted(path.name for path in trial.iterdir()) == [LOOP_LIBRARY_INDEX, "library_program_1.py"]
     index = json.loads((trial / LOOP_LIBRARY_INDEX).read_text())
     assert [(r["label"], r["round"], r["file"], r["kept_update"]) for r in index["rounds"]] == [
-        ("round 1", 1, "library_program_1.py", True), ("round 2", 2, None, False), ("round 3", 3, None, True)]
+        ("round 1", 1, "library_program_1.py", True),
+        ("round 2", 2, None, False),
+        ("round 3", 3, None, True),
+    ]
     assert index["rounds"][2]["scores"] == scores_3 and index["rounds"][1]["scores"] is None
     assert index["n_check"] == 4000 and record["withheld"] == {"3": ["ibb1f3fc6"]}
     text = (trial / LOOP_LIBRARY_INDEX).read_text()
@@ -255,15 +314,24 @@ def test_a_loop_context_is_refused_before_any_session_write(learn_store: LearnSt
     with pytest.raises(InstanceRefused, match="refused for a loop round: .*is missing"):
         runner.run_session(target, "LEARN", 0, loop_context=context, **common)
     context.write_text(json.dumps({"schema": "other"}))
-    with pytest.raises(InstanceRefused, match="refused for a loop round: .*is not a cryowisp.harness.loop_context"):
+    with pytest.raises(
+        InstanceRefused, match="refused for a loop round: .*is not a cryowisp.harness.loop_context"
+    ):
         runner.run_session(target, "LEARN", 0, loop_context=context, **common)
     context.write_text(json.dumps({"schema": LOOP_CONTEXT_SCHEMA, "round": 1, "prev": [], "library": []}))
     with pytest.raises(InstanceRefused, match="round 2 to 8"):
         runner.run_session(target, "LEARN", 0, loop_context=context, **common)
     assert (sorted(sessions.iterdir()) if sessions.exists() else []) == before
     with pytest.raises(LoopError, match="needs the evidence of rounds 1 to 2"):
-        read_loop_context(_write(tmp_path, "c3.json", json.dumps(
-            {"schema": LOOP_CONTEXT_SCHEMA, "round": 3, "prev": [{"round": 1}], "library": []})))
+        read_loop_context(
+            _write(
+                tmp_path,
+                "c3.json",
+                json.dumps(
+                    {"schema": LOOP_CONTEXT_SCHEMA, "round": 3, "prev": [{"round": 1}], "library": []}
+                ),
+            )
+        )
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -274,8 +342,11 @@ def test_a_loop_context_is_refused_before_any_session_write(learn_store: LearnSt
 def loop_store(learn_store: LearnStore) -> tuple[LearnStore, str, str]:
     """The learn store plus a second condition; the two seed-100 dev instances share the base model."""
     add_condition(learn_store.store, name=SECOND)
-    other = {o.seed: o.instance_id for o in build_condition(learn_store.store, roles=("dev",), name=SECOND)
-             if o.split_role == "dev"}
+    other = {
+        o.seed: o.instance_id
+        for o in build_condition(learn_store.store, roles=("dev",), name=SECOND)
+        if o.split_role == "dev"
+    }
     return learn_store, learn_store.ids[100], other[100]
 
 
@@ -285,10 +356,14 @@ def _round_one(first: str) -> Path:
     def script(client: Any, replies: list[ToolReply]) -> None:
         call_and_record(client, replies, "python", {"code": _program_cell({"fix.py": FIX})})
         call_and_record(client, replies, "patch_check", {"program_file": "fix.py"})
-        call_and_record(client, replies, "declare_final", {"program_file": "fix.py", "rationale": "it scored"})
+        call_and_record(
+            client, replies, "declare_final", {"program_file": "fix.py", "rationale": "it scored"}
+        )
 
     result = runner.run_session(first, "LEARN", 0, launcher=ScriptedLauncher(script), **SESSION_KWARGS)
-    assert result.status == "complete" and result.record["final"]["kind"] == "checked", result.record["infra_reasons"]
+    assert result.status == "complete" and result.record["final"]["kind"] == "checked", result.record[
+        "infra_reasons"
+    ]
     return result.root
 
 
@@ -298,13 +373,15 @@ def _round_two(client: Any, replies: list[ToolReply]) -> None:
     call_and_record(client, replies, "patch_check", {"program_file": "worse.py"})
     call_and_record(client, replies, "patch_check", {"program_file": "fix3.py"})
     call_and_record(client, replies, "status", {})
-    call_and_record(client, replies, "declare_final", {"program_file": "fix3.py", "rationale": "above both floors"})
+    call_and_record(
+        client, replies, "declare_final", {"program_file": "fix3.py", "rationale": "above both floors"}
+    )
 
 
 @needs_sandbox
-def test_a_teacher_stream_runs_round_two_on_the_round_one_student(loop_store: tuple[LearnStore, str, str],
-                                                                  tmp_path: Path,
-                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_teacher_stream_runs_round_two_on_the_round_one_student(
+    loop_store: tuple[LearnStore, str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     _, first, second = loop_store
     root1 = _round_one(first)
     program1 = root1 / "final" / "fix.py"
@@ -321,8 +398,17 @@ def test_a_teacher_stream_runs_round_two_on_the_round_one_student(loop_store: tu
         return launchers[-1]
 
     def stream(**extra: Any) -> Path:
-        return run_loop_stream(MODE_TEACHER, [first, second], program1, root1, out, _sandbox(),
-                               session_kwargs=SESSION_KWARGS, launcher_for=launcher_for, **extra)
+        return run_loop_stream(
+            MODE_TEACHER,
+            [first, second],
+            program1,
+            root1,
+            out,
+            _sandbox(),
+            session_kwargs=SESSION_KWARGS,
+            launcher_for=launcher_for,
+            **extra,
+        )
 
     with pytest.raises(RuntimeError, match="before the round-2 launch"):
         stream()
@@ -378,11 +464,14 @@ def test_a_teacher_stream_runs_round_two_on_the_round_one_student(loop_store: tu
     assert not set(evidence1["idx"][positions].tolist()) & set(new_idx.tolist())
     assert session["experience"]["prev_dropped_shared_image"] == dropped
     assert session["experience"]["prev_per_round"] == {"1": len(experience["y_prev"])}
-    assert read_json(paths.trial / "task.json")["experience"]["prev"]["per_round"] == {"1": len(experience["y_prev"])}
+    assert read_json(paths.trial / "task.json")["experience"]["prev"]["per_round"] == {
+        "1": len(experience["y_prev"])
+    }
 
     index = json.loads((paths.trial / LOOP_LIBRARY_INDEX).read_text())
     assert [(r["label"], r["file"], r["scores"]) for r in index["rounds"]] == [
-        ("round 1", "library_program_1.py", one["library_entry"]["scores"])]
+        ("round 1", "library_program_1.py", one["library_entry"]["scores"])
+    ]
     assert (paths.trial / "library_program_1.py").read_bytes() == program1.read_bytes()
     system = " ".join(paths.system_prompt.read_text().split())
     task = " ".join(paths.task_prompt.read_text().split())
@@ -399,51 +488,100 @@ def test_a_teacher_stream_runs_round_two_on_the_round_one_student(loop_store: tu
 
     selection = read_json(paths.selection_json)
     assert selection["final"]["parent"] == PARENT_LOOP and selection["kept_rule"]["name"] == KEPT_RULE_LOOP
-    assert [(c["patch_id"], c["eligible"]) for c in selection["candidates"]] == [("worse.py", False), ("fix3.py", True)]
+    assert [(c["patch_id"], c["eligible"]) for c in selection["candidates"]] == [
+        ("worse.py", False),
+        ("fix3.py", True),
+    ]
     with pytest.raises(DevReadoutError, match="unknown final.parent 'loop_student'"):
         readout_run(session_root / "run.json")
 
     # Control (a) on the same student with the kept program reaches the same child through the same check.
     kept_program = session_root / "final" / "fix3.py"
-    control = read_json(run_loop_stream(MODE_SELECT, [first, second], program1, root1, tmp_path / "control",
-                                        _sandbox(), candidates={2: [_write(tmp_path, "worse.py", WORSE),
-                                                                    kept_program]}))
+    control = read_json(
+        run_loop_stream(
+            MODE_SELECT,
+            [first, second],
+            program1,
+            root1,
+            tmp_path / "control",
+            _sandbox(),
+            candidates={2: [_write(tmp_path, "worse.py", WORSE), kept_program]},
+        )
+    )
     picked = control["rounds"][1]
     assert picked["status"] == "ok" and picked["kept"] == "candidate_2" and picked["queries_used"] == 2
     assert [row["eligible"] for row in picked["candidates"]] == [False, True]
-    assert picked["child_sha256"] == two["child_sha256"] and control["rounds"][0]["child_sha256"] == one["child_sha256"]
+    assert (
+        picked["child_sha256"] == two["child_sha256"]
+        and control["rounds"][0]["child_sha256"] == one["child_sha256"]
+    )
     assert picked["kept_rule"] == session["kept_rule"]
-    session_check = next(entry for entry in map(json.loads, paths.checks_log.read_text().splitlines())
-                         if entry.get("patch_id") == "fix3.py")
+    session_check = next(
+        entry
+        for entry in map(json.loads, paths.checks_log.read_text().splitlines())
+        if entry.get("patch_id") == "fix3.py"
+    )
     for key in ("score", "score_new", "score_old", "score_prev_1", "fixed_prev_1", "broken_prev_1"):
         assert picked["candidates"][1]["check"][key] == session_check[key], key
 
 
 @needs_sandbox
 def test_checked_selection_keeps_the_student_when_no_candidate_clears_the_floors(
-        loop_store: tuple[LearnStore, str, str], tmp_path: Path) -> None:
+    loop_store: tuple[LearnStore, str, str], tmp_path: Path
+) -> None:
     _, first, second = loop_store
     root1 = _round_one(first)
     program1 = root1 / "final" / "fix.py"
     worse = _write(tmp_path, "worse.py", WORSE)
-    record = read_json(run_loop_stream(MODE_SELECT, [first, second], program1, root1, tmp_path / "loops", _sandbox(),
-                                       candidates={2: [worse]}))
+    record = read_json(
+        run_loop_stream(
+            MODE_SELECT,
+            [first, second],
+            program1,
+            root1,
+            tmp_path / "loops",
+            _sandbox(),
+            candidates={2: [worse]},
+        )
+    )
     two = record["rounds"][1]
     assert two["status"] == "noop" and two["kept"] is None
     assert two["child_sha256"] == two["parent_sha256"] == record["rounds"][0]["child_sha256"]
     assert record["summary"]["n_rounds_ok"] == 1
     n_evidence = len(_npz(Path(record["work_dir"]) / "evidence_round_1.npz")["y"])
-    assert two["experience"]["n_prev"] + sum(two["experience"]["prev_dropped_shared_image"].values()) == n_evidence
+    assert (
+        two["experience"]["n_prev"] + sum(two["experience"]["prev_dropped_shared_image"].values())
+        == n_evidence
+    )
     with pytest.raises(LoopStreamError, match="every round from 2"):
-        run_loop_stream(MODE_SELECT, [first, second], program1, root1, tmp_path / "a", _sandbox(), candidates={})
+        run_loop_stream(
+            MODE_SELECT, [first, second], program1, root1, tmp_path / "a", _sandbox(), candidates={}
+        )
     with pytest.raises(LoopStreamError, match="takes no candidates"):
-        run_loop_stream(MODE_TEACHER, [first, second], program1, root1, tmp_path / "b", _sandbox(),
-                        candidates={2: [worse]})
+        run_loop_stream(
+            MODE_TEACHER,
+            [first, second],
+            program1,
+            root1,
+            tmp_path / "b",
+            _sandbox(),
+            candidates={2: [worse]},
+        )
     with pytest.raises(LoopStreamError, match="launches no session"):
-        run_loop_stream(MODE_SELECT, [first, second], program1, root1, tmp_path / "c", _sandbox(),
-                        candidates={2: [worse]}, session_kwargs=SESSION_KWARGS)
+        run_loop_stream(
+            MODE_SELECT,
+            [first, second],
+            program1,
+            root1,
+            tmp_path / "c",
+            _sandbox(),
+            candidates={2: [worse]},
+            session_kwargs=SESSION_KWARGS,
+        )
     with pytest.raises(LoopStreamError, match="is not the kept program"):
-        run_loop_stream(MODE_SELECT, [first, second], worse, root1, tmp_path / "d", _sandbox(), candidates={2: [worse]})
+        run_loop_stream(
+            MODE_SELECT, [first, second], worse, root1, tmp_path / "d", _sandbox(), candidates={2: [worse]}
+        )
     assert not (tmp_path / "d").exists()
     with pytest.raises(LoopStreamError, match="2 to 8 rounds"):
         run_loop_stream(MODE_SELECT, [first], program1, root1, tmp_path / "e", _sandbox(), candidates={})

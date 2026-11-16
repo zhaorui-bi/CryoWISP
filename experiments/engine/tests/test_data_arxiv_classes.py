@@ -21,7 +21,7 @@ def _meta() -> dict:
     train = rng.integers(100, 5000, A.N_CLASSES)
     evidence = rng.integers(0, 60, A.N_CLASSES)
     train[[3, 9, 17]] = [90000, 80000, 70000]  # the three largest
-    evidence[[3, 9, 17]] = 100                 # eligible by evidence, excluded by size
+    evidence[[3, 9, 17]] = 100  # eligible by evidence, excluded by size
     splits = {name: {"class_counts": rng.integers(0, 50, A.N_CLASSES).tolist()} for name in K.COUNT_SPLITS}
     splits["train"]["class_counts"] = train.tolist()
     splits["V_evidence"]["class_counts"] = evidence.tolist()
@@ -33,14 +33,21 @@ def test_eligibility_and_draw_follow_the_rule() -> None:
     eligible, largest = K.eligible_classes(meta)
     evidence = np.asarray(meta["splits"]["V_evidence"]["class_counts"])
     assert largest == [3, 9, 17]
-    assert eligible == [c for c in range(A.N_CLASSES) if evidence[c] >= K.MIN_EVIDENCE_ROWS and c not in largest]
+    assert eligible == [
+        c for c in range(A.N_CLASSES) if evidence[c] >= K.MIN_EVIDENCE_ROWS and c not in largest
+    ]
     record = K.draw_new_classes(meta)
-    expected = sorted(np.random.default_rng([SPLIT_SEED, K.CLASS_STREAM]).choice(
-        np.asarray(eligible), size=K.N_NEW_CLASSES, replace=False).tolist())
+    expected = sorted(
+        np.random.default_rng([SPLIT_SEED, K.CLASS_STREAM])
+        .choice(np.asarray(eligible), size=K.N_NEW_CLASSES, replace=False)
+        .tolist()
+    )
     assert record["new_classes"] == expected and len(expected) == K.N_NEW_CLASSES
     assert set(record["new_classes"]) <= set(eligible)
     assert record["train_classes"] == [c for c in range(A.N_CLASSES) if c not in expected]
-    assert record["new_part_rows"]["V_select"] == int(np.asarray(meta["splits"]["V_select"]["class_counts"])[expected].sum())
+    assert record["new_part_rows"]["V_select"] == int(
+        np.asarray(meta["splits"]["V_select"]["class_counts"])[expected].sum()
+    )
     assert K.draw_new_classes(meta) == record
 
 

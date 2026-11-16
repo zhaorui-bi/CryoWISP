@@ -63,7 +63,10 @@ def _assert_untouched(params, result, touched: set[str]) -> None:
 
 
 def test_scale_rows_and_cols_hand_computed() -> None:
-    params = {"w": np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32), "b": np.array([1.0, -2.0], dtype=np.float32)}
+    params = {
+        "w": np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32),
+        "b": np.array([1.0, -2.0], dtype=np.float32),
+    }
     result = _apply(
         params,
         {"op": "scale_rows", "tensor": "w", "rows": [1], "factor": 0.5},
@@ -113,8 +116,15 @@ def test_set_and_add_index_form_including_4d_tuples() -> None:
 
 def test_add_with_repeated_index_tuples_accumulates_like_add_at() -> None:
     params = _model()
-    result = _apply(params, {"op": "add", "tensor": "fc1.weight", "index": [[1, 2], [1, 2], [0, 0], [1, 2]],
-                             "values": [0.1, 0.2, 0.3, -0.05]})
+    result = _apply(
+        params,
+        {
+            "op": "add",
+            "tensor": "fc1.weight",
+            "index": [[1, 2], [1, 2], [0, 0], [1, 2]],
+            "values": [0.1, 0.2, 0.3, -0.05],
+        },
+    )
     reference = _f64(params, "fc1.weight")
     np.add.at(reference, (np.array([1, 1, 0, 1]), np.array([2, 2, 0, 2])), np.array([0.1, 0.2, 0.3, -0.05]))
     assert_array_equal(result.child["fc1.weight"], reference.astype(np.float32))
@@ -132,7 +142,12 @@ def test_set_and_add_slice_form_with_value_and_values_file(tmp_path) -> None:
         {"op": "set", "tensor": "fc1.weight", "slice": [[1, 3], [2, 5]], "values_file": "block.npy"},
         {"op": "add", "tensor": "fc1.weight", "slice": [None, [0, 1]], "value": 1.5},
         {"op": "set", "tensor": "conv.weight", "slice": [[2, 3], None, None, None], "value": 0.0},
-        {"op": "add", "tensor": "conv.weight", "slice": [[0, 2], None, [1, 2], None], "values_file": "conv_block.npy"},
+        {
+            "op": "add",
+            "tensor": "conv.weight",
+            "slice": [[0, 2], None, [1, 2], None],
+            "values_file": "conv_block.npy",
+        },
         {"op": "add", "tensor": "fc1.bias", "slice": [[4, 5]], "value": -0.5},
         patch_dir=tmp_path,
     )
@@ -150,12 +165,26 @@ def test_set_and_add_slice_form_with_value_and_values_file(tmp_path) -> None:
 
 
 def test_project_out_hand_computed_both_sides_and_bias() -> None:
-    params = {"w": np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32), "b": np.array([5.0, 6.0], dtype=np.float32)}
-    side_in = _apply(params, {"op": "project_out", "tensor": "w", "side": "in", "direction": [2.0, 0.0], "strength": 1.0})
+    params = {
+        "w": np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32),
+        "b": np.array([5.0, 6.0], dtype=np.float32),
+    }
+    side_in = _apply(
+        params, {"op": "project_out", "tensor": "w", "side": "in", "direction": [2.0, 0.0], "strength": 1.0}
+    )
     assert_array_equal(side_in.child["w"], np.array([[0.0, 2.0], [0.0, 4.0]], dtype=np.float32))
     assert_array_equal(side_in.child["b"], params["b"])
-    side_out = _apply(params, {"op": "project_out", "tensor": "w", "side": "out", "direction": [0.0, 3.0],
-                               "strength": 0.5, "bias": "b"})
+    side_out = _apply(
+        params,
+        {
+            "op": "project_out",
+            "tensor": "w",
+            "side": "out",
+            "direction": [0.0, 3.0],
+            "strength": 0.5,
+            "bias": "b",
+        },
+    )
     assert_array_equal(side_out.child["w"], np.array([[1.0, 2.0], [1.5, 2.0]], dtype=np.float32))
     assert_array_equal(side_out.child["b"], np.array([5.0, 3.0], dtype=np.float32))
 
@@ -173,8 +202,17 @@ def test_project_out_on_conv_matches_reference(tmp_path) -> None:
     weight = _f64(params, "conv.weight").reshape(4, 12)
     bias = _f64(params, "conv.bias")
 
-    result = _apply(params, {"op": "project_out", "tensor": "conv.weight", "side": "in", "direction": "d_in.npy",
-                             "strength": 0.7}, patch_dir=tmp_path)
+    result = _apply(
+        params,
+        {
+            "op": "project_out",
+            "tensor": "conv.weight",
+            "side": "in",
+            "direction": "d_in.npy",
+            "strength": 0.7,
+        },
+        patch_dir=tmp_path,
+    )
     unit = d_in / np.linalg.norm(d_in)
     blas = (weight - 0.7 * np.outer(weight @ unit, unit)).reshape(4, 3, 2, 2)
     assert_array_max_ulp(result.child["conv.weight"], blas.astype(np.float32), maxulp=1)
@@ -183,8 +221,17 @@ def test_project_out_on_conv_matches_reference(tmp_path) -> None:
     exact = (weight - 0.7 * np.outer(_exact_matvec(weight, documented), documented)).reshape(4, 3, 2, 2)
     assert_array_equal(result.child["conv.weight"], exact.astype(np.float32))
 
-    full = _apply(params, {"op": "project_out", "tensor": "conv.weight", "side": "out", "direction": d_out.tolist(),
-                           "strength": 1.0, "bias": "conv.bias"})
+    full = _apply(
+        params,
+        {
+            "op": "project_out",
+            "tensor": "conv.weight",
+            "side": "out",
+            "direction": d_out.tolist(),
+            "strength": 1.0,
+            "bias": "conv.bias",
+        },
+    )
     unit = d_out / np.linalg.norm(d_out)
     expected_w = (weight - np.outer(unit, unit @ weight)).reshape(4, 3, 2, 2)
     expected_b = bias - unit * (unit @ bias)
@@ -199,8 +246,16 @@ def test_project_out_direction_scale_does_not_matter() -> None:
     params = _model()
     base = [0.3, -1.2, 0.0, 2.5, 0.7]
     results = [
-        _apply(params, {"op": "project_out", "tensor": "fc1.weight", "side": "out",
-                        "direction": [scale * x for x in base], "strength": 0.9})
+        _apply(
+            params,
+            {
+                "op": "project_out",
+                "tensor": "fc1.weight",
+                "side": "out",
+                "direction": [scale * x for x in base],
+                "strength": 0.9,
+            },
+        )
         for scale in (1.0, 1e-200, 1e200)
     ]
     assert len({result.child_sha256 for result in results}) == 1
@@ -222,8 +277,11 @@ def test_low_rank_add_on_linear_and_conv(tmp_path) -> None:
     fc2 = _f64(params, "fc2.weight")
     conv = _f64(params, "conv.weight").reshape(4, 12)
     assert_array_max_ulp(result.child["fc2.weight"], (fc2 + u @ v.T).astype(np.float32), maxulp=1)
-    assert_array_max_ulp(result.child["conv.weight"], (conv + cu.astype(np.float64) @ cv.astype(np.float64).T)
-                         .reshape(4, 3, 2, 2).astype(np.float32), maxulp=1)
+    assert_array_max_ulp(
+        result.child["conv.weight"],
+        (conv + cu.astype(np.float64) @ cv.astype(np.float64).T).reshape(4, 3, 2, 2).astype(np.float32),
+        maxulp=1,
+    )
     ordered = np.zeros((3, 5))
     for k in range(2):
         ordered += np.outer(u[:, k], v[:, k])
@@ -257,8 +315,16 @@ def test_ops_apply_in_list_order() -> None:
     assert first_scale.child["fc2.weight"][0, 3] == np.float32(x * 2.0 + 1.0)
     assert first_add.child["fc2.weight"][0, 3] == np.float32((x + 1.0) * 2.0)
     assert first_scale.child_sha256 != first_add.child_sha256
-    project = {"op": "project_out", "tensor": "fc2.weight", "side": "in", "direction": [1, 0, 0, 0, 0], "strength": 1.0}
-    zero_then_project = _apply(params, {"op": "set", "tensor": "fc2.weight", "slice": [None, [0, 1]], "value": 5.0}, project)
+    project = {
+        "op": "project_out",
+        "tensor": "fc2.weight",
+        "side": "in",
+        "direction": [1, 0, 0, 0, 0],
+        "strength": 1.0,
+    }
+    zero_then_project = _apply(
+        params, {"op": "set", "tensor": "fc2.weight", "slice": [None, [0, 1]], "value": 5.0}, project
+    )
     assert np.all(zero_then_project.child["fc2.weight"][:, 0] == 0.0)
 
 
@@ -281,7 +347,13 @@ def test_application_is_deterministic_and_independent_of_key_order(tmp_path) -> 
     np.save(tmp_path / "u.npy", np.random.default_rng(1).normal(size=(5, 1)))
     np.save(tmp_path / "v.npy", np.random.default_rng(2).normal(size=(12, 1)))
     ops = (
-        {"op": "project_out", "tensor": "fc1.weight", "side": "in", "direction": list(range(1, 13)), "strength": 0.5},
+        {
+            "op": "project_out",
+            "tensor": "fc1.weight",
+            "side": "in",
+            "direction": list(range(1, 13)),
+            "strength": 0.5,
+        },
         {"op": "low_rank_add", "tensor": "fc1.weight", "u": "u.npy", "v": "v.npy"},
     )
     first = _apply(params, *ops, patch_dir=tmp_path)
@@ -294,8 +366,11 @@ def test_application_is_deterministic_and_independent_of_key_order(tmp_path) -> 
 
 def test_child_is_float32_read_only_and_survives_save_and_reload(tmp_path) -> None:
     params = _model()
-    result = _apply(params, {"op": "scale_rows", "tensor": "conv.weight", "rows": [1], "factor": 0.5},
-                    {"op": "add", "tensor": "fc2.bias", "index": [[0]], "values": [0.25]})
+    result = _apply(
+        params,
+        {"op": "scale_rows", "tensor": "conv.weight", "rows": [1], "factor": 0.5},
+        {"op": "add", "tensor": "fc2.bias", "index": [[0]], "values": [0.25]},
+    )
     assert list(result.child) == list(params)
     for name, value in result.child.items():
         assert value.dtype == np.float32 and value.shape == params[name].shape
@@ -316,8 +391,14 @@ def _example_blocks(text: str) -> list[dict]:
 
 def _example_model() -> dict[str, np.ndarray]:
     rng = np.random.default_rng(3)
-    shapes = {"fc1.weight": (128, 784), "fc1.bias": (128,), "fc2.weight": (128, 128), "fc2.bias": (128,),
-              "fc3.weight": (10, 128), "fc3.bias": (10,)}
+    shapes = {
+        "fc1.weight": (128, 784),
+        "fc1.bias": (128,),
+        "fc2.weight": (128, 128),
+        "fc2.bias": (128,),
+        "fc3.weight": (10, 128),
+        "fc3.bias": (10,),
+    }
     return {name: rng.normal(size=shape).astype(np.float32) for name, shape in shapes.items()}
 
 
@@ -347,7 +428,13 @@ def test_describe_ops_examples_are_valid_patches(tmp_path) -> None:
     full, op_examples = blocks[0], blocks[1:]
     params = _example_model()
     shapes = {name: value.shape for name, value in params.items()}
-    assert full["schema"] == SCHEMA and set(full) == {"schema", "parent_sha256", "ops", "hypothesis", "predicted_effect"}
+    assert full["schema"] == SCHEMA and set(full) == {
+        "schema",
+        "parent_sha256",
+        "ops",
+        "hypothesis",
+        "predicted_effect",
+    }
     full["parent_sha256"] = params_sha256(params)
     apply_patch(params, full, None, Limits(), params_sha256(params))
     assert sorted({op["op"] for op in op_examples}) == sorted(OP_NAMES)
@@ -358,8 +445,16 @@ def test_describe_ops_examples_are_valid_patches(tmp_path) -> None:
 
 
 def test_describe_ops_renders_the_limits_it_is_given() -> None:
-    text = describe_ops(Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None, max_ops=7, max_rank=3,
-                               max_file_bytes=1000))
+    text = describe_ops(
+        Limits(
+            max_changed_frac=None,
+            max_rel_frob=None,
+            max_edit_frac=None,
+            max_ops=7,
+            max_rank=3,
+            max_file_bytes=1000,
+        )
+    )
     assert "at most 7 ops" in text and "1 <= r <= 3" in text and "1000 bytes" in text
     assert "no limit on the edit size" in text and "number of changed entries is not limited" in text
     default = describe_ops()
@@ -387,6 +482,10 @@ def test_describe_ops_states_the_rank_floor_of_the_norm_rule(floor: int, exempt:
 
 def test_patch_error_is_a_value_error_with_messages() -> None:
     error = PatchError(["first", "second"])
-    assert isinstance(error, ValueError) and error.messages == ["first", "second"] and str(error) == "first\nsecond"
+    assert (
+        isinstance(error, ValueError)
+        and error.messages == ["first", "second"]
+        and str(error) == "first\nsecond"
+    )
     with pytest.raises(ValueError):
         PatchError([])

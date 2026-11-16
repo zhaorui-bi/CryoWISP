@@ -57,8 +57,10 @@ def test_forward_matches_torch(tmp_path: Path, chunk: int | None) -> None:
     config, params = _params()
     mine = forward(params, np.arange(N))
     assert mine.dtype == np.float32 and mine.shape == (N, K)
-    exact, float32 = (G.logits_all(G.build_gcn(config, params, dtype), *G.graph_tensors(graph, torch.device("cpu"), dtype))
-                      for dtype in (torch.float64, torch.float32))
+    exact, float32 = (
+        G.logits_all(G.build_gcn(config, params, dtype), *G.graph_tensors(graph, torch.device("cpu"), dtype))
+        for dtype in (torch.float64, torch.float32)
+    )
     result = check_logit_parity(mine, exact, float32)
     assert result["float64_max_rel_diff"] <= FLOAT32_STEP
     ids = np.array([5, 0, 59, 5])
@@ -102,11 +104,16 @@ def test_training_learns_and_params_round_trip(tmp_path: Path) -> None:
     assert all(np.array_equal(params[k], G.export_gcn_params(again.model)[k]) for k in params)
     assert first.log[-1]["train_acc"] > first.log[0]["train_acc"] or first.log[-1]["train_acc"] == 1.0
     assert set(params) == {f"conv{i}.{p}" for i in (1, 2, 3) for p in ("weight", "bias")} | {
-        f"bn{i}.{p}" for i in (1, 2) for p in G.BN_PARTS}
+        f"bn{i}.{p}" for i in (1, 2) for p in G.BN_PARTS
+    }
     rebuilt = G.build_gcn(first.model.config, params)
     assert all(np.array_equal(v, G.export_gcn_params(rebuilt)[k]) for k, v in params.items())
     spec = G.build_gcn_model_spec("m0", first.model.config, [f"c{i}" for i in range(K)], params)
-    assert spec["input_files"] == ["graph.npz"] and spec["n_parameters"] == sum(v.size for v in params.values())
+    assert spec["input_files"] == ["graph.npz"] and spec["n_parameters"] == sum(
+        v.size for v in params.values()
+    )
     forward = _forward(tmp_path, graph)
     exact = G.logits_all(rebuilt.double(), *G.graph_tensors(graph, torch.device("cpu"), torch.float64))
-    assert np.max(np.abs(forward(params, np.arange(N)) - exact)) <= FLOAT32_STEP * np.max(np.abs(exact)) + 1e-6
+    assert (
+        np.max(np.abs(forward(params, np.arange(N)) - exact)) <= FLOAT32_STEP * np.max(np.abs(exact)) + 1e-6
+    )

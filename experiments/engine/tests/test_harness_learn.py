@@ -29,7 +29,14 @@ from cryowisp.evalkit.companions import build_replay, load_clean_rows, load_repl
 from cryowisp.evalkit.instances import build_task_v1, instances_root
 from cryowisp.evalkit.patch_check import predict
 from cryowisp.harness import clean, runner
-from cryowisp.harness.arms import ARMS, BASE_TOOLS, PROGRAM_MAX_CHANGED_FRAC, applied_limits, arm_spec, limits_dict
+from cryowisp.harness.arms import (
+    ARMS,
+    BASE_TOOLS,
+    PROGRAM_MAX_CHANGED_FRAC,
+    applied_limits,
+    arm_spec,
+    limits_dict,
+)
 from cryowisp.harness.experience import (
     EXPERIENCE_KEYS,
     LEARN_FINAL_SELECTION,
@@ -42,8 +49,8 @@ from cryowisp.harness.experience import (
 from cryowisp.harness.finalize import FINAL_RULE_JOINT, KIND_BASE, KIND_CHECKED, select_final
 from cryowisp.harness.instance import InstanceRefused
 from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.leaks import HINT_WORDS, scan_texts, scan_trial
+from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.program import ProgramProblem, Student, run_update, write_derived_patch
 from cryowisp.harness.prompts import Budgets, render_system, render_task
 from cryowisp.harness.scripted import ScriptedLauncher
@@ -56,10 +63,26 @@ from cryowisp.sandbox.program import ProgramSandbox
 
 CLASSES = ["c0", "c1", "c2", "c3"]
 BUDGETS = Budgets(patch_checks=8, python_cells=150, cell_timeout_s=120.0, wall_timeout_s=3600.0)
-SHOWN_CHECK_KEYS = {"program_file", "query_index", "score_new", "score_old", "score", "queries_remaining", "tensors",
-                    "program_stdout", "program_stderr", "duration_s", "wall_s_elapsed", "wall_s_remaining"}
-STRINGS = 'HYPOTHESIS = "unit 0 should read the class-0 pixel"\nPREDICTED_EFFECT = "fixes errors, breaks none"\n'
-FIX = STRINGS + """import numpy as np
+SHOWN_CHECK_KEYS = {
+    "program_file",
+    "query_index",
+    "score_new",
+    "score_old",
+    "score",
+    "queries_remaining",
+    "tensors",
+    "program_stdout",
+    "program_stderr",
+    "duration_s",
+    "wall_s_elapsed",
+    "wall_s_remaining",
+}
+STRINGS = (
+    'HYPOTHESIS = "unit 0 should read the class-0 pixel"\nPREDICTED_EFFECT = "fixes errors, breaks none"\n'
+)
+FIX = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     w = student["params"]["fc1.weight"]
@@ -68,44 +91,72 @@ def update(student, experience):
     print("rows", len(experience["y_new"]), len(experience["y_old"]))
     return {"fc1.weight": delta}
 """
-BIG = STRINGS + """import numpy as np
+)
+BIG = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     delta = np.zeros_like(student["params"]["fc1.weight"])
     delta[0, 0] = 1000.0
     return {"fc1.weight": delta}
 """
-WORSE = STRINGS + """import numpy as np
+)
+WORSE = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     delta = np.zeros_like(student["params"]["fc2.bias"])
     delta[2] = 100.0
     return {"fc2.bias": delta}
 """
-WIDE = STRINGS + """import numpy as np
+)
+WIDE = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     return {"fc1.weight": np.full(student["params"]["fc1.weight"].shape, 1e-3)}
 """
-NAN = STRINGS + """import numpy as np
+)
+NAN = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     return {"fc1.weight": np.full(student["params"]["fc1.weight"].shape, np.nan)}
 """
+)
 INVALID = {
-    "shape": (STRINGS + "import numpy as np\ndef update(student, experience):\n    return {'fc1.weight': np.zeros((2, 2))}\n",
-              "deltas['fc1.weight']: shape [2, 2], but the tensor has shape [8, 16]"),
-    "unknown": (STRINGS + "import numpy as np\ndef update(student, experience):\n    return {'conv9.weight': np.zeros(3)}\n",
-                "deltas: 'conv9.weight' is not a tensor of the student"),
+    "shape": (
+        STRINGS
+        + "import numpy as np\ndef update(student, experience):\n    return {'fc1.weight': np.zeros((2, 2))}\n",
+        "deltas['fc1.weight']: shape [2, 2], but the tensor has shape [8, 16]",
+    ),
+    "unknown": (
+        STRINGS
+        + "import numpy as np\ndef update(student, experience):\n    return {'conv9.weight': np.zeros(3)}\n",
+        "deltas: 'conv9.weight' is not a tensor of the student",
+    ),
     "nan": (NAN, "deltas['fc1.weight']: 128 entries are not finite"),
-    "dtype": (STRINGS + "import numpy as np\ndef update(student, experience):\n"
-              "    return {'fc2.bias': np.zeros(4, dtype=np.int64)}\n",
-              "deltas['fc2.bias']: dtype int64; a delta must be float16, float32 or float64"),
-    "strings": ("import numpy as np\ndef update(student, experience):\n    return {}\n",
-                "the program must define HYPOTHESIS as a non-empty str at module level; it is missing"),
-    "raises": (STRINGS + "def update(student, experience):\n    raise KeyError('no such array')\n",
-               "the program failed in update (it ran as /work/in/<program>)"),
-    "import": (STRINGS + "import numpy as np\nthis is not python\n", "the program failed while the program was imported"),
+    "dtype": (
+        STRINGS + "import numpy as np\ndef update(student, experience):\n"
+        "    return {'fc2.bias': np.zeros(4, dtype=np.int64)}\n",
+        "deltas['fc2.bias']: dtype int64; a delta must be float16, float32 or float64",
+    ),
+    "strings": (
+        "import numpy as np\ndef update(student, experience):\n    return {}\n",
+        "the program must define HYPOTHESIS as a non-empty str at module level; it is missing",
+    ),
+    "raises": (
+        STRINGS + "def update(student, experience):\n    raise KeyError('no such array')\n",
+        "the program failed in update (it ran as /work/in/<program>)",
+    ),
+    "import": (
+        STRINGS + "import numpy as np\nthis is not python\n",
+        "the program failed while the program was imported",
+    ),
 }
 REL_FROB_TEXT = "tensor 'fc1.weight': the relative Frobenius norm of the change is above the limit 0.5"
 CHANGED_TEXT = "size: the fraction of parameters that change is above the limit 0.2"
@@ -144,8 +195,13 @@ def _assembled(store: LearnStore, tmp_path: Path, seed: int = 100) -> tuple[Any,
 
 
 def _student(trial: Path) -> Student:
-    return Student(params=load_params(trial / "model.npz"), params_file=trial / "model.npz",
-                   forward_file=trial / "forward.py", input_files={}, layout=read_json(trial / "model_spec.json"))
+    return Student(
+        params=load_params(trial / "model.npz"),
+        params_file=trial / "model.npz",
+        forward_file=trial / "forward.py",
+        input_files={},
+        layout=read_json(trial / "model_spec.json"),
+    )
 
 
 def _sandbox() -> ProgramSandbox:
@@ -173,8 +229,14 @@ def _sentences(paragraph: str) -> list[str]:
 def test_the_spec_is_m2_with_a_program_and_the_program_limits() -> None:
     spec, m2 = arm_spec("LEARN"), arm_spec("M2")
     assert "LEARN" in ARMS and spec.program and not m2.program
-    assert (spec.shown, spec.evidence, spec.apply_mode, spec.size_limits, spec.labels, spec.tools) == \
-        (m2.shown, m2.evidence, m2.apply_mode, m2.size_limits, m2.labels, BASE_TOOLS)
+    assert (spec.shown, spec.evidence, spec.apply_mode, spec.size_limits, spec.labels, spec.tools) == (
+        m2.shown,
+        m2.evidence,
+        m2.apply_mode,
+        m2.size_limits,
+        m2.labels,
+        BASE_TOOLS,
+    )
     limits = build_task_v1(CLASSES)["limits"]
     program, patch = applied_limits(limits, "LEARN"), applied_limits(limits, "M2")
     assert program.max_edit_frac is None and patch.max_edit_frac == Limits().max_edit_frac == 0.05
@@ -193,7 +255,9 @@ def test_the_spec_is_m2_with_a_program_and_the_program_limits() -> None:
     assert scan_texts(texts, (*HINT_WORDS, "seed", "rewrite", "decoy", "noweight")) == {}
 
 
-def test_a_program_may_change_every_tensor_of_a_student_with_more_tensors_than_max_ops(tmp_path: Path) -> None:
+def test_a_program_may_change_every_tensor_of_a_student_with_more_tensors_than_max_ops(
+    tmp_path: Path,
+) -> None:
     """The derived patch has one op per changed tensor, so in a program arm max_ops is raised to the tensor count
     (the 70-tensor seqops student of PREREG E5); on a student of at most 64 tensors the limits are unchanged."""
     limits = build_task_v1(CLASSES)["limits"]
@@ -248,14 +312,22 @@ def test_the_system_prompt_changes_only_the_sentences_false_for_a_program() -> N
     assert len(old) == len(new)
     changed = [index for index, (a, b) in enumerate(zip(old, new)) if a != b]
     headings = [paragraph.splitlines()[0] for paragraph in old]
-    assert [headings[index - 1] for index in changed] == ["## What is kept", "## How to work", "## Environment",
-                                                          old[headings.index("## Environment") + 1].splitlines()[0]]
+    assert [headings[index - 1] for index in changed] == [
+        "## What is kept",
+        "## How to work",
+        "## Environment",
+        old[headings.index("## Environment") + 1].splitlines()[0],
+    ]
     old_sentences = {sentence for index in changed for sentence in _sentences(old[index])}
     new_sentences = {sentence for index in changed for sentence in _sentences(new[index])}
     assert old_sentences - new_sentences == FALSE_FOR_A_PROGRAM
     assert "Unchecked programs are never kept." in new_sentences and "score_new + score_old" in learn
-    assert "`HYPOTHESIS`" in learn and "`PREDICTED_EFFECT`" in learn and "patch" not in " ".join(
-        new_sentences - old_sentences).replace("patch_check", "").replace("/work/patches", "")
+    assert (
+        "`HYPOTHESIS`" in learn
+        and "`PREDICTED_EFFECT`" in learn
+        and "patch"
+        not in " ".join(new_sentences - old_sentences).replace("patch_check", "").replace("/work/patches", "")
+    )
     assert scan_texts({"system": learn}, (*HINT_WORDS, "seed")) == {}
 
 
@@ -266,8 +338,9 @@ def test_the_task_prompt_states_the_program_interface_and_rules() -> None:
     text = render_task("LEARN", view, limits_dict(limits), BUDGETS)
     assert "$" not in text and "8 queries in total" in text and "300 seconds" in text
     assert LEARN_FINAL_SELECTION in text and view["patch_check"]["readout"] in text
-    assert all(rule in text for rule in LEARN_PROGRAM_RULE) and all(rule in text for rule in
-                                                                   task["training_free_rule"]["forbidden"])
+    assert all(rule in text for rule in LEARN_PROGRAM_RULE) and all(
+        rule in text for rule in task["training_free_rule"]["forbidden"]
+    )
     assert "`update(student: dict, experience: dict) -> dict[str, numpy.ndarray]`" in text
     assert "run unchanged on other independently trained classifiers" in text
     assert "x_fail" not in text and "evidence.npz" not in text and "Allowed ops" not in text
@@ -287,11 +360,14 @@ def test_exempt_tensors_are_shown_to_a_program_only_when_there_are_any() -> None
     assert view["limits"]["rel_frob_exempt"] == ["fc2.weight", "fc2.bias"]
     assert "so are the tensors in rel_frob_exempt" in view["limit_definitions"]["max_rel_frob"]
     text = render_task("LEARN", view, limits_dict(limits), BUDGETS)
-    assert '`rel_frob_exempt` = ["fc2.weight", "fc2.bias"]: tensors that max_rel_frob does not apply to' in text
+    assert (
+        '`rel_frob_exempt` = ["fc2.weight", "fc2.bias"]: tensors that max_rel_frob does not apply to' in text
+    )
     plain = build_task_v1(CLASSES)
     plain_limits = applied_limits(plain["limits"], "LEARN")
-    plain_text = render_task("LEARN", learn_task(plain, "a" * 64, plain_limits, 64, 16, 64), limits_dict(plain_limits),
-                             BUDGETS)
+    plain_text = render_task(
+        "LEARN", learn_task(plain, "a" * 64, plain_limits, 64, 16, 64), limits_dict(plain_limits), BUDGETS
+    )
     assert "rel_frob_exempt" not in plain_text
     m2_text = render_task("M2", plain, limits_dict(applied_limits(plain["limits"], "M2")), BUDGETS)
     assert "rel_frob_exempt" not in m2_text and "does not apply to" not in m2_text
@@ -305,19 +381,29 @@ def test_the_final_rule_is_argmax_joint_with_the_patch_tie_breaks() -> None:
     assert select_final(tied, budget=8, declared=None)["patch_id"] == "b.py"
     same = [entry("a.py", 5, 2, 0), entry("b.py", 5, 2, 1)]
     assert select_final(same, budget=8, declared=None)["patch_id"] == "a.py"
-    assert select_final([entry("a.py", 0, 1, 0), entry("b.py", -3, 1, 1)], budget=8, declared=None)["kind"] == KIND_BASE
+    assert (
+        select_final([entry("a.py", 0, 1, 0), entry("b.py", -3, 1, 1)], budget=8, declared=None)["kind"]
+        == KIND_BASE
+    )
 
 
 # ---------------------------------------------------------------------------------------------------------------
 # Trial assembly
 
 
-def test_the_trial_holds_the_experience_and_no_condition_name(learn_store: LearnStore, tmp_path: Path) -> None:
+def test_the_trial_holds_the_experience_and_no_condition_name(
+    learn_store: LearnStore, tmp_path: Path
+) -> None:
     instance = learn_store.instance()
     view, session_dir = _assembled(learn_store, tmp_path)
     trial = session_dir / "trial"
-    assert sorted(path.name for path in trial.iterdir()) == ["experience.npz", "forward.py", "model.npz",
-                                                             "model_spec.json", "task.json"]
+    assert sorted(path.name for path in trial.iterdir()) == [
+        "experience.npz",
+        "forward.py",
+        "model.npz",
+        "model_spec.json",
+        "task.json",
+    ]
     with np.load(trial / "experience.npz", allow_pickle=False) as archive:
         experience = {key: archive[key] for key in archive.files}
     assert sorted(experience) == sorted(EXPERIENCE_KEYS)
@@ -325,9 +411,13 @@ def test_the_trial_holds_the_experience_and_no_condition_name(learn_store: Learn
     assert np.array_equal(experience["x_new"], np.concatenate([evidence["x_fail"], evidence["x_rand"]]))
     assert np.array_equal(experience["y_new"], np.concatenate([evidence["y_fail"], evidence["y_rand"]]))
     assert np.array_equal(experience["split_ids_new"], evidence["split_ids"])
-    assert np.array_equal(experience["x_old"], replay["x"]) and np.array_equal(experience["y_old"], replay["y"])
+    assert np.array_equal(experience["x_old"], replay["x"]) and np.array_equal(
+        experience["y_old"], replay["y"]
+    )
     assert np.array_equal(experience["pred_old"], predict(instance.forward, instance.params, replay["x"], 64))
-    assert np.array_equal(experience["pred_new"], predict(instance.forward, instance.params, experience["x_new"], 64))
+    assert np.array_equal(
+        experience["pred_new"], predict(instance.forward, instance.params, experience["x_new"], 64)
+    )
     replay_idx, shown_idx = set(replay["idx"].tolist()), set(evidence_idx(instance).tolist())
     assert len(shown_idx) == len(experience["y_new"]) and not replay_idx & shown_idx
     assert view.experience["replay_idx_disjoint_from_evidence_idx"] is True
@@ -360,10 +450,13 @@ def test_a_replay_sharing_an_evidence_idx_is_refused(learn_store: LearnStore) ->
         idx[0] = planted
         return {**arrays, "idx": idx}, record
 
-    previous = clean.set_source(clean.CleanSource("planted", load_planted, real.load_clean_check,
-                                                  real.dev_readout_joint))
+    previous = clean.set_source(
+        clean.CleanSource("planted", load_planted, real.load_clean_check, real.dev_readout_joint)
+    )
     try:
-        with pytest.raises(ExperienceError, match="a clean view of an evidence image must never reach the editor"):
+        with pytest.raises(
+            ExperienceError, match="a clean view of an evidence image must never reach the editor"
+        ):
             build_experience(instance)
     finally:
         clean.set_source(previous)
@@ -390,9 +483,17 @@ def test_a_good_program_runs_deterministically(learn_store: LearnStore, tmp_path
     second = run_update(student, trial / "experience.npz", program, tmp_path / "run2", _sandbox())
     assert first.tensors == ["fc1.weight"] and first.record["deltas_sha256"] == second.record["deltas_sha256"]
     assert first.record["inputs_sha256"] == second.record["inputs_sha256"]
-    assert set(first.record["inputs_sha256"]) == {"experience.npz", "fix.py", "forward.py", "layout.json", "params.npz"}
+    assert set(first.record["inputs_sha256"]) == {
+        "experience.npz",
+        "fix.py",
+        "forward.py",
+        "layout.json",
+        "params.npz",
+    }
     assert first.deltas["fc1.weight"][0, 4] == 6.0 and np.count_nonzero(first.deltas["fc1.weight"]) == 2
-    assert first.hypothesis.startswith("unit 0") and first.record["shown"]["program_stdout"].startswith("rows ")
+    assert first.hypothesis.startswith("unit 0") and first.record["shown"]["program_stdout"].startswith(
+        "rows "
+    )
     assert not (tmp_path / "run1" / "in").exists()
 
 
@@ -403,8 +504,13 @@ def test_invalid_programs_are_reported_verbatim(learn_store: LearnStore, tmp_pat
     source, expected = INVALID[case]
     program = _write_program(tmp_path, f"{case}.py", source)
     with pytest.raises(ProgramProblem) as caught:
-        run_update(_student(session_dir / "trial"), session_dir / "trial" / "experience.npz", program,
-                   tmp_path / "run", _sandbox())
+        run_update(
+            _student(session_dir / "trial"),
+            session_dir / "trial" / "experience.npz",
+            program,
+            tmp_path / "run",
+            _sandbox(),
+        )
     assert any(message.startswith(expected) for message in caught.value.messages), caught.value.messages
     assert caught.value.run is not None and "shown" in caught.value.run
 
@@ -412,11 +518,20 @@ def test_invalid_programs_are_reported_verbatim(learn_store: LearnStore, tmp_pat
 @needs_sandbox
 def test_a_program_past_the_wall_limit_is_stopped(learn_store: LearnStore, tmp_path: Path) -> None:
     _, session_dir = _assembled(learn_store, tmp_path)
-    program = _write_program(tmp_path, "slow.py", STRINGS + "import time\ndef update(student, experience):\n"
-                                                            "    time.sleep(60)\n    return {}\n")
+    program = _write_program(
+        tmp_path,
+        "slow.py",
+        STRINGS + "import time\ndef update(student, experience):\n    time.sleep(60)\n    return {}\n",
+    )
     with pytest.raises(ProgramProblem) as caught:
-        run_update(_student(session_dir / "trial"), session_dir / "trial" / "experience.npz", program,
-                   tmp_path / "run", _sandbox(), wall_s=2.0)
+        run_update(
+            _student(session_dir / "trial"),
+            session_dir / "trial" / "experience.npz",
+            program,
+            tmp_path / "run",
+            _sandbox(),
+            wall_s=2.0,
+        )
     assert caught.value.messages == ["the program did not return within 2 seconds and was stopped"]
     assert caught.value.run is not None and caught.value.run["run"]["status"] == "timeout"
 
@@ -427,17 +542,25 @@ def test_a_program_past_the_wall_limit_is_stopped(learn_store: LearnStore, tmp_p
 
 def _program_cell(programs: dict[str, str]) -> str:
     payload = json.dumps(json.dumps(programs))
-    return ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n"
-            f"print(sorted(json.loads({payload})))\n")
+    return (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        f"print(sorted(json.loads({payload})))\n"
+    )
 
 
 @needs_sandbox
 def test_a_learn_session_checks_programs_on_the_joint_score(learn_store: LearnStore) -> None:
     steps = [
-        ("python", {"code": _program_cell({"fix.py": FIX, "big.py": BIG, "nan.py": NAN, "worse.py": WORSE,
-                                           "wide.py": WIDE})}),
+        (
+            "python",
+            {
+                "code": _program_cell(
+                    {"fix.py": FIX, "big.py": BIG, "nan.py": NAN, "worse.py": WORSE, "wide.py": WIDE}
+                )
+            },
+        ),
         ("patch_check", {"program_file": "fix.py"}),
         ("patch_check", {"program_file": "big.py"}),
         ("patch_check", {"program_file": "wide.py"}),
@@ -458,12 +581,22 @@ def test_a_learn_session_checks_programs_on_the_joint_score(learn_store: LearnSt
     assert fix.payload["queries_remaining"] == 7 and worse.payload["queries_remaining"] == 6
     assert fix.payload["tensors"] == ["fc1.weight"] and fix.payload["program_stdout"].startswith("rows ")
     assert big.is_error and big.payload["error"][0] == REL_FROB_TEXT and big.payload["queries_remaining"] == 7
-    assert wide.is_error and wide.payload["error"][0] == CHANGED_TEXT and wide.payload["queries_remaining"] == 7
-    assert nan.is_error and nan.payload["error"][0].startswith("deltas['fc1.weight']: 128 entries are not finite")
+    assert (
+        wide.is_error and wide.payload["error"][0] == CHANGED_TEXT and wide.payload["queries_remaining"] == 7
+    )
+    assert nan.is_error and nan.payload["error"][0].startswith(
+        "deltas['fc1.weight']: 128 entries are not finite"
+    )
     assert again.is_error and "already checked" in again.payload["error"][0]
     assert wrong_key.is_error and "unknown arguments ['patch_file']" in wrong_key.payload["error"][0]
     assert [row["program_file"] for row in status.payload["checked"]] == ["fix.py", "worse.py"]
-    assert set(status.payload["checked"][0]) == {"program_file", "query_index", "score_new", "score_old", "score"}
+    assert set(status.payload["checked"][0]) == {
+        "program_file",
+        "query_index",
+        "score_new",
+        "score_old",
+        "score",
+    }
     assert declared.payload["valid"] and declared.payload["checked"]
 
     paths = SessionPaths(result.root)
@@ -471,14 +604,20 @@ def test_a_learn_session_checks_programs_on_the_joint_score(learn_store: LearnSt
     assert session["experience"]["replay"]["idx"] and session["clean_check"]["split"] == "V_check"
     assert session["program"]["wall_s"] == 300.0
     final = result.record["final"]
-    assert final["kind"] == KIND_CHECKED and final["patch_id"] == "fix.py" and final["score"] == fix.payload["score"]
+    assert (
+        final["kind"] == KIND_CHECKED
+        and final["patch_id"] == "fix.py"
+        and final["score"] == fix.payload["score"]
+    )
     assert result.record["queries"] == {"used": 2, "consumed": 2, "charged_failures": 0, "budget": 8}
     assert "kept_rule" not in session and "s_old_floor" not in read_json(paths.selection_json)  # the v1 rule
     assert (final["score_new"], final["score_old"]) == (fix.payload["score_new"], fix.payload["score_old"])
     program = final["program"]
-    assert program["sha256"] == file_sha256(result.root / program["file"]) == file_sha256(result.root /
-                                                                                          "attempts" / final["attempt"]
-                                                                                          / "fix.py")
+    assert (
+        program["sha256"]
+        == file_sha256(result.root / program["file"])
+        == file_sha256(result.root / "attempts" / final["attempt"] / "fix.py")
+    )
     assert program["deltas_sha256"] == file_sha256(result.root / program["deltas"])
     assert program["patch_sha256"] == file_sha256(result.root / "final" / "patch.json")
     child = load_params(result.root / "final" / "model.npz")
@@ -494,11 +633,16 @@ def test_a_learn_session_checks_programs_on_the_joint_score(learn_store: LearnSt
     assert [row["program_file"] for row in selection["candidates"]] == ["fix.py", "worse.py"]
     checks = read_jsonl(paths.checks_log)
     assert all(entry["patch_file"] == "derived_patch.json" for entry in checks)
-    ledger = CheckLedger(session, paths)  # the replay re-runs nothing but re-applies and re-scores every check
+    ledger = CheckLedger(
+        session, paths
+    )  # the replay re-runs nothing but re-applies and re-scores every check
     assert [entry["score"] for entry in ledger.checked()] == [fix.payload["score"], worse.payload["score"]]
     rejected = result.record["rejected_attempts"]
-    assert {row["program_file"]: row["stage"] for row in rejected} == {"big.py": "limits", "wide.py": "limits",
-                                                                         "nan.py": "program"}
+    assert {row["program_file"]: row["stage"] for row in rejected} == {
+        "big.py": "limits",
+        "wide.py": "limits",
+        "nan.py": "program",
+    }
     assert any("rel_frob" in message or "Frobenius" in message for message in rejected[0]["messages"])
 
     info = session_info(result.root)
@@ -517,11 +661,19 @@ def test_the_transfer_runner_reads_out_a_frozen_program(learn_store: LearnStore,
     out = tmp_path / "transfer"
     written = run_transfer(fix, [learn_store.ids[100], learn_store.ids[101]], out, _sandbox())
     records = [json.loads(path.read_text()) for path in written]
-    assert len(records) == 2 and {record["target"]["instance_id"] for record in records} == set(learn_store.ids.values())
+    assert len(records) == 2 and {record["target"]["instance_id"] for record in records} == set(
+        learn_store.ids.values()
+    )
     for record, seed in zip(records, (100, 101)):
-        assert record["status"] == "ok" and record["within_limits"] is True and record["readout_child"] == "within_limits"
+        assert (
+            record["status"] == "ok"
+            and record["within_limits"] is True
+            and record["readout_child"] == "within_limits"
+        )
         assert record["program"]["sha256"] == file_sha256(fix) and record["tensors"] == ["fc1.weight"]
-        assert record["readouts"]["delta_acc"] is not None and record["readouts_clean"]["delta_acc"] is not None
+        assert (
+            record["readouts"]["delta_acc"] is not None and record["readouts_clean"]["delta_acc"] is not None
+        )
         view, _ = _assembled(learn_store, tmp_path, seed)
         assert record["experience"]["content_sha256"] == view.experience["content_sha256"]
     refused = run_transfer(big, [learn_store.ids[100]], out, _sandbox())

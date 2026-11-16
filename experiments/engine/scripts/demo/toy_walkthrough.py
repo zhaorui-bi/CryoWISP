@@ -31,8 +31,11 @@ from typing import Any
 HEADER = 'HYPOTHESIS = "{h}"\nPREDICTED_EFFECT = "{e}"\nimport numpy as np\n\n'
 PROGRAMS = {
     # Flips the sign of the final LayerNorm weight on a quarter of its dimensions: the edit the toy labels reward.
-    "norm_flip.py": HEADER.format(h="the final normalisation scale carries the wrong sign on the first dimensions",
-                                  e="fixes condition rows, breaks no clean row") + """\
+    "norm_flip.py": HEADER.format(
+        h="the final normalisation scale carries the wrong sign on the first dimensions",
+        e="fixes condition rows, breaks no clean row",
+    )
+    + """\
 def update(student, experience):
     w = np.asarray(student["params"]["classifier.norm.weight"], dtype=np.float64)
     delta = np.zeros_like(w)
@@ -41,8 +44,11 @@ def update(student, experience):
     return {"classifier.norm.weight": delta}
 """,
     # Scales the query block of the first attention layer by 1.3: within the limits, but not the rewarded edit.
-    "query_scale.py": HEADER.format(h="sharper first-layer queries separate the classes better under the condition",
-                                    e="a small gain on condition rows") + """\
+    "query_scale.py": HEADER.format(
+        h="sharper first-layer queries separate the classes better under the condition",
+        e="a small gain on condition rows",
+    )
+    + """\
 def update(student, experience):
     w = np.asarray(student["params"]["classifier.blocks.0.self_attn.qkv.weight"], dtype=np.float64)
     delta = np.zeros_like(w)
@@ -59,7 +65,9 @@ CLASSES = ("alpha", "beta", "gamma", "delta")
 SEEDS = (100, 101, 102, 103, 104, 105)
 DECOYS = {100: 101, 101: 100, 102: 103, 103: 102, 104: 105, 105: 104}
 ROWS = {"train": 96, "V_select": 160, "V_evidence": 128, "V_check": 160, "test": 32}
-RETENTION_FLOOR_FRAC = 0.005  # the floor of the E11 sessions of record: S_old >= -round(0.005 x clean check rows)
+RETENTION_FLOOR_FRAC = (
+    0.005  # the floor of the E11 sessions of record: S_old >= -round(0.005 x clean check rows)
+)
 
 
 def _points(value: float | None) -> str:
@@ -84,8 +92,12 @@ def _check_prerequisites(repo: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     repo = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--root", type=Path, default=repo / "out" / "toy_store",
-                        help="a new directory for the toy store and its records (default: out/toy_store)")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=repo / "out" / "toy_store",
+        help="a new directory for the toy store and its records (default: out/toy_store)",
+    )
     args = parser.parse_args(argv)
     root = args.root.resolve()
     if root.exists() and any(root.iterdir()):
@@ -94,7 +106,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # The store variables must point at the toy store before any cryowisp module resolves them; the real store is never
     # touched (vit_synth.build_store refuses to write anywhere else).
-    env = {"CRYOWISP_PRIVATE": root / "private", "CRYOWISP_SEALED": root / "sealed", "CRYOWISP_RUNS": root / "runs"}
+    env = {
+        "CRYOWISP_PRIVATE": root / "private",
+        "CRYOWISP_SEALED": root / "sealed",
+        "CRYOWISP_RUNS": root / "runs",
+    }
     for name, path in env.items():
         path.mkdir(parents=True, exist_ok=True)
         os.environ[name] = str(path)
@@ -109,34 +125,62 @@ def main(argv: list[str] | None = None) -> int:
     from cryowisp.sandbox.program import ProgramSandbox
 
     print(f"[1/4] Building the toy store under {root}")
-    store = vit_synth.build_store(root, vit_synth.TINY, dataset=e11.DATASET,
-                                  conditions=dict(zip(e10.STREAM_CONDITIONS, e10.STREAM_CORRUPTIONS)),
-                                  plant_condition=CONDITION, class_names=CLASSES, seeds=SEEDS, decoys=DECOYS,
-                                  rows=ROWS, instance_conditions=(CONDITION,))
+    store = vit_synth.build_store(
+        root,
+        vit_synth.TINY,
+        dataset=e11.DATASET,
+        conditions=dict(zip(e10.STREAM_CONDITIONS, e10.STREAM_CORRUPTIONS)),
+        plant_condition=CONDITION,
+        class_names=CLASSES,
+        seeds=SEEDS,
+        decoys=DECOYS,
+        rows=ROWS,
+        instance_conditions=(CONDITION,),
+    )
     source = store.ids[(CONDITION, 100)]
-    (root / "env.sh").write_text("".join(f"export {name}={path}\n" for name, path in env.items()), encoding="utf-8")
-    print(f"      6 students, repair instance {source} on the seed-100 student; store variables in {root / 'env.sh'}")
+    (root / "env.sh").write_text(
+        "".join(f"export {name}={path}\n" for name, path in env.items()), encoding="utf-8"
+    )
+    print(
+        f"      6 students, repair instance {source} on the seed-100 student; store variables in {root / 'env.sh'}"
+    )
 
     print("[2/4] Running one LEARN session with a scripted editor (the real MCP server, sandbox and limits)")
-    cell = ("import json\n"
-            f"programs = json.loads({json.dumps(json.dumps(PROGRAMS))})\n"
-            "for name, source in programs.items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n"
-            "print(sorted(programs))\n")
+    cell = (
+        "import json\n"
+        f"programs = json.loads({json.dumps(json.dumps(PROGRAMS))})\n"
+        "for name, source in programs.items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        "print(sorted(programs))\n"
+    )
 
     def script(client: Any, replies: list[Any]) -> None:
         call_and_record(client, replies, "python", {"code": cell})
         for name in PROGRAMS:
             call_and_record(client, replies, "patch_check", {"program_file": name})
-        call_and_record(client, replies, "declare_final", {"program_file": FINAL_PROGRAM,
-                                                           "rationale": "highest checked score above the floor"})
+        call_and_record(
+            client,
+            replies,
+            "declare_final",
+            {"program_file": FINAL_PROGRAM, "rationale": "highest checked score above the floor"},
+        )
 
     launcher = ScriptedLauncher(script)
-    result = runner.run_session(source, "LEARN", 0, effort="max", wall_timeout_s=300.0, launcher=launcher,
-                                skip_audit=True, retention_floor_frac=RETENTION_FLOOR_FRAC)
+    result = runner.run_session(
+        source,
+        "LEARN",
+        0,
+        effort="max",
+        wall_timeout_s=300.0,
+        launcher=launcher,
+        skip_audit=True,
+        retention_floor_frac=RETENTION_FLOOR_FRAC,
+    )
     if result.status != "complete":
-        sys.exit(f"toy_walkthrough: the session ended with status {result.status}: "
-                 f"{result.record.get('infra_reasons')}; records in {result.root}")
+        sys.exit(
+            f"toy_walkthrough: the session ended with status {result.status}: "
+            f"{result.record.get('infra_reasons')}; records in {result.root}"
+        )
     paths = SessionPaths(result.root)
     session = read_json(result.root / "session.json")
     floor = int(session["kept_rule"]["s_old_floor"])
@@ -147,16 +191,22 @@ def main(argv: list[str] | None = None) -> int:
             if reply.is_error:
                 print(f"      check {reply.arguments['program_file']}: refused ({json.dumps(shown)[:160]})")
             else:
-                print(f"      check {reply.arguments['program_file']}: score_new {shown['score_new']:+d}, "
-                      f"score_old {shown['score_old']:+d}, score {shown['score']:+d}")
+                print(
+                    f"      check {reply.arguments['program_file']}: score_new {shown['score_new']:+d}, "
+                    f"score_old {shown['score_old']:+d}, score {shown['score']:+d}"
+                )
     final = read_json(paths.selection_json)["final"]
     print(f"      final program: {final.get('patch_id')} (kind {final.get('kind')})")
 
     print("[3/4] Dev readout of the final network on the selection split (never the sealed test split)")
     readout = readout_run(result.root / "run.json", clean=True)
-    print(f"      condition rows: {readout['n']}, accuracy change {_points(readout['readouts']['delta_acc'])}")
-    print(f"      clean rows:     {readout['n_clean']}, accuracy change "
-          f"{_points(readout['readouts_clean']['delta_acc'])}")
+    print(
+        f"      condition rows: {readout['n']}, accuracy change {_points(readout['readouts']['delta_acc'])}"
+    )
+    print(
+        f"      clean rows:     {readout['n_clean']}, accuracy change "
+        f"{_points(readout['readouts_clean']['delta_acc'])}"
+    )
 
     print("[4/4] Reuse: the same final program, unchanged, on the five other students")
     program = paths.final / FINAL_PROGRAM
@@ -167,9 +217,13 @@ def main(argv: list[str] | None = None) -> int:
         record = json.loads(path.read_text(encoding="utf-8"))
         target = record["target"]["instance_id"]
         own = " (its own student)" if target == source else ""
-        print(f"      seed {seed_of[target]} {target}{own}: {record['status']}, condition "
-              f"{_points(record['readouts']['delta_acc'])}, clean {_points(record['readouts_clean']['delta_acc'])}")
-    print("      The toy labels reward this edit on the seed-100 student only, so the other five show no systematic")
+        print(
+            f"      seed {seed_of[target]} {target}{own}: {record['status']}, condition "
+            f"{_points(record['readouts']['delta_acc'])}, clean {_points(record['readouts_clean']['delta_acc'])}"
+        )
+    print(
+        "      The toy labels reward this edit on the seed-100 student only, so the other five show no systematic"
+    )
     print("      gain here. The same reuse workflow can be applied to saved experiment programs.")
 
     print("\nDone. Records:")
@@ -177,8 +231,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  transfer: {root / 'transfer'}")
     print("Next: render the prompts a real LLM session on this toy instance would get (no API call):")
     print(f"  source {root / 'env.sh'}")
-    print(f"  .venv/bin/python scripts/run_editor_session.py --instance {source} --arm LEARN --repeat 1 "
-          f"--effort max --wall-timeout-min 120 --retention-floor-frac {RETENTION_FLOOR_FRAC} --dry-run")
+    print(
+        f"  .venv/bin/python scripts/run_editor_session.py --instance {source} --arm LEARN --repeat 1 "
+        f"--effort max --wall-timeout-min 120 --retention-floor-frac {RETENTION_FLOOR_FRAC} --dry-run"
+    )
     return 0
 
 

@@ -142,11 +142,17 @@ from cryowisp.common.identity import Params, load_params, params_sha256, save_pa
 from cryowisp.evalkit.evidence import evidence_content_sha256
 from cryowisp.evalkit.instances import InstanceConflict, decoy_evidence
 from cryowisp.evalkit.patch_check import ForwardFn, predict
-from cryowisp.harness.arms import SHOWN_DECOY, SHOWN_REAL, SHOWN_SHAPES, SHOWN_ZEROS, applied_limits, arm_spec, limits_dict
-from cryowisp.patch import Limits
-from cryowisp.patch.limits import dense_delta_bytes
-from cryowisp.harness.clean import load_clean_check, source_name
 from cryowisp.harness import e11, fewshot, fscil, graphnew, policyskill, seqskill
+from cryowisp.harness.arms import (
+    SHOWN_DECOY,
+    SHOWN_REAL,
+    SHOWN_SHAPES,
+    SHOWN_ZEROS,
+    applied_limits,
+    arm_spec,
+    limits_dict,
+)
+from cryowisp.harness.clean import load_clean_check, source_name
 from cryowisp.harness.experience import (
     EXPERIENCE_FILE,
     EXPERIENCE_KEYS,
@@ -175,6 +181,8 @@ from cryowisp.harness.experience import (
 )
 from cryowisp.harness.instance import REQUIRED_PRIVATE_FIELDS, refuse_v0
 from cryowisp.harness.jsonio import file_sha256, json_text, read_json
+from cryowisp.patch import Limits
+from cryowisp.patch.limits import dense_delta_bytes
 
 SHAPES_SCHEMA = "cryowisp.model_shapes.v0"
 NAMED_PROGRAM_EXPERIENCE_FILE = "program_experience.npz"

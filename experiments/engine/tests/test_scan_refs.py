@@ -62,7 +62,9 @@ def test_instances_follow_the_contract(store: dict[str, str]) -> None:
             assert "x_prim" not in evidence and private["n_prim"] == 0
         old = S.decode(evidence["x_old"])
         assert not any(S.has_primitive(c, condition) for c in old) and "jump" not in old
-        visible = "\n".join((instance.instance_dir / name).read_text() for name in ("task.json", "model_spec.json"))
+        visible = "\n".join(
+            (instance.instance_dir / name).read_text() for name in ("task.json", "model_spec.json")
+        )
         assert not any(word.lower() in visible.lower() for word in K.LEAK_WORDS)
         # A rebuild gives the same evidence and inputs, so the active instance is reused.
         (again,) = K.build_scan_instances(condition)
@@ -122,8 +124,12 @@ def test_seqgrad_reference_through_the_scan_path(store: dict[str, str], tmp_path
     assert kept["selection"]["s_old_floor"] == -5
     # Only the jump row of tok_emb may change.
     if not readout["is_base_noop"]:
-        child = D.final_child(json.loads(path.read_text()), path.parent, instance,
-                              K.scan_program_limits(instance.task["limits"], len(instance.params)))
+        child = D.final_child(
+            json.loads(path.read_text()),
+            path.parent,
+            instance,
+            K.scan_program_limits(instance.task["limits"], len(instance.params)),
+        )
         changed = {k for k in child if not np.array_equal(child[k], instance.params[k])}
         assert changed <= {R.EMBEDDING}
         rows = np.flatnonzero(np.any(child[R.EMBEDDING] != instance.params[R.EMBEDDING], axis=1))
@@ -152,8 +158,9 @@ def test_f1_lora_and_lwf_on_around_right(store: dict[str, str], tmp_path: Path) 
         R.scan_generator(instance, "ft_full_noreplay", 0)
 
 
-def test_rulegen_reference_reports_fit_coverage(store: dict[str, str], tmp_path: Path,
-                                                monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rulegen_reference_reports_fit_coverage(
+    store: dict[str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(R, "N_RULEGEN", 200)
     monkeypatch.setattr(R, "N_RULEGEN_OLD", 100)
     fit = R.rulegen_fit_set("addprim_jump", "mixed")
@@ -163,7 +170,9 @@ def test_rulegen_reference_reports_fit_coverage(store: dict[str, str], tmp_path:
     assert coverage["n_in_fit_set"] + coverage["n_not_in_fit_set"] == coverage["n_new"]
     assert coverage["n_in_fit_set"] > 0
     with pytest.raises(R.ScanRefError):
-        R.run_reference(_instance(store, "addprim_jump"), "rulegen_grad_full", fit_set=fit, run_dir=tmp_path / "x")
+        R.run_reference(
+            _instance(store, "addprim_jump"), "rulegen_grad_full", fit_set=fit, run_dir=tmp_path / "x"
+        )
 
 
 def test_walk_diagnostic(store: dict[str, str]) -> None:
@@ -191,16 +200,37 @@ def test_cli_check_labels_and_refs(store: dict[str, str], tmp_path: Path) -> Non
         labels = json.loads(out.read_text())
         assert set(labels["fits"]) == {f"{c}/{f}" for c in S.CONDITIONS for f in ("full", "mixed")}
         assert all(v["official_check"]["mismatches"] == 0 for v in labels["fits"].values())
-        assert cli.main(["refs", "--instance", store["around_right"], "--methods", "f1_last", "--threads", "2"]) == 0
+        assert (
+            cli.main(["refs", "--instance", store["around_right"], "--methods", "f1_last", "--threads", "2"])
+            == 0
+        )
         assert cli.main(["refs", "--instance", store["around_right"], "--methods", "seq_grad_new_row"]) != 0
-        assert cli.main(["walk", "--instance", store["addprim_jump"], "--out", str(tmp_path / "walk.json")]) == 0
-        assert cli.main(["refs", "--instance", store["addprim_jump"], "--methods", "rulegen_grad_full", "--threads",
-                         "2", "--label-record", str(out)]) == 0
+        assert (
+            cli.main(["walk", "--instance", store["addprim_jump"], "--out", str(tmp_path / "walk.json")]) == 0
+        )
+        assert (
+            cli.main(
+                [
+                    "refs",
+                    "--instance",
+                    store["addprim_jump"],
+                    "--methods",
+                    "rulegen_grad_full",
+                    "--threads",
+                    "2",
+                    "--label-record",
+                    str(out),
+                ]
+            )
+            == 0
+        )
     finally:
         torch.set_num_threads(threads)
 
 
-CUDA = pytest.param("cuda", marks=pytest.mark.skipif(not __import__("torch").cuda.is_available(), reason="no CUDA"))
+CUDA = pytest.param(
+    "cuda", marks=pytest.mark.skipif(not __import__("torch").cuda.is_available(), reason="no CUDA")
+)
 
 
 @pytest.fixture
@@ -216,15 +246,23 @@ def device_flags(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
             monkeypatch.setenv(variable, os.environ[variable])
         else:
             monkeypatch.delenv(variable, raising=False)
-    saved = (torch.are_deterministic_algorithms_enabled(), torch.backends.cudnn.deterministic,
-             torch.backends.cudnn.benchmark, torch.backends.cuda.matmul.fp32_precision,
-             torch.backends.cudnn.conv.fp32_precision, torch.get_num_threads())
+    saved = (
+        torch.are_deterministic_algorithms_enabled(),
+        torch.backends.cudnn.deterministic,
+        torch.backends.cudnn.benchmark,
+        torch.backends.cuda.matmul.fp32_precision,
+        torch.backends.cudnn.conv.fp32_precision,
+        torch.get_num_threads(),
+    )
     try:
         yield
     finally:
         torch.use_deterministic_algorithms(saved[0])
         torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = saved[1], saved[2]
-        torch.backends.cuda.matmul.fp32_precision, torch.backends.cudnn.conv.fp32_precision = saved[3], saved[4]
+        torch.backends.cuda.matmul.fp32_precision, torch.backends.cudnn.conv.fp32_precision = (
+            saved[3],
+            saved[4],
+        )
         torch.set_num_threads(saved[5])
 
 
@@ -238,8 +276,9 @@ def test_device_settings_refuse_an_unprepared_gpu(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.skipif(not __import__("torch").cuda.is_available(), reason="no CUDA")
-def test_gpu_fits_match_the_cpu_and_run_every_kind(store: dict[str, str], tmp_path: Path,
-                                                   monkeypatch: pytest.MonkeyPatch, device_flags: None) -> None:
+def test_gpu_fits_match_the_cpu_and_run_every_kind(
+    store: dict[str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, device_flags: None
+) -> None:
     from cryowisp.baselines.fit import seqgrad as SG
     from cryowisp.baselines.fit.runner import load_scan_evidence
 
@@ -249,8 +288,19 @@ def test_gpu_fits_match_the_cpu_and_run_every_kind(store: dict[str, str], tmp_pa
     instance = _instance(store, "addprim_jump")
     evidence = load_scan_evidence(instance)
     x, y = R._rows(evidence.x, evidence.y)
-    runs = {device: SG.adam_checkpoints(instance.params, x, y, trainable=sorted(instance.params), lr=1e-2,
-                                        checkpoints=(5, 20), seed=0, device=device) for device in ("cpu", "cuda")}
+    runs = {
+        device: SG.adam_checkpoints(
+            instance.params,
+            x,
+            y,
+            trainable=sorted(instance.params),
+            lr=1e-2,
+            checkpoints=(5, 20),
+            seed=0,
+            device=device,
+        )
+        for device in ("cpu", "cuda")
+    }
     # Both are IEEE float32; the GPU's summation order differs, and Adam turns the noise on near-zero gradients into
     # steps of up to lr, so entries drift apart over many steps while the loss agrees (toy student: within 1e-4 at
     # 5 steps entrywise, losses within 1e-4 at 20 steps of lr 1e-2).
@@ -260,10 +310,21 @@ def test_gpu_fits_match_the_cpu_and_run_every_kind(store: dict[str, str], tmp_pa
     (_, p_cpu, _), (_, p_gpu, _) = runs["cpu"][0], runs["cuda"][0]
     assert all(np.allclose(p_gpu[k], p_cpu[k], atol=1e-4) for k in p_cpu)
     fit = R.rulegen_fit_set("addprim_jump", "mixed")
-    for method in ("seq_grad_sparse19_traj", "seq_grad_sparse19_sal", "lora_r4", "ft_full_lwf", "ft_full_l2sp",
-                   "rulegen_mixed_grad_full"):
-        record = R.run_reference(instance, method, fit_set=fit if method in R.RULEGEN_METHODS else None,
-                                 run_dir=tmp_path / method, device="cuda")
+    for method in (
+        "seq_grad_sparse19_traj",
+        "seq_grad_sparse19_sal",
+        "lora_r4",
+        "ft_full_lwf",
+        "ft_full_l2sp",
+        "rulegen_mixed_grad_full",
+    ):
+        record = R.run_reference(
+            instance,
+            method,
+            fit_set=fit if method in R.RULEGEN_METHODS else None,
+            run_dir=tmp_path / method,
+            device="cuda",
+        )
         assert record["status"] == "complete" and record["config"]["device"] == "cuda"
         assert record["config"]["device_settings"]["use_deterministic_algorithms"]
         generation = record["generation"]
@@ -273,8 +334,9 @@ def test_gpu_fits_match_the_cpu_and_run_every_kind(store: dict[str, str], tmp_pa
 
 
 @pytest.mark.parametrize("device", ["cpu", CUDA])
-def test_smoke_script_time_and_paths(store: dict[str, str], tmp_path: Path, capsys: pytest.CaptureFixture[str],
-                                     device_flags: None, device: str) -> None:
+def test_smoke_script_time_and_paths(
+    store: dict[str, str], tmp_path: Path, capsys: pytest.CaptureFixture[str], device_flags: None, device: str
+) -> None:
     import importlib.util
 
     script = Path(__file__).resolve().parents[1] / "scripts" / "store" / "e13_smoke.py"
@@ -282,10 +344,30 @@ def test_smoke_script_time_and_paths(store: dict[str, str], tmp_path: Path, caps
     assert spec is not None and spec.loader is not None
     smoke = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(smoke)
-    assert smoke.main(["time", "--condition", "around_right", "--threads", "2", "--device", device,
-                       "--steps", "1"]) == 0
-    assert smoke.main(["paths", "--condition", "addprim_jump", "--method", "ft_full_l2sp", "--threads", "2",
-                       "--device", device, "--out-root", str(tmp_path)]) == 0
+    assert (
+        smoke.main(
+            ["time", "--condition", "around_right", "--threads", "2", "--device", device, "--steps", "1"]
+        )
+        == 0
+    )
+    assert (
+        smoke.main(
+            [
+                "paths",
+                "--condition",
+                "addprim_jump",
+                "--method",
+                "ft_full_l2sp",
+                "--threads",
+                "2",
+                "--device",
+                device,
+                "--out-root",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
     lines = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.startswith("{")]
     kinds = [line["kind"] for line in lines]
     assert kinds.count("adam_full") == 3 and "load" in kinds and "opened" in kinds

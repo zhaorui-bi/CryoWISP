@@ -30,8 +30,9 @@ pytestmark = needs_sandbox
 HIDDEN = ("child_sha256", "n_changed", "executor_n_changed")
 
 
-def test_noweight_rejection_and_check_results_carry_no_real_weight_values(harness_store: HarnessStore  # noqa: F811
-                                                                         ) -> None:
+def test_noweight_rejection_and_check_results_carry_no_real_weight_values(
+    harness_store: HarnessStore,  # noqa: F811
+) -> None:
     instance_id = harness_store.dev(100)
     steps = [
         ("python", {"code": patch_code({"big.json": OVER_FROB_OPS, "fix.json": FIX_OPS})}),
@@ -50,7 +51,9 @@ def test_noweight_rejection_and_check_results_carry_no_real_weight_values(harnes
     assert not re.findall(r"\d", shown.replace("fc1", "").replace("0.5", ""))
     # The host logs keep the executor's full message with the measured value.
     root = result.root
-    logged = [record for record in read_jsonl(root / "logs" / "tools.jsonl") if record["tool"] == "patch_check"][0]
+    logged = [
+        record for record in read_jsonl(root / "logs" / "tools.jsonl") if record["tool"] == "patch_check"
+    ][0]
     executor = " ".join(logged["meta"]["executor_messages"])
     measured = re.search(r"norm of the change is ([0-9.e+-]+), above", executor)
     assert measured is not None and measured.group(1) not in json.dumps(big.payload)
@@ -63,7 +66,9 @@ def test_noweight_rejection_and_check_results_carry_no_real_weight_values(harnes
     # A checked patch: aggregate numbers, without the child hash or change count of the real child.
     assert not fix.is_error and fix.payload["score"] == FIX_SCORE
     assert not set(HIDDEN) & set(fix.payload)
-    assert {"edit_size", "edit_frac", "queries_remaining", "fixed", "broken", "base_acc", "child_acc"} <= set(fix.payload)
+    assert {"edit_size", "edit_frac", "queries_remaining", "fixed", "broken", "base_acc", "child_acc"} <= set(
+        fix.payload
+    )
     check = read_jsonl(root / "logs" / "checks.jsonl")[0]
     assert check["n_changed"] == 2 and len(check["child_sha256"]) == 64 and check["score"] == FIX_SCORE
     assert result.record["final"]["score"] == FIX_SCORE and not result.record["final"]["is_base_noop"]
@@ -82,7 +87,9 @@ def test_the_decoy_view_shows_the_decoy_models_own_evidence(harness_store: Harne
     forward, _ = load_forward(trial / "forward.py")
     weights = load_params(trial / "model.npz")
     for part in ("fail", "rand"):
-        np.testing.assert_array_equal(predict(forward, weights, shown[f"x_{part}"], 256), shown[f"pred_{part}"])
+        np.testing.assert_array_equal(
+            predict(forward, weights, shown[f"x_{part}"], 256), shown[f"pred_{part}"]
+        )
     session = json.loads((result.root / "session.json").read_text())
     assert session["evidence_source"] == "decoy_model_instance"
     assert session["evidence_content_sha256"] == evidence_content_sha256(shown)

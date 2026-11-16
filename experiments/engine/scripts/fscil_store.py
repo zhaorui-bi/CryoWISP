@@ -33,15 +33,21 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def forward_source() -> str:
     """forward.py of the ResNet-20 cosine-head students of ``cifar100_fscil``."""
-    return render_resnet20_forward(C.MEAN, C.STD, C.N_CLASSES, C.COSINE_SCALE, C.BN_EPS, C.NORM_EPS, C.IMAGE_SHAPE)
+    return render_resnet20_forward(
+        C.MEAN, C.STD, C.N_CLASSES, C.COSINE_SCALE, C.BN_EPS, C.NORM_EPS, C.IMAGE_SHAPE
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    install = commands.add_parser("install", help="install the archive and the session lists into the raw store")
+    install = commands.add_parser(
+        "install", help="install the archive and the session lists into the raw store"
+    )
     install.add_argument("--tarball", type=Path, required=True, help="downloaded cifar-100-python.tar.gz")
-    install.add_argument("--index-dir", type=Path, required=True, help="directory with session_1.txt .. session_9.txt")
+    install.add_argument(
+        "--index-dir", type=Path, required=True, help="directory with session_1.txt .. session_9.txt"
+    )
     install.add_argument("--fetch-note", required=True, help="how the files were fetched")
     commands.add_parser("build", help="write the splits, forward.py and dataset.json")
     commands.add_parser("verify", help="re-derive from the raw files and compare hashes")
@@ -54,14 +60,27 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "verify":
         report = C.verify(built)
         source_ok = forward_path(C.DATASET).read_text(encoding="utf-8") == forward_source()
-        print(json.dumps({**{key: value["match"] for key, value in report.items()}, "forward": source_ok}, indent=2))
+        print(
+            json.dumps(
+                {**{key: value["match"] for key, value in report.items()}, "forward": source_ok}, indent=2
+            )
+        )
         return 0 if source_ok and all(value["match"] for value in report.values()) else 1
     provenance = read_json(provenance_path())["sources"][C.SOURCE]
     forward_sha = write_forward(forward_path(C.DATASET), forward_source())
     manifest = C.write(built, forward_sha, provenance, run_info(REPO_ROOT))
-    print(json.dumps({"dataset": C.DATASET, "split_sizes": manifest["split_sizes"],
-                      "splits": {name: block["sha256"] for name, block in manifest["splits"].items()},
-                      "test_n": manifest["test"]["n"], "forward_sha256": forward_sha}, indent=2))
+    print(
+        json.dumps(
+            {
+                "dataset": C.DATASET,
+                "split_sizes": manifest["split_sizes"],
+                "splits": {name: block["sha256"] for name, block in manifest["splits"].items()},
+                "test_n": manifest["test"]["n"],
+                "forward_sha256": forward_sha,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

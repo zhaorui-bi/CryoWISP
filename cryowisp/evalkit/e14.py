@@ -80,8 +80,16 @@ from cryowisp.evalkit.instances import (
     patch_limits,
     scan_for_tokens,
 )
-from cryowisp.evalkit.patch_check import ForwardFn, JointPatchCheckOracle, load_forward
-from cryowisp.evalkit.targets import file_sha256, json_text, jsonable, no_bytecode_cache, read_json, utc_now, write_json_atomic
+from cryowisp.evalkit.patch_check import ForwardFn, JointPatchCheckOracle
+from cryowisp.evalkit.targets import (
+    file_sha256,
+    json_text,
+    jsonable,
+    no_bytecode_cache,
+    read_json,
+    utc_now,
+    write_json_atomic,
+)
 from cryowisp.patch import OP_NAMES, Limits
 from cryowisp.patch import SCHEMA as PATCH_SCHEMA
 from cryowisp.patch.limits import SIZE_LIMIT_FIELDS, with_dense_file_cap

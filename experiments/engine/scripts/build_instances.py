@@ -58,18 +58,35 @@ def _argument(parse: Callable[[str], T]) -> Callable[[str], T]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse arguments, supersede if asked, build or reuse instances and print one line per instance."""
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--dataset", required=True, help="dataset directory name under $CRYOWISP_PRIVATE")
-    parser.add_argument("--evidence-rule", choices=(EVIDENCE_RULE_V1, EVIDENCE_RULE), default=EVIDENCE_RULE_V1)
-    parser.add_argument("--condition", help=f"deployment condition, evidence-v1 only (default {DEPLOY_CONDITION})")
+    parser.add_argument(
+        "--evidence-rule", choices=(EVIDENCE_RULE_V1, EVIDENCE_RULE), default=EVIDENCE_RULE_V1
+    )
+    parser.add_argument(
+        "--condition", help=f"deployment condition, evidence-v1 only (default {DEPLOY_CONDITION})"
+    )
     parser.add_argument("--split-role", choices=("dev", "main", "all"), default="all")
-    parser.add_argument("--main-seeds", type=_argument(parse_seeds), default=",".join(map(str, DEFAULT_MAIN_SEEDS)))
-    parser.add_argument("--dev-seeds", type=_argument(parse_seeds), default=",".join(map(str, DEFAULT_DEV_SEEDS)))
-    parser.add_argument("--decoys", type=_argument(parse_decoys), default=format_decoys(DEFAULT_DECOYS),
-                        help="seed:decoy_seed pairs covering exactly the selected seeds")
-    parser.add_argument("--supersede-rule", choices=(EVIDENCE_RULE, EVIDENCE_RULE_V1),
-                        help="first supersede every active instance of --dataset built under this rule "
-                             "(evidence-v1: of --condition only)")
+    parser.add_argument(
+        "--main-seeds", type=_argument(parse_seeds), default=",".join(map(str, DEFAULT_MAIN_SEEDS))
+    )
+    parser.add_argument(
+        "--dev-seeds", type=_argument(parse_seeds), default=",".join(map(str, DEFAULT_DEV_SEEDS))
+    )
+    parser.add_argument(
+        "--decoys",
+        type=_argument(parse_decoys),
+        default=format_decoys(DEFAULT_DECOYS),
+        help="seed:decoy_seed pairs covering exactly the selected seeds",
+    )
+    parser.add_argument(
+        "--supersede-rule",
+        choices=(EVIDENCE_RULE, EVIDENCE_RULE_V1),
+        help="first supersede every active instance of --dataset built under this rule "
+        "(evidence-v1: of --condition only)",
+    )
     parser.add_argument("--reason", help="reason logged with --supersede-rule (required with it)")
     parser.add_argument("--batch-size", type=int, default=1024, help="forward batch size")
     args = parser.parse_args(argv)
@@ -89,26 +106,42 @@ def main(argv: Sequence[str] | None = None) -> int:
         scope = condition if args.supersede_rule == EVIDENCE_RULE_V1 else None
         ids = active_instance_ids(dataset=args.dataset, evidence_rule=args.supersede_rule, condition=scope)
         for row in supersede_instances(ids, args.reason) if ids else []:
-            print(f"{row['instance_id']} superseded {row['split_role']} model={row['model_id']} seed={row['seed']}")
+            print(
+                f"{row['instance_id']} superseded {row['split_role']} model={row['model_id']} seed={row['seed']}"
+            )
         print(f"{len(ids)} {args.supersede_rule} instances superseded")
     if args.evidence_rule == EVIDENCE_RULE_V1:
         outcomes = build_deployment_instances(
-            args.dataset, condition, selection=selection, decoys=args.decoys, split_roles=roles,
+            args.dataset,
+            condition,
+            selection=selection,
+            decoys=args.decoys,
+            split_roles=roles,
             batch_size=args.batch_size,
         )
     else:
         outcomes = build_dataset_instances(
-            args.dataset, selection=selection, decoys=args.decoys, split_roles=roles, batch_size=args.batch_size
+            args.dataset,
+            selection=selection,
+            decoys=args.decoys,
+            split_roles=roles,
+            batch_size=args.batch_size,
         )
     for o in outcomes:
         if o.target is not None and o.target_names is not None:
-            what = (f"target=({o.target[0]} {o.target_names[0]} -> {o.target[1]} {o.target_names[1]}) "
-                    f"V_select {o.counts['n_class_a_predicted_b']}/{o.counts['n_class_a']}")
+            what = (
+                f"target=({o.target[0]} {o.target_names[0]} -> {o.target[1]} {o.target_names[1]}) "
+                f"V_select {o.counts['n_class_a_predicted_b']}/{o.counts['n_class_a']}"
+            )
         else:
-            what = (f"condition={o.condition} base errors V_evidence {o.counts['n_base_errors_vevidence']}/"
-                    f"{o.counts['n_vevidence']}, V_check {o.counts['n_base_errors_vcheck']}/{o.counts['n_vcheck']}")
-        print(f"{o.instance_id} {o.status} {o.split_role} model={o.model_id} seed={o.seed} "
-              f"decoy=seed {o.decoy_seed} ({o.decoy_model_id}) {what}")
+            what = (
+                f"condition={o.condition} base errors V_evidence {o.counts['n_base_errors_vevidence']}/"
+                f"{o.counts['n_vevidence']}, V_check {o.counts['n_base_errors_vcheck']}/{o.counts['n_vcheck']}"
+            )
+        print(
+            f"{o.instance_id} {o.status} {o.split_role} model={o.model_id} seed={o.seed} "
+            f"decoy=seed {o.decoy_seed} ({o.decoy_model_id}) {what}"
+        )
         for file_name, tokens in o.visible_file_findings.items():
             if tokens:
                 print(f"  editor-visible {file_name} mentions {tokens}")

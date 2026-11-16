@@ -83,15 +83,35 @@ def train_group(args: argparse.Namespace) -> int:
 
         result = R.train_resnet20(config, seed, x, y, C.N_CLASSES, mean, std, device, log_fn=log)
         extra: dict[str, Any] = {"smoke": True, "smoke_rows": args.smoke_rows} if smoke else {}
-        entry = export_fscil_model(manifest=manifest, role=args.role, seed=seed, config=config, result=result,
-                                   training_splits=used, x_train=x, determinism=determinism, run_info=info,
-                                   models_root=root, extra_private=extra)
+        entry = export_fscil_model(
+            manifest=manifest,
+            role=args.role,
+            seed=seed,
+            config=config,
+            result=result,
+            training_splits=used,
+            x_train=x,
+            determinism=determinism,
+            run_info=info,
+            models_root=root,
+            extra_private=extra,
+        )
         entries.append(entry)
         write_json(index_file, previous + entries)
-        print(json.dumps({"role": args.role, "seed": seed, "model_id": entry["model_id"],
-                          "params_sha256": entry["params_sha256"], **result.final,
-                          "final_train_loss_augmented": result.log[-1]["train_loss"],
-                          "wall_time_s": round(result.wall_time_s, 1)}), flush=True)
+        print(
+            json.dumps(
+                {
+                    "role": args.role,
+                    "seed": seed,
+                    "model_id": entry["model_id"],
+                    "params_sha256": entry["params_sha256"],
+                    **result.final,
+                    "final_train_loss_augmented": result.log[-1]["train_loss"],
+                    "wall_time_s": round(result.wall_time_s, 1),
+                }
+            ),
+            flush=True,
+        )
     return 0
 
 
@@ -105,11 +125,18 @@ def report_group(args: argparse.Namespace) -> int:
     for entry in read_fewshot_index(C.DATASET):
         private = read_json(fewshot_models_dir(C.DATASET) / entry["model_id"] / "private.json")
         checks = private["import"]["local_checks"]
-        rows.append({**entry, "final_train": private["final_train"], "readouts": checks["readouts"],
-                     "parity_float64_max_rel_diff": checks["parity"]["float64_max_rel_diff"],
-                     "parity_float32_max_abs_diff": checks["parity"]["max_abs_diff"],
-                     "device_check": checks["device_check"], "wall_time_s": private["wall_time_s"],
-                     "layer_norms": private["layer_norms"]})
+        rows.append(
+            {
+                **entry,
+                "final_train": private["final_train"],
+                "readouts": checks["readouts"],
+                "parity_float64_max_rel_diff": checks["parity"]["float64_max_rel_diff"],
+                "parity_float32_max_abs_diff": checks["parity"]["max_abs_diff"],
+                "device_check": checks["device_check"],
+                "wall_time_s": private["wall_time_s"],
+                "layer_norms": private["layer_norms"],
+            }
+        )
     print(json.dumps(rows, indent=2))
     return 0
 

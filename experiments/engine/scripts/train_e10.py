@@ -65,14 +65,33 @@ def train_group(args: argparse.Namespace) -> int:
 
         result = A.train_resnet20a(config, seed, x, y, E.N_CLASSES, mean, std, device, log_fn=log)
         extra: dict[str, Any] = {"smoke": True, "smoke_rows": args.smoke_rows} if smoke else {}
-        entry = E.export_pending(manifest=manifest, seed=seed, config=config, result=result, training_splits=used,
-                                 x_train=x, determinism=determinism, run_info=info, models_root=root,
-                                 extra_private=extra)
+        entry = E.export_pending(
+            manifest=manifest,
+            seed=seed,
+            config=config,
+            result=result,
+            training_splits=used,
+            x_train=x,
+            determinism=determinism,
+            run_info=info,
+            models_root=root,
+            extra_private=extra,
+        )
         entries.append(entry)
         write_json(index_file, previous + entries)
-        print(json.dumps({"seed": seed, "model_id": entry["model_id"], "params_sha256": entry["params_sha256"],
-                          **result.final, "final_train_loss_augmented": result.log[-1]["train_loss"],
-                          "wall_time_s": round(result.wall_time_s, 1)}), flush=True)
+        print(
+            json.dumps(
+                {
+                    "seed": seed,
+                    "model_id": entry["model_id"],
+                    "params_sha256": entry["params_sha256"],
+                    **result.final,
+                    "final_train_loss_augmented": result.log[-1]["train_loss"],
+                    "wall_time_s": round(result.wall_time_s, 1),
+                }
+            ),
+            flush=True,
+        )
     return 0
 
 

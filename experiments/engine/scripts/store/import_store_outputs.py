@@ -48,8 +48,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("run_dir", type=Path, help="$CRYOWISP_PRIVATE/nscc_runs/RUN_NAME")
     parser.add_argument("--dry-run", action="store_true", help="check and list, copy nothing")
-    parser.add_argument("--accept-failed-exit", metavar="REASON",
-                        help="import the complete runs of a job whose exit code is not 0, recording this reason")
+    parser.add_argument(
+        "--accept-failed-exit",
+        metavar="REASON",
+        help="import the complete runs of a job whose exit code is not 0, recording this reason",
+    )
     args = parser.parse_args(argv)
     runs_root = Path(os.environ["CRYOWISP_RUNS"]).resolve()
     run_dir = args.run_dir.resolve()
@@ -58,7 +61,10 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     exit_record = json.loads((run_dir / "exit.json").read_text())
     if exit_record["exit_code"] != 0 and not args.accept_failed_exit:
-        print(f"job exit code {exit_record['exit_code']}; import refused (see --accept-failed-exit)", file=sys.stderr)
+        print(
+            f"job exit code {exit_record['exit_code']}; import refused (see --accept-failed-exit)",
+            file=sys.stderr,
+        )
         return 3
     modified = [line for line in (run_dir / "modified.txt").read_text().splitlines() if line.strip()]
     if modified:
@@ -71,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
             problems.append(f"output outside runs/: {rel}")
             continue
         source = run_dir / "store" / rel
-        target = runs_root / rel[len("runs/"):]
+        target = runs_root / rel[len("runs/") :]
         if sha256_file(source) != digest:
             problems.append(f"sha256 mismatch: {rel}")
         if target.exists():
@@ -79,9 +85,14 @@ def main(argv: list[str] | None = None) -> int:
         plan.append((rel, source, target, digest))
     if exit_record["exit_code"] != 0:
         rels = {rel for _, rel in rows}
-        run_dirs = {"/".join(Path(rel).parts[:6]) for rel in rels
-                    if Path(rel).parts[:2] == ("runs", "baselines") and len(Path(rel).parts) > 6}
-        problems += [f"run without run.json (cut off?): {d}" for d in sorted(run_dirs) if f"{d}/run.json" not in rels]
+        run_dirs = {
+            "/".join(Path(rel).parts[:6])
+            for rel in rels
+            if Path(rel).parts[:2] == ("runs", "baselines") and len(Path(rel).parts) > 6
+        }
+        problems += [
+            f"run without run.json (cut off?): {d}" for d in sorted(run_dirs) if f"{d}/run.json" not in rels
+        ]
     if problems:
         print("import refused:", *problems[:20], sep="\n  ", file=sys.stderr)
         return 3
@@ -93,10 +104,13 @@ def main(argv: list[str] | None = None) -> int:
     for _, source, target, _ in plan:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
-    record = {"imported": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
-              "runs_root": str(runs_root), "job_exit_code": exit_record["exit_code"],
-              "accepted_failed_exit": args.accept_failed_exit,
-              "files": [{"path": rel, "sha256": digest, "target": str(target)} for rel, _, target, digest in plan]}
+    record = {
+        "imported": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "runs_root": str(runs_root),
+        "job_exit_code": exit_record["exit_code"],
+        "accepted_failed_exit": args.accept_failed_exit,
+        "files": [{"path": rel, "sha256": digest, "target": str(target)} for rel, _, target, digest in plan],
+    }
     (run_dir / "import.json").write_text(json.dumps(record, indent=2) + "\n")
     print(f"imported {len(plan)} files into {runs_root}")
     return 0

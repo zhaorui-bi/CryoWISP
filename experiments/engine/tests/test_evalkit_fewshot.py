@@ -18,7 +18,12 @@ from cryowisp.evalkit import fewshot as F
 from cryowisp.evalkit.instances import leak_tokens
 from cryowisp.evalkit.patch_check import predict
 from cryowisp.models.arch import build_model, export_params
-from cryowisp.models.export import FEWSHOT_INDEX_KEYS, fewshot_models_dir, read_fewshot_index, write_fewshot_index
+from cryowisp.models.export import (
+    FEWSHOT_INDEX_KEYS,
+    fewshot_models_dir,
+    read_fewshot_index,
+    write_fewshot_index,
+)
 from cryowisp.models.spec import build_model_spec
 
 SIZES = {"train": 200, "V_select": 120, "V_evidence": 120, "V_check": 100}
@@ -36,11 +41,27 @@ def _student(model_id: str, arch: str, seed: int) -> dict[str, object]:
     folder = fewshot_models_dir("cifar10") / model_id
     folder.mkdir(parents=True)
     digest = save_params(folder / "model.npz", params)
-    spec = build_model_spec(model_id, arch, meta["image_shape"], meta["norm"]["mean"], meta["norm"]["std"],
-                            meta["class_names"], params)
+    spec = build_model_spec(
+        model_id,
+        arch,
+        meta["image_shape"],
+        meta["norm"]["mean"],
+        meta["norm"]["std"],
+        meta["class_names"],
+        params,
+    )
     store.write_json(folder / "model_spec.json", spec)
-    store.write_json(folder / "private.json", {"model_id": model_id, "role": "dev", "seed": seed, "arch": arch,
-                                               "train_classes": [0, 1, 2, 3, 4], "family": "fewshot"})
+    store.write_json(
+        folder / "private.json",
+        {
+            "model_id": model_id,
+            "role": "dev",
+            "seed": seed,
+            "arch": arch,
+            "train_classes": [0, 1, 2, 3, 4],
+            "family": "fewshot",
+        },
+    )
     values = [model_id, seed, arch, "dev", digest, 0.4, [0, 1, 2, 3, 4], 0.8]
     return dict(zip(FEWSHOT_INDEX_KEYS, values))
 
@@ -49,7 +70,11 @@ def _student(model_id: str, arch: str, seed: int) -> dict[str, object]:
 def fewshot_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> list[dict[str, object]]:
     monkeypatch.setattr(test_models_conditions, "SIZES", SIZES)
     _make_store(tmp_path / "store", monkeypatch)
-    rows = [_student("ma0000001", "cnn", 100), _student("ma0000002", "cnn", 101), _student("ma0000003", "cnn4", 100)]
+    rows = [
+        _student("ma0000001", "cnn", 100),
+        _student("ma0000002", "cnn", 101),
+        _student("ma0000003", "cnn4", 100),
+    ]
     write_fewshot_index("cifar10", rows)
     return rows
 
@@ -77,15 +102,21 @@ def test_build_writes_the_layout_the_evidence_and_the_records(fewshot_store: lis
         np.testing.assert_array_equal(np.asarray(private["replay_train_rows"]), replay)
         np.testing.assert_array_equal(ev["x_old"], data["train"]["x"][replay])
         assert set(ev["y_old"].tolist()) <= {0, 1, 2, 3, 4} and len(ev["y_old"]) == 64
-        np.testing.assert_array_equal(ev["pred_new"], predict(instance.forward, instance.params, ev["x_new"], 64))
-        np.testing.assert_array_equal(ev["pred_old"], predict(instance.forward, instance.params, ev["x_old"], 64))
+        np.testing.assert_array_equal(
+            ev["pred_new"], predict(instance.forward, instance.params, ev["x_new"], 64)
+        )
+        np.testing.assert_array_equal(
+            ev["pred_old"], predict(instance.forward, instance.params, ev["x_old"], 64)
+        )
         assert private["n_base_correct_evidence_new"] == 0 and private["n_base_pred_in_new_vcheck"] == 0
         ids = [*ev["split_ids_new"].tolist(), *ev["split_ids_old"].tolist()]
         assert len(set(ids)) == 114 and all(len(i) == 13 and i.startswith("e") for i in ids)
         assert private["evidence_seed"] == F.fewshot_seed(instance.params_sha256, "cifar10")
         assert private["n_vcheck"] == private["n_vcheck_new"] + private["n_vcheck_old"] == SIZES["V_check"]
         assert private["n_vcheck_new"] == int(np.isin(data["V_check"]["y"], NEW).sum())
-        assert private["n_vselect"] == private["n_vselect_new"] + private["n_vselect_old"] == SIZES["V_select"]
+        assert (
+            private["n_vselect"] == private["n_vselect_new"] + private["n_vselect_old"] == SIZES["V_select"]
+        )
         head = {"cnn": ["fc2.weight", "fc2.bias"], "cnn4": ["fc1.weight", "fc1.bias"]}[private["arch"]]
         assert private["head_tensors"] == head == task["limits"]["rel_frob_exempt"]
         assert task["limit_definitions"]["max_rel_frob"].endswith("exempt whatever their rank")
@@ -172,7 +203,11 @@ def test_oracle_and_readout_score_the_two_parts(fewshot_store: list[dict[str, ob
     readout = F.fewshot_readout(instance, child)
     v_select = store.load_split("cifar10", "V_select")
     in_new = np.isin(v_select["y"], NEW)
-    assert (readout["n_all"], readout["n_new"], readout["n_old"]) == (120, int(in_new.sum()), int((~in_new).sum()))
+    assert (readout["n_all"], readout["n_new"], readout["n_old"]) == (
+        120,
+        int(in_new.sum()),
+        int((~in_new).sum()),
+    )
     assert readout["acc_new_child"] == pytest.approx(np.mean(v_select["y"][in_new] == 5))
     assert readout["acc_old_child"] == 0.0
     assert readout["all_points"] == pytest.approx(100 * readout["delta_all"])
@@ -199,16 +234,34 @@ def test_devreadout_rebuilds_a_fewshot_final_under_the_head_exemption(
     patch = write_delta_patch(run_dir / "q0", instance.params_sha256, instance.params, child, "toy", "toy")
     with pytest.raises(PatchError):
         apply_patch_file(instance.params, patch, Limits(), instance.params_sha256)
-    final = {"is_base_noop": False, "dir": "q0", "score": 3, "fixed": 5, "broken": 2, "score_new": 4, "score_old": -1,
-             "edit_size": 645, "child_sha256": params_sha256(child)}
+    final = {
+        "is_base_noop": False,
+        "dir": "q0",
+        "score": 3,
+        "fixed": 5,
+        "broken": 2,
+        "score_new": 4,
+        "score_old": -1,
+        "edit_size": 645,
+        "child_sha256": params_sha256(child),
+    }
     run_path = run_dir / "run.json"
     program = task_limits(F.fewshot_program_limits(instance.task["limits"]))
     assert program["max_changed_frac"] == F.FEWSHOT_MAX_CHANGED_FRAC and program["max_edit_frac"] is None
     assert program["rel_frob_exempt"] == ["fc2.weight", "fc2.bias"]
 
     def write_run(limits: object) -> None:
-        run_path.write_text(json.dumps({"instance": {"instance_id": instance.instance_id}, "method": "imprint",
-                                        "flags": {"edit_limits_enforced": True}, "limits": limits, "final": final}))
+        run_path.write_text(
+            json.dumps(
+                {
+                    "instance": {"instance_id": instance.instance_id},
+                    "method": "imprint",
+                    "flags": {"edit_limits_enforced": True},
+                    "limits": limits,
+                    "final": final,
+                }
+            )
+        )
 
     write_run(program)
     record = devreadout.readout_run(run_path)
@@ -235,9 +288,16 @@ def test_module_import_does_not_need_torch() -> None:
     import cryowisp
 
     src = str(Path(cryowisp.__file__).resolve().parents[1])
-    code = ("import sys; sys.modules['torch'] = None; import cryowisp.evalkit.fewshot as F; "
-            "assert 'cryowisp.models.export' not in sys.modules; print(F.FEWSHOT_RULE)")
-    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120,
-                          env={"PATH": "/usr/bin:/bin", "PYTHONPATH": src})
+    code = (
+        "import sys; sys.modules['torch'] = None; import cryowisp.evalkit.fewshot as F; "
+        "assert 'cryowisp.models.export' not in sys.modules; print(F.FEWSHOT_RULE)"
+    )
+    done = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env={"PATH": "/usr/bin:/bin", "PYTHONPATH": src},
+    )
     assert done.returncode == 0, done.stderr
     assert done.stdout.strip() == F.FEWSHOT_RULE

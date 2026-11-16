@@ -32,10 +32,17 @@ def pairs(root: Path, sessions: list[str] | None) -> list[dict[str, Any]]:
             vcheck, vselect = row.get("vcheck"), row.get("vselect_clean")
             if not vcheck or not vselect or "readouts_fewshot" in row:
                 continue
-            out.append({"session": info["session"], "condition": info["condition"], "query": row["query_index"],
-                        "vcheck": 100.0 * vcheck["score_old"] / vcheck["n_old"],
-                        "vselect": 100.0 * vselect["score"] / vselect["n"],
-                        "n_old": vcheck["n_old"], "n_select": vselect["n"]})
+            out.append(
+                {
+                    "session": info["session"],
+                    "condition": info["condition"],
+                    "query": row["query_index"],
+                    "vcheck": 100.0 * vcheck["score_old"] / vcheck["n_old"],
+                    "vselect": 100.0 * vselect["score"] / vselect["n"],
+                    "n_old": vcheck["n_old"],
+                    "n_select": vselect["n"],
+                }
+            )
     return out
 
 
@@ -56,18 +63,28 @@ def main(argv: list[str] | None = None) -> int:
     corr = statistics.correlation(xs, ys)
     margin = Z_ONE_SIDED[args.coverage] * sd - mean
     at_floor = [r for r in records if -args.floor_points <= r["vcheck"] <= 0.0]
-    print(f"checked programs {len(records)} in {len({r['session'] for r in records})} sessions; rows per set "
-          f"{sorted({r['n_old'] for r in records})} (V_check clean) and {sorted({r['n_select'] for r in records})} "
-          f"(V_select clean)")
-    print(f"vselect - vcheck (points): mean {mean:+.3f}, sd {sd:.3f}, min {min(diff):+.2f}, max {max(diff):+.2f}; "
-          f"correlation {corr:.3f}")
-    print(f"checks with vcheck in [-{args.floor_points:g}, 0]: {len(at_floor)}, of which vselect < "
-          f"-{args.floor_points:g}: {sum(r['vselect'] < -args.floor_points for r in at_floor)}")
-    print(f"V_check margin for P(vselect >= -{args.floor_points:g}) >= {args.coverage:g} at the floor (normal "
-          f"approximation): {margin:.2f} points, a V_check floor of {-args.floor_points + margin:+.2f} points")
+    print(
+        f"checked programs {len(records)} in {len({r['session'] for r in records})} sessions; rows per set "
+        f"{sorted({r['n_old'] for r in records})} (V_check clean) and {sorted({r['n_select'] for r in records})} "
+        f"(V_select clean)"
+    )
+    print(
+        f"vselect - vcheck (points): mean {mean:+.3f}, sd {sd:.3f}, min {min(diff):+.2f}, max {max(diff):+.2f}; "
+        f"correlation {corr:.3f}"
+    )
+    print(
+        f"checks with vcheck in [-{args.floor_points:g}, 0]: {len(at_floor)}, of which vselect < "
+        f"-{args.floor_points:g}: {sum(r['vselect'] < -args.floor_points for r in at_floor)}"
+    )
+    print(
+        f"V_check margin for P(vselect >= -{args.floor_points:g}) >= {args.coverage:g} at the floor (normal "
+        f"approximation): {margin:.2f} points, a V_check floor of {-args.floor_points + margin:+.2f} points"
+    )
     for r in sorted(records, key=lambda r: (r["condition"], r["session"], r["query"])):
-        print(f"  {r['condition']:18s} {r['session']} q{r['query']} vcheck {r['vcheck']:+.2f} vselect "
-              f"{r['vselect']:+.2f}")
+        print(
+            f"  {r['condition']:18s} {r['session']} q{r['query']} vcheck {r['vcheck']:+.2f} vselect "
+            f"{r['vselect']:+.2f}"
+        )
     return 0
 
 

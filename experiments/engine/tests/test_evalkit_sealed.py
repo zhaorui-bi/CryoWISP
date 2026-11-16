@@ -22,7 +22,12 @@ import cryowisp.evalkit.sealed as sealed
 from cryowisp.baselines.instance_io import load_instance
 from cryowisp.common.identity import load_params, params_sha256, save_params
 from cryowisp.evalkit.instances import supersede_instances
-from cryowisp.evalkit.metrics import color_following_rate, color_split_fixes, color_split_target_fixes, sealed_readout
+from cryowisp.evalkit.metrics import (
+    color_following_rate,
+    color_split_fixes,
+    color_split_target_fixes,
+    sealed_readout,
+)
 from cryowisp.evalkit.patch_check import predict
 
 
@@ -44,15 +49,24 @@ def _child(folder: Path, name: str, params: dict[str, np.ndarray]) -> tuple[str,
 
 
 def _manifest(path: Path, entries: list[dict[str, object]], note: str = "test") -> Path:
-    payload = {"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03T12:00:00+00:00", "note": note,
-               "entries": entries}
+    payload = {
+        "schema": "cryowisp.sealed_manifest.v0",
+        "created_at": "2026-11-03T12:00:00+00:00",
+        "note": note,
+        "entries": entries,
+    }
     path.write_text(json.dumps(payload, indent=2))
     return path
 
 
 def _entry(instance_id: str, arm: str, repeat: int, child: tuple[str, str]) -> dict[str, object]:
-    return {"instance_id": instance_id, "arm": arm, "repeat": repeat, "child_params_path": child[0],
-            "child_params_sha256": child[1]}
+    return {
+        "instance_id": instance_id,
+        "arm": arm,
+        "repeat": repeat,
+        "child_params_path": child[0],
+        "child_params_sha256": child[1],
+    }
 
 
 def _registry(store: ToyStore) -> list[dict[str, object]]:
@@ -79,11 +93,18 @@ def three_entries(toy_store: ToyStore, tmp_path: Path) -> tuple[Path, dict[str, 
         _entry(ids[(0, 1)], "B1", 0, noop),
         _entry(ids[(3, 2)], "M2", 1, broken),
     ]
-    return _manifest(tmp_path / "manifest.json", entries), {"ids": ids, "fix": fix, "noop": noop, "broken": broken}
+    return _manifest(tmp_path / "manifest.json", entries), {
+        "ids": ids,
+        "fix": fix,
+        "noop": noop,
+        "broken": broken,
+    }
 
 
 def test_end_to_end_readouts_registry_and_output(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]], capsys: pytest.CaptureFixture[str]  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],
+    capsys: pytest.CaptureFixture[str],  # noqa: F811
 ) -> None:
     manifest_path, info = three_entries
     assert sealed.main(["--manifest", str(manifest_path)]) == 0
@@ -96,13 +117,18 @@ def test_end_to_end_readouts_registry_and_output(
     test = _test_set(toy_store)
     for record in records:
         instance = load_instance(toy_store.private / "instances" / record["instance_id"])
-        child_path = {info["fix"][1]: info["fix"][0], info["noop"][1]: info["noop"][0],
-                      info["broken"][1]: info["broken"][0]}[record["child_params_sha256"]]
+        child_path = {
+            info["fix"][1]: info["fix"][0],
+            info["noop"][1]: info["noop"][0],
+            info["broken"][1]: info["broken"][0],
+        }[record["child_params_sha256"]]
         child = load_params(child_path)
         base_pred = predict(instance.forward, instance.params, test["x"], 64)
         child_pred = predict(instance.forward, child, test["x"], 64)
         a, b = instance.target
-        assert record["readouts"] == json.loads(json.dumps(sealed_readout(test["y"], base_pred, child_pred, a, b, 4)))
+        assert record["readouts"] == json.loads(
+            json.dumps(sealed_readout(test["y"], base_pred, child_pred, a, b, 4))
+        )
         assert record["split_role"] == "main" and record["target"] == [a, b]
         assert record["evidence_rule"] == "evidence-v0" and record["condition"] == "deploy"
         assert record["base_params_sha256"] == instance.params_sha256
@@ -121,7 +147,9 @@ def test_end_to_end_readouts_registry_and_output(
 
 
 def test_second_read_is_refused_even_when_reformatted(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]], tmp_path: Path  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],
+    tmp_path: Path,  # noqa: F811
 ) -> None:
     manifest_path, _ = three_entries
     assert sealed.main(["--manifest", str(manifest_path)]) == 0
@@ -132,25 +160,35 @@ def test_second_read_is_refused_even_when_reformatted(
 
 
 def test_hash_and_layout_mismatches_are_refused_before_any_record(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]], tmp_path: Path  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],
+    tmp_path: Path,  # noqa: F811
 ) -> None:
     _, info = three_entries
     ids = info["ids"]
     wrong_sha = (info["fix"][0], "0" * 64)
     with pytest.raises(sealed.SealedEvalError, match="params_sha256"):
-        sealed.evaluate_manifest(_manifest(tmp_path / "bad_sha.json", [_entry(ids[(0, 1)], "M2", 0, wrong_sha)]))
+        sealed.evaluate_manifest(
+            _manifest(tmp_path / "bad_sha.json", [_entry(ids[(0, 1)], "M2", 0, wrong_sha)])
+        )
     instance = load_instance(toy_store.private / "instances" / ids[(0, 1)])
     reshaped = dict(instance.params, **{"fc2.bias": np.zeros(5, dtype=np.float32)})
     child = _child(tmp_path / "children", "reshaped", reshaped)
     with pytest.raises(sealed.SealedEvalError, match="fc2.bias"):
-        sealed.evaluate_manifest(_manifest(tmp_path / "bad_shape.json", [_entry(ids[(0, 1)], "M2", 0, child)]))
+        sealed.evaluate_manifest(
+            _manifest(tmp_path / "bad_shape.json", [_entry(ids[(0, 1)], "M2", 0, child)])
+        )
     with pytest.raises(sealed.SealedEvalError, match="unknown instance"):
-        sealed.evaluate_manifest(_manifest(tmp_path / "bad_id.json", [_entry("i00000000", "M2", 0, info["fix"])]))
+        sealed.evaluate_manifest(
+            _manifest(tmp_path / "bad_id.json", [_entry("i00000000", "M2", 0, info["fix"])])
+        )
     assert _registry(toy_store) == []
 
 
 def test_relative_child_paths_resolve_against_the_manifest(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]], tmp_path: Path  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],
+    tmp_path: Path,  # noqa: F811
 ) -> None:
     _, info = three_entries
     relative = ("children/fix.npz", info["fix"][1])
@@ -160,7 +198,9 @@ def test_relative_child_paths_resolve_against_the_manifest(
 
 
 def test_started_record_precedes_the_first_test_label(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]], monkeypatch: pytest.MonkeyPatch  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,  # noqa: F811
 ) -> None:
     manifest_path, _ = three_entries
     original = sealed._load_test_set
@@ -176,7 +216,9 @@ def test_started_record_precedes_the_first_test_label(
 
 
 def test_a_failure_after_start_is_recorded_and_spends_the_manifest(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]], monkeypatch: pytest.MonkeyPatch  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],
+    monkeypatch: pytest.MonkeyPatch,  # noqa: F811
 ) -> None:
     manifest_path, _ = three_entries
 
@@ -196,18 +238,42 @@ def test_a_failure_after_start_is_recorded_and_spends_the_manifest(
 
 
 def test_manifest_schema_is_strict(tmp_path: Path) -> None:
-    good = {"instance_id": "i0123abcd", "arm": "M2", "repeat": 0, "child_params_path": "c.npz",
-            "child_params_sha256": "a" * 64}
+    good = {
+        "instance_id": "i0123abcd",
+        "arm": "M2",
+        "repeat": 0,
+        "child_params_path": "c.npz",
+        "child_params_sha256": "a" * 64,
+    }
     bad_cases = [
-        {"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "", "entries": [good], "x": 1},
+        {
+            "schema": "cryowisp.sealed_manifest.v0",
+            "created_at": "2026-11-03",
+            "note": "",
+            "entries": [good],
+            "x": 1,
+        },
         {"schema": "cryowisp.sealed_manifest.v1", "created_at": "2026-11-03", "note": "", "entries": [good]},
         {"schema": "cryowisp.sealed_manifest.v0", "created_at": "yesterday", "note": "", "entries": [good]},
         {"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "", "entries": []},
-        {"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "", "entries": [good, good]},
-        {"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "",
-         "entries": [dict(good, repeat=True)]},
-        {"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "",
-         "entries": [dict(good, child_params_sha256="A" * 64)]},
+        {
+            "schema": "cryowisp.sealed_manifest.v0",
+            "created_at": "2026-11-03",
+            "note": "",
+            "entries": [good, good],
+        },
+        {
+            "schema": "cryowisp.sealed_manifest.v0",
+            "created_at": "2026-11-03",
+            "note": "",
+            "entries": [dict(good, repeat=True)],
+        },
+        {
+            "schema": "cryowisp.sealed_manifest.v0",
+            "created_at": "2026-11-03",
+            "note": "",
+            "entries": [dict(good, child_params_sha256="A" * 64)],
+        },
     ]
     for number, payload in enumerate(bad_cases):
         path = tmp_path / f"m{number}.json"
@@ -215,8 +281,16 @@ def test_manifest_schema_is_strict(tmp_path: Path) -> None:
         with pytest.raises(sealed.SealedEvalError):
             sealed.load_manifest(path)
     ok = tmp_path / "ok.json"
-    ok.write_text(json.dumps({"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "",
-                              "entries": [good]}))
+    ok.write_text(
+        json.dumps(
+            {
+                "schema": "cryowisp.sealed_manifest.v0",
+                "created_at": "2026-11-03",
+                "note": "",
+                "entries": [good],
+            }
+        )
+    )
     _, entries = sealed.load_manifest(ok)
     assert entries[0].child_params_path == tmp_path / "c.npz"
 
@@ -252,11 +326,15 @@ def test_colored_test_set_adds_color_readouts(tmp_path: Path, monkeypatch: pytes
         "fixed_target_color_b": 12,
         "fixed_target_color_other": 8,
     }
-    assert {key: unchanged[key] for key in split} == dict(split, fixed_target_color_b=0, fixed_target_color_other=0)
+    assert {key: unchanged[key] for key in split} == dict(
+        split, fixed_target_color_b=0, fixed_target_color_other=0
+    )
     assert unchanged["delta_cfr"] == 0.0 and fixed["R"] == 1.0 and unchanged["R"] == 0.0
 
+
 def test_a_changed_official_test_set_is_refused(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]]  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],  # noqa: F811
 ) -> None:
     manifest_path, _ = three_entries
     test = _test_set(toy_store)
@@ -276,7 +354,11 @@ def test_v1_readouts_have_no_pair_and_delta_acc_is_primary(toy_store: ToyStore, 
     broken = _child(children, "broken", breaking_child(instance.params))
     manifest = _manifest(
         tmp_path / "v1.json",
-        [_entry(instance_id, "M2", 0, fix), _entry(instance_id, "B1", 0, noop), _entry(instance_id, "M2", 1, broken)],
+        [
+            _entry(instance_id, "M2", 0, fix),
+            _entry(instance_id, "B1", 0, noop),
+            _entry(instance_id, "M2", 1, broken),
+        ],
     )
     results_path, count = sealed.evaluate_manifest(manifest)
     records = [json.loads(line) for line in results_path.read_text().splitlines()]
@@ -290,22 +372,31 @@ def test_v1_readouts_have_no_pair_and_delta_acc_is_primary(toy_store: ToyStore, 
         assert record["readouts"] == json.loads(json.dumps(expected))
         assert record["target"] is None and record["condition"] == "deploy"
         assert record["evidence_rule"] == "evidence-v1" and record["split_role"] == "main"
-        assert "R" not in record["readouts"] and not [k for k in record["readouts"] if "cfr" in k or "color" in k]
+        assert "R" not in record["readouts"] and not [
+            k for k in record["readouts"] if "cfr" in k or "color" in k
+        ]
     fixed, unchanged, damaged = (r["readouts"] for r in records)
     n = PLAN["test"][0] * 4
     assert (fixed["fixed"], fixed["broken"]) == (20, 0) and fixed["delta_acc"] == pytest.approx(20 / n)
-    assert fixed["per_class_acc_delta"][0] == pytest.approx(20 / PLAN["test"][0]) and fixed["worst_class_delta"] == 0
+    assert (
+        fixed["per_class_acc_delta"][0] == pytest.approx(20 / PLAN["test"][0])
+        and fixed["worst_class_delta"] == 0
+    )
     assert unchanged["delta_acc"] == 0 and unchanged["fixed"] == unchanged["broken"] == 0
     assert damaged["delta_acc"] < 0 and damaged["worst_class_delta"] < 0
 
 
-def test_v1_colored_readouts_split_all_fixes_by_color(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_v1_colored_readouts_split_all_fixes_by_color(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     store = build_toy_store(tmp_path / "store", dataset="toycolor", colored=True)
     store.activate(monkeypatch)
     instance_id = _v1_instance(store)
     instance = load_instance(store.private / "instances" / instance_id)
     fix = _child(tmp_path / "children", "fix", fixing_child(instance.params))
-    results_path, _ = sealed.evaluate_manifest(_manifest(tmp_path / "m.json", [_entry(instance_id, "M2", 0, fix)]))
+    results_path, _ = sealed.evaluate_manifest(
+        _manifest(tmp_path / "m.json", [_entry(instance_id, "M2", 0, fix)])
+    )
     readouts = json.loads(results_path.read_text())["readouts"]
     test = _test_set(store)
     base_pred = predict(instance.forward, instance.params, test["x"], 64)
@@ -314,8 +405,12 @@ def test_v1_colored_readouts_split_all_fixes_by_color(tmp_path: Path, monkeypatc
     assert {key: readouts[key] for key in split} == split
     # 57 base errors; 12 have a shape-driven color (neither label nor prediction), 45 follow color. The fixing
     # child repairs all 20 (0 -> 1) errors, 12 color-following and 8 shape-driven.
-    assert split == {"n_base_errors_color_following": 45, "n_base_errors_other": 12, "fixed_color_following": 12,
-                     "fixed_other": 8}
+    assert split == {
+        "n_base_errors_color_following": 45,
+        "n_base_errors_other": 12,
+        "fixed_color_following": 12,
+        "fixed_other": 8,
+    }
     assert readouts["delta_cfr"] == readouts["child_cfr"] - readouts["base_cfr"]
     assert readouts["base_cfr"] == pytest.approx(color_following_rate(base_pred, test["y"], test["color"]))
     assert not [key for key in readouts if "target" in key and readouts[key] is not None]
@@ -323,14 +418,14 @@ def test_v1_colored_readouts_split_all_fixes_by_color(tmp_path: Path, monkeypatc
 
 
 def test_a_superseded_instance_is_refused_before_any_record(
-    toy_store: ToyStore, three_entries: tuple[Path, dict[str, object]]  # noqa: F811
+    toy_store: ToyStore,
+    three_entries: tuple[Path, dict[str, object]],  # noqa: F811
 ) -> None:
     manifest_path, info = three_entries
     supersede_instances([info["ids"][(0, 1)]], "replaced by evidence-v1")
     with pytest.raises(sealed.SealedEvalError, match="not active"):
         sealed.evaluate_manifest(manifest_path)
     assert _registry(toy_store) == []
-
 
 
 def test_a_dev_instance_is_refused_before_any_record(toy_store: ToyStore, tmp_path: Path) -> None:  # noqa: F811

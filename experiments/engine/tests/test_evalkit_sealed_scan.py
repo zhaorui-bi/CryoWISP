@@ -59,13 +59,26 @@ def _session(instance: Any, child: dict[str, np.ndarray]) -> None:
     write_delta_patch(root / "final", instance.params_sha256, instance.params, child, "toy", "toy")
     limits = dataclasses.asdict(Limits(max_rel_frob=None, max_edit_frac=None))
     (root / "session.json").write_text(json.dumps({"limits": limits}))
-    run = {"session_id": SESSION, "status": "complete", "session_result": "session_result.json",
-           "instance": {"instance_id": instance.instance_id, "params_sha256": instance.params_sha256},
-           "final": {"is_base_noop": False, "dir": "final", "parent": "instance", "patch_id": "jump.py",
-                     "query_index": 0, "n_changed": 128, "child_sha256": params_sha256(child)}}
+    run = {
+        "session_id": SESSION,
+        "status": "complete",
+        "session_result": "session_result.json",
+        "instance": {"instance_id": instance.instance_id, "params_sha256": instance.params_sha256},
+        "final": {
+            "is_base_noop": False,
+            "dir": "final",
+            "parent": "instance",
+            "patch_id": "jump.py",
+            "query_index": 0,
+            "n_changed": 128,
+            "child_sha256": params_sha256(child),
+        },
+    }
     (root / "run.json").write_text(json.dumps(run))
-    info = {"instance_id": instance.instance_id,
-            "final": {"child_sha256": params_sha256(child), "readouts_scan": K.scan_readout(instance, child)}}
+    info = {
+        "instance_id": instance.instance_id,
+        "final": {"child_sha256": params_sha256(child), "readouts_scan": K.scan_readout(instance, child)},
+    }
     reference = runs_dir() / "devreadouts" / "learn" / SESSION / "info.json"
     reference.parent.mkdir(parents=True)
     reference.write_text(json.dumps(D.json_safe(info)))
@@ -82,38 +95,79 @@ def toy(tmp_path_factory: pytest.TempPathFactory) -> Iterator[ScanToy]:
         child = {key: value.copy() for key, value in instance.params.items()}
         child[R.EMBEDDING][S.TOKEN_ID["jump"]] = child[R.EMBEDDING][S.TOKEN_ID["walk"]]
         _session(instance, child)
-        for name, value in (("STEP_CHECKPOINTS", (1, 2, 3, 4)), ("REG_STEPS", (1, 2)), ("TRAJ_STEPS", 3),
-                            ("N_RULEGEN", 200), ("N_RULEGEN_OLD", 100)):
+        for name, value in (
+            ("STEP_CHECKPOINTS", (1, 2, 3, 4)),
+            ("REG_STEPS", (1, 2)),
+            ("TRAJ_STEPS", 3),
+            ("N_RULEGEN", 200),
+            ("N_RULEGEN_OLD", 100),
+        ):
             patcher.setattr(R, name, value)
         run_dir = baseline_run_dir(instance.instance_id, METHOD, 0, R.run_label(METHOD))
         R.run_reference(instance, METHOD, fit_set=R.rulegen_fit_set(CONDITION, "mixed"), run_dir=run_dir)
         record = D.readout_retention(run_dir / "run.json", s_old_floor=-5)
         ref_record = "devreadouts/e13_refs_toy_floor5.jsonl"
         (runs_dir() / ref_record).write_text(json.dumps(D.json_safe(record)) + "\n")
-        pick = SF.kept_pick(SF.Final("x", SF.READOUT_SCAN_EM, {"s_old_floor": -5}, instance.instance_id, "0" * 64),
-                            json.loads((run_dir / "run.json").read_text()))["final"]
+        pick = SF.kept_pick(
+            SF.Final("x", SF.READOUT_SCAN_EM, {"s_old_floor": -5}, instance.instance_id, "0" * 64),
+            json.loads((run_dir / "run.json").read_text()),
+        )["final"]
         ref_child = instance.params_sha256 if pick["is_base_noop"] else pick["child_sha256"]
-        yield ScanToy(instance.instance_id, child, str((run_dir / "run.json").relative_to(runs_dir())), ref_record,
-                      ref_child)
+        yield ScanToy(
+            instance.instance_id,
+            child,
+            str((run_dir / "run.json").relative_to(runs_dir())),
+            ref_record,
+            ref_child,
+        )
     finally:
         patcher.undo()
 
 
 def _entries(toy: ScanToy) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    finals = [{"name": "scan_final", "readout": "scan_em", "source": {"kind": "session", "session_id": SESSION},
-               "instance_id": toy.instance_id, "child_sha256": params_sha256(toy.session_child)}]
-    references = [{"name": "scan_ref", "readout": "scan_em",
-                   "source": {"kind": "reference", "run": toy.ref_run, "pick": "kept", "s_old_floor": -5,
-                              "dev_record": toy.ref_record},
-                   "instance_id": toy.instance_id, "child_sha256": toy.ref_child_sha256, "pairs_with": "scan_final"}]
+    finals = [
+        {
+            "name": "scan_final",
+            "readout": "scan_em",
+            "source": {"kind": "session", "session_id": SESSION},
+            "instance_id": toy.instance_id,
+            "child_sha256": params_sha256(toy.session_child),
+        }
+    ]
+    references = [
+        {
+            "name": "scan_ref",
+            "readout": "scan_em",
+            "source": {
+                "kind": "reference",
+                "run": toy.ref_run,
+                "pick": "kept",
+                "s_old_floor": -5,
+                "dev_record": toy.ref_record,
+            },
+            "instance_id": toy.instance_id,
+            "child_sha256": toy.ref_child_sha256,
+            "pairs_with": "scan_final",
+        }
+    ]
     return finals, references
 
 
 def _write_list(path: Path, toy: ScanToy, status: str = "draft", approval: str | None = None) -> Path:
     finals, references = _entries(toy)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"schema": SF.LIST_SCHEMA, "status": status, "approval": approval, "note": "toy",
-                                "finals": finals, "references": references}))
+    path.write_text(
+        json.dumps(
+            {
+                "schema": SF.LIST_SCHEMA,
+                "status": status,
+                "approval": approval,
+                "note": "toy",
+                "finals": finals,
+                "references": references,
+            }
+        )
+    )
     return path
 
 
@@ -123,8 +177,11 @@ def _git_state(path: Path) -> Path:
 
 
 def test_dev_equals_the_scan_readouts_of_record(toy: ScanToy, tmp_path: Path) -> None:
-    records = SF.run_dev(_write_list(tmp_path / "list.json", toy), tmp_path / "dev.jsonl",
-                         code_state_path=_git_state(tmp_path / "git_state.json"))
+    records = SF.run_dev(
+        _write_list(tmp_path / "list.json", toy),
+        tmp_path / "dev.jsonl",
+        code_state_path=_git_state(tmp_path / "git_state.json"),
+    )
     assert [r["name"] for r in records] == ["scan_final", "scan_ref"]
     instance = SS.FAMILY.load_instance(toy.instance_id)
     final, ref = records
@@ -149,13 +206,19 @@ def test_dev_reports_a_changed_scan_record(toy: ScanToy, tmp_path: Path) -> None
     info["final"]["readouts_scan"]["new_by_construction"]["twice_thrice"]["fixed"] += 1
     path.write_text(json.dumps(info))
     try:
-        records = SF.run_dev(_write_list(tmp_path / "list.json", toy), tmp_path / "dev.jsonl",
-                             code_state_path=_git_state(tmp_path / "git_state.json"), only=["scan_final"])
+        records = SF.run_dev(
+            _write_list(tmp_path / "list.json", toy),
+            tmp_path / "dev.jsonl",
+            code_state_path=_git_state(tmp_path / "git_state.json"),
+            only=["scan_final"],
+        )
     finally:
         path.write_text(original)
     assert not records[0]["reference"]["match"]
-    assert any("readouts_scan.new_by_construction.twice_thrice.fixed" in d
-               for d in records[0]["reference"]["differences"])
+    assert any(
+        "readouts_scan.new_by_construction.twice_thrice.fixed" in d
+        for d in records[0]["reference"]["differences"]
+    )
 
 
 def _approved(toy: ScanToy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -164,8 +227,11 @@ def _approved(toy: ScanToy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     repo.mkdir()
     committed = repo / "finals.json"
     committed.write_text(draft.read_text())
-    for args in (["init", "-q"], ["add", "finals.json"],
-                 ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "list"]):
+    for args in (
+        ["init", "-q"],
+        ["add", "finals.json"],
+        ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "list"],
+    ):
         subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
     state = {"commit": COMMIT, "dirty": False, "source": f"git {repo}", "repo": str(repo), "files": {}}
     monkeypatch.setattr(SF, "code_state", lambda code_state_path=None, modules=SF.CODE_MODULES: dict(state))
@@ -173,7 +239,9 @@ def _approved(toy: ScanToy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def _sealed_parts() -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
-    with np.load(sealed_dir() / "scan" / "conditions" / CONDITION / "test.npz", allow_pickle=False) as archive:
+    with np.load(
+        sealed_dir() / "scan" / "conditions" / CONDITION / "test.npz", allow_pickle=False
+    ) as archive:
         arrays = {key: archive[key] for key in archive.files}
     new = arrays["part"] == S.PART_NEW
     return ({k: v[new] for k, v in arrays.items()}, {k: v[~new] for k, v in arrays.items()})
@@ -196,8 +264,11 @@ def test_sealed_read_of_the_scan_test(toy: ScanToy, tmp_path: Path, monkeypatch:
         assert record["rows"]["new"]["n"] == len(new["y"]) and record["rows"]["old"]["n"] == len(old["y"])
         assert record["rows"]["new"]["verified_sha256"] == record["sealed_index"]["test"]["sha256"]
     events = read_registry(sealed_dir() / "registry.jsonl")
-    assert [e["event"] for e in events] == ["evaluation_started", *["entry_started", "entry_finished"] * 2,
-                                            "evaluation_finished"]
+    assert [e["event"] for e in events] == [
+        "evaluation_started",
+        *["entry_started", "entry_finished"] * 2,
+        "evaluation_finished",
+    ]
     assert list(events[-1]["test_sha256"]) == [records[0]["sealed_index"]["test"]["location"]]
 
 
@@ -210,8 +281,9 @@ def _copy_sealed(tmp_path: Path) -> Path:
     return copy
 
 
-def test_a_sealed_file_out_of_order_is_refused_and_spent(toy: ScanToy, tmp_path: Path,
-                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_sealed_file_out_of_order_is_refused_and_spent(
+    toy: ScanToy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     copy = _copy_sealed(tmp_path)
     monkeypatch.setenv("CRYOWISP_SEALED", str(copy))
     path = copy / "scan" / "conditions" / CONDITION / "test.npz"
@@ -228,8 +300,11 @@ def test_a_sealed_file_out_of_order_is_refused_and_spent(toy: ScanToy, tmp_path:
     finally:
         dataset_json_path(S.DATASET, CONDITION).write_text(original)
     events = read_registry(copy / "registry.jsonl")
-    assert [e["event"] for e in events] == ["evaluation_started", *["entry_started", "entry_failed"] * 2,
-                                            "evaluation_finished"]
+    assert [e["event"] for e in events] == [
+        "evaluation_started",
+        *["entry_started", "entry_failed"] * 2,
+        "evaluation_finished",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -257,8 +332,15 @@ def test_scan_index_refusals(toy: ScanToy, change: Any, message: str) -> None:
 
 def _reference_entry(toy: ScanToy) -> SF.Final:
     source = _entries(toy)[1][0]["source"]
-    return SF.Final("scan_ref", "scan_em", source, toy.instance_id, toy.ref_child_sha256, SF.BLOCK_REFERENCES,
-                    "scan_final")
+    return SF.Final(
+        "scan_ref",
+        "scan_em",
+        source,
+        toy.instance_id,
+        toy.ref_child_sha256,
+        SF.BLOCK_REFERENCES,
+        "scan_final",
+    )
 
 
 def test_scan_reference_refusals(toy: ScanToy) -> None:

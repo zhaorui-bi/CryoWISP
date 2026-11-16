@@ -19,8 +19,15 @@ from pathlib import Path
 import pytest
 
 import cryowisp.sandbox.host as host_module
-from cryowisp.sandbox import (DEFAULT_BWRAP, KERNEL_SCRIPT, SandboxConfig, SandboxKernel, interpreter_mounts,
-                                isolation_selftest, sandbox_environment)
+from cryowisp.sandbox import (
+    DEFAULT_BWRAP,
+    KERNEL_SCRIPT,
+    SandboxConfig,
+    SandboxKernel,
+    interpreter_mounts,
+    isolation_selftest,
+    sandbox_environment,
+)
 from cryowisp.sandbox.selftest import INSIDE_CHECKS
 
 REPO = Path(__file__).resolve().parents[1]
@@ -29,9 +36,13 @@ SANDBOX_VENV = SANDBOX_PYTHON.parent.parent
 BWRAP = DEFAULT_BWRAP  # $CRYOWISP_BWRAP or /usr/bin/bwrap
 
 pytestmark = [
-    pytest.mark.skipif(not BWRAP.exists(), reason=f"{BWRAP} is missing: the sandbox tests need the real bubblewrap"),
-    pytest.mark.skipif(not SANDBOX_PYTHON.exists(),
-                       reason=f"{SANDBOX_PYTHON} is missing: create the sandbox venv (scripts/setup_sandbox_venv.sh)"),
+    pytest.mark.skipif(
+        not BWRAP.exists(), reason=f"{BWRAP} is missing: the sandbox tests need the real bubblewrap"
+    ),
+    pytest.mark.skipif(
+        not SANDBOX_PYTHON.exists(),
+        reason=f"{SANDBOX_PYTHON} is missing: create the sandbox venv (scripts/setup_sandbox_venv.sh)",
+    ),
 ]
 
 HOST_SIDE_CHECKS = {
@@ -48,7 +59,11 @@ def store(monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[str, Path]]:
     """Fake $CRYOWISP_PRIVATE, $CRYOWISP_SEALED and $CRYOWISP_RUNS with a marker file each, removed afterwards."""
     root = Path(tempfile.mkdtemp(prefix="cryowisp-sandbox-test-", dir=Path.home() / ".cache"))
     roots = {}
-    for name, variable in (("private", "CRYOWISP_PRIVATE"), ("sealed", "CRYOWISP_SEALED"), ("runs", "CRYOWISP_RUNS")):
+    for name, variable in (
+        ("private", "CRYOWISP_PRIVATE"),
+        ("sealed", "CRYOWISP_SEALED"),
+        ("runs", "CRYOWISP_RUNS"),
+    ):
         path = root / name
         path.mkdir()
         (path / "SECRET.txt").write_text(f"{name} secret\n")
@@ -166,17 +181,31 @@ def test_host_files_and_protected_roots_are_invisible(store: dict[str, Path], di
         dirs["logs"],
     ]
     present_on_host = {path for path in hidden if os.path.lexists(path)}
-    assert present_on_host >= {store["private"] / "SECRET.txt", REPO / "cryowisp", KERNEL_SCRIPT, dirs["trial"]}
+    assert present_on_host >= {
+        store["private"] / "SECRET.txt",
+        REPO / "cryowisp",
+        KERNEL_SCRIPT,
+        dirs["trial"],
+    }
     with SandboxKernel(make_config(dirs)) as kernel:
-        visible = value_of(kernel, f"import os\n[p for p in {[str(p) for p in hidden]!r} if os.path.lexists(p)]")
+        visible = value_of(
+            kernel, f"import os\n[p for p in {[str(p) for p in hidden]!r} if os.path.lexists(p)]"
+        )
         repo_listing = value_of(kernel, f"import os\nsorted(os.listdir({str(REPO)!r}))")
-        home_listing = value_of(kernel, f"import os\nsorted(os.listdir({str(home)!r})) if os.path.exists({str(home)!r}) else None")
+        home_listing = value_of(
+            kernel, f"import os\nsorted(os.listdir({str(home)!r})) if os.path.exists({str(home)!r}) else None"
+        )
     assert visible == []
     assert repo_listing == [SANDBOX_VENV.name]  # the repo root shows nothing but the path to the sandbox venv
     # The home shows only the first directories of what is mounted: the venv and, for a base interpreter outside
     # /usr such as a uv-managed CPython, its binds and links (interpreter_mounts).
-    under_home = sorted({Path(path).relative_to(home).parts[0] for path in interpreter_mounts(SANDBOX_PYTHON).visible()
-                         if Path(path).is_relative_to(home)})
+    under_home = sorted(
+        {
+            Path(path).relative_to(home).parts[0]
+            for path in interpreter_mounts(SANDBOX_PYTHON).visible()
+            if Path(path).is_relative_to(home)
+        }
+    )
     assert home_listing == (under_home or None)
 
 
@@ -198,7 +227,9 @@ def test_parent_environment_is_not_visible(
         assert secret.encode() not in initial and secret not in repr(environment)
 
 
-def test_trial_is_read_only_while_patches_and_scratch_are_writable(kernel: SandboxKernel, dirs: dict[str, Path]) -> None:
+def test_trial_is_read_only_while_patches_and_scratch_are_writable(
+    kernel: SandboxKernel, dirs: dict[str, Path]
+) -> None:
     code = textwrap.dedent(
         """
         import errno, os
@@ -308,11 +339,18 @@ def test_isolation_selftest_detects_injected_leaks(
     monkeypatch.setattr(host_module, "build_bwrap_argv", leaky)
     report = isolation_selftest(make_config(dirs))
     assert report["status"] == "fail"
-    assert set(report["failed"]) == {"env_clean", "private_invisible", "trial_readonly", "host_home_and_repo_hidden"}  # type: ignore[arg-type]
+    assert set(report["failed"]) == {
+        "env_clean",
+        "private_invisible",
+        "trial_readonly",
+        "host_home_and_repo_hidden",
+    }  # type: ignore[arg-type]
     assert sorted(os.listdir(dirs["trial"])) == ["model_spec.json"]  # the probe file was removed host-side
 
 
-def test_isolation_selftest_flags_a_bind_source_inside_private(store: dict[str, Path], dirs: dict[str, Path]) -> None:
+def test_isolation_selftest_flags_a_bind_source_inside_private(
+    store: dict[str, Path], dirs: dict[str, Path]
+) -> None:
     trial = store["private"] / "instances" / "i0" / "trial"
     trial.mkdir(parents=True)
     (trial / "model_spec.json").write_text("{}\n")
@@ -320,7 +358,9 @@ def test_isolation_selftest_flags_a_bind_source_inside_private(store: dict[str, 
     assert report["failed"] == ["bind_sources_safe"]
 
 
-def test_isolation_selftest_finds_forbidden_strings_in_bind_source_paths(store: dict[str, Path], tmp_path: Path) -> None:
+def test_isolation_selftest_finds_forbidden_strings_in_bind_source_paths(
+    store: dict[str, Path], tmp_path: Path
+) -> None:
     named = make_dirs(tmp_path / "sessions" / "DECOY-r1")  # a session directory named after its arm
     report = isolation_selftest(make_config(named), forbidden_strings=["DECOY"])
     assert report["failed"] == ["forbidden_strings_absent"]
@@ -328,7 +368,9 @@ def test_isolation_selftest_finds_forbidden_strings_in_bind_source_paths(store: 
     assert isolation_selftest(make_config(opaque), forbidden_strings=["DECOY"])["status"] == "pass"
 
 
-def test_isolation_selftest_fails_closed_without_protected_roots(dirs: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_isolation_selftest_fails_closed_without_protected_roots(
+    dirs: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
     for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
         monkeypatch.delenv(variable, raising=False)
     report = isolation_selftest(make_config(dirs))

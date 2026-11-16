@@ -16,7 +16,9 @@ from cryowisp.evalkit.sealed import manifest_sha256
 from cryowisp.evalkit.sealed_range import per_image
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("make_test_table_v6", ROOT / "scripts/sealed/make_test_table_v6.py")
+SPEC = importlib.util.spec_from_file_location(
+    "make_test_table_v6", ROOT / "scripts/sealed/make_test_table_v6.py"
+)
 TT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(TT)
 N = 38_000
@@ -32,9 +34,14 @@ def approved_list(tmp: Path) -> Path:
 
 
 def readouts(base: np.ndarray, child: np.ndarray) -> dict:
-    return {"n": len(base), "fixed": int((~base & child).sum()), "broken": int((base & ~child).sum()),
-            "base_acc": float(base.mean()), "child_acc": float(child.mean()),
-            "delta_acc": float(child.mean() - base.mean())}
+    return {
+        "n": len(base),
+        "fixed": int((~base & child).sum()),
+        "broken": int((base & ~child).sum()),
+        "base_acc": float(base.mean()),
+        "child_acc": float(child.mean()),
+        "delta_acc": float(child.mean() - base.mean()),
+    }
 
 
 def records(list_path: Path, rng: np.random.Generator) -> list[dict]:
@@ -51,12 +58,24 @@ def records(list_path: Path, rng: np.random.Generator) -> list[dict]:
         c_clean = np.where(rng.random(N) < flip / 5, ~b_clean, b_clean)
         gain = 100.0 * float(np.mean(c_cond.astype(np.int8) - b_cond.astype(np.int8)))
         clean = 100.0 * float(np.mean(c_clean.astype(np.int8) - b_clean.astype(np.int8)))
-        out.append({"name": entry.name, "instance_id": entry.instance_id, "child_sha256": entry.child_sha256,
-                    "readout": entry.readout, "mode": "sealed", "list_sha256": sha,
-                    "condition": "gaussian_noise_s3" if "gaussian" in entry.name else "contrast_s4",
-                    "readouts": readouts(b_cond, c_cond), "readouts_clean": readouts(b_clean, c_clean),
-                    "per_image": per_image(b_cond, c_cond), "per_image_clean": per_image(b_clean, c_clean),
-                    "gain": gain, "clean": clean, "joint": gain + clean})
+        out.append(
+            {
+                "name": entry.name,
+                "instance_id": entry.instance_id,
+                "child_sha256": entry.child_sha256,
+                "readout": entry.readout,
+                "mode": "sealed",
+                "list_sha256": sha,
+                "condition": "gaussian_noise_s3" if "gaussian" in entry.name else "contrast_s4",
+                "readouts": readouts(b_cond, c_cond),
+                "readouts_clean": readouts(b_clean, c_clean),
+                "per_image": per_image(b_cond, c_cond),
+                "per_image_clean": per_image(b_clean, c_clean),
+                "gain": gain,
+                "clean": clean,
+                "joint": gain + clean,
+            }
+        )
     return out
 
 
@@ -88,17 +107,30 @@ def test_sealed_table_readings_follow_the_records(tmp_path: Path) -> None:
             assert joint["lo"] < joint["point"] < joint["hi"]
     g = table["readings"]["gaussian_noise_s3"]
     assert g["bar"] == pytest.approx(by_name["T04_gaussian_bar_grad_sparse19_sal"]["joint"] + 1.0)
-    assert set(g["ft_joints"]) == {"main_ft_bn", "arm3_ft_full_l2sp", "arm3_ft_full_lwf", "arm3_ft_full_noreplay",
-                                   "arm3_grad_full", "arm3_grad_last", "arm3_lora_r16", "arm3_lora_r4"}
+    assert set(g["ft_joints"]) == {
+        "main_ft_bn",
+        "arm3_ft_full_l2sp",
+        "arm3_ft_full_lwf",
+        "arm3_ft_full_noreplay",
+        "arm3_grad_full",
+        "arm3_grad_last",
+        "arm3_lora_r16",
+        "arm3_lora_r4",
+    }
     c = table["readings"]["contrast_s4"]
     assert c["ft_joints"]["arm3_ft_full_l2sp"] == 0.0 and c["ft_joints"]["arm3_ft_full_lwf"] == 0.0
     for condition in (g, c):
         for final in condition["finals"].values():
             r = by_name[final["entry"]]
-            expect = (r["gain"] >= condition["G"] - 1e-9 and r["clean"] >= -1.0 - 1e-9
-                      and r["joint"] >= condition["bar"] - 1e-9)
+            expect = (
+                r["gain"] >= condition["G"] - 1e-9
+                and r["clean"] >= -1.0 - 1e-9
+                and r["joint"] >= condition["bar"] - 1e-9
+            )
             assert final["B_met"] == expect
-            assert final["joint_minus_main_interval"]["point"] == pytest.approx(final["joint_minus_main"], abs=1e-6)
+            assert final["joint_minus_main_interval"]["point"] == pytest.approx(
+                final["joint_minus_main"], abs=1e-6
+            )
 
 
 def test_sealed_table_refuses_a_record_off_the_list(tmp_path: Path) -> None:

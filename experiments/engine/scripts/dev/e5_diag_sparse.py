@@ -58,7 +58,13 @@ def main(argv: list[str] | None = None) -> int:
     from cryowisp.baselines.fit.edits import scale_to_norm_limit
     from cryowisp.baselines.fit.grad import LEARNING_RATES, STEP_CHECKPOINTS
     from cryowisp.baselines.fit.runner import CandidatePatch, MethodSpec, baseline_run_dir, execute_run
-    from cryowisp.baselines.fit.seqgrad import (adam_checkpoints, rebuild, seq_grad_config, seq_parity, token_loss)
+    from cryowisp.baselines.fit.seqgrad import (
+        adam_checkpoints,
+        rebuild,
+        seq_grad_config,
+        seq_parity,
+        token_loss,
+    )
     from cryowisp.evalkit.seqskill import load_seqskill_instance, seqskill_program_limits
 
     instance = load_seqskill_instance(args.instance)
@@ -91,56 +97,107 @@ def main(argv: list[str] | None = None) -> int:
                 token_loss(model, x, y).backward()
                 score = {name: p.grad.detach().numpy().copy() for name, p in model.named_parameters()}
             else:
-                (_, traj, _), = adam_checkpoints(params, x, y, trainable=trainable, lr=TRAJ_LR,
-                                                 checkpoints=(TRAJ_STEPS,), seed=args.seed)
-                score = {key: traj[key].astype(np.float64) - params[key].astype(np.float64) for key in trainable}
+                ((_, traj, _),) = adam_checkpoints(
+                    params, x, y, trainable=trainable, lr=TRAJ_LR, checkpoints=(TRAJ_STEPS,), seed=args.seed
+                )
+                score = {
+                    key: traj[key].astype(np.float64) - params[key].astype(np.float64) for key in trainable
+                }
             if set(score) != set(trainable):
-                raise RuntimeError(f"score keys differ from the student's: {sorted(set(score) ^ set(trainable))}")
+                raise RuntimeError(
+                    f"score keys differ from the student's: {sorted(set(score) ^ set(trainable))}"
+                )
             masks = top_fraction(score)
             n_mask = int(sum(m.sum() for m in masks.values()))
             n_params = int(sum(v.size for v in params.values()))
-            info = {"model_config": model.config.as_dict(), "parity_max_abs_logit_diff": parity,
-                    "parity_bound": parity_bound, "mask_rule": method, "mask_fraction_per_tensor": MASK_FRACTION,
-                    "n_trainable_entries": n_mask, "n_params": n_params, "trainable_frac": n_mask / n_params}
+            info = {
+                "model_config": model.config.as_dict(),
+                "parity_max_abs_logit_diff": parity,
+                "parity_bound": parity_bound,
+                "mask_rule": method,
+                "mask_fraction_per_tensor": MASK_FRACTION,
+                "n_trainable_entries": n_mask,
+                "n_params": n_params,
+                "trainable_frac": n_mask / n_params,
+            }
             with torch.no_grad():
                 info["base_evidence_loss"] = float(token_loss(rebuild(params), x, y))
             candidates = []
             for lr in LEARNING_RATES:
-                for steps, child, loss in adam_checkpoints(params, x, y, trainable=trainable, lr=lr,
-                                                           checkpoints=STEP_CHECKPOINTS, seed=args.seed, masks=masks):
+                for steps, child, loss in adam_checkpoints(
+                    params,
+                    x,
+                    y,
+                    trainable=trainable,
+                    lr=lr,
+                    checkpoints=STEP_CHECKPOINTS,
+                    seed=args.seed,
+                    masks=masks,
+                ):
                     for key in trainable:
                         if not np.array_equal(child[key][~masks[key]], params[key][~masks[key]]):
                             raise RuntimeError(f"{key} changed outside its mask")
                     notes = {"evidence_loss_at_checkpoint": loss}
-                    child, scaling = scale_to_norm_limit(params, child, trainable, limit=limits.max_rel_frob,
-                                                         min_ndim=limits.rel_frob_min_ndim,
-                                                         exempt=limits.rel_frob_exempt)
+                    child, scaling = scale_to_norm_limit(
+                        params,
+                        child,
+                        trainable,
+                        limit=limits.max_rel_frob,
+                        min_ndim=limits.rel_frob_min_ndim,
+                        exempt=limits.rel_frob_exempt,
+                    )
                     notes["norm_scaled_tensors"] = [key for key, entry in scaling.items() if entry["scaled"]]
                     if notes["norm_scaled_tensors"]:
                         with torch.no_grad():
                             notes["evidence_loss_after_scaling"] = float(token_loss(rebuild(child), x, y))
-                    candidates.append(CandidatePatch(
-                        slot=len(candidates), child=child, config={"lr": lr, "steps": steps},
-                        hypothesis=(f"{method}: Adam lr={lr:g} for {steps} full-batch steps on the {len(evidence.y)} "
-                                    f"evidence rows, every tensor, top {MASK_FRACTION:g} of each tensor's entries"),
-                        predicted_effect="new-operator rows answered right if a sparse fit inside the limits exists",
-                        notes=notes))
+                    candidates.append(
+                        CandidatePatch(
+                            slot=len(candidates),
+                            child=child,
+                            config={"lr": lr, "steps": steps},
+                            hypothesis=(
+                                f"{method}: Adam lr={lr:g} for {steps} full-batch steps on the {len(evidence.y)} "
+                                f"evidence rows, every tensor, top {MASK_FRACTION:g} of each tensor's entries"
+                            ),
+                            predicted_effect="new-operator rows answered right if a sparse fit inside the limits exists",
+                            notes=notes,
+                        )
+                    )
             info["n_candidates_norm_scaled"] = sum(1 for c in candidates if c.notes["norm_scaled_tensors"])
             return candidates, info
+
         return generate
 
     for method in args.methods:
-        spec = MethodSpec(method=method,
-                          label=("E5 post-hoc diagnostic, not a PREREG reference: Adam on a fixed 19% of every "
-                                 "tensor's entries, E5 program limits enforced"),
-                          uses_labels_for_fit=True, edit_limits_enforced=True)
+        spec = MethodSpec(
+            method=method,
+            label=(
+                "E5 post-hoc diagnostic, not a PREREG reference: Adam on a fixed 19% of every "
+                "tensor's entries, E5 program limits enforced"
+            ),
+            uses_labels_for_fit=True,
+            edit_limits_enforced=True,
+        )
         config = seq_grad_config("seq_grad_full", args.seed, instance)
-        config.update({"trained": f"every tensor, top {MASK_FRACTION:g} of its entries by the {method} mask",
-                       "norm_limit": limits.max_rel_frob, "mask_fraction_per_tensor": MASK_FRACTION,
-                       "traj_mask": {"lr": TRAJ_LR, "steps": TRAJ_STEPS} if method.endswith("traj") else None})
+        config.update(
+            {
+                "trained": f"every tensor, top {MASK_FRACTION:g} of its entries by the {method} mask",
+                "norm_limit": limits.max_rel_frob,
+                "mask_fraction_per_tensor": MASK_FRACTION,
+                "traj_mask": {"lr": TRAJ_LR, "steps": TRAJ_STEPS} if method.endswith("traj") else None,
+            }
+        )
         run_dir = baseline_run_dir(instance.instance_id, method, args.seed, REF_LABEL)
-        record = execute_run(instance=instance, spec=spec, run_dir=run_dir, run_seed=args.seed, config=config,
-                             generate=make_generator(method), require_valid_candidate=True, seqskill=True)
+        record = execute_run(
+            instance=instance,
+            spec=spec,
+            run_dir=run_dir,
+            run_seed=args.seed,
+            config=config,
+            generate=make_generator(method),
+            require_valid_candidate=True,
+            seqskill=True,
+        )
         print(method, run_dir / "run.json", record.get("final", {}).get("patch_id"), flush=True)
     return 0
 

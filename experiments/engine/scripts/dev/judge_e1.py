@@ -53,11 +53,15 @@ def judge(sid: str, bars: dict[str, tuple[str, float | None, bool]] | None = Non
     gain, clean = points(final.get("vselect")), points(final.get("vselect_clean"))
     joint = None if gain is None or clean is None else gain + clean
     print(f"== {sid}  instance {instance}  {condition}")
-    print(f"   final: noop {final.get('is_base_noop')}  kind {final.get('kind')}  query {final.get('query_index')}  "
-          f"program {final.get('patch_id')}")
+    print(
+        f"   final: noop {final.get('is_base_noop')}  kind {final.get('kind')}  query {final.get('query_index')}  "
+        f"program {final.get('patch_id')}"
+    )
     if final.get("vcheck"):
         vc = final["vcheck"]
-        print(f"   V_check: score_new {vc.get('score_new')}  score_old {vc.get('score_old')}  S_joint {vc.get('score')}")
+        print(
+            f"   V_check: score_new {vc.get('score_new')}  score_old {vc.get('score_old')}  S_joint {vc.get('score')}"
+        )
     print(f"   E1 V_select: gain {fmt(gain)}  clean {fmt(clean)}  joint {fmt(joint)}  bar {bar}")
     worst = (final.get("vselect_clean") or {}).get("worst_class_delta")
     if worst is not None:  # PREREG E1: reported next to the mean clean change, without gating
@@ -71,8 +75,15 @@ def judge(sid: str, bars: dict[str, tuple[str, float | None, bool]] | None = Non
     for path in sorted((out / "transfer").glob("transfer_*.json")):
         record = json.loads(path.read_text())
         target = record["target"]["instance_id"]
-        rows.append((target, record.get("status"), record.get("within_limits"), points(record.get("readouts")),
-                     points(record.get("readouts_clean"))))
+        rows.append(
+            (
+                target,
+                record.get("status"),
+                record.get("within_limits"),
+                points(record.get("readouts")),
+                points(record.get("readouts_clean")),
+            )
+        )
     own = [row for row in rows if row[0] == instance]
     others = [row for row in rows if row[0] != instance]
     for target, status, within, g, c in rows:
@@ -84,17 +95,24 @@ def judge(sid: str, bars: dict[str, tuple[str, float | None, bool]] | None = Non
             ratio = (sum(gains) / len(gains)) / own[0][3]
             n_clean_ok = sum(1 for row in others if row[4] is not None and row[4] >= -1.0)
             ok = ratio >= 0.7 and n_clean_ok >= 4 and all(row[2] for row in others)
-            print(f"   E3 reuse ratio {ratio:.3f} (mean unseen gain {sum(gains) / len(gains):+.2f} / own "
-                  f"{own[0][3]:+.2f}); clean >= -1.0 on {n_clean_ok} of {len(others)}; all within limits "
-                  f"{all(row[2] for row in others)} -> {'SUPPORTED' if ok else 'not supported'}")
+            print(
+                f"   E3 reuse ratio {ratio:.3f} (mean unseen gain {sum(gains) / len(gains):+.2f} / own "
+                f"{own[0][3]:+.2f}); clean >= -1.0 on {n_clean_ok} of {len(others)}; all within limits "
+                f"{all(row[2] for row in others)} -> {'SUPPORTED' if ok else 'not supported'}"
+            )
 
 
 def main(argv: list[str]) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--bar", action="append", default=[], metavar="INSTANCE=JOINT",
-                        help="the joint bar of an instance BARS does not hold (gain floor 10 applies)")
+    parser.add_argument(
+        "--bar",
+        action="append",
+        default=[],
+        metavar="INSTANCE=JOINT",
+        help="the joint bar of an instance BARS does not hold (gain floor 10 applies)",
+    )
     parser.add_argument("sessions", nargs="+")
     args = parser.parse_args(argv)
     bars: dict[str, tuple[str, float | None, bool]] = {}

@@ -14,7 +14,14 @@ import pytest
 
 from cryowisp.data import seqops as S
 from cryowisp.data import seqops_build as B
-from cryowisp.data.store import load_split, read_dataset_json, save_split, sealed_test_path, split_path, split_sha256
+from cryowisp.data.store import (
+    load_split,
+    read_dataset_json,
+    save_split,
+    sealed_test_path,
+    split_path,
+    split_sha256,
+)
 
 
 @pytest.fixture
@@ -73,7 +80,9 @@ def test_condition_parts_old_part_and_disjointness(store: Path) -> None:
     all_new_keys = []
     for name, arrays in [*built.splits.items(), ("test", built.test)]:
         old = arrays["part"] == S.PART_OLD
-        np.testing.assert_array_equal(arrays["idx"][old], base[name]["idx"] if name != "V_evidence" else arrays["idx"][old])
+        np.testing.assert_array_equal(
+            arrays["idx"][old], base[name]["idx"] if name != "V_evidence" else arrays["idx"][old]
+        )
         has_new = (arrays["opa"] == new0) | (arrays["opb"] == new0)
         np.testing.assert_array_equal(has_new, ~old)
         all_new_keys.append(arrays["idx"][~old])
@@ -93,7 +102,10 @@ def test_condition_write_and_verify_need_the_base(store: Path) -> None:
     assert manifest["forward_sha256"] == base_manifest["forward_sha256"]
     assert read_dataset_json(S.DATASET, "new0_substitution")["condition"]["operator"] == "OP_NEW0"
     assert all(value["match"] for value in B.verify_condition("new0_substitution").values())
-    assert split_sha256(load_split(S.DATASET, "V_check", "new0_substitution")) == manifest["splits"]["V_check"]["sha256"]
+    assert (
+        split_sha256(load_split(S.DATASET, "V_check", "new0_substitution"))
+        == manifest["splits"]["V_check"]["sha256"]
+    )
     assert sealed_test_path(S.DATASET, "new0_substitution").is_file()
 
 

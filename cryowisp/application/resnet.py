@@ -44,6 +44,7 @@ def reference_logits(model, x: np.ndarray, *, dtype=None) -> np.ndarray:
 
 def parity(params: dict, buffers: dict, x: np.ndarray) -> dict:
     import torch
+
     from cryowisp.models.parity import check_logit_parity
 
     mine = forward_module(len(params["fc.bias"])).forward(params, x)
@@ -59,6 +60,7 @@ def parity(params: dict, buffers: dict, x: np.ndarray) -> dict:
 def import_checkpoint(checkpoint: Path, labels: list[str], out: Path) -> dict:
     import torch
     from torchvision.models import resnet18
+
     from cryowisp.models.resnet18native import render_forward_u8
     from cryowisp.models.resnet18up import param_shapes
 

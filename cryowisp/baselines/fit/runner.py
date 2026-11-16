@@ -65,7 +65,12 @@ from cryowisp.data import seqops as S
 from cryowisp.evalkit.companions import REPLAY_RULE, load_replay, make_joint_oracle
 from cryowisp.evalkit.e10 import e10_program_limits
 from cryowisp.evalkit.evidence import EVIDENCE_RULE, EVIDENCE_RULE_V1
-from cryowisp.evalkit.fewshot import FEWSHOT_RULE, check_fewshot_current, fewshot_program_limits, make_fewshot_oracle
+from cryowisp.evalkit.fewshot import (
+    FEWSHOT_RULE,
+    check_fewshot_current,
+    fewshot_program_limits,
+    make_fewshot_oracle,
+)
 from cryowisp.evalkit.fewshot import REPLAY_RULE as FEWSHOT_REPLAY_RULE
 from cryowisp.evalkit.graphnew import (
     GRAPHNEW_RULE,
@@ -77,7 +82,13 @@ from cryowisp.evalkit.graphnew import (
 from cryowisp.evalkit.graphnew import REPLAY_RULE as GRAPHNEW_REPLAY_RULE
 from cryowisp.evalkit.metrics import BASE_CANDIDATE, Candidate, summarize
 from cryowisp.evalkit.patch_check import JOINT_PARTS, JointPatchCheckOracle, PatchCheckOracle, predict
-from cryowisp.evalkit.scanskill import SCAN_LIMITS_SOURCE, SCAN_RULE, check_scan_current, make_scan_oracle, scan_program_limits
+from cryowisp.evalkit.scanskill import (
+    SCAN_LIMITS_SOURCE,
+    SCAN_RULE,
+    check_scan_current,
+    make_scan_oracle,
+    scan_program_limits,
+)
 from cryowisp.evalkit.scanskill import evidence_keys as scan_evidence_keys
 from cryowisp.evalkit.scanskill import seq_predictions as scan_predictions
 from cryowisp.evalkit.seqskill import REPLAY_RULE as SEQSKILL_REPLAY_RULE

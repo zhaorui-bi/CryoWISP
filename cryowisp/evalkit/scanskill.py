@@ -80,7 +80,15 @@ from cryowisp.evalkit.instances import (
 from cryowisp.evalkit.metrics import IGNORE, rows_right, token_accuracy
 from cryowisp.evalkit.patch_check import ForwardFn, JointPatchCheckOracle, load_forward, predict
 from cryowisp.evalkit.seqskill import REPLAY_RULE, REPLAY_STREAM, seqskill_program_limits
-from cryowisp.evalkit.targets import file_sha256, json_text, jsonable, no_bytecode_cache, read_json, utc_now, write_json_atomic
+from cryowisp.evalkit.targets import (
+    file_sha256,
+    json_text,
+    jsonable,
+    no_bytecode_cache,
+    read_json,
+    utc_now,
+    write_json_atomic,
+)
 from cryowisp.patch import OP_NAMES, Limits
 from cryowisp.patch import SCHEMA as PATCH_SCHEMA
 

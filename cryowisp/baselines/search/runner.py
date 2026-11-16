@@ -33,7 +33,12 @@ import numpy as np
 
 from cryowisp.baselines.instance_io import DEFAULT_QUERY_BUDGET, Instance, load_instance, make_oracle
 from cryowisp.baselines.search import arachne, care
-from cryowisp.baselines.search.evidence import CountedForward, EvidenceSets, build_evidence_sets, evidence_readout
+from cryowisp.baselines.search.evidence import (
+    CountedForward,
+    EvidenceSets,
+    build_evidence_sets,
+    evidence_readout,
+)
 from cryowisp.baselines.search.limits import EditLimits, edit_stats, limit_violations
 from cryowisp.baselines.search.netspec import NetSpec, check_parity, parse_spec
 from cryowisp.baselines.search.patches import write_sparse_patch

@@ -22,10 +22,20 @@ from pathlib import Path
 from typing import Any
 
 from cryowisp.common.paths import relocate_run_path
+
 CONDITIONS = ("gaussian_noise_s3", "contrast_s4")
 ARM4 = ("bn_adapt", "tent")
-ARM5_T04 = ("grad_last", "grad_full", "ridge_last", "prior_shift", "tie_inputs", "input_stats", "grad_sparse19_sal",
-            "grad_sparse19_traj", "interp")
+ARM5_T04 = (
+    "grad_last",
+    "grad_full",
+    "ridge_last",
+    "prior_shift",
+    "tie_inputs",
+    "input_stats",
+    "grad_sparse19_sal",
+    "grad_sparse19_traj",
+    "interp",
+)
 ARM5_GRIDS = ("grad_sparse19_sal", "grad_sparse19_traj", "interp")
 GRID_LABELS = ("t04g2", "t04g3")
 EXTENSION = "t04g3"
@@ -60,12 +70,23 @@ def load(store: Path, condition: str) -> list[dict[str, Any]]:
             config = {c["patch_id"]: c["config"] for c in run["candidates"]}
             sel = r["selection"]
             label = run_path.parts[-3]
-            rows.append({"arm": arm_of(r["method"], label), "method": r["method"], "label": label,
-                         "kept": sel["patch_id"], "kept_config": config.get(sel["patch_id"]),
-                         "primary": sel.get("primary_patch_id"), "primary_config": config.get(sel.get("primary_patch_id")),
-                         "eligible": f"{sel['n_eligible']}/{sel['n_checks']}",
-                         "s_new": r["vcheck"].get("score_new"), "s_old": r["vcheck"].get("score_old"),
-                         "points": points(r), "file": path.name, "run": run})
+            rows.append(
+                {
+                    "arm": arm_of(r["method"], label),
+                    "method": r["method"],
+                    "label": label,
+                    "kept": sel["patch_id"],
+                    "kept_config": config.get(sel["patch_id"]),
+                    "primary": sel.get("primary_patch_id"),
+                    "primary_config": config.get(sel.get("primary_patch_id")),
+                    "eligible": f"{sel['n_eligible']}/{sel['n_checks']}",
+                    "s_new": r["vcheck"].get("score_new"),
+                    "s_old": r["vcheck"].get("score_old"),
+                    "points": points(r),
+                    "file": path.name,
+                    "run": run,
+                }
+            )
     return rows
 
 
@@ -84,7 +105,9 @@ def line(x: dict[str, Any]) -> str:
     return f"{x['method']}/{x['label']} {x['kept'] or 'base'} {cfg(x['kept_config'])} {g:+.3f} / {c:+.3f} / {j:+.3f}"
 
 
-def determinism(rows: list[dict[str, Any]], decisions: list[dict[str, Any]], condition: str) -> tuple[int, list[str]]:
+def determinism(
+    rows: list[dict[str, Any]], decisions: list[dict[str, Any]], condition: str
+) -> tuple[int, list[str]]:
     """The repeated configurations of each extension grid against its source run's V_check log."""
     by = {(x["method"], x["label"]): x["run"] for x in rows}
     n, bad = 0, []
@@ -114,34 +137,49 @@ def determinism(rows: list[dict[str, Any]], decisions: list[dict[str, Any]], con
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--store", required=True, type=Path, help="the T04 store root")
-    parser.add_argument("--pairs", required=True, type=Path, help="edge_extension.py's output (edge_pairs.json)")
+    parser.add_argument(
+        "--pairs", required=True, type=Path, help="edge_extension.py's output (edge_pairs.json)"
+    )
     parser.add_argument("--conditions", nargs="+", default=list(CONDITIONS))
     args = parser.parse_args(argv)
     decisions = json.loads(args.pairs.read_text())["decisions"]
     for condition in args.conditions:
         rows = load(args.store, condition)
         print(f"== {condition}: {len(rows)} kept readouts")
-        print("arm | method / label | kept pick (config) | primary | eligible | V_check S_new / S_old | gain | clean | "
-              "joint")
+        print(
+            "arm | method / label | kept pick (config) | primary | eligible | V_check S_new / S_old | gain | clean | "
+            "joint"
+        )
         for x in sorted(rows, key=lambda x: (x["arm"], -x["points"][2], x["method"], x["label"])):
             g, c, j = x["points"]
-            print(f"{x['arm']} | {x['method']} / {x['label']} | {x['kept'] or 'base'} {cfg(x['kept_config'])} | "
-                  f"{x['primary'] or 'base'} {cfg(x['primary_config'])} | {x['eligible']} | {x['s_new']} / "
-                  f"{x['s_old']} | {g:+.3f} | {c:+.3f} | {j:+.3f}")
+            print(
+                f"{x['arm']} | {x['method']} / {x['label']} | {x['kept'] or 'base'} {cfg(x['kept_config'])} | "
+                f"{x['primary'] or 'base'} {cfg(x['primary_config'])} | {x['eligible']} | {x['s_new']} / "
+                f"{x['s_old']} | {g:+.3f} | {c:+.3f} | {j:+.3f}"
+            )
         pre = [x for x in rows if x["label"] != EXTENSION]
         bar0, bar1 = best(pre, ("4", "5")), best(rows, ("4", "5"))
         ctl0, ctl1 = best(pre, ("3",)), best(rows, ("3",))
-        print(f"bar: before the extension {bar0['points'][2] + 1:+.3f} ({line(bar0)}); of record "
-              f"{bar1['points'][2] + 1:+.3f} ({line(bar1)})")
+        print(
+            f"bar: before the extension {bar0['points'][2] + 1:+.3f} ({line(bar0)}); of record "
+            f"{bar1['points'][2] + 1:+.3f} ({line(bar1)})"
+        )
         print(f"main control: before the extension {line(ctl0)}; of record {line(ctl1)}")
         n, bad = determinism(rows, decisions, condition)
-        print(f"determinism: {n} repeated configurations, {len(bad)} mismatches" + "".join(f"\n  {b}" for b in bad))
-        for path in sorted((args.store / "runs" / "devreadouts" / "t04" / condition).glob("frontier_*.jsonl")):
+        print(
+            f"determinism: {n} repeated configurations, {len(bad)} mismatches"
+            + "".join(f"\n  {b}" for b in bad)
+        )
+        for path in sorted(
+            (args.store / "runs" / "devreadouts" / "t04" / condition).glob("frontier_*.jsonl")
+        ):
             print(f"arm-6 frontier ({path.name}; descriptive, selects nothing):")
             for r in map(json.loads, path.read_text().splitlines()):
                 g, c, j = points(r)
-                print(f"  {r['method']} {r['patch_id']} {cfg(r['config'])} | V_check {r['vcheck']['score_new']} / "
-                      f"{r['vcheck']['score_old']} | {g:+.3f} | {c:+.3f} | {j:+.3f}")
+                print(
+                    f"  {r['method']} {r['patch_id']} {cfg(r['config'])} | V_check {r['vcheck']['score_new']} / "
+                    f"{r['vcheck']['score_old']} | {g:+.3f} | {c:+.3f} | {j:+.3f}"
+                )
     return 0
 
 

@@ -34,7 +34,9 @@ def test_grad_and_interp_extension_grids_are_the_rule_applied_to_the_second_grid
     assert G.GRID_T04_EDGE.learning_rates == (1e-6, 1e-5)
     assert G.GRID_T04_EDGE.interp_alphas == tuple(k / 512 for k in range(1, 9))
     source = [{"lr": lr, "steps": s} for lr, s in G.candidate_grid(G.GRID_E11_SECOND)]
-    assert rule_scaled(source, "lr") == [{"lr": lr, "steps": s} for lr, s in G.candidate_grid(G.GRID_T04_EDGE)]
+    assert rule_scaled(source, "lr") == [
+        {"lr": lr, "steps": s} for lr, s in G.candidate_grid(G.GRID_T04_EDGE)
+    ]
     alphas = [{"alpha": a} for a in G.GRID_E11_SECOND.interp_alphas]
     assert rule_scaled(alphas, "alpha") == [{"alpha": a} for a in G.GRID_T04_EDGE.interp_alphas]
     assert "alpha in {1/512 .. 8/512}" in G.grid_spec("interp", G.GRID_T04_EDGE).label
@@ -57,7 +59,9 @@ def test_f1_extension_grids_are_the_rule_applied_to_each_f1_grid(method: str) ->
     edge = FT.f1_configs(method, edge=True)
     assert edge == rule_scaled(FT.f1_configs(method), "lr")
     assert len(edge) == 8
-    assert min(c["lr"] for c in edge) == pytest.approx(min(c["lr"] for c in FT.f1_configs(method)) / 10, rel=1e-12)
+    assert min(c["lr"] for c in edge) == pytest.approx(
+        min(c["lr"] for c in FT.f1_configs(method)) / 10, rel=1e-12
+    )
     config = FT.f1_config(method, 0, FT.F1_T04_DATASET, edge=True)
     assert config["candidate_order"] == edge and config["grid"]["name"] == "t04_edge"
     assert config["reused"] == {"full": ["grad_full", "t04g3"], "last layer": ["grad_last", "t04g3"]}
@@ -82,8 +86,12 @@ def test_edge_runs_are_refused_outside_t04_and_for_methods_without_an_extension(
 
 
 def _record(method: str, primary: str | None, kept: str | None) -> dict[str, Any]:
-    return {"method": method, "condition": "c", "instance_id": "i0",
-            "selection": {"primary_patch_id": primary, "patch_id": kept}}
+    return {
+        "method": method,
+        "condition": "c",
+        "instance_id": "i0",
+        "selection": {"primary_patch_id": primary, "patch_id": kept},
+    }
 
 
 def _run(configs: list[dict[str, Any]]) -> dict[str, Any]:
@@ -119,11 +127,26 @@ def test_pair_script_reads_kept_files_and_maps_the_store(tmp_path: Path) -> None
     (run_dir / "run.json").write_text(json.dumps(_run(lr_grid)))
     kept = store / "runs" / "devreadouts" / "t04" / "c"
     kept.mkdir(parents=True)
-    record = _record("grad_full", "q0", None) | {"run": "/previous/store/runs/baselines/i0/grad_full/t04g2/0/run.json"}
+    record = _record("grad_full", "q0", None) | {
+        "run": "/previous/store/runs/baselines/i0/grad_full/t04g2/0/run.json"
+    }
     (kept / "kept_x.jsonl").write_text(json.dumps(record) + "\n")
     out = tmp_path / "pairs.json"
-    assert EE.main(["--devreadouts", str(store / "runs" / "devreadouts" / "t04"), "--store", str(store),
-                    "--conditions", "c", "--out", str(out)]) == 0
+    assert (
+        EE.main(
+            [
+                "--devreadouts",
+                str(store / "runs" / "devreadouts" / "t04"),
+                "--store",
+                str(store),
+                "--conditions",
+                "c",
+                "--out",
+                str(out),
+            ]
+        )
+        == 0
+    )
     result = json.loads(out.read_text())
     assert result["n_extended"] == 1 and result["decisions"][0]["label"] == "t04g2"
 
@@ -133,7 +156,9 @@ def test_recorded_runs_paths_relocate_to_the_explicit_store(recorded: str, tmp_p
     assert relocate_run_path(recorded, tmp_path) == tmp_path / "runs/baselines/run.json"
 
 
-@pytest.mark.parametrize("recorded", ["private/run.json", "runs/../private/run.json", "runs/nested/runs/run.json"])
+@pytest.mark.parametrize(
+    "recorded", ["private/run.json", "runs/../private/run.json", "runs/nested/runs/run.json"]
+)
 def test_recorded_runs_paths_refuse_ambiguous_or_escaping_roots(recorded: str, tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="not a store runs path"):
         relocate_run_path(recorded, tmp_path)

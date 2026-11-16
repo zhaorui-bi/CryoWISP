@@ -69,7 +69,10 @@ def test_input_stats_fold_is_exact_on_interior_positions() -> None:
     mean, std = RU.input_channel_stats(arch, x)
     fold = RU.input_stats_fold(arch, params, mean, std, 1.0)
     assert set(k for k in params if not np.array_equal(fold.child[k], params[k])) == {
-        "conv1.weight", "bn1.running_mean", "bn1.running_var"}
+        "conv1.weight",
+        "bn1.running_mean",
+        "bn1.running_var",
+    }
     k = fold.k
     t64 = TF.to_tensors(params, dtype=torch.float64)
     c64 = TF.to_tensors(fold.child, dtype=torch.float64)
@@ -138,5 +141,12 @@ def test_every_runner_the_cli_dispatches_with_e10_accepts_it() -> None:
 
     from cryowisp.baselines.fit import grad, ridge
 
-    runners = (grad.run_grad, ridge.run_ridge, RU.run_prior_shift, RU.run_tie, RU.run_input_stats, B.run_bn_ref)
+    runners = (
+        grad.run_grad,
+        ridge.run_ridge,
+        RU.run_prior_shift,
+        RU.run_tie,
+        RU.run_input_stats,
+        B.run_bn_ref,
+    )
     assert all("e10" in inspect.signature(runner).parameters for runner in runners)

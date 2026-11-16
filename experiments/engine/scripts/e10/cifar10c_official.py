@@ -67,12 +67,20 @@ def load_official(path: Path) -> dict[str, Any]:
         raise OfficialCodeError(f"{path} does not define {missing}")
     import torchvision.transforms as trn
 
-    namespace["convert_img"] = trn.Compose([trn.ToTensor(), trn.ToPILImage()])  # line 448 of the official file
+    namespace["convert_img"] = trn.Compose(
+        [trn.ToTensor(), trn.ToPILImage()]
+    )  # line 448 of the official file
     return namespace
 
 
-def corrupt(official: dict[str, Any], name: str, x: np.ndarray, seed: int, severity: int = SEVERITY,
-            progress: Callable[[int], None] | None = None) -> np.ndarray:
+def corrupt(
+    official: dict[str, Any],
+    name: str,
+    x: np.ndarray,
+    seed: int,
+    severity: int = SEVERITY,
+    progress: Callable[[int], None] | None = None,
+) -> np.ndarray:
     """Corrupt NCHW uint8 images with the official function ``name`` at ``severity`` (module docstring)."""
     if x.dtype != np.uint8 or x.ndim != 4 or x.shape[1] != 3:
         raise ValueError(f"expected NCHW uint8 images with 3 channels, got {x.dtype} {x.shape}")
@@ -99,7 +107,15 @@ def library_versions() -> dict[str, str]:
     import torchvision
     import wand.version
 
-    return {"python": sys.version.split()[0], "numpy": np.__version__, "scipy": scipy.__version__,
-            "opencv": cv2.__version__, "scikit-image": skimage.__version__, "Pillow": PIL.__version__,
-            "torch": torch.__version__, "torchvision": torchvision.__version__, "Wand": wand.version.VERSION,
-            "ImageMagick": wand.version.MAGICK_VERSION}
+    return {
+        "python": sys.version.split()[0],
+        "numpy": np.__version__,
+        "scipy": scipy.__version__,
+        "opencv": cv2.__version__,
+        "scikit-image": skimage.__version__,
+        "Pillow": PIL.__version__,
+        "torch": torch.__version__,
+        "torchvision": torchvision.__version__,
+        "Wand": wand.version.VERSION,
+        "ImageMagick": wand.version.MAGICK_VERSION,
+    }

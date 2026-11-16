@@ -27,7 +27,6 @@ from typing import Any
 
 import numpy as np
 
-from cryowisp.evalkit.targets import file_sha256
 from cryowisp.data.store import (
     dataset_dir,
     dataset_json_path,
@@ -39,6 +38,7 @@ from cryowisp.data.store import (
     split_sha256,
     write_json,
 )
+from cryowisp.evalkit.targets import file_sha256
 from cryowisp.models.forward_gen import render_resnet20a_forward
 from cryowisp.models.resnet20 import BN_EPS
 

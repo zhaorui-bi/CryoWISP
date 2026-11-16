@@ -40,7 +40,10 @@ def test_download_checks_the_sha256(tmp_path: Path) -> None:
 
 def test_hf_files_follow_sha256sums(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = tmp_path / "endpoint" / "datasets" / F.HF_REPO / "resolve" / F.HF_REVISION
-    lines = [f"{_file(root / path, path)}  {path}" for path in ("w/i1/model.npz", "w/i1/task.json", "r/s1/run.json")]
+    lines = [
+        f"{_file(root / path, path)}  {path}"
+        for path in ("w/i1/model.npz", "w/i1/task.json", "r/s1/run.json")
+    ]
     sums = "\n".join(lines) + "\n"
     _file(root / "SHA256SUMS", sums)
     monkeypatch.setenv("HF_ENDPOINT", (tmp_path / "endpoint").as_uri())
@@ -63,10 +66,12 @@ def test_the_examples_run_without_pytorch() -> None:
     import subprocess
     import sys
 
-    code = ("import sys\nsys.modules['torch'] = sys.modules['torchvision'] = None\n"
-            "import cryowisp.application.cli, cryowisp.examples.replay\n"
-            "from cryowisp.examples import EXAMPLES\nimport importlib\n"
-            "[importlib.import_module(m) for m in EXAMPLES.values()]\n")
+    code = (
+        "import sys\nsys.modules['torch'] = sys.modules['torchvision'] = None\n"
+        "import cryowisp.application.cli, cryowisp.examples.replay\n"
+        "from cryowisp.examples import EXAMPLES\nimport importlib\n"
+        "[importlib.import_module(m) for m in EXAMPLES.values()]\n"
+    )
     done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
     assert done.returncode == 0, done.stderr
 
@@ -77,7 +82,9 @@ def test_the_cli_parses_every_example() -> None:
         assert args.command == "reproduce" and args.example == name and args.sandbox_python is None
 
 
-@pytest.mark.skipif(os.environ.get("CRYOWISP_ONLINE_TESTS") != "1", reason="downloads ~10 MB; set CRYOWISP_ONLINE_TESTS=1")
+@pytest.mark.skipif(
+    os.environ.get("CRYOWISP_ONLINE_TESTS") != "1", reason="downloads ~10 MB; set CRYOWISP_ONLINE_TESTS=1"
+)
 def test_scan_reproduces_the_paper(tmp_path: Path) -> None:
     import sys
 
@@ -87,7 +94,11 @@ def test_scan_reproduces_the_paper(tmp_path: Path) -> None:
     runner = UnisolatedRunner(python=Path(sys.executable), memory_bytes=8 * 2**30, threads=4)
     summary = scan.run(tmp_path, runner, log=lambda _: None)
     assert summary["replay"]["exact"] and summary["matches_paper"]
-    assert summary["new"]["n"] == 2568 and summary["new"]["em_base"] == 0.0 and summary["replay"]["n_changed"] == 257
+    assert (
+        summary["new"]["n"] == 2568
+        and summary["new"]["em_base"] == 0.0
+        and summary["replay"]["n_changed"] == 257
+    )
 
 
 def test_imagenet_reads_the_records_per_image_bits() -> None:

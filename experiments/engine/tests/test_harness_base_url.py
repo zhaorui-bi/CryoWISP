@@ -55,13 +55,18 @@ def test_billing_record_holds_paths_never_secrets(tmp_path: Path) -> None:
     token = _file(tmp_path, "auth_token", TOKEN + "\n")
     url = _file(tmp_path, "base_url", URL + "\n")
     record = launch.billing_record(None, base_url_file=url, auth_token_file=token)
-    assert record == {"mode": launch.BILLING_AUTH_TOKEN_FILE, "auth_token_file": str(token.absolute()),
-                      "base_url_file": str(url.absolute())}
+    assert record == {
+        "mode": launch.BILLING_AUTH_TOKEN_FILE,
+        "auth_token_file": str(token.absolute()),
+        "base_url_file": str(url.absolute()),
+    }
     assert TOKEN not in repr(record) and URL not in repr(record)
     key = _file(tmp_path, "api_key", KEY + "\n")
     assert launch.billing_record(key, base_url_file=url) == {
-        "mode": launch.BILLING_API_KEY_FILE, "api_key_file": str(key.absolute()),
-        "base_url_file": str(url.absolute())}
+        "mode": launch.BILLING_API_KEY_FILE,
+        "api_key_file": str(key.absolute()),
+        "base_url_file": str(url.absolute()),
+    }
     assert launch.billing_record(None) == {"mode": launch.BILLING_SUBSCRIPTION}
 
 
@@ -70,12 +75,14 @@ def test_several_credential_files_are_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="not both"):
         launch.billing_record(_file(tmp_path, "api_key", KEY + "\n"), auth_token_file=token)
     with pytest.raises(ValueError, match="not both"):
-        launch.ClaudeLauncher(_fake_claude(tmp_path), api_key_file=_file(tmp_path, "api_key", KEY + "\n"),
-                              auth_token_file=token)
+        launch.ClaudeLauncher(
+            _fake_claude(tmp_path), api_key_file=_file(tmp_path, "api_key", KEY + "\n"), auth_token_file=token
+        )
 
 
-def test_the_launcher_sets_the_endpoint_and_token_in_the_child_only(tmp_path: Path,
-                                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_launcher_sets_the_endpoint_and_token_in_the_child_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv(launch.BASE_URL_ENV, "https://inherited.example.com")
     monkeypatch.setenv(launch.AUTH_TOKEN_ENV, "inherited-from-parent")
     plain = launch.ClaudeLauncher(_fake_claude(tmp_path))
@@ -103,21 +110,37 @@ def test_a_base_url_file_combines_with_an_api_key_file(tmp_path: Path) -> None:
 
 def test_a_bad_file_is_refused_before_any_session_is_prepared(tmp_path: Path) -> None:
     with pytest.raises(launch.BaseUrlFileError):
-        launch.ClaudeLauncher(_fake_claude(tmp_path), base_url_file=_file(tmp_path, "base_url", URL + "\n",
-                                                                          mode=0o644))
+        launch.ClaudeLauncher(
+            _fake_claude(tmp_path), base_url_file=_file(tmp_path, "base_url", URL + "\n", mode=0o644)
+        )
     with pytest.raises(launch.BaseUrlFileError, match="https://"):
-        launch.ClaudeLauncher(_fake_claude(tmp_path), base_url_file=_file(tmp_path, "base_url", "not-a-url\n"))
+        launch.ClaudeLauncher(
+            _fake_claude(tmp_path), base_url_file=_file(tmp_path, "base_url", "not-a-url\n")
+        )
     with pytest.raises(launch.AuthTokenFileError, match="mode"):
-        launch.ClaudeLauncher(_fake_claude(tmp_path), auth_token_file=_file(tmp_path, "auth_token", TOKEN + "\n",
-                                                                            mode=0o644))
+        launch.ClaudeLauncher(
+            _fake_claude(tmp_path), auth_token_file=_file(tmp_path, "auth_token", TOKEN + "\n", mode=0o644)
+        )
 
 
 def test_the_cli_takes_the_new_flags() -> None:
     import subprocess
     import sys
+
     script = Path(__file__).resolve().parents[1] / "scripts" / "run_editor_session.py"
     proc = subprocess.run([sys.executable, str(script), "--help"], capture_output=True, text=True)
     assert "--auth-token-file" in proc.stdout and "--base-url-file" in proc.stdout
-    proc = subprocess.run([sys.executable, str(script), "--api-key-file", "/nonexistent/a",
-                           "--auth-token-file", "/nonexistent/b", "--help"], capture_output=True, text=True)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--api-key-file",
+            "/nonexistent/a",
+            "--auth-token-file",
+            "/nonexistent/b",
+            "--help",
+        ],
+        capture_output=True,
+        text=True,
+    )
     assert proc.returncode == 2 and "not allowed with argument" in proc.stderr

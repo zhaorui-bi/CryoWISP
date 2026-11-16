@@ -34,8 +34,10 @@ def test_a_superseded_instance_is_refused_with_its_reason(harness_store: Harness
     assert _nothing_written(harness_store)
 
 
-def test_an_instance_built_under_other_limits_is_refused_naming_the_field(harness_store: HarnessStore,  # noqa: F811
-                                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_instance_built_under_other_limits_is_refused_naming_the_field(
+    harness_store: HarnessStore,  # noqa: F811
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     def newer_limits(**kwargs: object) -> Limits:
         return Limits(**{"max_edit_frac": 0.1, **kwargs})  # type: ignore[arg-type]
 
@@ -81,8 +83,9 @@ def test_decoy_is_refused_without_the_decoy_models_own_evidence(harness_store: H
 
 
 @needs_sandbox
-def test_the_other_arms_still_run_when_only_the_decoy_evidence_is_missing(harness_store: HarnessStore  # noqa: F811
-                                                                         ) -> None:
+def test_the_other_arms_still_run_when_only_the_decoy_evidence_is_missing(
+    harness_store: HarnessStore,  # noqa: F811
+) -> None:
     supersede_instances([harness_store.dev(101)], "test: decoy sibling retired")
     result = run_session(harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=60.0, dry_run=True)
     assert result.status == "dry_run"

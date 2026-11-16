@@ -4,6 +4,7 @@
 Fine-tunes the base ResNet-18 on experience.npz (x_new + x_old), evaluates on selection.npz and final.npz
 with the same scoring as the engine (accuracy per condition), so the numbers are directly comparable.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -13,7 +14,6 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
 from torchvision.models import resnet18
 
 IMAGENET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
@@ -41,8 +41,8 @@ def cond_accuracy(model: nn.Module, npz: Path) -> dict:
         y = torch.from_numpy(z[f"y_{role}"].astype(np.int64))
         correct = total = 0
         for i in range(0, len(x), 256):
-            pred = model(normalize(x[i:i + 256])).argmax(1)
-            correct += int((pred == y[i:i + 256]).sum())
+            pred = model(normalize(x[i : i + 256])).argmax(1)
+            correct += int((pred == y[i : i + 256]).sum())
             total += len(pred)
         out[role] = {"accuracy": correct / total, "n": total}
     return out
@@ -76,7 +76,7 @@ def main() -> None:
         perm = torch.randperm(len(x))
         losses = []
         for i in range(0, len(perm) - args.batch_size + 1, args.batch_size):
-            idx = perm[i:i + args.batch_size]
+            idx = perm[i : i + args.batch_size]
             logits = model(normalize(x[idx]))
             loss = nn.functional.cross_entropy(logits, y[idx])
             opt.zero_grad(set_to_none=True)
@@ -86,19 +86,26 @@ def main() -> None:
         sched.step()
         sel = cond_accuracy(model, args.selection)
         net = sel["new"]["accuracy"] + sel["old"]["accuracy"]
-        history.append({"epoch": epoch, "train_loss": sum(losses) / max(1, len(losses)),
-                        "selection": sel})
-        print(f"epoch {epoch}: loss {sum(losses) / max(1, len(losses)):.4f} "
-              f"sel new {sel['new']['accuracy']:.4f} old {sel['old']['accuracy']:.4f}", flush=True)
+        history.append({"epoch": epoch, "train_loss": sum(losses) / max(1, len(losses)), "selection": sel})
+        print(
+            f"epoch {epoch}: loss {sum(losses) / max(1, len(losses)):.4f} "
+            f"sel new {sel['new']['accuracy']:.4f} old {sel['old']['accuracy']:.4f}",
+            flush=True,
+        )
         if net >= best_sel:
             best_sel = net
             best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
 
     model.load_state_dict(best_state)
-    result = {"epochs": args.epochs, "lr": args.lr, "seed": args.seed,
-              "best_selection_net": best_sel, "history": history,
-              "selection": cond_accuracy(model, args.selection),
-              "final": cond_accuracy(model, args.final)}
+    result = {
+        "epochs": args.epochs,
+        "lr": args.lr,
+        "seed": args.seed,
+        "best_selection_net": best_sel,
+        "history": history,
+        "selection": cond_accuracy(model, args.selection),
+        "final": cond_accuracy(model, args.final),
+    }
     print("selection", json.dumps(result["selection"]))
     print("final", json.dumps(result["final"]))
     args.out.parent.mkdir(parents=True, exist_ok=True)

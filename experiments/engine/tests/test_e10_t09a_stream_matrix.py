@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 SPEC = importlib.util.spec_from_file_location(
-    "t09a", Path(__file__).resolve().parents[1] / "scripts" / "e10" / "t09a_stream_matrix.py")
+    "t09a", Path(__file__).resolve().parents[1] / "scripts" / "e10" / "t09a_stream_matrix.py"
+)
 t09a = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(t09a)
 
@@ -23,8 +24,15 @@ def _record() -> dict:
     rounds = []
     for t, (row, clean) in enumerate(zip(GAIN, CLEAN), start=1):
         readouts = {i: {"select": {"delta_acc": g}, "clean": {"delta_acc": clean}} for i, g in zip(IDS, row)}
-        rounds.append({"round": t, "status": "ok", "condition": CONDS[t - 1], "instance_id": IDS[t - 1],
-                       "readouts": readouts})
+        rounds.append(
+            {
+                "round": t,
+                "status": "ok",
+                "condition": CONDS[t - 1],
+                "instance_id": IDS[t - 1],
+                "readouts": readouts,
+            }
+        )
     return {"schema": "cryowisp.harness.loop_stream.v0", "instances": IDS, "rounds": rounds}
 
 
@@ -38,9 +46,13 @@ def test_readings_match_hand_computation() -> None:
     assert a["forgetting_signed"] == pytest.approx(-4.0) and a["forgetting_best"] == pytest.approx(1.0)
     assert b["gain_before_own_round"] == pytest.approx(-2.0) and b["forgetting_best"] == pytest.approx(1.0)
     assert res["per_condition"]["c_s5"]["gain_before_own_round"] == pytest.approx(3.0)
-    assert res["max_forgetting_signed"] == pytest.approx(1.0) and res["max_forgetting_best"] == pytest.approx(1.0)
+    assert res["max_forgetting_signed"] == pytest.approx(1.0) and res["max_forgetting_best"] == pytest.approx(
+        1.0
+    )
     stop = res["stop_after_2"]
-    assert stop["w2_joint"] == pytest.approx(26.0 / 3 - 1.0) and stop["rounds_after_2_mean_gain"] == pytest.approx(0.0)
+    assert stop["w2_joint"] == pytest.approx(26.0 / 3 - 1.0) and stop[
+        "rounds_after_2_mean_gain"
+    ] == pytest.approx(0.0)
 
 
 def test_unequal_clean_or_missing_readout_is_refused() -> None:

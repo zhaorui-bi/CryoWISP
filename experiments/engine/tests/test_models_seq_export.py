@@ -66,13 +66,29 @@ def _fake_run(local: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role
     monkeypatch.setenv("CRYOWISP_PRIVATE", str(run / "private"))
     manifest = read_dataset_json(S.DATASET)
     result = _train()
-    entry = export_seq_model(manifest=manifest, role=role, seed=100, config=TINY, result=result,
-                             size_check={"em": 0.0, "passed": False}, determinism={},
-                             run_info={"versions": {"torch": torch.__version__}, "device": "cpu"},
-                             vselect=load_split(S.DATASET, "V_select"))
+    entry = export_seq_model(
+        manifest=manifest,
+        role=role,
+        seed=100,
+        config=TINY,
+        result=result,
+        size_check={"em": 0.0, "passed": False},
+        determinism={},
+        run_info={"versions": {"torch": torch.__version__}, "device": "cpu"},
+        vselect=load_split(S.DATASET, "V_select"),
+    )
     (models_dir(S.DATASET) / "index.json").write_text(json.dumps([entry]))
-    (run / "meta.json").write_text(json.dumps({"run_name": "r1", "request": "R-test", "select": "select=1:ngpus=1",
-                                               "walltime": "00:12:00", "code_digest": "abc"}))
+    (run / "meta.json").write_text(
+        json.dumps(
+            {
+                "run_name": "r1",
+                "request": "R-test",
+                "select": "select=1:ngpus=1",
+                "walltime": "00:12:00",
+                "code_digest": "abc",
+            }
+        )
+    )
     (run / "exit.json").write_text(json.dumps({"exit_code": 0, "elapsed_s": 10}))
     (run / "environment.txt").write_text(f"{'0' * 64} /images/container.sif\n")
     (run / "job_id.txt").write_text("1.pbs\n")
@@ -80,7 +96,9 @@ def _fake_run(local: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role
     return run
 
 
-def test_export_then_import_with_local_rechecks(local: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_export_then_import_with_local_rechecks(
+    local: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     run = _fake_run(local, tmp_path, monkeypatch)
     row = json.loads((run / "private" / S.DATASET / "models" / "index.json").read_text())[0]
     exported = read_json(run / "private" / S.DATASET / "models" / row["model_id"] / "private.json")
@@ -109,15 +127,26 @@ def test_export_then_import_with_local_rechecks(local: Path, tmp_path: Path, mon
 def _as_4090_run(run: Path, reason: str = "NUS unreachable: VPN down") -> None:
     """Turn the NSCC-like run dir into a 4090 fallback run dir as run_4090.sh and job_4090.sh write it."""
     meta = json.loads((run / "meta.json").read_text())
-    (run / "meta.json").write_text(json.dumps({"run_name": meta["run_name"], "host": "4090", "name": "seqops_base",
-                                               "reason": reason, "venv": "/home/bob/cryowisp/venv_seqops",
-                                               "code_digest": "abc"}))
+    (run / "meta.json").write_text(
+        json.dumps(
+            {
+                "run_name": meta["run_name"],
+                "host": "4090",
+                "name": "seqops_base",
+                "reason": reason,
+                "venv": "/home/bob/cryowisp/venv_seqops",
+                "code_digest": "abc",
+            }
+        )
+    )
     (run / "job_id.txt").unlink(missing_ok=True)
     freeze = "numpy==2.5.4\ntorch==2.14.0+cu130\n"
     (run / "venv_freeze.txt").write_text(freeze)
     digest = hashlib.sha256(freeze.encode()).hexdigest()
-    (run / "environment.txt").write_text(f"$ hostname\nbob\nvenv /home/bob/cryowisp/venv_seqops\npython_version 3.12.4\n"
-                                         f"venv_freeze_sha256 {digest}\n")
+    (run / "environment.txt").write_text(
+        f"$ hostname\nbob\nvenv /home/bob/cryowisp/venv_seqops\npython_version 3.12.4\n"
+        f"venv_freeze_sha256 {digest}\n"
+    )
 
 
 def test_import_of_a_4090_fallback_run(local: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -175,7 +204,9 @@ def test_parity_bounds_scale_with_the_logits(local: Path) -> None:
 
     shifted = {**params, "head.bias": params["head.bias"] - np.float32(3e4)}
     result = seq_parity(config, shifted, x, forward)
-    assert result["logit_scale"] > 3e4 and result["tolerance"] == pytest.approx(PARITY_TOL * result["logit_scale"])
+    assert result["logit_scale"] > 3e4 and result["tolerance"] == pytest.approx(
+        PARITY_TOL * result["logit_scale"]
+    )
     assert result["float64_max_rel_diff"] <= FLOAT32_STEP
 
     def off_by_steps(p: dict, rows: np.ndarray) -> np.ndarray:

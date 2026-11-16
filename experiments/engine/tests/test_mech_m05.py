@@ -10,7 +10,8 @@ from pathlib import Path
 import pytest
 
 SPEC = importlib.util.spec_from_file_location(
-    "mech_m05", Path(__file__).resolve().parents[1] / "scripts" / "mech_v1" / "m05.py")
+    "mech_m05", Path(__file__).resolve().parents[1] / "scripts" / "mech_v1" / "m05.py"
+)
 M = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = M
 SPEC.loader.exec_module(M)
@@ -41,22 +42,39 @@ def test_reference_tolerances():
 
 def _offsets(base, within):
     tok = {"mean_offset_norm": 0.0, "mean_paired_norm": 0.3}
-    return {"base": {"patch": {**tok, "mean_offset_norm": base}}, "edited_within": {"patch": {**tok,
-            "mean_offset_norm": within}}, "edited_vs_base_clean": {"patch": tok}, "edit_move_clean": {"patch": tok},
-            "edit_move_cond": {"patch": tok}}
+    return {
+        "base": {"patch": {**tok, "mean_offset_norm": base}},
+        "edited_within": {"patch": {**tok, "mean_offset_norm": within}},
+        "edited_vs_base_clean": {"patch": tok},
+        "edit_move_clean": {"patch": tok},
+        "edit_move_cond": {"patch": tok},
+    }
 
 
 def test_main_gate_gaussian_and_contrast():
-    sel = {"cond": {"patch": {"frac_above_threshold": 0.99, "mean_gate_output_norm": 4.0}},
-           "clean": {"patch": {"frac_above_threshold": 0.004}}}
-    gaussian = {"gates": [{"kind": "patch", "block": 2}, {"kind": "cls", "block": 4}],
-                "selectivity": {"patch_block2": sel}, "offsets": {"block2": _offsets(5.0, 0.5)}}
+    sel = {
+        "cond": {"patch": {"frac_above_threshold": 0.99, "mean_gate_output_norm": 4.0}},
+        "clean": {"patch": {"frac_above_threshold": 0.004}},
+    }
+    gaussian = {
+        "gates": [{"kind": "patch", "block": 2}, {"kind": "cls", "block": 4}],
+        "selectivity": {"patch_block2": sel},
+        "offsets": {"block2": _offsets(5.0, 0.5)},
+    }
     mg = M.main_gate("gaussian_noise", gaussian)
     assert mg["block"] == 2 and mg["cond_rate"] == 0.99 and mg["residual_share"] == pytest.approx(0.1)
     assert mg["offset_reduction"] == pytest.approx(0.9) and mg["correction_norm_cond_patch"] == 4.0
-    contrast = {"gate": {"block": 2}, "gate_stats": {
-        "cond": {"rate_patch_tokens": 0.98, "units_output_norm_patch_token_mean": 5.3},
-        "clean": {"rate_patch_tokens": 0.0003}}, "offsets": {"block2": _offsets(2.0, 0.0)}}
+    contrast = {
+        "gate": {"block": 2},
+        "gate_stats": {
+            "cond": {"rate_patch_tokens": 0.98, "units_output_norm_patch_token_mean": 5.3},
+            "clean": {"rate_patch_tokens": 0.0003},
+        },
+        "offsets": {"block2": _offsets(2.0, 0.0)},
+    }
     mg = M.main_gate("contrast", contrast)
     assert mg["clean_rate"] == 0.0003 and mg["residual_share"] == 0.0
-    assert M.main_gate("contrast", {**contrast, "offsets": {"block2": _offsets(0.0, 0.0)}})["residual_share"] is None
+    assert (
+        M.main_gate("contrast", {**contrast, "offsets": {"block2": _offsets(0.0, 0.0)}})["residual_share"]
+        is None
+    )

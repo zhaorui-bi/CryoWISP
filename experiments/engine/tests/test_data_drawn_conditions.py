@@ -16,9 +16,8 @@ from types import MappingProxyType, ModuleType
 import numpy as np
 import pytest
 
-from cryowisp.data import colored
+from cryowisp.data import colored, store
 from cryowisp.data import conditions as C
-from cryowisp.data import store
 from cryowisp.data.registry import CIFAR10_CLASSES, SPLIT_NAMES, SPLIT_SEED
 from cryowisp.models import calibration as K
 from cryowisp.models.forward_gen import render_forward, write_forward
@@ -132,7 +131,9 @@ def test_zero_severity_is_the_identity(name: str) -> None:
     params = cond.parameters()
     x = np.concatenate([_extremes(), _images(5, 8)])
     v = x / 255.0
-    assert np.array_equal(C.transform_float(v, cond.transform, C.drawn_operator(cond.transform, params, 0.0)), v)
+    assert np.array_equal(
+        C.transform_float(v, cond.transform, C.drawn_operator(cond.transform, params, 0.0)), v
+    )
     assert np.array_equal(C.apply_drawn(x, cond.transform, params, 0.0, chunk=3), x)
 
 
@@ -150,7 +151,9 @@ def test_chunking_changes_nothing(name: str) -> None:
 def test_parameters_are_determined_by_the_stream() -> None:
     streams = [C.get_condition(name).parameter_stream for name in DRAWN]
     assert len(set(streams)) == len(streams)
-    used = set(colored.COLOR_STREAMS.values()) | set(C.CORRUPTION_CONDITIONS["gaussian_noise_s3"].streams.values())
+    used = set(colored.COLOR_STREAMS.values()) | set(
+        C.CORRUPTION_CONDITIONS["gaussian_noise_s3"].streams.values()
+    )
     used.add(700)  # the ogbn-arxiv node permutation stream (cryowisp.data.arxiv.PERMUTATION_STREAM)
     used.add(701)  # the ogbn-arxiv old holdouts (cryowisp.data.arxiv.OLD_HOLDOUT_STREAM)
     used.add(702)  # the ogbn-arxiv class-id permutation (cryowisp.data.arxiv.CLASS_PERMUTATION_STREAM)
@@ -168,11 +171,15 @@ def test_parameters_are_determined_by_the_stream() -> None:
     for name in DRAWN:
         cond = C.get_condition(name)
         first, second = cond.parameters(), cond.parameters()
-        expected = C.draw_parameters(cond.transform, np.random.default_rng([SPLIT_SEED, cond.parameter_stream]))
+        expected = C.draw_parameters(
+            cond.transform, np.random.default_rng([SPLIT_SEED, cond.parameter_stream])
+        )
         assert first.keys() == second.keys() == expected.keys()
         for key in first:
             assert np.array_equal(first[key], second[key]) and np.array_equal(first[key], expected[key])
-        other = C.draw_parameters(cond.transform, np.random.default_rng([SPLIT_SEED, cond.parameter_stream + 1]))
+        other = C.draw_parameters(
+            cond.transform, np.random.default_rng([SPLIT_SEED, cond.parameter_stream + 1])
+        )
         assert not all(np.array_equal(first[key], other[key]) for key in first)
 
 
@@ -187,12 +194,18 @@ def test_corruption_builder_refuses_a_drawn_condition() -> None:
 
 def _curve(drops: list[int], eligible: list[bool] | None = None) -> list[dict]:
     eligible = eligible or [True] * len(drops)
-    return [{"severity": (k + 1) / 20, "eligible": e, "drop_count": d} for k, (d, e) in enumerate(zip(drops, eligible))]
+    return [
+        {"severity": (k + 1) / 20, "eligible": e, "drop_count": d}
+        for k, (d, e) in enumerate(zip(drops, eligible))
+    ]
 
 
 def test_select_severity_rule() -> None:
     # Reference: 4 pairs dropping 40 in total, so D* = 10 per pair; with 2 models s reaches at drop_count >= 20.
-    assert K.select_severity(_curve([5, 19, 20, 30]), 40, 4, 2) == {"severity": 0.15, "status": "reached_target"}
+    assert K.select_severity(_curve([5, 19, 20, 30]), 40, 4, 2) == {
+        "severity": 0.15,
+        "status": "reached_target",
+    }
     assert K.select_severity(_curve([5, 19, 20, 30], [True, True, False, True]), 40, 4, 2)["severity"] == 0.2
     below = K.select_severity(_curve([5, 19, 18, 30], [True, True, True, False]), 40, 4, 2)
     assert below == {"severity": 0.15, "status": "below_target"}
@@ -239,7 +252,11 @@ def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.
         x = rng.integers(0, 256, size=(n, 3, 32, 32), dtype=np.uint8)
         x[:, y % 3] = np.minimum(x[:, y % 3], 60)
         arrays = {"x": x, "y": y, "idx": np.arange(100 * offset, 100 * offset + n, dtype=np.int64)}
-        splits_meta[split] = {"path": f"splits/{split}.npz", "n": n, "sha256": store.save_split(store.split_path("cifar10", split), arrays)}
+        splits_meta[split] = {
+            "path": f"splits/{split}.npz",
+            "n": n,
+            "sha256": store.save_split(store.split_path("cifar10", split), arrays),
+        }
     test = {
         "x": rng.integers(0, 256, size=(20, 3, 32, 32), dtype=np.uint8),
         "y": np.arange(20, dtype=np.int64) % 10,
@@ -258,7 +275,11 @@ def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.
             "norm": {"mean": mean, "std": std, "computed_on": "train"},
             "split_seed": SPLIT_SEED,
             "splits": splits_meta,
-            "test": {"location": "$CRYOWISP_SEALED/cifar10/test.npz", "n": 20, "sha256": store.split_sha256(test)},
+            "test": {
+                "location": "$CRYOWISP_SEALED/cifar10/test.npz",
+                "n": 20,
+                "sha256": store.split_sha256(test),
+            },
             "forward_sha256": forward_sha,
         },
     )
@@ -278,7 +299,9 @@ def _with_severity(monkeypatch: pytest.MonkeyPatch, name: str, severity: float |
     monkeypatch.setattr(C, "CONDITIONS", MappingProxyType({**C.CONDITIONS, name: replaced}))
 
 
-def test_calibrate_build_write_verify(tiny_store: dict[str, np.ndarray], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_calibrate_build_write_verify(
+    tiny_store: dict[str, np.ndarray], monkeypatch: pytest.MonkeyPatch
+) -> None:
     name = "colormix_d1"
     read: list[tuple[str, str | None]] = []
     original = store.load_split
@@ -322,10 +345,17 @@ def test_calibrate_build_write_verify(tiny_store: dict[str, np.ndarray], monkeyp
     recorded = store.read_dataset_json("cifar10", name)
     assert recorded == manifest
     block = recorded["condition"]
-    assert block["kind"] == "drawn_transform" and block["transform"] == "colormix" and block["severity"] == chosen
+    assert (
+        block["kind"] == "drawn_transform"
+        and block["transform"] == "colormix"
+        and block["severity"] == chosen
+    )
     assert block["formula"] == C.DRAWN_FORMULAS["colormix"] and block["storage"] == C.STORAGE_RULE
     assert block["parameters"]["values"]["Q"] == cond.parameters()["Q"].tolist()
-    assert block["parameters"]["stream"] == cond.parameter_stream and block["parameters"]["split_seed"] == SPLIT_SEED
+    assert (
+        block["parameters"]["stream"] == cond.parameter_stream
+        and block["parameters"]["split_seed"] == SPLIT_SEED
+    )
     assert block["calibration"]["path"] == "calibration.json"
     assert block["calibration"]["sha256"] == C._file_sha256(path)
     assert block["calibration"]["status"] == log["chosen"]["status"]
@@ -336,7 +366,10 @@ def test_calibrate_build_write_verify(tiny_store: dict[str, np.ndarray], monkeyp
         on_disk = store.load_split("cifar10", split, name)
         clean = store.load_split("cifar10", split)
         assert np.array_equal(on_disk["y"], clean["y"]) and np.array_equal(on_disk["idx"], clean["idx"])
-        assert recorded["splits"][split]["clean_sha256"] == store.read_dataset_json("cifar10")["splits"][split]["sha256"]
+        assert (
+            recorded["splits"][split]["clean_sha256"]
+            == store.read_dataset_json("cifar10")["splits"][split]["sha256"]
+        )
     assert store.sealed_test_path("cifar10", name).is_file()
 
     report = C.verify_condition(C.build_from_store(name, tiny_store))

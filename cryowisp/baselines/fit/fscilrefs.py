@@ -82,7 +82,13 @@ from cryowisp.data.store import dataset_json_path
 from cryowisp.evalkit import fscil as FS
 from cryowisp.evalkit.metrics import Candidate, choose_final
 from cryowisp.evalkit.patch_check import ForwardFn, JointPatchCheckOracle, validate_child
-from cryowisp.evalkit.targets import file_sha256, load_checked_split, load_dataset_forward, read_dataset_meta, split_path
+from cryowisp.evalkit.targets import (
+    file_sha256,
+    load_checked_split,
+    load_dataset_forward,
+    read_dataset_meta,
+    split_path,
+)
 from cryowisp.models import resnet20 as R
 from cryowisp.models.fscil_export import normalization
 from cryowisp.models.parity import check_logit_parity

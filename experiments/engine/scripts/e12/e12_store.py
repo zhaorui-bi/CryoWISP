@@ -85,13 +85,24 @@ def _headroom(seed: int, out: Path) -> dict:
     for condition in list_conditions(D.DATASET):
         acc, sha = accuracy(condition)
         gap = 100.0 * (clean - acc)
-        rows[condition] = {"vselect_acc": acc, "vselect_sha256": sha, "gap_points": gap,
-                           "runs": gap >= HEADROOM_POINTS}
-    record = {"schema": "cryowisp.e12.headroom.v1", "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
-              "V_select (PREREG E12 on E10's rule, before any instance); gaussian_noise_s5 and contrast_s5 first, "
-              "then defocus_blur_s5, snow_s5 in that order for a condition short of it", **student, "seed": seed,
-              "forward_sha256": forward_sha, "clean_vselect_acc": clean, "clean_vselect_sha256": clean_sha,
-              "conditions": rows}
+        rows[condition] = {
+            "vselect_acc": acc,
+            "vselect_sha256": sha,
+            "gap_points": gap,
+            "runs": gap >= HEADROOM_POINTS,
+        }
+    record = {
+        "schema": "cryowisp.e12.headroom.v1",
+        "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
+        "V_select (PREREG E12 on E10's rule, before any instance); gaussian_noise_s5 and contrast_s5 first, "
+        "then defocus_blur_s5, snow_s5 in that order for a condition short of it",
+        **student,
+        "seed": seed,
+        "forward_sha256": forward_sha,
+        "clean_vselect_acc": clean,
+        "clean_vselect_sha256": clean_sha,
+        "conditions": rows,
+    }
     _write_once(out, record)
     return record
 
@@ -119,7 +130,9 @@ def _timing(resize: int, seed: int, repeats: int, out: Path | None) -> dict:
     info = run_info(REPO_ROOT)
     config = M.ResNet18UpConfig(resize=int(resize))
     params = M.export_params(M.initial_student(config, E.weights_path(), seed))
-    text = render_resnet18up_forward(M.IMAGENET_MEAN, M.IMAGENET_STD, config.n_classes, M.BN_EPS, config.resize)
+    text = render_resnet18up_forward(
+        M.IMAGENET_MEAN, M.IMAGENET_STD, config.n_classes, M.BN_EPS, config.resize
+    )
     module = types.ModuleType("forward")
     exec(compile(text, "forward.py", "exec"), module.__dict__)
     x_all, _, splits, _ = E.training_rows()
@@ -127,16 +140,28 @@ def _timing(resize: int, seed: int, repeats: int, out: Path | None) -> dict:
     module.forward(params, x[:8])  # warm-up
     times, loads = _timed(module.forward, params, x, repeats)
     small, small_loads = _timed(module.forward, params, np.ascontiguousarray(x[:PROGRAM_ROWS]), repeats)
-    record = {"schema": "cryowisp.e12.forward_timing.v1", "resize": config.resize, "seed": seed,
-              "student": "the fine-tuning start (ImageNet weights, fc from the seed); the time depends on R only",
-              "weights_sha256": file_sha256(E.weights_path()),
-              "forward_sha256": hashlib.sha256(text.encode()).hexdigest(),
-              "rows": f"the first {TIMING_ROWS} rows of cifar10/train", "train_sha256": splits["train"],
-              "threads": threads, "repeats_s": times, "best_s": min(times),
-              "loadavg_before_after": loads, "program_rows": PROGRAM_ROWS, "program_rows_repeats_s": small,
-              "program_rows_best_s": min(small), "program_rows_loadavg": small_loads,
-              "numpy": np.__version__, "cpu_count": os.cpu_count(), "host": os.uname().nodename,
-              "run_info": info}
+    record = {
+        "schema": "cryowisp.e12.forward_timing.v1",
+        "resize": config.resize,
+        "seed": seed,
+        "student": "the fine-tuning start (ImageNet weights, fc from the seed); the time depends on R only",
+        "weights_sha256": file_sha256(E.weights_path()),
+        "forward_sha256": hashlib.sha256(text.encode()).hexdigest(),
+        "rows": f"the first {TIMING_ROWS} rows of cifar10/train",
+        "train_sha256": splits["train"],
+        "threads": threads,
+        "repeats_s": times,
+        "best_s": min(times),
+        "loadavg_before_after": loads,
+        "program_rows": PROGRAM_ROWS,
+        "program_rows_repeats_s": small,
+        "program_rows_best_s": min(small),
+        "program_rows_loadavg": small_loads,
+        "numpy": np.__version__,
+        "cpu_count": os.cpu_count(),
+        "host": os.uname().nodename,
+        "run_info": info,
+    }
     if out is not None:
         _write_once(out, record)
     else:
@@ -165,15 +190,30 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.group == "clean":
         manifest = D.build_clean(args.resize, run_info(REPO_ROOT))
-        print(json.dumps({"dataset": manifest["dataset"], "forward_sha256": manifest["forward_sha256"],
-                          "resize": manifest["student_preprocessing"]["resize"],
-                          "splits": {k: v["sha256"] for k, v in manifest["splits"].items()}}, indent=1))
+        print(
+            json.dumps(
+                {
+                    "dataset": manifest["dataset"],
+                    "forward_sha256": manifest["forward_sha256"],
+                    "resize": manifest["student_preprocessing"]["resize"],
+                    "splits": {k: v["sha256"] for k, v in manifest["splits"].items()},
+                },
+                indent=1,
+            )
+        )
     elif args.group == "condition":
         info = run_info(REPO_ROOT)
         for condition in args.conditions:
             manifest = D.build_condition(condition, info)
-            print(json.dumps({"condition": manifest["condition"]["name"],
-                              "splits": {k: v["sha256"] for k, v in manifest["splits"].items()}}, indent=1))
+            print(
+                json.dumps(
+                    {
+                        "condition": manifest["condition"]["name"],
+                        "splits": {k: v["sha256"] for k, v in manifest["splits"].items()},
+                    },
+                    indent=1,
+                )
+            )
     elif args.group == "import":
         print(json.dumps(E.import_e12_models(args.run_dir, args.note), indent=1))
     elif args.group == "headroom":

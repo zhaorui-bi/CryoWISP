@@ -62,7 +62,12 @@ from cryowisp.common.paths import private_dir, sealed_dir
 from cryowisp.data import store
 from cryowisp.evalkit.evidence import CONDITION_RE, EVIDENCE_RULE, EVIDENCE_RULE_V1
 from cryowisp.evalkit.instances import read_index
-from cryowisp.evalkit.metrics import color_following_rate, color_split_fixes, color_split_target_fixes, sealed_readout
+from cryowisp.evalkit.metrics import (
+    color_following_rate,
+    color_split_fixes,
+    color_split_target_fixes,
+    sealed_readout,
+)
 from cryowisp.evalkit.patch_check import predict
 from cryowisp.evalkit.targets import (
     DEPLOY_CONDITION,

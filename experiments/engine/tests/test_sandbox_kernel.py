@@ -25,9 +25,13 @@ SANDBOX_PYTHON = REPO / ".venv-sandbox" / "bin" / "python"
 BWRAP = DEFAULT_BWRAP  # $CRYOWISP_BWRAP or /usr/bin/bwrap
 
 pytestmark = [
-    pytest.mark.skipif(not BWRAP.exists(), reason=f"{BWRAP} is missing: the sandbox tests need the real bubblewrap"),
-    pytest.mark.skipif(not SANDBOX_PYTHON.exists(),
-                       reason=f"{SANDBOX_PYTHON} is missing: create the sandbox venv (scripts/setup_sandbox_venv.sh)"),
+    pytest.mark.skipif(
+        not BWRAP.exists(), reason=f"{BWRAP} is missing: the sandbox tests need the real bubblewrap"
+    ),
+    pytest.mark.skipif(
+        not SANDBOX_PYTHON.exists(),
+        reason=f"{SANDBOX_PYTHON} is missing: create the sandbox venv (scripts/setup_sandbox_venv.sh)",
+    ),
 ]
 
 
@@ -128,7 +132,11 @@ def test_tracebacks_exclude_kernel_frames(kernel: SandboxKernel) -> None:
     assert 'File "<cell-0>", line 2, in inner' in runtime.error
     assert "return 1 / 0" in runtime.error and "ZeroDivisionError: division by zero" in runtime.error
     syntax = kernel.run("x = = 1")
-    assert syntax.error is not None and 'File "<cell-2>", line 1' in syntax.error and "SyntaxError" in syntax.error
+    assert (
+        syntax.error is not None
+        and 'File "<cell-2>", line 1' in syntax.error
+        and "SyntaxError" in syntax.error
+    )
     for error in (runtime.error, syntax.error):
         assert "kernel.py" not in error and "/opt/cryowisp" not in error and "ast.py" not in error
     assert "Traceback" not in syntax.error
@@ -185,7 +193,9 @@ def test_timeout_kills_every_process_in_the_sandbox(dirs: dict[str, Path]) -> No
             f"subprocess.Popen(['/usr/bin/setsid', '/usr/bin/sleep', '{token}'])\n"
         )
         assert kernel.run(spawn).error is None
-        assert wait_until(lambda: len(host_processes_with_arg(token)) == 2), "the scan must see the sandbox's processes"
+        assert wait_until(lambda: len(host_processes_with_arg(token)) == 2), (
+            "the scan must see the sandbox's processes"
+        )
         result = kernel.run("import time\ntime.sleep(60)")
         assert result.timed_out and result.restarted
         assert wait_until(lambda: not host_processes_with_arg(token)), host_processes_with_arg(token)
@@ -235,7 +245,9 @@ def test_bytes_forged_on_the_response_pipe_stop_and_restart_the_kernel(kernel: S
     )
     result = kernel.run(code)
     assert result.restarted and not result.timed_out
-    assert result.error is not None and "SandboxProtocolError" in result.error and "state lost" in result.error
+    assert (
+        result.error is not None and "SandboxProtocolError" in result.error and "state lost" in result.error
+    )
     assert kernel.run("1 + 1").stdout == "2\n"
 
 
@@ -317,7 +329,17 @@ def test_the_log_has_one_line_per_cell(dirs: dict[str, Path]) -> None:
     assert [r["index"] for r in records] == [r.index for r in results] == list(range(len(codes)))
     assert [r["status"] for r in records] == ["ok", "error", "timeout", "ok", "refused"]
     assert [r["code"] for r in records] == codes
-    required = {"timestamp", "index", "code", "stdout", "stderr", "error", "duration_s", "timed_out", "restarted"}
+    required = {
+        "timestamp",
+        "index",
+        "code",
+        "stdout",
+        "stderr",
+        "error",
+        "duration_s",
+        "timed_out",
+        "restarted",
+    }
     assert all(required <= set(record) for record in records)
     assert records[2]["timed_out"] is True and records[2]["restarted"] is True
     assert [r["kernel_generation"] for r in records] == [0, 0, 0, 1, 1]
@@ -361,7 +383,10 @@ _HOST_SCRIPT = textwrap.dedent(
 
 def test_a_cell_interrupted_by_host_death_is_logged_and_the_sandbox_dies(dirs: dict[str, Path]) -> None:
     config = make_config(dirs, cell_timeout_s=120.0)
-    fields = {name: str(getattr(config, name)) for name in ("trial_dir", "patches_dir", "scratch_dir", "log_path", "python")}
+    fields = {
+        name: str(getattr(config, name))
+        for name in ("trial_dir", "patches_dir", "scratch_dir", "log_path", "python")
+    }
     token = sleep_token()
     inflight = config.log_path.with_name(config.log_path.name + ".inflight")
     host = subprocess.Popen(

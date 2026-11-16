@@ -38,7 +38,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--official", type=Path, required=True)
     parser.add_argument("--replay-dir", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--f1s-rows", type=Path, help="f1s_s5/s5_rows.json: draw 0 must equal its gaussian_noise rows")
+    parser.add_argument(
+        "--f1s-rows", type=Path, help="f1s_s5/s5_rows.json: draw 0 must equal its gaussian_noise rows"
+    )
     args = parser.parse_args(argv)
     if args.out_dir.exists():
         raise SystemExit(f"{args.out_dir} exists; nothing written")
@@ -65,15 +67,27 @@ def main(argv: list[str] | None = None) -> int:
     args.out_dir.mkdir(parents=True)
     target = args.out_dir / f"{FUNCTION}_s5_rule_draws.npz"
     np.savez(target, x=stacked)
-    record = {"schema": "cryowisp.k1.rule_rows.v1", "severity": O.SEVERITY,
-              "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
-              "libraries": O.library_versions(),
-              "replay": {"content_sha256": replay_json["content_sha256"], "n": int(len(x)),
-                         "file_sha256": O.file_sha256(args.replay_dir / "replay_v1.npz")},
-              "rows": {FUNCTION: {"file": target.name, "file_sha256": O.file_sha256(target),
-                                  "seeds": [e["seed"] for e in entries], "draws": entries,
-                                  "layout": "uint8 [draw, replay row, ...], replay rows' own layout",
-                                  "draw0_equals_f1s_s5_rows": same_as_f1s}}}
+    record = {
+        "schema": "cryowisp.k1.rule_rows.v1",
+        "severity": O.SEVERITY,
+        "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
+        "libraries": O.library_versions(),
+        "replay": {
+            "content_sha256": replay_json["content_sha256"],
+            "n": int(len(x)),
+            "file_sha256": O.file_sha256(args.replay_dir / "replay_v1.npz"),
+        },
+        "rows": {
+            FUNCTION: {
+                "file": target.name,
+                "file_sha256": O.file_sha256(target),
+                "seeds": [e["seed"] for e in entries],
+                "draws": entries,
+                "layout": "uint8 [draw, replay row, ...], replay rows' own layout",
+                "draw0_equals_f1s_s5_rows": same_as_f1s,
+            }
+        },
+    }
     (args.out_dir / "k1_rule_rows.json").write_text(json.dumps(record, indent=1, sort_keys=True) + "\n")
     return 0
 

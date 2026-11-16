@@ -61,7 +61,9 @@ def test_spec_builds_with_e12_layers_without_upsample(params: dict[str, np.ndarr
     assert spec["arch"] == N.ARCH and spec["n_classes"] == 1000 and spec["input_shape"] == [3, 224, 224]
     assert spec["n_parameters"] == sum(v.size for v in params.values())
     assert set(spec["tensors"]) == set(M.param_shapes(1000))
-    e12 = M.build_resnet18up_spec("t03native", classes, M.ResNet18UpConfig(n_classes=1000, resize=128), params)
+    e12 = M.build_resnet18up_spec(
+        "t03native", classes, M.ResNet18UpConfig(n_classes=1000, resize=128), params
+    )
     assert e12["layers"][0]["op"] == "resize_bilinear"
     assert spec["layers"] == e12["layers"][1:]
     assert all(layer["op"] != "resize_bilinear" for layer in spec["layers"])
@@ -70,8 +72,9 @@ def test_spec_builds_with_e12_layers_without_upsample(params: dict[str, np.ndarr
 
 def test_native_module_is_torchvision_resnet18(params: dict[str, np.ndarray]) -> None:
     model = N.build_resnet18native(params, torch.float32)
-    assert set(model.state_dict()) - {k for k in model.state_dict() if k.endswith("num_batches_tracked")} == set(
-        M.param_shapes(1000))
+    assert set(model.state_dict()) - {
+        k for k in model.state_dict() if k.endswith("num_batches_tracked")
+    } == set(M.param_shapes(1000))
     check = M.torchvision_reference_diff(model, _inputs(2, seed=3))
     if check["torchvision"] is not None:
         assert check["max_abs_diff"] < 1e-4
@@ -124,7 +127,9 @@ def test_d_rule_on_the_hf_shard_layout() -> None:
         I.d_rows(HF_ROW_COUNTS[:-1], I.shard_names()[:-1])
 
 
-def test_save_reload_round_trip_and_fixed_edit(params: dict[str, np.ndarray], forward, tmp_path: Path) -> None:
+def test_save_reload_round_trip_and_fixed_edit(
+    params: dict[str, np.ndarray], forward, tmp_path: Path
+) -> None:
     x = _inputs(2, seed=1)
     base = np.asarray(forward(params, x))
     reloaded, record = T.save_reload(params, tmp_path / "model.npz")
@@ -135,9 +140,15 @@ def test_save_reload_round_trip_and_fixed_edit(params: dict[str, np.ndarray], fo
     edited, edit = T.apply_fixed_edit(params, tmp_path / "edit")
     assert edit["parent_sha256"] == params_sha256(params) and edit["child_sha256"] == params_sha256(edited)
     assert edit["save_reload"]["same_sha256"]
-    assert edit["changed_per_tensor"] == {"fc.weight": 8, "fc.bias": 2, "layer1.0.conv1.weight": 2,
-                                          "layer4.1.conv2.weight": 2 * 512 * 9}
-    assert json.loads((tmp_path / "edit" / T.PATCH_FILE).read_text())["ops"] == [dict(op) for op in T.FIXED_EDIT_OPS]
+    assert edit["changed_per_tensor"] == {
+        "fc.weight": 8,
+        "fc.bias": 2,
+        "layer1.0.conv1.weight": 2,
+        "layer4.1.conv2.weight": 2 * 512 * 9,
+    }
+    assert json.loads((tmp_path / "edit" / T.PATCH_FILE).read_text())["ops"] == [
+        dict(op) for op in T.FIXED_EDIT_OPS
+    ]
     assert edited["fc.weight"][1, 7] == np.float32(np.float64(params["fc.weight"][1, 7]) - 0.05)
     after = np.asarray(forward(edited, x))
     assert not T.bitwise_equal(after, base)
@@ -162,11 +173,16 @@ def test_accuracy_record_band() -> None:
 def test_manifest_and_classes(tmp_path: Path) -> None:
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "a.parquet").write_bytes(b"abc")
-    text = ('from collections import OrderedDict\n\nIMAGENET2012_CLASSES = OrderedDict(\n    {\n'
-            '        "n01440764": "tench, Tinca tinca",\n        "n01443537": "goldfish, Carassius auratus",\n'
-            '    }\n)\n')
+    text = (
+        "from collections import OrderedDict\n\nIMAGENET2012_CLASSES = OrderedDict(\n    {\n"
+        '        "n01440764": "tench, Tinca tinca",\n        "n01443537": "goldfish, Carassius auratus",\n'
+        "    }\n)\n"
+    )
     (tmp_path / "classes.py").write_text(text)
-    lines = [f"{hashlib.sha256((tmp_path / p).read_bytes()).hexdigest()}  {p}" for p in ("classes.py", "data/a.parquet")]
+    lines = [
+        f"{hashlib.sha256((tmp_path / p).read_bytes()).hexdigest()}  {p}"
+        for p in ("classes.py", "data/a.parquet")
+    ]
     (tmp_path / "manifest.sha256").write_text("\n".join(lines) + "\n")
     listed = I.verify_manifest(tmp_path, I.file_sha256(tmp_path / "manifest.sha256"))
     assert set(listed) == {"classes.py", "data/a.parquet"}
@@ -210,7 +226,12 @@ def test_read_d_records_takes_only_d_rows(tmp_path: Path) -> None:
     rows = I.d_rows(I.shard_row_counts(tmp_path, names), names, expected_rows=200)
     records = list(I.read_d_records(tmp_path, rows))
     assert [r.global_index for r in records] == [0, 50, 100, 150]
-    assert [(r.shard, r.row) for r in records] == [(names[0], 0), (names[0], 50), (names[1], 30), (names[2], 20)]
+    assert [(r.shard, r.row) for r in records] == [
+        (names[0], 0),
+        (names[0], 50),
+        (names[1], 30),
+        (names[2], 20),
+    ]
     for record in records:
         assert record.image_bytes == f"img-{record.shard}-{record.row}".encode()
         assert record.image_sha256 == hashlib.sha256(record.image_bytes).hexdigest()

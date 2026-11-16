@@ -50,7 +50,14 @@ from cryowisp.harness import clean, fewshot, fscil, graphnew, seqskill
 from cryowisp.harness.arms import applied_limits, limits_dict
 from cryowisp.harness.experience import EXPERIENCE_FILE, build_experience
 from cryowisp.harness.jsonio import file_sha256, json_text, utc_now, write_json
-from cryowisp.harness.program import DERIVED_PATCH, ProgramProblem, Student, program_name, run_update, write_derived_patch
+from cryowisp.harness.program import (
+    DERIVED_PATCH,
+    ProgramProblem,
+    Student,
+    program_name,
+    run_update,
+    write_derived_patch,
+)
 from cryowisp.harness.trial import input_file_names
 from cryowisp.patch import Limits, PatchError, apply_patch
 from cryowisp.patch.limits import dense_delta_bytes

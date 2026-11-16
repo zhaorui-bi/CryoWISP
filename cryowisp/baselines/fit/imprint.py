@@ -55,7 +55,14 @@ from cryowisp.evalkit.fewshot import FEWSHOT_RULE
 from cryowisp.evalkit.patch_check import predict
 
 from .runner import CandidatePatch, Evidence, Generator, MethodSpec, execute_run, read_model_spec
-from .torch_forward import PARITY_ATOL, architecture_from, assert_parity, images_tensor, penultimate, to_tensors
+from .torch_forward import (
+    PARITY_ATOL,
+    architecture_from,
+    assert_parity,
+    images_tensor,
+    penultimate,
+    to_tensors,
+)
 
 IMPRINT_DIRECTIONS: tuple[str, ...] = ("mean", "centered")
 IMPRINT_SCALES: tuple[float, ...] = (0.5, 1.0, 2.0, 4.0)

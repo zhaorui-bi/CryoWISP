@@ -22,7 +22,9 @@ def _config(**overrides: int) -> T.TfmConfig:
 
 
 def _forward(tmp_path: Path, config: T.TfmConfig):
-    source = render_seq_forward(config.seq_len, config.vocab_size, config.n_out, config.n_heads, config.pad_id, T.LN_EPS)
+    source = render_seq_forward(
+        config.seq_len, config.vocab_size, config.n_out, config.n_heads, config.pad_id, T.LN_EPS
+    )
     write_forward(tmp_path / "forward.py", source)
     forward, _ = load_forward(tmp_path / "forward.py")
     return forward
@@ -88,7 +90,12 @@ def test_parameter_names_and_layer_list(tmp_path: Path) -> None:
     assert params["head.weight"].shape == (S.N_SYMBOLS, 64)
     layers = T.seq_layer_list(config, params)
     assert [layer["op"] for layer in layers[:6]] == [
-        "embedding", "position_embedding", "layernorm", "attention", "layernorm", "mlp"
+        "embedding",
+        "position_embedding",
+        "layernorm",
+        "attention",
+        "layernorm",
+        "mlp",
     ]
     assert layers[-1]["op"] == "linear" and layers[-2]["name"] == "ln_f"
     assert T.config_from_params(params, config.n_heads, config.pad_id) == config
@@ -102,7 +109,11 @@ def test_decay_groups_leave_embeddings_layernorm_and_biases_undecayed() -> None:
     decay, no_decay = T.decay_groups(model, 0.01)
     names = {id(p): n for n, p in model.named_parameters()}
     decayed = {names[id(p)] for p in decay["params"]}
-    assert decayed == {n for n in names.values() if n.endswith(".weight") and ("attn" in n or "mlp" in n or n == "head.weight")}
+    assert decayed == {
+        n
+        for n in names.values()
+        if n.endswith(".weight") and ("attn" in n or "mlp" in n or n == "head.weight")
+    }
     assert decay["weight_decay"] == 0.01 and no_decay["weight_decay"] == 0.0
     assert len(decay["params"]) + len(no_decay["params"]) == len(list(model.parameters()))
 
@@ -116,7 +127,9 @@ def test_absent_token_rows_stay_bit_identical_under_adamw() -> None:
     for step in range(5):
         x, y = stream.batch(step)
         logits = model(torch.from_numpy(x))
-        loss = torch.nn.functional.cross_entropy(logits.reshape(-1, S.N_SYMBOLS), torch.from_numpy(y).reshape(-1), ignore_index=S.IGNORE)
+        loss = torch.nn.functional.cross_entropy(
+            logits.reshape(-1, S.N_SYMBOLS), torch.from_numpy(y).reshape(-1), ignore_index=S.IGNORE
+        )
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()

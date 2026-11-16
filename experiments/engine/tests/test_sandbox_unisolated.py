@@ -39,8 +39,9 @@ def _run(store: LearnStore, tmp_path: Path, name: str, source: str, label: str, 
     program = tmp_path / name
     if not program.exists():
         _write_program(tmp_path, name, source)
-    return run_update(_student(trial), trial / "experience.npz", program, tmp_path / f"run_{label}", _runner(),
-                      **kwargs)
+    return run_update(
+        _student(trial), trial / "experience.npz", program, tmp_path / f"run_{label}", _runner(), **kwargs
+    )
 
 
 def test_programs_give_the_deltas_of_the_sandboxed_driver(learn_store: LearnStore, tmp_path: Path) -> None:  # noqa: F811

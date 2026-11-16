@@ -79,7 +79,9 @@ def train_group(args: argparse.Namespace) -> int:
     info["device"] = f"{name} ({device})"
     config = G.GCNTrainConfig()
     if args.smoke_epochs is not None:
-        config = dataclasses.replace(config, epochs=args.smoke_epochs, log_every=max(1, args.smoke_epochs // 2))
+        config = dataclasses.replace(
+            config, epochs=args.smoke_epochs, log_every=max(1, args.smoke_epochs // 2)
+        )
     if args.models_root is not None:
         index_file = Path(args.models_root) / "index.json"
         previous = json.loads(index_file.read_text()) if index_file.exists() else []
@@ -92,10 +94,21 @@ def train_group(args: argparse.Namespace) -> int:
         extra: dict[str, Any] = {"smoke": True} if args.smoke_epochs is not None else {}
         if draw is not None:
             extra["class_draw"] = draw
-        entry = export_gcn_model(dataset=dataset, manifest=manifest, role=args.role, seed=seed, config=config,
-                                 result=result, training_splits=used, train_graph=graph_block,
-                                 determinism=determinism, run_info=info, models_root=args.models_root,
-                                 extra_private=extra, train_classes=train_classes)
+        entry = export_gcn_model(
+            dataset=dataset,
+            manifest=manifest,
+            role=args.role,
+            seed=seed,
+            config=config,
+            result=result,
+            training_splits=used,
+            train_graph=graph_block,
+            determinism=determinism,
+            run_info=info,
+            models_root=args.models_root,
+            extra_private=extra,
+            train_classes=train_classes,
+        )
         entries.append(entry)
         if args.models_root is not None:
             write_json(Path(args.models_root) / "index.json", previous + entries)
@@ -103,16 +116,31 @@ def train_group(args: argparse.Namespace) -> int:
             write_fewshot_index(dataset, previous + entries)
         else:
             write_index(dataset, previous + entries)
-        print(json.dumps({"protocol": args.protocol, "seed": seed, "role": args.role, "model_id": entry["model_id"],
-                          "vselect_acc": entry["vselect_acc"], "final_train_acc": result.log[-1]["train_acc"],
-                          "final_loss": result.log[-1]["loss"], "wall_time_s": round(result.wall_time_s, 1)}),
-              flush=True)
+        print(
+            json.dumps(
+                {
+                    "protocol": args.protocol,
+                    "seed": seed,
+                    "role": args.role,
+                    "model_id": entry["model_id"],
+                    "vselect_acc": entry["vselect_acc"],
+                    "final_train_acc": result.log[-1]["train_acc"],
+                    "final_loss": result.log[-1]["loss"],
+                    "wall_time_s": round(result.wall_time_s, 1),
+                }
+            ),
+            flush=True,
+        )
     return 0
 
 
 def import_group(args: argparse.Namespace) -> int:
     fewshot = args.role in CLASS_SUBSET_ROLES
-    print(json.dumps(import_gcn_models(A.PROTOCOLS[args.protocol], args.run_dir, args.note, fewshot=fewshot), indent=2))
+    print(
+        json.dumps(
+            import_gcn_models(A.PROTOCOLS[args.protocol], args.run_dir, args.note, fewshot=fewshot), indent=2
+        )
+    )
     return 0
 
 
@@ -126,10 +154,16 @@ def report_group(args: argparse.Namespace) -> int:
     listed += [(fewshot_models_dir(dataset), entry) for entry in read_fewshot_index(dataset)]
     for root, entry in listed:
         private = read_json(root / entry["model_id"] / "private.json")
-        rows.append({**entry, "old_select_acc": private["final_old_select_acc"],
-                     "logit_scale": private["parity"]["logit_scale"], "layer_norms": private["layer_norms"],
-                     "train_splits": sorted(private["train_data"]["splits"]),
-                     "train_graph": private["train_data"]["graph"]["path"]})
+        rows.append(
+            {
+                **entry,
+                "old_select_acc": private["final_old_select_acc"],
+                "logit_scale": private["parity"]["logit_scale"],
+                "layer_norms": private["layer_norms"],
+                "train_splits": sorted(private["train_data"]["splits"]),
+                "train_graph": private["train_data"]["graph"]["path"],
+            }
+        )
     print(json.dumps(rows, indent=2))
     return 0
 

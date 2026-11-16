@@ -18,13 +18,23 @@ def _script():
 
 
 def _rec(seed: int, gain: float, clean: float, within: bool = True) -> dict:
-    return {"target": {"instance_id": f"i{seed}", "seed": seed}, "status": "ok", "within_limits": within,
-            "readouts": {"delta_acc": gain / 100.0}, "readouts_clean": {"delta_acc": clean / 100.0},
-            "n_changed": 10, "child_sha256": f"c{seed}"}
+    return {
+        "target": {"instance_id": f"i{seed}", "seed": seed},
+        "status": "ok",
+        "within_limits": within,
+        "readouts": {"delta_acc": gain / 100.0},
+        "readouts_clean": {"delta_acc": clean / 100.0},
+        "n_changed": 10,
+        "child_sha256": f"c{seed}",
+    }
 
 
-OWN = {"readouts": {"delta_acc": 0.30}, "readouts_clean": {"delta_acc": -0.004}, "within_limits": True,
-       "child_sha256": "own"}
+OWN = {
+    "readouts": {"delta_acc": 0.30},
+    "readouts_clean": {"delta_acc": -0.004},
+    "within_limits": True,
+    "child_sha256": "own",
+}
 
 
 def test_c_supported_when_ratio_clean_and_limits_hold() -> None:

@@ -38,8 +38,14 @@ def floors_document(sessions: range = range(2, 10), r: float = R_TOY, d: float =
     rows = {}
     for t in sessions:
         n_c, n_s = FS.old_part_sizes(t)
-        rows[str(t)] = {"floor_t": FS.joint_retain_floor(n_c, n_s, r, d), "R": r, "d": d, "n": 16, "n_c": n_c,
-                        "n_s": n_s}
+        rows[str(t)] = {
+            "floor_t": FS.joint_retain_floor(n_c, n_s, r, d),
+            "R": r,
+            "d": d,
+            "n": 16,
+            "n_c": n_c,
+            "n_s": n_s,
+        }
     return {"schema": L.FLOORS_SCHEMA, "sessions": rows}
 
 
@@ -57,14 +63,22 @@ def toy(tmp_path_factory: pytest.TempPathFactory) -> Iterator[ToyFscil]:
 def test_the_floors_are_recomputed_and_any_disagreement_is_refused(toy: ToyFscil, tmp_path: Path) -> None:
     floors = L.load_floors(write_floors(tmp_path / "f.json", floors_document()))
     assert sorted(floors) == list(range(2, 10)) and floors[2].floor == toy_floor(2) == -12
-    assert floors[2].source["R"] == R_TOY and floors[2].source["n_c"] == 120 and floors[9].source["n_c"] == 190
+    assert (
+        floors[2].source["R"] == R_TOY and floors[2].source["n_c"] == 120 and floors[9].source["n_c"] == 190
+    )
     zero = L.load_floors(write_floors(tmp_path / "z.json", floors_document(range(2, 3), r=-1.0, d=0.5)))
     assert zero[2].floor == 0  # never above 0, and 0 itself is a floor (PREREG E9)
     good = floors_document(range(2, 4))
     bad = [
         ({**good, "schema": "other"}, "is not a"),
-        ({**good, "sessions": {**good["sessions"], "2": {**good["sessions"]["2"], "floor_t": -11}}}, "is not"),
-        ({**good, "sessions": {**good["sessions"], "2": {**good["sessions"]["2"], "n_c": 121}}}, "old-part sizes"),
+        (
+            {**good, "sessions": {**good["sessions"], "2": {**good["sessions"]["2"], "floor_t": -11}}},
+            "is not",
+        ),
+        (
+            {**good, "sessions": {**good["sessions"], "2": {**good["sessions"]["2"], "n_c": 121}}},
+            "old-part sizes",
+        ),
         ({**good, "sessions": {"2": {k: v for k, v in good["sessions"]["2"].items() if k != "d"}}}, "lacks"),
         ({**good, "sessions": {"2": {**good["sessions"]["2"], "n": True}}}, "must be an int"),
         ({**good, "sessions": {"10": good["sessions"]["2"]}}, "is not one of"),
@@ -75,31 +89,50 @@ def test_the_floors_are_recomputed_and_any_disagreement_is_refused(toy: ToyFscil
             L.load_floors(write_floors(tmp_path / "bad.json", document))
     refs = tmp_path / "refs"
     refs.mkdir()
-    write_json(refs / "run.json", {"schema": STREAMS_SCHEMA, "r_points": R_TOY,
-                                   "inputs": {"base": {"params_sha256": toy.base_params_sha256}}})
+    write_json(
+        refs / "run.json",
+        {
+            "schema": STREAMS_SCHEMA,
+            "r_points": R_TOY,
+            "inputs": {"base": {"params_sha256": toy.base_params_sha256}},
+        },
+    )
     n_c, n_s = FS.old_part_sizes(2)
     block = {"n_c": n_c, "n_s": n_s, "d": D_TOY, "n_checks": 16, "floor": toy_floor(2)}
     write_json(refs / "session_2.json", {"schema": STREAMS_SCHEMA, "session": 2, "floor": block})
     from_refs = L.load_reference_floors(refs, toy.base_params_sha256)
-    assert sorted(from_refs) == [2] and from_refs[2].floor == floors[2].floor and from_refs[2].source["n"] == 16
+    assert (
+        sorted(from_refs) == [2] and from_refs[2].floor == floors[2].floor and from_refs[2].source["n"] == 16
+    )
     with pytest.raises(L.LineageError, match="another base"):
         L.load_reference_floors(refs, "0" * 64)
-    write_json(refs / "session_2.json", {"schema": STREAMS_SCHEMA, "session": 2, "floor": {**block, "floor": 0}})
+    write_json(
+        refs / "session_2.json", {"schema": STREAMS_SCHEMA, "session": 2, "floor": {**block, "floor": 0}}
+    )
     with pytest.raises(L.LineageError, match="joint_retain_floor"):
         L.load_reference_floors(refs, toy.base_params_sha256)
 
 
 def test_the_summary_reads_the_absolute_readouts() -> None:
     def accuracy(t: int, seen: float, own: float) -> dict[str, Any]:
-        return {"bal_seen": seen, "per_session": {str(s): {"bal": own if s == t else 0.5} for s in range(1, t + 1)}}
+        return {
+            "bal_seen": seen,
+            "per_session": {str(s): {"bal": own if s == t else 0.5} for s in range(1, t + 1)},
+        }
 
     state: dict[str, Any] = {"lineage": "C", "session_1": {"accuracy": accuracy(1, 0.8, 0.8)}, "sessions": {}}
     for t in range(2, 10):
-        state["sessions"][str(t)] = {"done": True, "outcome": "kept", "accuracy": accuracy(t, 0.8 - 0.05 * t, 0.3)}
+        state["sessions"][str(t)] = {
+            "done": True,
+            "outcome": "kept",
+            "accuracy": accuracy(t, 0.8 - 0.05 * t, 0.3),
+        }
     summary = L.summarize(state, teacher_bal_new_2=0.6)
     assert summary["bal_seen"]["1"] == 0.8 and summary["bal_seen"]["9"] == pytest.approx(0.35)
     assert summary["bal_seen_drop_1_to_9"] == pytest.approx(0.45)
-    assert summary["bal_seen_mean_1_to_9"] == pytest.approx((0.8 + sum(0.8 - 0.05 * t for t in range(2, 10))) / 9)
+    assert summary["bal_seen_mean_1_to_9"] == pytest.approx(
+        (0.8 + sum(0.8 - 0.05 * t for t in range(2, 10))) / 9
+    )
     assert summary["forgetting"]["1"] == pytest.approx(0.3) and summary["forgetting"]["9"] == 0.0
     assert summary["forgetting"]["4"] == pytest.approx(0.3 - 0.5) and summary["bal_new"]["5"] == 0.3
     assert summary["c_ratio"] == pytest.approx(0.5) and summary["outcomes"]["9"] == "kept"
@@ -126,8 +159,13 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
     launcher = ScriptedLauncher(script)
     floors = L.load_floors(write_floors(tmp_path / "floors.json", floors_document()))
     sandbox = ProgramSandbox(python=SANDBOX_PYTHON, memory_bytes=4 * 2**30, threads=1)
-    options = {"effort": "low", "wall_timeout_s": 300.0, "threads": 2, "sandbox": sandbox,
-               "session_kwargs": {"launcher": launcher, "skip_audit": True}}
+    options = {
+        "effort": "low",
+        "wall_timeout_s": 300.0,
+        "threads": 2,
+        "sandbox": sandbox,
+        "session_kwargs": {"launcher": launcher, "skip_audit": True},
+    }
     sessions_dir = Path(os.environ["CRYOWISP_RUNS"]) / "sessions"
 
     def driver(lineage: str, table: Any = floors, busy: Any = lambda: []) -> L.LineageDriver:
@@ -144,7 +182,9 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
     dry = L.dry_run(floors=None, placeholder_floor=-12, session_kwargs={"skip_audit": True})
     assert dry.status == "dry_run" and dry.record["selftest"]["status"] == "pass", dry.record
     assert read_json(dry.root / "session.json")["kept_rule"]["floor_source"]["placeholder"] is True
-    assert not (L.lineages_root() / f"T_{toy.base_params_sha256[:12]}" / "state.json").exists()  # state untouched
+    assert not (
+        L.lineages_root() / f"T_{toy.base_params_sha256[:12]}" / "state.json"
+    ).exists()  # state untouched
 
     # T: a busy machine stops session 2 before its launch; nothing was launched
     with pytest.raises(L.LineageError, match="editor session runs"):
@@ -155,7 +195,12 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
     assert _sessions(sessions_dir) == []
     state = teacher.run(2)
     s2 = state["sessions"]["2"]
-    assert s2["done"] and s2["outcome"] == "kept" and s2["final_kind"] == "checked" and s2["status"] == "complete"
+    assert (
+        s2["done"]
+        and s2["outcome"] == "kept"
+        and s2["final_kind"] == "checked"
+        and s2["status"] == "complete"
+    )
     assert s2["floor"] == toy_floor(2) and s2["library_sessions"] is None and s2["kind"] == L.KIND_LEARN
     assert s2["program"]["sha256"] and Path(s2["program"]["file"]).read_text(encoding="utf-8") == program
     assert s2["child_path"].endswith("final/model.npz")
@@ -166,22 +211,42 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
     assert first["library_sessions"] == [s2["session_id"]]
     killed = sessions_dir / first["session_id"]
     shutil.move(killed / "session_result.json", tmp_path / "result.bak")
-    reset = {key: first[key] for key in ("session", "instance_id", "instance_status", "parent_params_sha256", "kind",
-                                         "floor", "floor_source", "library_sessions")}
-    reset["attempts"] = [{"repeat": 0, "launched_at": first["attempts"][0]["launched_at"], "status": "pending"}]
+    reset = {
+        key: first[key]
+        for key in (
+            "session",
+            "instance_id",
+            "instance_status",
+            "parent_params_sha256",
+            "kind",
+            "floor",
+            "floor_source",
+            "library_sessions",
+        )
+    }
+    reset["attempts"] = [
+        {"repeat": 0, "launched_at": first["attempts"][0]["launched_at"], "status": "pending"}
+    ]
     state["sessions"]["3"] = reset
     write_json(teacher.state_path, state)
     state = driver("T").run(3)
     s3 = state["sessions"]["3"]
     assert [a["status"] for a in s3["attempts"]] == ["infra", "complete"]
     assert s3["attempts"][0]["session_id"] == killed.name and s3["attempts"][0]["resolved_from"] == (
-        "killed after a check")
+        "killed after a check"
+    )
     assert s3["session_id"] == s3["attempts"][1]["session_id"] != killed.name and s3["outcome"] == "kept"
-    assert read_json(sessions_dir / s3["session_id"] / "session.json")["library"]["entries"][0]["label"] == "session 2"
+    assert (
+        read_json(sessions_dir / s3["session_id"] / "session.json")["library"]["entries"][0]["label"]
+        == "session 2"
+    )
 
     # T, session 4: an attempt recorded with no session is a stop before launch and is launched again
     state = read_json(teacher.state_path)
-    state["sessions"]["4"] = {"session": 4, "attempts": [{"repeat": 0, "launched_at": utc_now(), "status": "pending"}]}
+    state["sessions"]["4"] = {
+        "session": 4,
+        "attempts": [{"repeat": 0, "launched_at": utc_now(), "status": "pending"}],
+    }
     write_json(teacher.state_path, state)
     state = driver("T").run(4)
     s4 = state["sessions"]["4"]
@@ -204,7 +269,8 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
     again = driver("T").run()  # finished sessions are never launched again
     assert _sessions(sessions_dir) == launched
     assert {t: r["child_sha256"] for t, r in again["sessions"].items()} == {
-        t: r["child_sha256"] for t, r in state["sessions"].items()}
+        t: r["child_sha256"] for t, r in state["sessions"].items()
+    }
     summary = again["summary"]
     assert sorted(summary["bal_seen"]) == [str(t) for t in range(1, 10)]
     assert summary["bal_seen_mean_1_to_9"] is not None and summary["bal_seen_drop_1_to_9"] is not None
@@ -220,11 +286,16 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
         assert record["kind"] == L.KIND_FROZEN and record["outcome"] == "kept" and record["pick"] is None
         assert "check" not in record["runs"][0] and record["runs"][0]["status"] == "ok"
     six = frozen["sessions"]["6"]  # applied unchecked: its own check would have refused it
-    assert FS.make_fscil_oracle(six["instance_id"], 1).query(load_params(six["child_path"]), "f")["score_old"] < (
-        toy_floor(6))
-    assert frozen["sessions"]["3"]["instance_id"] == state["sessions"]["3"]["instance_id"]  # same student: reused
-    assert "c_ratio" in frozen["summary"] and frozen["summary"]["teacher_bal_new_2"] == s2["accuracy"][
-        "per_session"]["2"]["bal"]
+    assert FS.make_fscil_oracle(six["instance_id"], 1).query(load_params(six["child_path"]), "f")[
+        "score_old"
+    ] < (toy_floor(6))
+    assert (
+        frozen["sessions"]["3"]["instance_id"] == state["sessions"]["3"]["instance_id"]
+    )  # same student: reused
+    assert (
+        "c_ratio" in frozen["summary"]
+        and frozen["summary"]["teacher_bal_new_2"] == s2["accuracy"]["per_session"]["2"]["bal"]
+    )
 
     # C: the same program applied only when its one check meets the floor; a missing floor stops it, then it resumes
     partial = {t: floor for t, floor in floors.items() if t != 3}
@@ -239,7 +310,15 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
     assert checked["sessions"]["6"]["child_sha256"] == checked["sessions"]["5"]["child_sha256"]
     assert checked["sessions"]["5"]["child_sha256"] == frozen["sessions"]["5"]["child_sha256"]
     assert checked["sessions"]["7"]["child_sha256"] != frozen["sessions"]["7"]["child_sha256"]
-    assert set(checked["summary"]) >= {"bal_seen", "bal_seen_mean_1_to_9", "bal_seen_drop_1_to_9", "bal_new",
-                                       "forgetting", "outcomes", "c_ratio", "teacher_bal_new_2"}
+    assert set(checked["summary"]) >= {
+        "bal_seen",
+        "bal_seen_mean_1_to_9",
+        "bal_seen_drop_1_to_9",
+        "bal_new",
+        "forgetting",
+        "outcomes",
+        "c_ratio",
+        "teacher_bal_new_2",
+    }
     assert _sessions(sessions_dir) == launched  # F and C make no LLM call
     json.dumps(checked, allow_nan=False)

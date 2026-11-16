@@ -97,7 +97,10 @@ def test_top_level_schema_rules() -> None:
         (_patch(params, op, predicted_effect=3), "predicted_effect: must be a non-empty string"),
         (_patch(params, op, notes="x"), "unknown field(s) 'notes'"),
         (_patch(params, op, ops={"op": "scale_rows"}), "ops: must be a list"),
-        ({key: value for key, value in _patch(params, op).items() if key != "hypothesis"}, "missing field(s) hypothesis"),
+        (
+            {key: value for key, value in _patch(params, op).items() if key != "hypothesis"},
+            "missing field(s) hypothesis",
+        ),
         ([op], "patch: must be a JSON object"),
     ]
     for patch, needle in cases:
@@ -109,19 +112,32 @@ def test_top_level_schema_rules() -> None:
 def test_empty_ops_list_is_the_identity_patch() -> None:
     params = _model()
     result = _apply(params, limits=Limits())
-    assert result.n_changed == 0 and result.changed_frac == 0.0 and result.child_sha256 == params_sha256(params)
+    assert (
+        result.n_changed == 0 and result.changed_frac == 0.0 and result.child_sha256 == params_sha256(params)
+    )
 
 
 def test_unknown_op_tensor_and_fields() -> None:
     params = _model()
     _one_error(params, {"op": "scale"}, "unknown op 'scale'")
     _one_error(params, {"tensor": "fc.bias"}, "missing field op")
-    _one_error(params, {"op": "scale_rows", "tensor": "fc3.bias", "rows": [0], "factor": 1.0}, "unknown tensor 'fc3.bias'")
-    _one_error(params, {"op": "scale_rows", "tensor": "fc.bias", "rows": [0], "factor": 1.0, "axis": 0},
-               "unknown field(s) 'axis'")
+    _one_error(
+        params,
+        {"op": "scale_rows", "tensor": "fc3.bias", "rows": [0], "factor": 1.0},
+        "unknown tensor 'fc3.bias'",
+    )
+    _one_error(
+        params,
+        {"op": "scale_rows", "tensor": "fc.bias", "rows": [0], "factor": 1.0, "axis": 0},
+        "unknown field(s) 'axis'",
+    )
     _one_error(params, {"op": "scale_rows", "tensor": "fc.bias", "rows": [0]}, "missing field(s) factor")
-    _one_error(params, {"op": "scale_cols", "tensor": "fc.bias", "cols": [0], "factor": 1.0}, "needs rank >= 2")
-    _one_error(params, {"op": "low_rank_add", "tensor": "fc.bias", "u": "u.npy", "v": "v.npy"}, "needs rank >= 2")
+    _one_error(
+        params, {"op": "scale_cols", "tensor": "fc.bias", "cols": [0], "factor": 1.0}, "needs rank >= 2"
+    )
+    _one_error(
+        params, {"op": "low_rank_add", "tensor": "fc.bias", "u": "u.npy", "v": "v.npy"}, "needs rank >= 2"
+    )
     _one_error(params, "scale_rows", "must be a JSON object")
 
 
@@ -150,14 +166,20 @@ def test_malformed_rows(rows, needle) -> None:
 
 
 def test_malformed_cols_on_conv() -> None:
-    _one_error(_model(), {"op": "scale_cols", "tensor": "conv.weight", "cols": [3], "factor": 0.5},
-               "cols[0] = 3 is outside [0, 3)")
+    _one_error(
+        _model(),
+        {"op": "scale_cols", "tensor": "conv.weight", "cols": [3], "factor": 0.5},
+        "cols[0] = 3 is outside [0, 3)",
+    )
 
 
 @pytest.mark.parametrize("factor", [float("nan"), float("inf"), "0.5", True, None, 10**400])
 def test_scale_factor_must_be_finite(factor) -> None:
-    _one_error(_model(), {"op": "scale_rows", "tensor": "fc.weight", "rows": [0], "factor": factor},
-               "factor must be a finite number")
+    _one_error(
+        _model(),
+        {"op": "scale_rows", "tensor": "fc.weight", "rows": [0], "factor": factor},
+        "factor must be a finite number",
+    )
 
 
 @pytest.mark.parametrize(
@@ -186,13 +208,19 @@ def test_malformed_index_form(kind, index, values, needle) -> None:
 def test_index_form_needs_values_and_rejects_slice_fields() -> None:
     params = _model()
     _one_error(params, {"op": "set", "tensor": "fc.weight", "index": [[0, 0]]}, "the index form needs values")
-    _one_error(params, {"op": "set", "tensor": "fc.weight", "index": [[0, 0]], "values": [1.0], "value": 1.0},
-               "value belongs to the slice form")
+    _one_error(
+        params,
+        {"op": "set", "tensor": "fc.weight", "index": [[0, 0]], "values": [1.0], "value": 1.0},
+        "value belongs to the slice form",
+    )
 
 
 def test_set_with_repeated_index_tuples_is_an_error() -> None:
-    _one_error(_model(), {"op": "set", "tensor": "fc.weight", "index": [[1, 2], [0, 0], [1, 2]], "values": [1, 2, 3]},
-               "index tuple [1, 2] appears 2 times")
+    _one_error(
+        _model(),
+        {"op": "set", "tensor": "fc.weight", "index": [[1, 2], [0, 0], [1, 2]], "values": [1, 2, 3]},
+        "index tuple [1, 2] appears 2 times",
+    )
 
 
 def test_json_overflowing_literal_is_rejected_as_non_finite() -> None:
@@ -216,7 +244,10 @@ def test_json_overflowing_literal_is_rejected_as_non_finite() -> None:
         ({"slice": [None, None], "value": 0.0, "values_file": "x.npy"}, "needs exactly one of value"),
         ({"slice": [None, None], "values": [0.0]}, "values belongs to the index form"),
         ({"slice": [None, None], "value": float("nan")}, "value must be a finite number"),
-        ({"slice": [None, None], "values_file": "../x.npy"}, "values_file must be the bare name of a .npy file"),
+        (
+            {"slice": [None, None], "values_file": "../x.npy"},
+            "values_file must be the bare name of a .npy file",
+        ),
         ({"slice": [None, None], "index": [[0, 0]], "value": 0.0}, "give exactly one of index"),
         ({"value": 0.0}, "give exactly one of index"),
     ],
@@ -229,12 +260,23 @@ def test_values_file_shape_must_equal_the_block_shape(tmp_path) -> None:
     np.save(tmp_path / "block.npy", np.zeros((2, 5)))
     np.save(tmp_path / "flat.npy", np.zeros(10))
     params = _model()
-    _apply(params, {"op": "set", "tensor": "fc.weight", "slice": [[1, 3], None], "values_file": "block.npy"},
-           patch_dir=tmp_path)
-    _one_error(params, {"op": "set", "tensor": "fc.weight", "slice": [[0, 3], None], "values_file": "block.npy"},
-               "has shape [2, 5], but the slice selects a block of shape [3, 5]", patch_dir=tmp_path)
-    _one_error(params, {"op": "set", "tensor": "fc.weight", "slice": [[1, 3], None], "values_file": "flat.npy"},
-               "has shape [10], but the slice selects a block of shape [2, 5]", patch_dir=tmp_path)
+    _apply(
+        params,
+        {"op": "set", "tensor": "fc.weight", "slice": [[1, 3], None], "values_file": "block.npy"},
+        patch_dir=tmp_path,
+    )
+    _one_error(
+        params,
+        {"op": "set", "tensor": "fc.weight", "slice": [[0, 3], None], "values_file": "block.npy"},
+        "has shape [2, 5], but the slice selects a block of shape [3, 5]",
+        patch_dir=tmp_path,
+    )
+    _one_error(
+        params,
+        {"op": "set", "tensor": "fc.weight", "slice": [[1, 3], None], "values_file": "flat.npy"},
+        "has shape [10], but the slice selects a block of shape [2, 5]",
+        patch_dir=tmp_path,
+    )
 
 
 # ----------------------------------------------------------------------------------------------- dense ops
@@ -257,37 +299,76 @@ def test_values_file_shape_must_equal_the_block_shape(tmp_path) -> None:
     ],
 )
 def test_malformed_project_out(fields, needle) -> None:
-    op = {"op": "project_out", "tensor": "fc.weight", "side": "in", "direction": [1.0, 0, 0, 0, 0], "strength": 1.0}
+    op = {
+        "op": "project_out",
+        "tensor": "fc.weight",
+        "side": "in",
+        "direction": [1.0, 0, 0, 0, 0],
+        "strength": 1.0,
+    }
     _one_error(_model(), {**op, **fields}, needle)
 
 
 def test_project_out_bias_and_file_direction_rules(tmp_path) -> None:
     params = _model()
-    op = {"op": "project_out", "tensor": "fc.weight", "side": "out", "direction": [1.0, 0.0, 1.0], "strength": 1.0}
+    op = {
+        "op": "project_out",
+        "tensor": "fc.weight",
+        "side": "out",
+        "direction": [1.0, 0.0, 1.0],
+        "strength": 1.0,
+    }
     _one_error(params, {**op, "bias": "conv.bias"}, "it must be 1-D of length 3")
     _one_error(params, {**op, "bias": "fc.weight"}, "bias must name a tensor other than tensor")
     _one_error(params, {**op, "bias": "nope"}, "unknown tensor 'nope'")
     np.save(tmp_path / "d5.npy", np.ones(5))
     np.save(tmp_path / "d0.npy", np.zeros(3))
-    _one_error(params, {**op, "direction": "d5.npy"}, "direction 'd5.npy' has shape [5]; side 'out' needs a 1-D array of length 3",
-               patch_dir=tmp_path)
-    _one_error(params, {**op, "direction": "d0.npy"}, "direction 'd0.npy' is the zero vector", patch_dir=tmp_path)
+    _one_error(
+        params,
+        {**op, "direction": "d5.npy"},
+        "direction 'd5.npy' has shape [5]; side 'out' needs a 1-D array of length 3",
+        patch_dir=tmp_path,
+    )
+    _one_error(
+        params, {**op, "direction": "d0.npy"}, "direction 'd0.npy' is the zero vector", patch_dir=tmp_path
+    )
     assert _apply(params, {**op, "strength": 1e-9}).n_changed >= 0
 
 
 def test_low_rank_add_shapes_and_rank_limit(tmp_path) -> None:
     params = _model()
     rng = np.random.default_rng(0)
-    files = {"u2.npy": (3, 2), "v2.npy": (5, 2), "u3.npy": (3, 3), "v3.npy": (5, 3), "u0.npy": (3, 0), "v0.npy": (5, 0),
-             "v1d.npy": (5,), "ubad.npy": (4, 2)}
+    files = {
+        "u2.npy": (3, 2),
+        "v2.npy": (5, 2),
+        "u3.npy": (3, 3),
+        "v3.npy": (5, 3),
+        "u0.npy": (3, 0),
+        "v0.npy": (5, 0),
+        "v1d.npy": (5,),
+        "ubad.npy": (4, 2),
+    }
     for name, shape in files.items():
         np.save(tmp_path / name, rng.normal(size=shape))
     op = {"op": "low_rank_add", "tensor": "fc.weight"}
     two = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None, max_rank=2)
-    assert _apply(params, {**op, "u": "u2.npy", "v": "v2.npy"}, limits=two, patch_dir=tmp_path).n_changed == 15
-    _one_error(params, {**op, "u": "u3.npy", "v": "v3.npy"}, "rank r = 3 is outside 1..2", limits=two, patch_dir=tmp_path)
+    assert (
+        _apply(params, {**op, "u": "u2.npy", "v": "v2.npy"}, limits=two, patch_dir=tmp_path).n_changed == 15
+    )
+    _one_error(
+        params,
+        {**op, "u": "u3.npy", "v": "v3.npy"},
+        "rank r = 3 is outside 1..2",
+        limits=two,
+        patch_dir=tmp_path,
+    )
     _one_error(params, {**op, "u": "u0.npy", "v": "v0.npy"}, "rank r = 0 is outside 1..8", patch_dir=tmp_path)
-    _one_error(params, {**op, "u": "u2.npy", "v": "v3.npy"}, "u has r = 2 columns but v has r = 3", patch_dir=tmp_path)
+    _one_error(
+        params,
+        {**op, "u": "u2.npy", "v": "v3.npy"},
+        "u has r = 2 columns but v has r = 3",
+        patch_dir=tmp_path,
+    )
     _one_error(params, {**op, "u": "u2.npy", "v": "v1d.npy"}, "expected [5, r]", patch_dir=tmp_path)
     _one_error(params, {**op, "u": "ubad.npy", "v": "v2.npy"}, "expected [3, r]", patch_dir=tmp_path)
 
@@ -298,15 +379,27 @@ def test_low_rank_add_rank_at_and_above_the_default_limit(tmp_path) -> None:
     for r in (8, 9):
         np.save(tmp_path / f"u{r}.npy", rng.normal(size=(3, r)))
         np.save(tmp_path / f"v{r}.npy", rng.normal(size=(5, r)))
-    _apply(params, {"op": "low_rank_add", "tensor": "fc.weight", "u": "u8.npy", "v": "v8.npy"}, patch_dir=tmp_path)
-    _one_error(params, {"op": "low_rank_add", "tensor": "fc.weight", "u": "u9.npy", "v": "v9.npy"},
-               "rank r = 9 is outside 1..8", patch_dir=tmp_path)
+    _apply(
+        params,
+        {"op": "low_rank_add", "tensor": "fc.weight", "u": "u8.npy", "v": "v8.npy"},
+        patch_dir=tmp_path,
+    )
+    _one_error(
+        params,
+        {"op": "low_rank_add", "tensor": "fc.weight", "u": "u9.npy", "v": "v9.npy"},
+        "rank r = 9 is outside 1..8",
+        patch_dir=tmp_path,
+    )
 
 
 def test_add_dense_shape_must_match(tmp_path) -> None:
     np.save(tmp_path / "d.npy", np.zeros((5, 3)))
-    _one_error(_model(), {"op": "add_dense", "tensor": "fc.weight", "delta": "d.npy"},
-               "delta 'd.npy' has shape [5, 3], but 'fc.weight' has shape [3, 5]", patch_dir=tmp_path)
+    _one_error(
+        _model(),
+        {"op": "add_dense", "tensor": "fc.weight", "delta": "d.npy"},
+        "delta 'd.npy' has shape [5, 3], but 'fc.weight' has shape [3, 5]",
+        patch_dir=tmp_path,
+    )
 
 
 # ----------------------------------------------------------------------------------------------- limits
@@ -383,8 +476,11 @@ def test_zero_parent_tensor_has_infinite_relative_norm_and_none_disables_limits(
 
 def test_per_tensor_summary_values() -> None:
     params = {"w": np.ones((2, 2), dtype=np.float32), "b": np.full(2, 3.0, dtype=np.float32)}
-    result = _apply(params, {"op": "set", "tensor": "w", "index": [[0, 0]], "values": [3.0]},
-                    {"op": "add", "tensor": "b", "index": [[1]], "values": [-0.5]})
+    result = _apply(
+        params,
+        {"op": "set", "tensor": "w", "index": [[0, 0]], "values": [3.0]},
+        {"op": "add", "tensor": "b", "index": [[1]], "values": [-0.5]},
+    )
     assert result.per_tensor["w"] == {"changed": 1, "size": 4, "rel_frob": 1.0, "max_abs_delta": 2.0}
     assert result.per_tensor["b"]["changed"] == 1 and result.per_tensor["b"]["max_abs_delta"] == 0.5
     assert result.per_tensor["b"]["rel_frob"] == pytest.approx(0.5 / np.sqrt(18.0), rel=1e-15)
@@ -401,9 +497,12 @@ def test_entry_rounding_back_to_the_parent_is_not_a_change() -> None:
 
 def test_signed_zero_flip_is_not_a_change() -> None:
     zeros = {"w": np.zeros((2, 3), dtype=np.float32)}
-    result = _apply(zeros, {"op": "scale_rows", "tensor": "w", "rows": [0, 1], "factor": -1.0},
-                    {"op": "set", "tensor": "w", "index": [[0, 0]], "values": [-0.0]},
-                    limits=Limits(max_edit_frac=None))
+    result = _apply(
+        zeros,
+        {"op": "scale_rows", "tensor": "w", "rows": [0, 1], "factor": -1.0},
+        {"op": "set", "tensor": "w", "index": [[0, 0]], "values": [-0.0]},
+        limits=Limits(max_edit_frac=None),
+    )
     assert not np.any(np.signbit(result.child["w"]))
     assert result.n_changed == 0 and result.child_sha256 == params_sha256(zeros)
 
@@ -440,8 +539,17 @@ def test_edit_size_counts_the_numbers_each_op_specifies(tmp_path) -> None:
         ({"op": "add", "tensor": "w", "slice": [[0, 2], [0, 3]], "value": 1e-3}, 1),
         ({"op": "add", "tensor": "w", "slice": [[0, 2], [0, 3]], "values_file": "block.npy"}, 6),
         ({"op": "project_out", "tensor": "w", "side": "in", "direction": "d.npy", "strength": 0.1}, 10),
-        ({"op": "project_out", "tensor": "w", "side": "out", "direction": [1.0, 0, 0, 0, 0, 0], "strength": 0.1,
-          "bias": "b"}, 6),
+        (
+            {
+                "op": "project_out",
+                "tensor": "w",
+                "side": "out",
+                "direction": [1.0, 0, 0, 0, 0, 0],
+                "strength": 0.1,
+                "bias": "b",
+            },
+            6,
+        ),
         ({"op": "low_rank_add", "tensor": "w", "u": "u.npy", "v": "v.npy"}, 2 * (6 + 10)),
         ({"op": "add_dense", "tensor": "w", "delta": "dense.npy"}, 60),
     ]
@@ -457,8 +565,14 @@ def test_rank_one_hidden_edit_fits_the_edit_size_limit_but_not_an_entry_cap(tmp_
     # FashionMNIST MLP shapes: a rank-1 edit of fc2 changes 16,384 entries (13.9 percent of 118,282) but
     # specifies 256 numbers, well under 5 percent.
     rng = np.random.default_rng(11)
-    shapes = {"fc1.weight": (128, 784), "fc1.bias": (128,), "fc2.weight": (128, 128), "fc2.bias": (128,),
-              "fc3.weight": (10, 128), "fc3.bias": (10,)}
+    shapes = {
+        "fc1.weight": (128, 784),
+        "fc1.bias": (128,),
+        "fc2.weight": (128, 128),
+        "fc2.bias": (128,),
+        "fc3.weight": (10, 128),
+        "fc3.bias": (10,),
+    }
     params = {name: (rng.normal(size=shape) * 0.05).astype(np.float32) for name, shape in shapes.items()}
     np.save(tmp_path / "u.npy", rng.normal(size=(128, 1)) * 1e-2)
     np.save(tmp_path / "v.npy", rng.normal(size=(128, 1)) * 1e-2)
@@ -466,7 +580,10 @@ def test_rank_one_hidden_edit_fits_the_edit_size_limit_but_not_an_entry_cap(tmp_
     result = _apply(params, op, patch_dir=tmp_path, limits=Limits(max_changed_frac=None))
     assert result.edit_size == 256 and result.n_changed == 128 * 128 and result.changed_frac > 0.05
     entry_cap = Limits(max_changed_frac=0.05)
-    assert any("parameters change" in message for message in _errors(params, op, patch_dir=tmp_path, limits=entry_cap))
+    assert any(
+        "parameters change" in message
+        for message in _errors(params, op, patch_dir=tmp_path, limits=entry_cap)
+    )
 
 
 def test_one_dimensional_tensors_are_exempt_from_the_relative_frobenius_limit() -> None:
@@ -482,8 +599,18 @@ def test_one_dimensional_tensors_are_exempt_from_the_relative_frobenius_limit() 
 def test_named_tensors_are_exempt_from_the_relative_frobenius_limit() -> None:
     params = {"w": np.ones((4, 4), dtype=np.float32), "head": np.full((3, 4), 0.01, dtype=np.float32)}
     limits = Limits(max_changed_frac=None, max_rel_frob=0.5, max_edit_frac=None, rel_frob_exempt=["head"])
-    assert limits.rel_frob_exempt == ("head",) and limits == Limits(**json.loads(json.dumps(
-        {"max_changed_frac": None, "max_rel_frob": 0.5, "max_edit_frac": None, "rel_frob_exempt": ["head"]})))
+    assert limits.rel_frob_exempt == ("head",) and limits == Limits(
+        **json.loads(
+            json.dumps(
+                {
+                    "max_changed_frac": None,
+                    "max_rel_frob": 0.5,
+                    "max_edit_frac": None,
+                    "rel_frob_exempt": ["head"],
+                }
+            )
+        )
+    )
     fill = {"op": "add", "tensor": "head", "index": [[2, 0], [2, 1]], "values": [5.0, -5.0]}
     result = _apply(params, fill, limits=limits)
     assert result.per_tensor["head"]["rel_frob"] > 0.5 and result.child["head"][2, 0] == np.float32(5.01)
@@ -496,8 +623,11 @@ def test_named_tensors_are_exempt_from_the_relative_frobenius_limit() -> None:
 def test_an_exempt_name_the_model_lacks_is_a_caller_error() -> None:
     params = _model()
     with pytest.raises(ValueError, match="rel_frob_exempt names tensors the model does not have"):
-        _apply(params, {"op": "add", "tensor": "fc.bias", "index": [[0]], "values": [1.0]},
-               limits=Limits(rel_frob_exempt=["fc2.weight"]))
+        _apply(
+            params,
+            {"op": "add", "tensor": "fc.bias", "index": [[0]], "values": [1.0]},
+            limits=Limits(rel_frob_exempt=["fc2.weight"]),
+        )
 
 
 # ----------------------------------------------------------------------------------------------- non-finite
@@ -507,12 +637,20 @@ def test_non_finite_results_are_rejected() -> None:
     params = _model()
     beyond_float32 = {"op": "scale_rows", "tensor": "fc.weight", "rows": [0], "factor": 1e300}
     messages = _errors(params, beyond_float32)
-    assert messages == ["tensor 'fc.weight': 5 entries are not finite after the patch (float64 overflow or invalid "
-                        "arithmetic, or values beyond the float32 range)"]
+    assert messages == [
+        "tensor 'fc.weight': 5 entries are not finite after the patch (float64 overflow or invalid "
+        "arithmetic, or values beyond the float32 range)"
+    ]
     _errors(params, beyond_float32, beyond_float32)
     huge = {"op": "add", "tensor": "conv.bias", "index": [[0], [0]], "values": [1.7e308, 1.7e308]}
     assert any("conv.bias" in message for message in _errors(params, huge))
-    project = {"op": "project_out", "tensor": "fc.weight", "side": "in", "direction": [1, 1, 1, 1, 1], "strength": 1.0}
+    project = {
+        "op": "project_out",
+        "tensor": "fc.weight",
+        "side": "in",
+        "direction": [1, 1, 1, 1, 1],
+        "strength": 1.0,
+    }
     assert any("fc.weight" in message for message in _errors(params, beyond_float32, beyond_float32, project))
 
 
@@ -532,7 +670,13 @@ def test_problems_from_every_op_are_reported_together(tmp_path) -> None:
     ops = [
         {"op": "scale_rows", "tensor": "fc.weight", "rows": [9], "factor": 1.0},
         {"op": "set", "tensor": "fc.weight", "index": [[0, 0], [0, 0]], "values": [1, 2]},
-        {"op": "project_out", "tensor": "fc.weight", "side": "in", "direction": [0, 0, 0, 0, 0], "strength": 2},
+        {
+            "op": "project_out",
+            "tensor": "fc.weight",
+            "side": "in",
+            "direction": [0, 0, 0, 0, 0],
+            "strength": 2,
+        },
         {"op": "add_dense", "tensor": "fc.weight", "delta": "missing.npy"},
         {"op": "scale_rows", "tensor": "fc.bias", "rows": [0], "factor": 2.0},
     ]
@@ -557,7 +701,14 @@ def test_inputs_are_never_mutated() -> None:
     snapshot = {name: value.copy() for name, value in params.items()}
     good = [
         {"op": "scale_rows", "tensor": "conv.weight", "rows": [0], "factor": 0.0},
-        {"op": "project_out", "tensor": "fc.weight", "side": "out", "direction": [1, 2, 3], "strength": 1.0, "bias": "fc.bias"},
+        {
+            "op": "project_out",
+            "tensor": "fc.weight",
+            "side": "out",
+            "direction": [1, 2, 3],
+            "strength": 1.0,
+            "bias": "fc.bias",
+        },
         {"op": "add", "tensor": "fc.weight", "index": [[0, 0], [0, 0]], "values": [0.5, 0.5]},
     ]
     patch = _patch(params, *good)
@@ -565,8 +716,13 @@ def test_inputs_are_never_mutated() -> None:
     result = apply_patch(params, patch, None, OPEN, params_sha256(params))
     assert result.n_changed > 0
     with pytest.raises(PatchError):
-        apply_patch(params, _patch(params, *good, {"op": "scale_rows", "tensor": "fc.weight", "rows": [7], "factor": 1}),
-                    None, OPEN, params_sha256(params))
+        apply_patch(
+            params,
+            _patch(params, *good, {"op": "scale_rows", "tensor": "fc.weight", "rows": [7], "factor": 1}),
+            None,
+            OPEN,
+            params_sha256(params),
+        )
     with pytest.raises(PatchError):
         apply_patch(params, patch, None, Limits(), params_sha256(params))
     assert patch == patch_snapshot
@@ -627,7 +783,9 @@ def test_task_limits_is_the_json_form_of_every_field() -> None:
     from cryowisp.patch import task_limits
 
     every = dataclasses.asdict(Limits())
-    assert every.pop("rel_frob_exempt") == () and task_limits() == every == json.loads(json.dumps(task_limits()))
+    assert every.pop("rel_frob_exempt") == () and task_limits() == every == json.loads(
+        json.dumps(task_limits())
+    )
     custom = Limits(max_changed_frac=0.2, max_edit_frac=None, rel_frob_exempt=["fc.weight"])
     assert task_limits(custom)["rel_frob_exempt"] == ["fc.weight"] and Limits(**task_limits(custom)) == custom
     assert Limits(**task_limits(Limits(max_changed_frac=0.2))) == Limits(max_changed_frac=0.2)

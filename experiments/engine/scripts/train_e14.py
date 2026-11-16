@@ -61,8 +61,16 @@ def cmd_init(args: argparse.Namespace) -> int:
     if record["forward_sha256"] != forward_sha:
         raise RuntimeError("forward.py hash differs from the record")
     write_json(record_path, record)
-    print(json.dumps({"dataset_json": str(record_path), "forward_sha256": forward_sha,
-                      "sealed_record_sha256": sealed["sha256"]}, indent=1))
+    print(
+        json.dumps(
+            {
+                "dataset_json": str(record_path),
+                "forward_sha256": forward_sha,
+                "sealed_record_sha256": sealed["sha256"],
+            },
+            indent=1,
+        )
+    )
     return 0
 
 
@@ -81,10 +89,16 @@ def cmd_demos(args: argparse.Namespace) -> int:
     started = time.perf_counter()
     n_train = SMOKE_TRAIN if args.smoke else D.SEED_RANGES["train"].n
     n_evidence = SMOKE_EVIDENCE if args.smoke else D.SEED_RANGES["V_evidence_new"].n
-    sets = {"train": ("old", D.SEED_RANGES["train"].start, n_train),
-            "V_evidence_new": ("new", D.SEED_RANGES["V_evidence_new"].start, n_evidence)}
-    manifest: dict[str, Any] = {"smoke": bool(args.smoke), "versions": D.environment_versions(), "sets": {},
-                                "workers": args.workers}
+    sets = {
+        "train": ("old", D.SEED_RANGES["train"].start, n_train),
+        "V_evidence_new": ("new", D.SEED_RANGES["V_evidence_new"].start, n_evidence),
+    }
+    manifest: dict[str, Any] = {
+        "smoke": bool(args.smoke),
+        "versions": D.environment_versions(),
+        "sets": {},
+        "workers": args.workers,
+    }
     context = multiprocessing.get_context("spawn")
     with context.Pool(args.workers) as pool:
         for name, (mission, start, n) in sets.items():
@@ -92,17 +106,31 @@ def cmd_demos(args: argparse.Namespace) -> int:
             chunks = pool.map(D.demo_chunk, _chunks(mission, start, start + n))
             arrays = D.merge_demo_chunks(chunks)
             if not np.array_equal(arrays["ep_seed"], np.arange(start, start + n)):
-                raise RuntimeError(f"{name}: the episodes are not the seeds {start}..{start + n - 1} in order")
+                raise RuntimeError(
+                    f"{name}: the episodes are not the seeds {start}..{start + n - 1} in order"
+                )
             digest = D.save_demos(name, arrays)
-            manifest["sets"][name] = {"file": D.DEMO_FILES[name], "sha256": digest, "mission": mission,
-                                      "seed_start": start, "n_seeds": n, **D.demo_summary(arrays),
-                                      "wall_s": time.perf_counter() - t0}
+            manifest["sets"][name] = {
+                "file": D.DEMO_FILES[name],
+                "sha256": digest,
+                "mission": mission,
+                "seed_start": start,
+                "n_seeds": n,
+                **D.demo_summary(arrays),
+                "wall_s": time.perf_counter() - t0,
+            }
             print(name, json.dumps(manifest["sets"][name]), flush=True)
-    names = ("smoke_old", "smoke_new") if args.smoke else (
-        "V_check_old", "V_select_old", "V_check_new", "V_select_new")
-    manifest["fingerprints"] = {name: D.initial_fingerprint(D.SEED_RANGES[name].mission, D.SEED_RANGES[name].seeds)
-                                for name in names}
-    manifest["fingerprints"]["train_first_1000"] = D.initial_fingerprint("old", D.SEED_RANGES["train"].seeds[:1000])
+    names = (
+        ("smoke_old", "smoke_new")
+        if args.smoke
+        else ("V_check_old", "V_select_old", "V_check_new", "V_select_new")
+    )
+    manifest["fingerprints"] = {
+        name: D.initial_fingerprint(D.SEED_RANGES[name].mission, D.SEED_RANGES[name].seeds) for name in names
+    }
+    manifest["fingerprints"]["train_first_1000"] = D.initial_fingerprint(
+        "old", D.SEED_RANGES["train"].seeds[:1000]
+    )
     manifest["wall_s"] = time.perf_counter() - started
     write_json(D.demos_dir() / D.DEMOS_MANIFEST, manifest)
     print(json.dumps({"fingerprints": manifest["fingerprints"], "wall_s": manifest["wall_s"]}), flush=True)
@@ -126,7 +154,9 @@ def _smoke_readout(forward: Any, params: Any) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for mission in D.MISSIONS:
         t0 = time.perf_counter()
-        result = D.rollouts(P.numpy_logits_fn(forward, params), mission, D.SEED_RANGES[f"smoke_{mission}"].seeds)
+        result = D.rollouts(
+            P.numpy_logits_fn(forward, params), mission, D.SEED_RANGES[f"smoke_{mission}"].seeds
+        )
         out[f"smoke_{mission}_wall_s"] = time.perf_counter() - t0
         out[f"smoke_{mission}_mean_length"] = float(result.length.mean())
     out["gate"] = {"passed": False, "note": "smoke: no V_select episode is run"}
@@ -139,8 +169,13 @@ def _device_record(torch: Any, device: str) -> dict[str, Any]:
         return {"device": "cpu"}
     if not torch.cuda.is_available():
         raise SystemExit("--device cuda: torch sees no CUDA device")
-    return {"device": "cuda", "gpu_name": torch.cuda.get_device_name(0), "cuda_version": torch.version.cuda,
-            "cudnn_version": torch.backends.cudnn.version(), "n_visible_gpus": torch.cuda.device_count()}
+    return {
+        "device": "cuda",
+        "gpu_name": torch.cuda.get_device_name(0),
+        "cuda_version": torch.version.cuda,
+        "cudnn_version": torch.backends.cudnn.version(),
+        "n_visible_gpus": torch.cuda.device_count(),
+    }
 
 
 def cmd_chain(args: argparse.Namespace) -> int:
@@ -164,7 +199,7 @@ def cmd_chain(args: argparse.Namespace) -> int:
     info = run_info(REPO_ROOT, args.git_state_file)
     root = X.pending_models_dir() if args.models_root is None else Path(args.models_root)
     rows: list[dict[str, Any]] = []
-    chain = ((("base", SMOKE_TRAIN),) if args.smoke else X.CHAIN)
+    chain = (("base", SMOKE_TRAIN),) if args.smoke else X.CHAIN
     config = P.E14TrainConfig(epochs=1) if args.smoke else P.E14TrainConfig()
     for size, n_episodes in chain:
         if args.smoke:
@@ -172,28 +207,55 @@ def cmd_chain(args: argparse.Namespace) -> int:
             x, y = demos["x"][keep].astype(np.int64), demos["y"][keep].astype(np.int64)
         else:
             x, y = D.train_rows(demos, n_episodes)
-        determinism = {**configure_determinism(args.seed), "torch_threads": torch.get_num_threads(),
-                       "mkldnn_enabled": torch.backends.mkldnn.enabled, **_device_record(torch, args.device)}
-        print(f"== {size} at {n_episodes} episodes: {len(x)} rows, {args.threads} threads, device {args.device}",
-              flush=True)
+        determinism = {
+            **configure_determinism(args.seed),
+            "torch_threads": torch.get_num_threads(),
+            "mkldnn_enabled": torch.backends.mkldnn.enabled,
+            **_device_record(torch, args.device),
+        }
+        print(
+            f"== {size} at {n_episodes} episodes: {len(x)} rows, {args.threads} threads, device {args.device}",
+            flush=True,
+        )
         result = P.train_policy(config, P.SIZES[size], x, y, seed=args.seed, device=args.device)
         params = P.export_params(result.model)
         t0 = time.perf_counter()
         gate = _smoke_readout(forward, params) if args.smoke else X.readout(forward, params)
         gate["wall_s"] = time.perf_counter() - t0
-        demo_record = {"train_demos_sha256": manifest["sets"]["train"]["sha256"],
-                       "demos_manifest_versions": manifest["versions"]}
-        row = X.export_pending(seed=args.seed, size=size, n_episodes=n_episodes, config=config, result=result,
-                               demos=demo_record, x_train=x, gate=gate, determinism=determinism, run_info=info,
-                               root=root)
+        demo_record = {
+            "train_demos_sha256": manifest["sets"]["train"]["sha256"],
+            "demos_manifest_versions": manifest["versions"],
+        }
+        row = X.export_pending(
+            seed=args.seed,
+            size=size,
+            n_episodes=n_episodes,
+            config=config,
+            result=result,
+            demos=demo_record,
+            x_train=x,
+            gate=gate,
+            determinism=determinism,
+            run_info=info,
+            root=root,
+        )
         if args.smoke:
             private_path = root / row["model_id"] / "private.json"
             private = json.loads(private_path.read_text(encoding="utf-8"))
             write_json(private_path, {**private, "smoke": True})
         rows.append(row)
         write_json(root / "index.json", rows)
-        print(json.dumps({**row, "gate": gate.get("gate"), "headroom": gate.get("headroom"),
-                          "train_wall_s": result.wall_time_s}), flush=True)
+        print(
+            json.dumps(
+                {
+                    **row,
+                    "gate": gate.get("gate"),
+                    "headroom": gate.get("headroom"),
+                    "train_wall_s": result.wall_time_s,
+                }
+            ),
+            flush=True,
+        )
         if gate["gate"]["passed"]:
             break
     else:
@@ -224,7 +286,9 @@ def cmd_import_demos(args: argparse.Namespace) -> int:
         raise SystemExit(f"{D.demos_dir()} already holds demonstrations; nothing overwritten")
     local_versions = D.environment_versions()
     if manifest["versions"] != local_versions:
-        raise SystemExit(f"job versions {manifest['versions']} differ from the workstation's {local_versions}")
+        raise SystemExit(
+            f"job versions {manifest['versions']} differ from the workstation's {local_versions}"
+        )
     checks: dict[str, Any] = {}
     for name, entry in manifest["sets"].items():
         arrays = D.load_demo_file(source / entry["file"])
@@ -235,7 +299,11 @@ def cmd_import_demos(args: argparse.Namespace) -> int:
         local = D.demo_chunk((entry["mission"], start, start + n_local))
         keep_rows = arrays["episode"] < n_local
         for key in D.DEMO_KEYS:
-            job = arrays[key][keep_rows] if len(arrays[key]) == len(arrays["episode"]) else arrays[key][:n_local]
+            job = (
+                arrays[key][keep_rows]
+                if len(arrays[key]) == len(arrays["episode"])
+                else arrays[key][:n_local]
+            )
             if not np.array_equal(job, local[key]):
                 raise SystemExit(f"{name}: the workstation bot differs from the job's on key {key}")
         checks[name] = {"episodes_regenerated": n_local, "equal": True}
@@ -250,8 +318,10 @@ def cmd_import_demos(args: argparse.Namespace) -> int:
     D.demos_dir().mkdir(parents=True, exist_ok=True)
     for entry in manifest["sets"].values():
         shutil.copyfile(source / entry["file"], D.demos_dir() / entry["file"])
-    write_json(D.demos_dir() / D.DEMOS_MANIFEST,
-               {**manifest, "import": {"run_dir": str(args.run_dir), "note": args.note, "checks": checks}})
+    write_json(
+        D.demos_dir() / D.DEMOS_MANIFEST,
+        {**manifest, "import": {"run_dir": str(args.run_dir), "note": args.note, "checks": checks}},
+    )
     for name, entry in manifest["sets"].items():
         D.load_demos(name, entry["sha256"])
     print(json.dumps({"installed": str(D.demos_dir()), "checks": checks}, indent=1))
@@ -278,10 +348,17 @@ def cmd_probe(args: argparse.Namespace) -> int:
     else:
         torch.manual_seed(args.seed)
     print(torch.__config__.parallel_info(), flush=True)
-    print({"threads": torch.get_num_threads(), "interop_threads": torch.get_num_interop_threads(),
-           "mkldnn_enabled": torch.backends.mkldnn.enabled, "mkldnn_available": torch.backends.mkldnn.is_available(),
-           "deterministic": torch.are_deterministic_algorithms_enabled(), "cpu_capability":
-               torch.backends.cpu.get_cpu_capability()}, flush=True)
+    print(
+        {
+            "threads": torch.get_num_threads(),
+            "interop_threads": torch.get_num_interop_threads(),
+            "mkldnn_enabled": torch.backends.mkldnn.enabled,
+            "mkldnn_available": torch.backends.mkldnn.is_available(),
+            "deterministic": torch.are_deterministic_algorithms_enabled(),
+            "cpu_capability": torch.backends.cpu.get_cpu_capability(),
+        },
+        flush=True,
+    )
     manifest = json.loads((D.demos_dir() / D.DEMOS_MANIFEST).read_text(encoding="utf-8"))
     if not manifest["smoke"]:
         raise SystemExit("the probe runs on the smoke demonstrations only")
@@ -290,9 +367,19 @@ def cmd_probe(args: argparse.Namespace) -> int:
     epochs = math.ceil(args.steps / math.ceil(len(x) / P.E14TrainConfig().batch_size))
     result = P.train_policy(P.E14TrainConfig(epochs=epochs), P.SIZES["base"], x, y, seed=args.seed)
     steps = int(result.final["steps_total"])
-    print(json.dumps({"probe": vars(args), "steps": steps, "wall_s": result.wall_time_s,
-                      "ms_per_step": 1000 * result.wall_time_s / steps, "final_loss": result.final["train_loss"]},
-                     default=str), flush=True)
+    print(
+        json.dumps(
+            {
+                "probe": vars(args),
+                "steps": steps,
+                "wall_s": result.wall_time_s,
+                "ms_per_step": 1000 * result.wall_time_s / steps,
+                "final_loss": result.final["train_loss"],
+            },
+            default=str,
+        ),
+        flush=True,
+    )
     return 0
 
 
@@ -332,8 +419,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     faulthandler.enable()  # a native crash prints every thread's Python stack
     set_threads(getattr(args, "threads", 1) if args.command in ("chain", "probe") else 1)
-    return {"init": cmd_init, "demos": cmd_demos, "chain": cmd_chain, "probe": cmd_probe,
-            "import-demos": cmd_import_demos, "import": cmd_import}[args.command](args)
+    return {
+        "init": cmd_init,
+        "demos": cmd_demos,
+        "chain": cmd_chain,
+        "probe": cmd_probe,
+        "import-demos": cmd_import_demos,
+        "import": cmd_import,
+    }[args.command](args)
 
 
 if __name__ == "__main__":

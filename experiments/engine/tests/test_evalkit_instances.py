@@ -65,7 +65,9 @@ def test_draw_evidence_contract() -> None:
     fail_rows, rand_rows = rows[:K_FAIL], rows[K_FAIL:]
     assert np.all(y[fail_rows] == 0) and np.all(pred[fail_rows] == 1)
     assert np.array_equal(arrays["x_fail"], x[fail_rows]) and np.array_equal(arrays["x_rand"], x[rand_rows])
-    assert np.array_equal(arrays["y_rand"], y[rand_rows]) and np.array_equal(arrays["pred_rand"], pred[rand_rows])
+    assert np.array_equal(arrays["y_rand"], y[rand_rows]) and np.array_equal(
+        arrays["pred_rand"], pred[rand_rows]
+    )
     assert np.all(arrays["y_fail"] == 0) and np.all(arrays["pred_fail"] == 1)
     assert arrays["y_fail"].dtype == np.int64 and arrays["x_fail"].dtype == np.uint8
     ids = evidence.split_ids
@@ -91,7 +93,14 @@ def test_instance_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa:
     outcomes = build_v0(toy_store)
     assert len(outcomes) == 8 and all(o.status == "created" for o in outcomes)
     assert [(o.split_role, o.seed) for o in outcomes] == [
-        ("dev", 100), ("dev", 100), ("dev", 101), ("dev", 101), ("main", 0), ("main", 0), ("main", 1), ("main", 1)
+        ("dev", 100),
+        ("dev", 100),
+        ("dev", 101),
+        ("dev", 101),
+        ("main", 0),
+        ("main", 0),
+        ("main", 1),
+        ("main", 1),
     ]
     root = toy_store.private / "instances"
     with np.load(toy_store.private / toy_store.dataset / "splits" / "V_evidence.npz") as archive:
@@ -102,7 +111,9 @@ def test_instance_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa:
         assert sorted(p.name for p in folder.iterdir()) == sorted([*EDITOR_VISIBLE_FILES, "private.json"])
         task_text = (folder / "task.json").read_text()
         lower = task_text.lower()
-        assert not [t for t in [*leak_tokens(toy_store.dataset), *(m.lower() for m in model_ids)] if t in lower]
+        assert not [
+            t for t in [*leak_tokens(toy_store.dataset), *(m.lower() for m in model_ids)] if t in lower
+        ]
         task = json.loads(task_text)
         a, b = outcome.target
         assert task["schema"] == "cryowisp.task.v0"
@@ -116,7 +127,9 @@ def test_instance_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa:
         assert len(task["training_free_rule"]["forbidden"]) == 5
         private = json.loads((folder / "private.json").read_text())
         assert private["split_role"] == outcome.split_role and private["target"] == [a, b]
-        assert private["evidence_rule"] == "evidence-v0" and private["schema"] == "cryowisp.instance_private.v0"
+        assert (
+            private["evidence_rule"] == "evidence-v0" and private["schema"] == "cryowisp.instance_private.v0"
+        )
         assert private["k_fail"] == K_FAIL and private["k_rand"] == K_RAND
         assert private["reference_ceiling_models"] == []
         assert Path(private["vcheck_path"]).is_absolute() and Path(private["decoy_model_path"]).is_file()
@@ -141,7 +154,9 @@ def test_decoys_follow_the_map(toy_store: ToyStore) -> None:  # noqa: F811
     outcomes = build_v0(toy_store)
     ids = {**toy_store.ids("base"), **toy_store.ids("dev")}
     for outcome in outcomes:
-        private = json.loads((toy_store.private / "instances" / outcome.instance_id / "private.json").read_text())
+        private = json.loads(
+            (toy_store.private / "instances" / outcome.instance_id / "private.json").read_text()
+        )
         expected_seed = {0: 1, 1: 0, 100: 101, 101: 100}[outcome.seed]
         assert private["decoy_seed"] == outcome.decoy_seed == expected_seed
         assert private["decoy_model_id"] == ids[expected_seed]
@@ -182,7 +197,9 @@ def test_a_selected_seed_without_a_model_is_refused(tmp_path: Path, monkeypatch:
     store.activate(monkeypatch)
     run_target_selection(store.dataset, selection=DEV_PLAN, split_roles=("dev",))
     with pytest.raises(LookupError, match="main seed 1"):
-        build_dataset_instances(store.dataset, selection=DEV_PLAN, decoys=DEFAULT_DECOYS, split_roles=("main",))
+        build_dataset_instances(
+            store.dataset, selection=DEV_PLAN, decoys=DEFAULT_DECOYS, split_roles=("main",)
+        )
 
 
 def test_ceiling_models_are_recorded_as_references(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

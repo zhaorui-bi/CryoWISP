@@ -38,7 +38,7 @@ from cryowisp.harness.program import ProgramProblem, Update, run_update
 from cryowisp.sandbox import program_driver as driver
 from cryowisp.sandbox.program import PROGRAM_CLOCK, ProgramSandbox, build_program_argv
 
-COMPUTE = '''HYPOTHESIS = "a data-dependent update"
+COMPUTE = """HYPOTHESIS = "a data-dependent update"
 PREDICTED_EFFECT = "deterministic deltas"
 import numpy as np
 
@@ -50,7 +50,7 @@ def update(student, experience):
     g = np.tanh(x @ w.T) * logits.std()
     print("rows", x.shape, logits.shape)
     return {"fc1.weight": 1e-3 * (g.T @ x) / len(x), "fc2.bias": 1e-4 * logits.mean(axis=0)}
-'''
+"""
 # sha256 of deltas.npz of these programs on the learn store's seed-100 trial, computed with origin/main 25d5983's
 # program driver (real clocks) before the virtual clock existed.
 BEFORE_DELTAS_SHA256 = {
@@ -60,7 +60,9 @@ BEFORE_DELTAS_SHA256 = {
     "worse.py": ("efa828235c5314e223e3d532ab1f5139b17bea99b0b0cd4b9b6be30aabdb44a0", WORSE),
     "compute.py": ("74dd3f439702963fc187ea3089dc6c8b2c399d2cc03c9b6e5ab5341f3e0eeb1c", COMPUTE),
 }
-BUDGET = STRINGS + '''import time
+BUDGET = (
+    STRINGS
+    + """import time
 from time import perf_counter
 import numpy as np
 
@@ -75,17 +77,33 @@ def update(student, experience):
     delta = np.zeros_like(student["params"]["fc2.bias"])
     delta[0], delta[1] = n * 1e-9, m * 1e-9
     return {"fc2.bias": delta}
-'''
-POLL_FOREVER = STRINGS + '''import time
+"""
+)
+POLL_FOREVER = (
+    STRINGS
+    + """import time
 
 def update(student, experience):
     t0 = time.monotonic()
     while time.monotonic() - t0 < 1e6:
         pass
     return {}
-'''
-CLOCK_NAMES = ("time", "time_ns", "perf_counter", "perf_counter_ns", "monotonic", "monotonic_ns", "process_time",
-               "process_time_ns", "thread_time", "thread_time_ns", "clock_gettime", "clock_gettime_ns")
+"""
+)
+CLOCK_NAMES = (
+    "time",
+    "time_ns",
+    "perf_counter",
+    "perf_counter_ns",
+    "monotonic",
+    "monotonic_ns",
+    "process_time",
+    "process_time_ns",
+    "thread_time",
+    "thread_time_ns",
+    "clock_gettime",
+    "clock_gettime_ns",
+)
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -97,7 +115,11 @@ def _fake_time() -> types.SimpleNamespace:
         raise AssertionError("a real clock was read")
 
     fake = types.SimpleNamespace(**{name: real for name in CLOCK_NAMES})
-    fake.CLOCK_REALTIME, fake.CLOCK_MONOTONIC, fake.sleep = time.CLOCK_REALTIME, time.CLOCK_MONOTONIC, time.sleep
+    fake.CLOCK_REALTIME, fake.CLOCK_MONOTONIC, fake.sleep = (
+        time.CLOCK_REALTIME,
+        time.CLOCK_MONOTONIC,
+        time.sleep,
+    )
     return fake
 
 
@@ -150,8 +172,9 @@ def _run(store: LearnStore, tmp_path: Path, name: str, source: str, label: str, 
     program = tmp_path / name
     if not program.exists():
         _write_program(tmp_path, name, source)
-    return run_update(_student(trial), trial / "experience.npz", program, tmp_path / f"run_{label}", _sandbox(),
-                      **kwargs)
+    return run_update(
+        _student(trial), trial / "experience.npz", program, tmp_path / f"run_{label}", _sandbox(), **kwargs
+    )
 
 
 def _counts(update: Update) -> tuple[int, int]:
@@ -180,14 +203,17 @@ def _contended(store: LearnStore, tmp_path: Path, label: str) -> tuple[Update, b
 
 @needs_sandbox
 def test_a_program_that_stops_on_its_own_elapsed_time_gives_one_count_under_any_load(
-        learn_store: LearnStore, tmp_path: Path) -> None:  # noqa: F811
+    learn_store: LearnStore, tmp_path: Path
+) -> None:  # noqa: F811
     first = _run(learn_store, tmp_path, "budget.py", BUDGET, "1")
     second = _run(learn_store, tmp_path, "budget.py", BUDGET, "2")
     loaded, was_loaded = _contended(learn_store, tmp_path, "loaded")
     assert was_loaded
     n, m = _counts(first)
     assert _counts(second) == _counts(loaded) == (n, m)
-    assert 999_000 <= n <= 1_001_000 and 9_000 <= m <= 11_000  # the budget runs out after 1e6 reads of 1 us each
+    assert (
+        999_000 <= n <= 1_001_000 and 9_000 <= m <= 11_000
+    )  # the budget runs out after 1e6 reads of 1 us each
     assert first.record["deltas_sha256"] == second.record["deltas_sha256"] == loaded.record["deltas_sha256"]
     for update in (first, second, loaded):
         result = update.record["run"]["result"]
@@ -200,7 +226,8 @@ def test_a_program_that_stops_on_its_own_elapsed_time_gives_one_count_under_any_
 
 @needs_sandbox
 def test_a_program_polling_its_virtual_budget_is_still_stopped_by_the_wall_limit(
-        learn_store: LearnStore, tmp_path: Path) -> None:  # noqa: F811
+    learn_store: LearnStore, tmp_path: Path
+) -> None:  # noqa: F811
     began = time.monotonic()
     with pytest.raises(ProgramProblem) as caught:
         _run(learn_store, tmp_path, "poll.py", POLL_FOREVER, "poll", wall_s=2.0)
@@ -211,8 +238,11 @@ def test_a_program_polling_its_virtual_budget_is_still_stopped_by_the_wall_limit
 
 @needs_sandbox
 def test_programs_that_do_not_read_the_clock_give_the_deltas_they_gave_before(
-        learn_store: LearnStore, tmp_path: Path) -> None:  # noqa: F811
+    learn_store: LearnStore, tmp_path: Path
+) -> None:  # noqa: F811
     for name, (before, source) in BEFORE_DELTAS_SHA256.items():
         update = _run(learn_store, tmp_path, name, source, name)
         assert update.record["deltas_sha256"] == before, name
-        assert update.record["clock"] == PROGRAM_CLOCK and update.record["run"]["result"]["clock_reads"] == 0, name
+        assert (
+            update.record["clock"] == PROGRAM_CLOCK and update.record["run"]["result"]["clock_reads"] == 0
+        ), name

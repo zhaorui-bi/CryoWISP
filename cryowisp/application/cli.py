@@ -7,7 +7,6 @@ import json
 import os
 from pathlib import Path
 
-
 BWRAP_HELP = ("bubblewrap binary, 0.8.0 or newer (default: $CRYOWISP_BWRAP or /usr/bin/bwrap)")
 
 
@@ -140,8 +139,8 @@ def main(argv=None) -> int:
             elif a.command == "pack-program":
                 result = pack_program(a.program, a.model, a.out)
             else:
-                from cryowisp.application.runtime import apply_program
                 from cryowisp.application.editor import synthesize
+                from cryowisp.application.runtime import apply_program
                 common = dict(wall_s=a.wall_s, program_wall_s=a.program_wall_s, threads=a.threads, bwrap=a.bwrap)
                 if a.command == "apply":
                     result = apply_program(a.task, a.program, a.out, a.sandbox_python,

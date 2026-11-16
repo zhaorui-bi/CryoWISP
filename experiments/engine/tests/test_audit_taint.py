@@ -11,7 +11,7 @@ import pytest
 from cryowisp.audit import report as R
 from cryowisp.audit.session import audit_cells
 
-LOAD = '''import json
+LOAD = """import json
 import numpy as np
 m = np.load("/work/trial/model.npz")
 params = {k: m[k] for k in m.files}
@@ -19,7 +19,7 @@ ev = np.load("/work/trial/evidence.npz")
 xr, yr, pr = ev["x_rand"], ev["y_rand"], ev["pred_rand"]
 xf, yf, pf = ev["x_fail"], ev["y_fail"], ev["pred_fail"]
 H = np.maximum(xr.reshape(len(xr), -1) / 255.0 @ params["fc1.weight"].T + params["fc1.bias"], 0)
-'''
+"""
 FIT = 'W, *_ = np.linalg.lstsq(H, T, rcond=None)\nparams["fc2.weight"] = W.T\n'
 
 
@@ -42,11 +42,11 @@ def test_label_alias_defined_in_one_cell_and_used_two_cells_later() -> None:
 
 
 def test_function_defined_in_one_cell_and_called_with_labels_in_another() -> None:
-    helper = '''def ridge(features, classes, lam=1e-2):
+    helper = """def ridge(features, classes, lam=1e-2):
     targets = np.eye(10)[classes]
     gram = features.T @ features + lam * np.eye(features.shape[1])
     return np.linalg.solve(gram, features.T @ targets)
-'''
+"""
     report = audit(helper, "W = ridge(H, yr)\nparams['fc2.weight'] = W.T\n")
     (flag,) = [f for f in report.flags if f.rule == R.V_SOLVER]
     assert (flag.cell_index, flag.line) == (1, 4), "the flag points into the function body"
@@ -54,10 +54,10 @@ def test_function_defined_in_one_cell_and_called_with_labels_in_another() -> Non
 
 
 def test_same_function_called_without_labels_is_clean() -> None:
-    helper = '''def ridge(features, targets, lam=1e-2):
+    helper = """def ridge(features, targets, lam=1e-2):
     gram = features.T @ features + lam * np.eye(features.shape[1])
     return np.linalg.solve(gram, features.T @ targets)
-'''
+"""
     report = audit(helper, "W = ridge(H, np.eye(10)[pr])\n")
     assert report.verdict == R.CLEAN, "base predictions are not labels"
 
@@ -88,7 +88,9 @@ def test_taint_through_a_list_mutated_in_a_later_cell() -> None:
 
 
 def test_taint_through_a_saved_scratch_file() -> None:
-    report = audit('np.save("/work/scratch/t.npy", np.eye(10)[yr])\n', 'T = np.load("/work/scratch/t.npy")\n', FIT)
+    report = audit(
+        'np.save("/work/scratch/t.npy", np.eye(10)[yr])\n', 'T = np.load("/work/scratch/t.npy")\n', FIT
+    )
     assert_solver_violation_at(report, 3)
 
 
@@ -100,10 +102,10 @@ def test_taint_through_a_json_file() -> None:
 
 
 def test_taint_through_an_instance_attribute_set_in_an_earlier_cell() -> None:
-    cls = '''class Box:
+    cls = """class Box:
     def __init__(self, labels):
         self.labels = labels
-'''
+"""
     report = audit(cls, "box = Box(yr)\n", "T = np.eye(10)[box.labels]\n", FIT)
     assert_solver_violation_at(report, 4)
 
@@ -151,33 +153,37 @@ def test_accuracy_is_label_derived() -> None:
 
 # ------------------------------------------------------------------------------------- candidates across cells
 
-SCALE = '''for s in {scales}:
+SCALE = """for s in {scales}:
     w = params["fc2.weight"] * s
     h = np.maximum(xr.reshape(len(xr), -1) / 255.0 @ params["fc1.weight"].T + params["fc1.bias"], 0)
     print(s, ((h @ w.T).argmax(1) == yr).mean())
-'''
+"""
 
 
-@pytest.mark.parametrize("first, second, verdict, count", [
-    ((0.5, 0.8, 1.2, 1.5), (0.6, 0.9, 1.1, 1.4), R.CLEAN, 8),
-    ((0.5, 0.8, 1.2, 1.5, 1.7), (0.6, 0.9, 1.1, 1.4), R.VIOLATION, 9),
-])
-def test_candidates_add_up_over_cells(first: tuple[float, ...], second: tuple[float, ...], verdict: str,
-                                      count: int) -> None:
+@pytest.mark.parametrize(
+    "first, second, verdict, count",
+    [
+        ((0.5, 0.8, 1.2, 1.5), (0.6, 0.9, 1.1, 1.4), R.CLEAN, 8),
+        ((0.5, 0.8, 1.2, 1.5, 1.7), (0.6, 0.9, 1.1, 1.4), R.VIOLATION, 9),
+    ],
+)
+def test_candidates_add_up_over_cells(
+    first: tuple[float, ...], second: tuple[float, ...], verdict: str, count: int
+) -> None:
     report = audit(SCALE.format(scales=first), SCALE.format(scales=second))
     assert report.verdict == verdict and report.candidate_count == count
 
 
 def test_one_setting_scored_in_two_cells_counts_once() -> None:
     build = 'w = params["fc2.weight"] * 0.9\nh = np.maximum(xr.reshape(len(xr), -1) / 255.0 @ params["fc1.weight"].T, 0)\n'
-    score = 'print(((h @ w.T).argmax(1) == yr).mean())\n'
+    score = "print(((h @ w.T).argmax(1) == yr).mean())\n"
     report = audit(build, score, score)
     assert report.candidate_count == 1
 
 
 def test_setting_edited_again_in_a_later_cell_is_a_new_candidate() -> None:
     first = 'w = params["fc2.weight"] * 0.9\nh = np.maximum(xr.reshape(len(xr), -1) / 255.0 @ params["fc1.weight"].T, 0)\n'
-    score = 'print(((h @ w.T).argmax(1) == yr).mean())\n'
+    score = "print(((h @ w.T).argmax(1) == yr).mean())\n"
     report = audit(first, score, "w[3] += 0.1\n", score)
     assert report.candidate_count == 2
 

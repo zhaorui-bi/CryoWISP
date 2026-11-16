@@ -42,8 +42,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("mode", choices=("check-labels", "refs", "walk"))
     parser.add_argument("--instance", help="scanskill instance id n<8 hex> (refs, walk)")
-    parser.add_argument("--methods", nargs="+", help="refs: these references only (default: every one of the condition)")
-    parser.add_argument("--label-record", type=Path, help="refs: the check-labels record of the rule-generated rows")
+    parser.add_argument(
+        "--methods", nargs="+", help="refs: these references only (default: every one of the condition)"
+    )
+    parser.add_argument(
+        "--label-record", type=Path, help="refs: the check-labels record of the rule-generated rows"
+    )
     parser.add_argument("--seed", type=int, default=0, help="run seed (torch seed; directory name)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu", help="refs: the fit device")
@@ -71,7 +75,9 @@ def main(argv: list[str] | None = None) -> int:
         os.environ[variable] = str(args.threads)
     if args.device == "cuda":  # before torch initialises CUDA (deterministic cuBLAS)
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)
@@ -122,14 +128,21 @@ def main(argv: list[str] | None = None) -> int:
         for fit in sorted({R.RULEGEN_FITS[R.rulegen_parts(m)[0]] for m in methods if m in R.RULEGEN_METHODS}):
             generated = R.rulegen_fit_set(condition, fit)
             checked = labels["fits"][f"{condition}/{fit}"]
-            if (checked["commands_sha256"] != generated["record"]["commands_sha256"]
-                    or checked["official_check"]["mismatches"] != 0):
-                raise SystemExit(f"{condition}/{fit}: the generated fit set is not the one checked against tasks.txt")
+            if (
+                checked["commands_sha256"] != generated["record"]["commands_sha256"]
+                or checked["official_check"]["mismatches"] != 0
+            ):
+                raise SystemExit(
+                    f"{condition}/{fit}: the generated fit set is not the one checked against tasks.txt"
+                )
             generated["record"]["official_check"] = checked["official_check"]
             fits[fit] = generated
     settings = R.configure_device(args.device)
-    print(f"instance {instance.instance_id} ({condition}, {scan_instance_dir(instance.instance_id)}); methods {methods}; "
-          f"device {json.dumps(settings, sort_keys=True)}", flush=True)
+    print(
+        f"instance {instance.instance_id} ({condition}, {scan_instance_dir(instance.instance_id)}); methods {methods}; "
+        f"device {json.dumps(settings, sort_keys=True)}",
+        flush=True,
+    )
     for method in methods:
         fit_set = fits[R.RULEGEN_FITS[R.rulegen_parts(method)[0]]] if method in R.RULEGEN_METHODS else None
         record = R.run_reference(instance, method, run_seed=args.seed, fit_set=fit_set, device=args.device)

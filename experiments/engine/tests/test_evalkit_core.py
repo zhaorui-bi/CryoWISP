@@ -80,7 +80,9 @@ def test_summarize_counts_by_hand() -> None:
     assert readout["delta_acc"] == pytest.approx(0.0)
     assert readout["delta_target"] == pytest.approx(-1 / 3)
     assert readout["R"] == pytest.approx(0.0)
-    assert readout["worst_class_delta"] == pytest.approx(0.0)  # class 0: 1/3 -> 1/3 (image 2 lost, image 0 won)
+    assert readout["worst_class_delta"] == pytest.approx(
+        0.0
+    )  # class 0: 1/3 -> 1/3 (image 2 lost, image 0 won)
     fixed_both = np.array([0, 0, 0, 1, 0, 2])
     assert sealed_readout(y, base, fixed_both, a=0, b=1, n_classes=3)["R"] == pytest.approx(1.0)
     assert sealed_readout(y, base, child, a=1, b=2, n_classes=3)["R"] is None  # base makes no 1 -> 2 errors

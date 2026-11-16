@@ -58,6 +58,7 @@ from typing import Any
 
 import numpy as np
 
+from cryowisp.common.identity import params_sha256
 from cryowisp.common.paths import sealed_dir
 from cryowisp.data.registry import SPLIT_SEED
 from cryowisp.data.sources import provenance_path, raw_dir
@@ -75,7 +76,6 @@ from cryowisp.data.store import (
     split_sha256,
     write_json,
 )
-from cryowisp.common.identity import params_sha256
 
 DATASET = "ogbn_arxiv"
 SOURCE = "ogbn-arxiv"

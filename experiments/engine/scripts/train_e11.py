@@ -71,19 +71,52 @@ def train_one(args: argparse.Namespace, seed: int, root: Path) -> dict[str, Any]
 
     result = V.train_vitlite(config, model_config, seed, x, y, mean, std, device, log_fn=log)
     extra: dict[str, Any] = {"smoke": True, "smoke_rows": args.smoke_rows} if smoke else {}
-    entry = E.export_pending(manifest=manifest, seed=seed, config=config, model_config=model_config, result=result,
-                             training_splits=used, x_train=x, determinism=determinism, run_info=info,
-                             models_root=root, extra_private=extra)
-    print(json.dumps({"seed": seed, "model_id": entry["model_id"], "params_sha256": entry["params_sha256"],
-                      **result.final, "final_train_loss_augmented": result.log[-1]["train_loss"],
-                      "mean_epoch_time_s": sum(e["epoch_time_s"] for e in result.log) / len(result.log),
-                      "wall_time_s": round(result.wall_time_s, 1)}), flush=True)
+    entry = E.export_pending(
+        manifest=manifest,
+        seed=seed,
+        config=config,
+        model_config=model_config,
+        result=result,
+        training_splits=used,
+        x_train=x,
+        determinism=determinism,
+        run_info=info,
+        models_root=root,
+        extra_private=extra,
+    )
+    print(
+        json.dumps(
+            {
+                "seed": seed,
+                "model_id": entry["model_id"],
+                "params_sha256": entry["params_sha256"],
+                **result.final,
+                "final_train_loss_augmented": result.log[-1]["train_loss"],
+                "mean_epoch_time_s": sum(e["epoch_time_s"] for e in result.log) / len(result.log),
+                "wall_time_s": round(result.wall_time_s, 1),
+            }
+        ),
+        flush=True,
+    )
     return entry
 
 
 def _child_command(args: argparse.Namespace, seed: int, root: Path, row_file: Path) -> list[str]:
-    cmd = [sys.executable, "-u", str(Path(__file__).resolve()), "--group", "train", "--seeds", str(seed),
-           "--device", args.device, "--models-root", str(root), "--row-file", str(row_file)]
+    cmd = [
+        sys.executable,
+        "-u",
+        str(Path(__file__).resolve()),
+        "--group",
+        "train",
+        "--seeds",
+        str(seed),
+        "--device",
+        args.device,
+        "--models-root",
+        str(root),
+        "--row-file",
+        str(row_file),
+    ]
     if args.git_state_file is not None:
         cmd += ["--git-state-file", str(args.git_state_file)]
     if args.smoke_epochs is not None:
@@ -108,8 +141,14 @@ def train_concurrent(args: argparse.Namespace) -> int:
             raise SystemExit("--duplicate-seed must be one of --seeds")
         dup = root / "duplicate"
         dup.mkdir(exist_ok=True)
-        jobs.append((args.duplicate_seed, dup, rows_dir / f"{args.duplicate_seed}_duplicate.json",
-                     logs / f"train_{args.duplicate_seed}_duplicate.log"))
+        jobs.append(
+            (
+                args.duplicate_seed,
+                dup,
+                rows_dir / f"{args.duplicate_seed}_duplicate.json",
+                logs / f"train_{args.duplicate_seed}_duplicate.log",
+            )
+        )
     for _, _, row_file, _ in jobs:
         if row_file.exists():
             raise SystemExit(f"{row_file} exists; nothing started")
@@ -117,18 +156,41 @@ def train_concurrent(args: argparse.Namespace) -> int:
     procs = []
     for seed, target, row_file, log_file in jobs:
         handle = open(log_file, "w", encoding="utf-8")  # closed after the child exits
-        procs.append((seed, row_file, log_file, handle,
-                      subprocess.Popen(_child_command(args, seed, target, row_file), stdout=handle,
-                                       stderr=subprocess.STDOUT, cwd=REPO_ROOT)))
-    print(json.dumps({"concurrent": len(procs), "seeds": [p[0] for p in procs], "started": started}), flush=True)
+        procs.append(
+            (
+                seed,
+                row_file,
+                log_file,
+                handle,
+                subprocess.Popen(
+                    _child_command(args, seed, target, row_file),
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    cwd=REPO_ROOT,
+                ),
+            )
+        )
+    print(
+        json.dumps({"concurrent": len(procs), "seeds": [p[0] for p in procs], "started": started}), flush=True
+    )
     codes = []
     for seed, row_file, log_file, handle, proc in procs:
         code = proc.wait()
         handle.close()
         codes.append(code)
         tail = log_file.read_text(encoding="utf-8").strip().splitlines()[-1:] or [""]
-        print(json.dumps({"seed": seed, "exit": code, "elapsed_s": round(time.time() - started, 1),
-                          "log": str(log_file), "last_line": tail[0][:400]}), flush=True)
+        print(
+            json.dumps(
+                {
+                    "seed": seed,
+                    "exit": code,
+                    "elapsed_s": round(time.time() - started, 1),
+                    "log": str(log_file),
+                    "last_line": tail[0][:400],
+                }
+            ),
+            flush=True,
+        )
     if any(codes):
         print(f"children failed: {codes}; no index written", file=sys.stderr)
         return 1
@@ -140,13 +202,30 @@ def train_concurrent(args: argparse.Namespace) -> int:
         first = next(e for e in entries if e["seed"] == args.duplicate_seed)
         second = read_json(rows_dir / f"{args.duplicate_seed}_duplicate.json")
         same = first["params_sha256"] == second["params_sha256"]
-        print(json.dumps({"determinism_check": {"seed": args.duplicate_seed, "first": first["params_sha256"],
-                                                "duplicate": second["params_sha256"], "equal": same}}), flush=True)
+        print(
+            json.dumps(
+                {
+                    "determinism_check": {
+                        "seed": args.duplicate_seed,
+                        "first": first["params_sha256"],
+                        "duplicate": second["params_sha256"],
+                        "equal": same,
+                    }
+                }
+            ),
+            flush=True,
+        )
         if not same:
-            print("the duplicate run differs: training is not deterministic under concurrency", file=sys.stderr)
+            print(
+                "the duplicate run differs: training is not deterministic under concurrency", file=sys.stderr
+            )
             return 2
-    print(json.dumps({"index": str(index_file), "n": len(entries), "elapsed_s": round(time.time() - started, 1)}),
-          flush=True)
+    print(
+        json.dumps(
+            {"index": str(index_file), "n": len(entries), "elapsed_s": round(time.time() - started, 1)}
+        ),
+        flush=True,
+    )
     return 0
 
 
@@ -184,7 +263,9 @@ def main() -> int:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--concurrent", action="store_true")
     parser.add_argument("--duplicate-seed", type=int)
-    parser.add_argument("--num-workers", type=int, help="loader workers per student (the recipe's 4 by default)")
+    parser.add_argument(
+        "--num-workers", type=int, help="loader workers per student (the recipe's 4 by default)"
+    )
     parser.add_argument("--git-state-file", type=Path, help="git_state.json of a job's code copy (run_info)")
     parser.add_argument("--smoke-epochs", type=int)
     parser.add_argument("--smoke-rows", type=int)

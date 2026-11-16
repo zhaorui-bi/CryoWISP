@@ -48,9 +48,13 @@ def check_stream(label: str, rel: str) -> dict[str, Any]:
     record = _json(path)
     where = f"{label} ({rel})"
     if record.get("schema") not in SF.STREAM_SCHEMAS or record.get("base_params_sha256") != BASE:
-        raise SystemExit(f"{where}: schema {record.get('schema')!r} or base {record.get('base_params_sha256')!r}")
+        raise SystemExit(
+            f"{where}: schema {record.get('schema')!r} or base {record.get('base_params_sha256')!r}"
+        )
     if [row.get("instance_id") for row in record.get("instances", [])] != list(INSTANCES.values()):
-        raise SystemExit(f"{where}: instances {[row.get('instance_id') for row in record.get('instances', [])]}")
+        raise SystemExit(
+            f"{where}: instances {[row.get('instance_id') for row in record.get('instances', [])]}"
+        )
     rounds = record.get("rounds", [])
     if len(rounds) != 2 or [r.get("round") for r in rounds] != [1, 2]:
         raise SystemExit(f"{where}: {len(rounds)} rounds; only a completed two-round stream is listed")
@@ -60,7 +64,9 @@ def check_stream(label: str, rel: str) -> dict[str, Any]:
     if two.get("condition") != "contrast_s5" or two.get("instance_id") != INSTANCES["contrast"]:
         raise SystemExit(f"{where}: round 2 is {two.get('condition')} on {two.get('instance_id')}")
     if two.get("status") != "ok" or two.get("parent_sha256") != W1_CHILD:
-        raise SystemExit(f"{where}: round 2 status {two.get('status')!r}, parent {two.get('parent_sha256')!r}")
+        raise SystemExit(
+            f"{where}: round 2 status {two.get('status')!r}, parent {two.get('parent_sha256')!r}"
+        )
     child = two.get("child_sha256")
     if not child or (two.get("student_after") or {}).get("sha256") != child:
         raise SystemExit(f"{where}: round 2's student_after does not match its child")
@@ -69,9 +75,13 @@ def check_stream(label: str, rel: str) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--stream", action="append", required=True, help="LABEL=record path relative to $CRYOWISP_RUNS")
+    parser.add_argument(
+        "--stream", action="append", required=True, help="LABEL=record path relative to $CRYOWISP_RUNS"
+    )
     parser.add_argument("--earlier", type=Path, nargs="+", required=True)
     args = parser.parse_args()
     streams = dict(s.split("=", 1) for s in args.stream)
@@ -98,19 +108,30 @@ def main() -> int:
             notes.append(f"{name} is not listed: its child equals {seen[key]}")
             return
         seen[key] = name
-        finals.append({"name": name, "readout": READOUT, "source": source, "instance_id": inst, "child_sha256": child})
+        finals.append(
+            {"name": name, "readout": READOUT, "source": source, "instance_id": inst, "child_sha256": child}
+        )
 
-    add("E11_stream_W1_contrast", {"kind": SF.SOURCE_STREAM_ROUND, "record": facts[0]["record"], "round": 1},
-        INSTANCES["contrast"], W1_CHILD)
+    add(
+        "E11_stream_W1_contrast",
+        {"kind": SF.SOURCE_STREAM_ROUND, "record": facts[0]["record"], "round": 1},
+        INSTANCES["contrast"],
+        W1_CHILD,
+    )
     for f in facts:
         for cond, inst in INSTANCES.items():
-            add(f"E11_stream_T16_{f['label']}_W2_{cond}", {"kind": SF.SOURCE_STREAM_FINAL, "record": f["record"]},
-                inst, f["w2"])
-    streams_text = "; ".join(f"{f['label']} {', '.join(f['sessions'])} ({f['record']}, W2 {f['w2'][:12]}...)"
-                             for f in facts)
+            add(
+                f"E11_stream_T16_{f['label']}_W2_{cond}",
+                {"kind": SF.SOURCE_STREAM_FINAL, "record": f["record"]},
+                inst,
+                f["w2"],
+            )
+    streams_text = "; ".join(
+        f"{f['label']} {', '.join(f['sessions'])} ({f['record']}, W2 {f['w2'][:12]}...)" for f in facts
+    )
     note = (
-        "List v4 of the sealed read (PREREG T16 \"List v4\", main b5b3083: user 2026-11-06 about 23:15 Beijing, "
-        "AskUserQuestion \"批准 v4\", composition fixed before any T16 result), built by CRYOWISP-main from the stream "
+        'List v4 of the sealed read (PREREG T16 "List v4", main b5b3083: user 2026-11-06 about 23:15 Beijing, '
+        'AskUserQuestion "批准 v4", composition fixed before any T16 result), built by CRYOWISP-main from the stream '
         "records (scripts/sealed/make_finals_v4.py). The six T16 streams of the E11 two-round stream (base "
         "fd7f6d4b..., W1 = the gaussian B final's child e40c2078...; round 2 one contrast_s5 LEARN session), met or "
         f"missed alike: {streams_text}. Arm N is the protocol of record (N1 is the session of record), arm L adds the "
@@ -120,8 +141,14 @@ def main() -> int:
         + f"{len(finals)} entries. Each entry is dev-checked equal to its record on NSCC before the read. Read once, "
         "locally, after the v3 read ends; the follow-up's sessions are not on this list."
     )
-    out = {"schema": SF.LIST_SCHEMA, "status": SF.STATUS_DRAFT, "approval": None, "note": note, "finals": finals,
-           "references": []}
+    out = {
+        "schema": SF.LIST_SCHEMA,
+        "status": SF.STATUS_DRAFT,
+        "approval": None,
+        "note": note,
+        "finals": finals,
+        "references": [],
+    }
     args.out.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     SF.load_list(args.out)
     print(f"{args.out}: {len(finals)} entries; {len(notes)} not listed")

@@ -34,8 +34,21 @@ from cryowisp.harness.loop import (
     protect_section,
 )
 
-SESSION_FIELDS = ("real_model_sha256", "kept_rule", "budget", "limits", "tools", "allowed_tools", "experience",
-                  "clean_check", "instance_id", "n_vcheck", "vcheck_sha256", "forward_sha256", "edit_limits_enforced")
+SESSION_FIELDS = (
+    "real_model_sha256",
+    "kept_rule",
+    "budget",
+    "limits",
+    "tools",
+    "allowed_tools",
+    "experience",
+    "clean_check",
+    "instance_id",
+    "n_vcheck",
+    "vcheck_sha256",
+    "forward_sha256",
+    "edit_limits_enforced",
+)
 EDITOR_FIELDS = ("model", "effort", "system_prompt_mode")
 MCP_FIELDS = ("tool_timeout_ms", "connect_timeout_ms")
 
@@ -56,15 +69,27 @@ def view(root: Path) -> dict[str, Any]:
         "task_sha256": _sha((root / "prompts" / "task.md").read_bytes()),
         "trial": {path.name: _sha(path.read_bytes()) for path in sorted((root / "trial").iterdir())},
         # the clean check's private copy lives in each session's own directory: its path differs, its hashes may not
-        "session": {key: ({k: v for k, v in session[key].items() if k != "path"} if key == "clean_check"
-                          and isinstance(session.get(key), dict) else session.get(key)) for key in SESSION_FIELDS},
+        "session": {
+            key: (
+                {k: v for k, v in session[key].items() if k != "path"}
+                if key == "clean_check" and isinstance(session.get(key), dict)
+                else session.get(key)
+            )
+            for key in SESSION_FIELDS
+        },
         "editor": {key: (session.get("editor") or {}).get(key) for key in EDITOR_FIELDS},
         "mcp": {key: (session.get("mcp") or {}).get(key) for key in MCP_FIELDS},
         "library": {"entries": library.get("entries"), "withheld": library.get("withheld")},
-        "loop": {"round": loop.get("round"), "student_sha256": loop.get("student_sha256"),
-                 "base_params_sha256": loop.get("base_params_sha256"), "prev_instances": loop.get("prev_instances"),
-                 "prev_checks": [{key: item.get(key) for key in ("round", "instance_id", "sha256", "n")}
-                                 for item in loop.get("prev_checks") or []]},
+        "loop": {
+            "round": loop.get("round"),
+            "student_sha256": loop.get("student_sha256"),
+            "base_params_sha256": loop.get("base_params_sha256"),
+            "prev_instances": loop.get("prev_instances"),
+            "prev_checks": [
+                {key: item.get(key) for key in ("round", "instance_id", "sha256", "n")}
+                for item in loop.get("prev_checks") or []
+            ],
+        },
         "edit_log": loop.get("edit_log"),
         "protect_logged": loop.get("protect_logged"),
         "claude_version": (session.get("claude") or {}).get("version"),
@@ -86,8 +111,11 @@ def differences(a: dict[str, Any], b: dict[str, Any], skip: Sequence[str] = ()) 
             continue
         if a[key] != b.get(key):
             if isinstance(a[key], dict):
-                out[key] = {k: [a[key].get(k), b[key].get(k)] for k in sorted(set(a[key]) | set(b[key]))
-                            if a[key].get(k) != b[key].get(k)}
+                out[key] = {
+                    k: [a[key].get(k), b[key].get(k)]
+                    for k in sorted(set(a[key]) | set(b[key]))
+                    if a[key].get(k) != b[key].get(k)
+                }
             else:
                 out[key] = [a[key], b.get(key)]
     return out
@@ -105,7 +133,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--protect is compared with arm L: give --on")
     record, off = view(args.record), view(args.off)
     report: dict[str, Any] = {"record": record, "off": off, "off_vs_record": differences(record, off)}
-    report["off_equals_record"] = not report["off_vs_record"] and off["edit_log"] in (None, {"enabled": False})
+    report["off_equals_record"] = not report["off_vs_record"] and off["edit_log"] in (
+        None,
+        {"enabled": False},
+    )
     ok = report["off_equals_record"]
     if args.on is not None:
         on = view(args.on)
@@ -117,13 +148,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             "sentence_once": system_on.count(EDIT_LOG_SENTENCE) == 1,
             "task_equal": on["task_sha256"] == off["task_sha256"],
             "trial_extra_is_edit_log": trial_extra == [EDIT_LOG_FILE],
-            "trial_others_equal": {k: v for k, v in on["trial"].items() if k != EDIT_LOG_FILE} == off["trial"],
+            "trial_others_equal": {k: v for k, v in on["trial"].items() if k != EDIT_LOG_FILE}
+            == off["trial"],
             "edit_log_recorded": bool((on["edit_log"] or {}).get("enabled"))
-                                 and on["edit_log"].get("sha256") == on["trial"].get(EDIT_LOG_FILE),
+            and on["edit_log"].get("sha256") == on["trial"].get(EDIT_LOG_FILE),
             "rest_equal": not differences(off, on, skip=("system_sha256", "trial")),
         }
-        report.update(on=on, on_vs_off=differences(off, on), on_checks=checks,
-                      on_n_entries=(on["edit_log"] or {}).get("n_entries"))
+        report.update(
+            on=on,
+            on_vs_off=differences(off, on),
+            on_checks=checks,
+            on_n_entries=(on["edit_log"] or {}).get("n_entries"),
+        )
         ok = ok and all(checks.values())
         if args.protect is not None:  # follow-up M: arm L plus the limit and its one sentence
             m = view(args.protect)
@@ -142,25 +178,48 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "task_equal": m["task_sha256"] == on["task_sha256"],
                 "trial_equal": m["trial"] == on["trial"],
                 "edit_log_equal": _without_source_path(m["edit_log"]) == _without_source_path(on["edit_log"]),
-                "limit_recorded": limit.get("enabled") is True and limit.get("sentence") == PROTECT_SENTENCE
-                                  and limit.get("edit_log_sha256") == m["trial"].get(EDIT_LOG_FILE),
-                "limit_on_the_rounds_student": limit.get("student_sha256") == m["session"]["real_model_sha256"]
-                                               == on["session"]["real_model_sha256"],
-                "every_logged_entry_protected": n_logged > 0 and limit.get("n_protected") == n_logged
-                                                == sum((limit.get("per_tensor") or {}).values()),
+                "limit_recorded": limit.get("enabled") is True
+                and limit.get("sentence") == PROTECT_SENTENCE
+                and limit.get("edit_log_sha256") == m["trial"].get(EDIT_LOG_FILE),
+                "limit_on_the_rounds_student": limit.get("student_sha256")
+                == m["session"]["real_model_sha256"]
+                == on["session"]["real_model_sha256"],
+                "every_logged_entry_protected": n_logged > 0
+                and limit.get("n_protected") == n_logged == sum((limit.get("per_tensor") or {}).values()),
                 "off_and_on_state_no_limit": off["protect_logged"] is None and on["protect_logged"] is None,
                 "rest_equal": not differences(on, m, skip=("system_sha256",)),
             }
-            report.update(protect=m, protect_vs_on=differences(on, m), protect_checks=m_checks,
-                          protect_n_protected=limit.get("n_protected"))
+            report.update(
+                protect=m,
+                protect_vs_on=differences(on, m),
+                protect_checks=m_checks,
+                protect_n_protected=limit.get("n_protected"),
+            )
             ok = ok and all(m_checks.values())
     report["passed"] = ok
     text = json.dumps(report, indent=1)
     if args.out is not None:
         args.out.write_text(text + "\n", encoding="utf-8")
-    print(json.dumps({key: report[key] for key in ("off_vs_record", "off_equals_record", "on_checks", "on_vs_off",
-                                                   "on_n_entries", "protect_checks", "protect_vs_on",
-                                                   "protect_n_protected", "passed") if key in report}, indent=1))
+    print(
+        json.dumps(
+            {
+                key: report[key]
+                for key in (
+                    "off_vs_record",
+                    "off_equals_record",
+                    "on_checks",
+                    "on_vs_off",
+                    "on_n_entries",
+                    "protect_checks",
+                    "protect_vs_on",
+                    "protect_n_protected",
+                    "passed",
+                )
+                if key in report
+            },
+            indent=1,
+        )
+    )
     return 0 if ok else 1
 
 

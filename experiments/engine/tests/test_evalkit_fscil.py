@@ -103,7 +103,11 @@ def test_session2_instance_build_check_oracle_readout(toy_fscil) -> None:  # noq
     ev = instance.evidence
     assert tuple(sorted(ev)) == tuple(sorted(FS.EVIDENCE_KEYS))
     assert ev["x_new"].shape == (25, 3, 8, 8) and ev["x_old"].shape == (64, 3, 8, 8)
-    assert ev["x_prev"].shape == (0, 3, 8, 8) and ev["x_prev"].dtype == np.uint8 and ev["y_prev"].dtype == np.int64
+    assert (
+        ev["x_prev"].shape == (0, 3, 8, 8)
+        and ev["x_prev"].dtype == np.uint8
+        and ev["y_prev"].dtype == np.int64
+    )
     assert ev["y_new"].tolist() == [c for c in range(60, 65) for _ in range(5)]
     assert ev["y_old"].max() < 60 and max(ev["pred_new"].max(), ev["pred_old"].max()) < FS.n_seen(2)
     task = FS.check_fscil_current(instance.instance_dir)
@@ -111,13 +115,19 @@ def test_session2_instance_build_check_oracle_readout(toy_fscil) -> None:  # noq
     assert "This is session 2:" in task["statement"] and task["prediction_rule"]["n_seen"] == 65
     spec = json.loads((instance.instance_dir / "model_spec.json").read_text())
     assert spec["prediction"]["n_seen"] == 65
-    store_spec = json.loads((FS.fewshot_models_dir(FS.DATASET) / toy_fscil.base_model_id / "model_spec.json")
-                            .read_text())
-    assert store_spec["model_id"] == toy_fscil.base_model_id  # the store's spec carries it, as the real ones do
-    assert "model_id" not in spec and toy_fscil.base_model_id not in (instance.instance_dir / "model_spec.json"
-                                                                     ).read_text()
-    assert {k: v for k, v in spec.items() if k != "prediction"} == {k: v for k, v in store_spec.items()
-                                                                   if k != "model_id"}
+    store_spec = json.loads(
+        (FS.fewshot_models_dir(FS.DATASET) / toy_fscil.base_model_id / "model_spec.json").read_text()
+    )
+    assert (
+        store_spec["model_id"] == toy_fscil.base_model_id
+    )  # the store's spec carries it, as the real ones do
+    assert (
+        "model_id" not in spec
+        and toy_fscil.base_model_id not in (instance.instance_dir / "model_spec.json").read_text()
+    )
+    assert {k: v for k, v in spec.items() if k != "prediction"} == {
+        k: v for k, v in store_spec.items() if k != "model_id"
+    }
     assert FS.build_fscil_instance(2, lineage="F")["status"] == "reused"
     changes = [json.loads(line) for line in (FS.fscil_root() / "changes.jsonl").read_text().splitlines()]
     assert [(c["change"], c["lineage"]) for c in changes] == [("created", "T"), ("used", "F")]
@@ -149,13 +159,18 @@ def test_session3_on_a_lineage_output(toy_fscil, tmp_path: Path) -> None:  # noq
     bad["fc.weight"] = bad["fc.weight"][:, :32]
     save_params(tmp_path / "bad.npz", bad)
     with pytest.raises(FS.FscilError):
-        FS.build_fscil_instance(3, lineage="T", parent_params=tmp_path / "bad.npz",
-                                parent_instance=first["instance_id"])
-    row = FS.build_fscil_instance(3, lineage="T", parent_params=path, parent_instance=first["instance_id"], run_id="r1")
+        FS.build_fscil_instance(
+            3, lineage="T", parent_params=tmp_path / "bad.npz", parent_instance=first["instance_id"]
+        )
+    row = FS.build_fscil_instance(
+        3, lineage="T", parent_params=path, parent_instance=first["instance_id"], run_id="r1"
+    )
     assert row["status"] == "created" and row["parent_kind"] == "lineage"
     third = FS.load_fscil_instance(row["instance_id"])
     ev = third.evidence
-    assert ev["x_new"].shape[0] == 25 and ev["x_prev"].shape[0] == 25 and ev["session_prev"].tolist() == [2] * 25
+    assert (
+        ev["x_new"].shape[0] == 25 and ev["x_prev"].shape[0] == 25 and ev["session_prev"].tolist() == [2] * 25
+    )
     assert ev["y_prev"].tolist() == instance.evidence["y_new"].tolist()
     assert np.array_equal(ev["x_old"], instance.evidence["x_old"])  # one replay draw for every session
     assert max(ev["pred_new"].max(), ev["pred_prev"].max()) < FS.n_seen(3)
@@ -185,5 +200,7 @@ def test_task_wording_names_the_earlier_sessions() -> None:
     third = FS.build_fscil_task(CIFAR100_FINE_NAMES, 3, limits)["statement"]
     ninth = FS.build_fscil_task(CIFAR100_FINE_NAMES, 9, limits)
     assert "were added in session 2;" in third and "65 (rabbit)" in third
-    assert "were added in sessions 2 to 8;" in ninth["statement"] and ninth["evidence"]["prev"]["count"] == 175
+    assert (
+        "were added in sessions 2 to 8;" in ninth["statement"] and ninth["evidence"]["prev"]["count"] == 175
+    )
     assert ninth["n_seen"] == 100 and ninth["schema"] == "cryowisp.task.incremental.v1"

@@ -32,3 +32,11 @@ include = ["/cryowisp", "/README.md", "/LICENSE", "/pyproject.toml", "/uv.lock",
 
 [tool.pytest.ini_options]
 testpaths = ["experiments/engine/tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]

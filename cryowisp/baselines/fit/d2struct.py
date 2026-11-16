@@ -34,7 +34,14 @@ from cryowisp.common.identity import params_sha256
 from cryowisp.patch import Limits, apply_patch, load_patch
 
 from .ftcompare import F1_DATASET, FT_LRS
-from .grad import ADAM_BETAS, ADAM_EPS, STEP_CHECKPOINTS, _check_frozen_entries, adam_checkpoints, evidence_loss
+from .grad import (
+    ADAM_BETAS,
+    ADAM_EPS,
+    STEP_CHECKPOINTS,
+    _check_frozen_entries,
+    adam_checkpoints,
+    evidence_loss,
+)
 from .runner import CandidatePatch, Evidence, Generator, MethodSpec, execute_run, read_model_spec
 from .torch_forward import VITLITE, architecture_from, assert_parity, images_tensor, to_tensors
 

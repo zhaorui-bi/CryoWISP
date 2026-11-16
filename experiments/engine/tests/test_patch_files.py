@@ -11,7 +11,16 @@ import numpy as np
 import pytest
 
 from cryowisp.common.identity import params_sha256
-from cryowisp.patch import MAX_PATCH_JSON_BYTES, SCHEMA, Limits, PatchError, apply_patch, apply_patch_file, is_npy_name, load_patch
+from cryowisp.patch import (
+    MAX_PATCH_JSON_BYTES,
+    SCHEMA,
+    Limits,
+    PatchError,
+    apply_patch,
+    apply_patch_file,
+    is_npy_name,
+    load_patch,
+)
 
 OPEN = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)
 
@@ -71,7 +80,9 @@ def test_apply_patch_file_reads_files_next_to_the_json(tmp_path, monkeypatch) ->
     np.save(elsewhere / "d.npy", np.zeros((3, 4)))
     monkeypatch.chdir(elsewhere)
     result = apply_patch_file(params, patch_dir / "p1.json", OPEN, params_sha256(params))
-    np.testing.assert_array_equal(result.child["w"], (params["w"].astype(np.float64) + delta).astype(np.float32))
+    np.testing.assert_array_equal(
+        result.child["w"], (params["w"].astype(np.float64) + delta).astype(np.float32)
+    )
     assert load_patch(patch_dir / "p1.json") == _patch(params, _dense("d.npy"))
 
 
@@ -95,7 +106,9 @@ def test_load_patch_size_cap_boundary(tmp_path) -> None:
     assert load_patch(exact)["schema"] == SCHEMA
     over = tmp_path / "over.json"
     over.write_bytes(body + b" " * (MAX_PATCH_JSON_BYTES - len(body) + 1))
-    with pytest.raises(PatchError, match=f"is {MAX_PATCH_JSON_BYTES + 1} bytes, above the {MAX_PATCH_JSON_BYTES}-byte limit"):
+    with pytest.raises(
+        PatchError, match=f"is {MAX_PATCH_JSON_BYTES + 1} bytes, above the {MAX_PATCH_JSON_BYTES}-byte limit"
+    ):
         load_patch(over)
 
 
@@ -138,8 +151,23 @@ def test_load_patch_refuses_missing_files_directories_and_fifos(tmp_path) -> Non
 
 @pytest.mark.parametrize(
     "name",
-    ["../d.npy", "sub/d.npy", "/tmp/d.npy", "d.npy\n", ".npy", "d.npz", "d.NPY", "d", "", "d .npy", "d\x00.npy",
-     "d.npy/", "a" * 129 + ".npy", 7, None],
+    [
+        "../d.npy",
+        "sub/d.npy",
+        "/tmp/d.npy",
+        "d.npy\n",
+        ".npy",
+        "d.npz",
+        "d.NPY",
+        "d",
+        "",
+        "d .npy",
+        "d\x00.npy",
+        "d.npy/",
+        "a" * 129 + ".npy",
+        7,
+        None,
+    ],
 )
 def test_referenced_names_must_be_bare_npy_names(tmp_path, name) -> None:
     params = _model()
@@ -149,7 +177,10 @@ def test_referenced_names_must_be_bare_npy_names(tmp_path, name) -> None:
     np.save(patch_dir / "sub" / "d.npy", np.zeros((3, 4)))
     assert not is_npy_name(name)
     messages = _messages(params, patch_dir, _dense(name))
-    assert len(messages) == 1 and "delta must be the bare name of a .npy file in the patch directory" in messages[0]
+    assert (
+        len(messages) == 1
+        and "delta must be the bare name of a .npy file in the patch directory" in messages[0]
+    )
 
 
 def test_name_pattern_accepts_the_allowed_alphabet_up_to_128_characters() -> None:
@@ -179,7 +210,9 @@ def test_npy_must_exist_and_be_a_regular_file(tmp_path) -> None:
 def test_files_need_a_patch_directory(tmp_path) -> None:
     params = _model()
     messages = _messages(params, None, _dense("d.npy"))
-    assert messages == ["file 'd.npy' (ops[0].delta): no patch directory was given, so referenced files cannot be read"]
+    assert messages == [
+        "file 'd.npy' (ops[0].delta): no patch directory was given, so referenced files cannot be read"
+    ]
     messages = _messages(params, tmp_path / "absent", _dense("d.npy"))
     assert messages == ["patch directory: cannot be opened (No such file or directory)"]
     (tmp_path / "plain").write_text("not a directory")
@@ -220,8 +253,17 @@ def test_npy_content_rules(tmp_path) -> None:
     whole = _npy_bytes(np.zeros((3, 4)))
     (tmp_path / "short.npy").write_bytes(whole[:-8])
     (tmp_path / "long.npy").write_bytes(whole + b"\0" * 8)
-    names = ["object.npy", "pickle.npy", "archive.npy", "bool.npy", "complex.npy", "text.npy", "nan.npy", "short.npy",
-             "long.npy"]
+    names = [
+        "object.npy",
+        "pickle.npy",
+        "archive.npy",
+        "bool.npy",
+        "complex.npy",
+        "text.npy",
+        "nan.npy",
+        "short.npy",
+        "long.npy",
+    ]
     messages = _messages(params, tmp_path, *[_dense(name) for name in names])
     expected = {
         "object.npy": "has dtype object; only integer and floating dtypes are accepted",
@@ -243,8 +285,10 @@ def test_npy_header_claiming_a_huge_array_is_refused_before_allocation(tmp_path)
     np.lib.format.write_array_header_1_0(header, {"descr": "<f8", "fortran_order": False, "shape": (10**12,)})
     (tmp_path / "bomb.npy").write_bytes(header.getvalue() + b"\0" * 16)
     messages = _messages(params, tmp_path, _dense("bomb.npy"))
-    assert messages == ["file 'bomb.npy' (ops[0].delta): declares shape (1000000000000,) of float64 (8000000000000 "
-                        "data bytes) but holds 16 data bytes"]
+    assert messages == [
+        "file 'bomb.npy' (ops[0].delta): declares shape (1000000000000,) of float64 (8000000000000 "
+        "data bytes) but holds 16 data bytes"
+    ]
 
 
 def test_fortran_order_and_big_endian_files_load_by_value(tmp_path) -> None:
@@ -268,7 +312,9 @@ def test_total_referenced_bytes_boundary_and_distinct_files_count_once(tmp_path)
     ops = (_dense("a.npy"), _dense("b.npy"), _dense("a.npy"))
     exact = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None, max_file_bytes=total)
     result = apply_patch(params, _patch(params, *ops), tmp_path, exact, params_sha256(params))
-    np.testing.assert_array_equal(result.child["w"], (params["w"].astype(np.float64) + 0.75).astype(np.float32))
+    np.testing.assert_array_equal(
+        result.child["w"], (params["w"].astype(np.float64) + 0.75).astype(np.float32)
+    )
     below = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None, max_file_bytes=total - 1)
     assert _messages(params, tmp_path, *ops, limits=below) == [
         f"files: the referenced .npy files total {total} bytes, above the limit of {total - 1} bytes"

@@ -91,8 +91,10 @@ FIT_WORDS = {
     "replay rows",
 }
 LABELS = {
-    method: (f"PREREG E8 rule-generated {'mixed-row' if FIT_OF[method] == 'mixed' else 'full-row'} reference: "
-             f"{RECIPE_WORDS[RECIPE_OF[method]]}, fit on {FIT_WORDS[FIT_OF[method]]}; not training-free")
+    method: (
+        f"PREREG E8 rule-generated {'mixed-row' if FIT_OF[method] == 'mixed' else 'full-row'} reference: "
+        f"{RECIPE_WORDS[RECIPE_OF[method]]}, fit on {FIT_WORDS[FIT_OF[method]]}; not training-free"
+    )
     for method in METHODS
 }
 PREREG_REFS = {
@@ -110,8 +112,21 @@ POSITION_PREFIX = "operator, position map: out[k] = "
 SYMBOL_PREFIX = "operator, symbol map: s -> "
 TABLE_SEPARATOR = ", table = "
 IGNORE_TARGET = -1
-_FORMULA_NODES = (ast.Expression, ast.BinOp, ast.Add, ast.Sub, ast.Mod, ast.BitXor, ast.Compare, ast.Lt, ast.IfExp,
-                  ast.Name, ast.Load, ast.Constant, ast.Subscript)
+_FORMULA_NODES = (
+    ast.Expression,
+    ast.BinOp,
+    ast.Add,
+    ast.Sub,
+    ast.Mod,
+    ast.BitXor,
+    ast.Compare,
+    ast.Lt,
+    ast.IfExp,
+    ast.Name,
+    ast.Load,
+    ast.Constant,
+    ast.Subscript,
+)
 
 Operator = Callable[[list[int]], list[int]]
 
@@ -125,7 +140,9 @@ def _compile_formula(text: str, names: frozenset[str]) -> Any:
             raise ValueError(f"formula {text!r}: {type(node).__name__} is not an allowed construct")
         if isinstance(node, ast.Name) and node.id not in names:
             raise ValueError(f"formula {text!r}: unknown name {node.id!r}")
-        if isinstance(node, ast.Constant) and (isinstance(node.value, bool) or not isinstance(node.value, int)):
+        if isinstance(node, ast.Constant) and (
+            isinstance(node.value, bool) or not isinstance(node.value, int)
+        ):
             raise ValueError(f"formula {text!r}: constant {node.value!r} is not an integer")
     return compile(tree, "<model_spec meaning>", "eval")
 
@@ -134,14 +151,16 @@ def stated_operator(meaning: str) -> Operator:
     """The operator a token meaning states: a position map "out[k] = <formula of in, k, n>" or a symbol map
     "s -> <formula of s>" with an optional ", table = [..]"."""
     if meaning.startswith(POSITION_PREFIX):
-        code = _compile_formula(meaning[len(POSITION_PREFIX):], frozenset({"x", "k", "n"}))
+        code = _compile_formula(meaning[len(POSITION_PREFIX) :], frozenset({"x", "k", "n"}))
 
         def position_map(x: list[int]) -> list[int]:
-            return [int(eval(code, {"__builtins__": {}}, {"x": x, "k": k, "n": len(x)})) for k in range(len(x))]
+            return [
+                int(eval(code, {"__builtins__": {}}, {"x": x, "k": k, "n": len(x)})) for k in range(len(x))
+            ]
 
         return position_map
     if meaning.startswith(SYMBOL_PREFIX):
-        formula, _, table_text = meaning[len(SYMBOL_PREFIX):].partition(TABLE_SEPARATOR)
+        formula, _, table_text = meaning[len(SYMBOL_PREFIX) :].partition(TABLE_SEPARATOR)
         table = [int(v) for v in json.loads(table_text)] if table_text else None
         code = _compile_formula(formula, frozenset({"s", "table"} if table is not None else {"s"}))
 
@@ -152,8 +171,12 @@ def stated_operator(meaning: str) -> Operator:
     raise ValueError(f"meaning {meaning!r} states no operator")
 
 
-def check_rows_as_stated(model_spec: Mapping[str, Any], x: Sequence[Sequence[int]], y: Sequence[Sequence[int]],
-                         extra_meanings: Mapping[str, str]) -> dict[str, Any]:
+def check_rows_as_stated(
+    model_spec: Mapping[str, Any],
+    x: Sequence[Sequence[int]],
+    y: Sequence[Sequence[int]],
+    extra_meanings: Mapping[str, str],
+) -> dict[str, Any]:
     """Recompute every row's targets from model_spec.json's stated layout and token meanings; raise on any mismatch.
 
     ``extra_meanings`` states operators by token name in the same form (OP_NEW0's rule in the E8 form). Rows are
@@ -165,9 +188,13 @@ def check_rows_as_stated(model_spec: Mapping[str, Any], x: Sequence[Sequence[int
         raise RuntimeError(f"model_spec.json layout {layout!r} does not state {LAYOUT_ANSWER!r}")
     tokens = {str(t["name"]): (int(t["id"]), str(t["meaning"])) for t in model_spec["input"]["tokens"]}
     if NONE_MEANING not in tokens["NONE"][1]:
-        raise RuntimeError(f"model_spec.json NONE meaning {tokens['NONE'][1]!r} does not state {NONE_MEANING!r}")
+        raise RuntimeError(
+            f"model_spec.json NONE meaning {tokens['NONE'][1]!r} does not state {NONE_MEANING!r}"
+        )
     special = {name: tokens[name][0] for name in ("PAD", "BOS", "SEP", "OUT", "NONE")}
-    symbol_of = {tid: int(m.group(1)) for name, (tid, _) in tokens.items() if (m := re.fullmatch(r"s(\d+)", name))}
+    symbol_of = {
+        tid: int(m.group(1)) for name, (tid, _) in tokens.items() if (m := re.fullmatch(r"s(\d+)", name))
+    }
     operators: dict[int, Operator] = {}
     stated: list[str] = []
     for name, (tid, meaning) in tokens.items():
@@ -186,7 +213,9 @@ def check_rows_as_stated(model_spec: Mapping[str, Any], x: Sequence[Sequence[int
         sep = row.index(special["SEP"])
         symbols = [symbol_of[t] for t in row[3:sep]]
         n = len(symbols)
-        if row[sep + 1:sep + 1 + n] != [special["OUT"]] * n or any(t != special["PAD"] for t in row[sep + 1 + n:]):
+        if row[sep + 1 : sep + 1 + n] != [special["OUT"]] * n or any(
+            t != special["PAD"] for t in row[sep + 1 + n :]
+        ):
             raise RuntimeError(f"row {index}: not {n} OUT slots then PAD")
         opa, opb = row[1], row[2]
         if opa not in operators or (opb != special["NONE"] and opb not in operators):
@@ -195,23 +224,32 @@ def check_rows_as_stated(model_spec: Mapping[str, Any], x: Sequence[Sequence[int
         if opb != special["NONE"]:
             answer = operators[opb](answer)
         expected = [IGNORE_TARGET] * len(row)
-        expected[sep + 1:sep + 1 + n] = answer
+        expected[sep + 1 : sep + 1 + n] = answer
         if target != expected:
             raise RuntimeError(f"row {index}: targets {target} differ from the stated rules' {expected}")
         pair = f"{opa}+{opb}"
         rows_by_pair[pair] = rows_by_pair.get(pair, 0) + 1
-    return {"n_rows": len(x), "operators_stated": sorted(stated), "n_operator_pairs": len(rows_by_pair),
-            "mismatches": 0}
+    return {
+        "n_rows": len(x),
+        "operators_stated": sorted(stated),
+        "n_operator_pairs": len(rows_by_pair),
+        "mismatches": 0,
+    }
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--instance", required=True, help="seqskill instance id q<8 hex>")
-    parser.add_argument("--methods", nargs="+", choices=METHODS, help="methods to run (required unless --rows-only)")
+    parser.add_argument(
+        "--methods", nargs="+", choices=METHODS, help="methods to run (required unless --rows-only)"
+    )
     parser.add_argument("--seed", type=int, default=0, help="run seed (torch seed; directory name)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
-    parser.add_argument("--rows-only", action="store_true",
-                        help="build and check the fit rows, print their counts and sha256, run nothing")
+    parser.add_argument(
+        "--rows-only",
+        action="store_true",
+        help="build and check the fit rows, print their counts and sha256, run nothing",
+    )
     args = parser.parse_args(argv)
     if not args.rows_only and not args.methods:
         parser.error("--methods is required unless --rows-only")
@@ -241,14 +279,23 @@ def main(argv: list[str] | None = None) -> int:
     rule_path = dataset_json_path(S.DATASET, condition)
     rule_file_sha = file_sha256(rule_path)
     if rule_file_sha != private["condition_dataset_json_sha256"]:
-        raise RuntimeError(f"{rule_path}: sha256 {rule_file_sha} != private.json condition_dataset_json_sha256")
+        raise RuntimeError(
+            f"{rule_path}: sha256 {rule_file_sha} != private.json condition_dataset_json_sha256"
+        )
     recorded = read_dataset_json(S.DATASET, condition)["condition"]
     table = tuple(int(v) for v in recorded["rule"]["table"])
     drawn = S.draw_new_rule(NEW_RULE_INDEX)
-    if (int(recorded["operator_id"]) != new_id or drawn.token != new_id or recorded["rule"]["kind"] != "symbol"
-            or recorded["rule"]["token"] != S.TOKENS[new_id] or table != drawn.table):
-        raise RuntimeError(f"condition rule {recorded['rule']} differs from draw_new_rule({NEW_RULE_INDEX}) or from "
-                           f"the instance's operator {S.TOKENS[new_id]}")
+    if (
+        int(recorded["operator_id"]) != new_id
+        or drawn.token != new_id
+        or recorded["rule"]["kind"] != "symbol"
+        or recorded["rule"]["token"] != S.TOKENS[new_id]
+        or table != drawn.table
+    ):
+        raise RuntimeError(
+            f"condition rule {recorded['rule']} differs from draw_new_rule({NEW_RULE_INDEX}) or from "
+            f"the instance's operator {S.TOKENS[new_id]}"
+        )
     rules = {**S.old_rules(), new_id: S.Rule(new_id, "symbol", table=table)}
 
     # Excluded keys: every row of the condition's V_select and V_check, file hashes and stored keys checked.
@@ -269,12 +316,16 @@ def main(argv: list[str] | None = None) -> int:
         excluded_parts.append({"idx": arrays["idx"]})
         excluded_record[split] = {"path": str(path), "sha256": digest, "n_rows": int(len(arrays["idx"]))}
     exclude = S.keys_of(excluded_parts)
-    excluded = {"splits": excluded_record, "n_keys": int(exclude.size),
-                "rule": "every generated key differs from every key of these splits (all parts); the sealed test is "
-                "not read"}
+    excluded = {
+        "splits": excluded_record,
+        "n_keys": int(exclude.size),
+        "rule": "every generated key differs from every key of these splits (all parts); the sealed test is "
+        "not read",
+    }
 
-    def draw_counted(spec: S.RowSpec, size: int, rng: np.random.Generator,
-                     seen: np.ndarray) -> tuple[tuple[np.ndarray, ...], dict[str, int]]:
+    def draw_counted(
+        spec: S.RowSpec, size: int, rng: np.random.Generator, seen: np.ndarray
+    ) -> tuple[tuple[np.ndarray, ...], dict[str, int]]:
         """``S.draw_unique`` and, from a copy of the generator, how many sampled rows it refused and why.
 
         ``refused_excluded``: rows whose key is in ``seen`` (a V_select or V_check row); ``refused_repeat``: rows
@@ -329,16 +380,21 @@ def main(argv: list[str] | None = None) -> int:
     # New-operator rows: one generator, single rows first; the hash of the full-row runs is asserted.
     rng = np.random.default_rng(list(ROW_STREAM))
     single, single_counts = draw_counted(S.new_single_rows(new_id, SINGLE_LENGTHS), N_SINGLE, rng, exclude)
-    composed, composed_counts = draw_counted(S.new_composed_rows(new_id, COMPOSED_LENGTHS), N_COMPOSED, rng,
-                                             np.union1d(exclude, single[4]))
+    composed, composed_counts = draw_counted(
+        S.new_composed_rows(new_id, COMPOSED_LENGTHS), N_COMPOSED, rng, np.union1d(exclude, single[4])
+    )
     new_parts = tuple(np.concatenate([a, b]) for a, b in zip(single, composed, strict=True))
     x_gen, y_gen = encoded(new_parts)
     new_sha = params_sha256({"x": x_gen, "y": y_gen})
     if new_sha != NEW_ROWS_SHA256:
-        raise RuntimeError(f"generated new-operator rows hash {new_sha}, the full-row runs' rows {NEW_ROWS_SHA256}")
+        raise RuntimeError(
+            f"generated new-operator rows hash {new_sha}, the full-row runs' rows {NEW_ROWS_SHA256}"
+        )
 
     # Old-operator rows of the mixed set: the base's old-operator training distribution, own generator.
-    old_parts, old_counts = draw_counted(S.OLD_ROWS, N_OLD, np.random.default_rng(list(OLD_ROW_STREAM)), exclude)
+    old_parts, old_counts = draw_counted(
+        S.OLD_ROWS, N_OLD, np.random.default_rng(list(OLD_ROW_STREAM)), exclude
+    )
     x_old, y_old = encoded(old_parts)
     if np.isin(old_parts[2:4], S.NEW_OP_IDS).any():
         raise RuntimeError("a generated old-operator row holds a reserved operator")
@@ -365,37 +421,63 @@ def main(argv: list[str] | None = None) -> int:
     new_meaning = f"{SYMBOL_PREFIX}table[s]{TABLE_SEPARATOR}{json.dumps(list(table))}"
     x_all = np.concatenate([x_gen, x_old, x_rep])
     y_all = np.concatenate([y_gen, y_old, y_rep])
-    stated_check = check_rows_as_stated(model_spec, x_all.tolist(), y_all.tolist(), {S.TOKENS[new_id]: new_meaning})
-    stated_check.update({"rows": f"the {len(x_gen)} new-operator, {len(x_old)} old-operator and {len(x_rep)} replay "
-                         "rows", "model_spec": str(spec_path), "model_spec_sha256": spec_sha,
-                         "new_operator_meaning": new_meaning,
-                         "evaluator": "check_rows_as_stated in this script: stated layout and token meanings parsed "
-                         "from model_spec.json, no seqops function"})
+    stated_check = check_rows_as_stated(
+        model_spec, x_all.tolist(), y_all.tolist(), {S.TOKENS[new_id]: new_meaning}
+    )
+    stated_check.update(
+        {
+            "rows": f"the {len(x_gen)} new-operator, {len(x_old)} old-operator and {len(x_rep)} replay rows",
+            "model_spec": str(spec_path),
+            "model_spec_sha256": spec_sha,
+            "new_operator_meaning": new_meaning,
+            "evaluator": "check_rows_as_stated in this script: stated layout and token meanings parsed "
+            "from model_spec.json, no seqops function",
+        }
+    )
 
     new_block = {
-        "rule": {"token": S.TOKENS[new_id], "kind": "symbol", "table": list(table), "source": str(rule_path),
-                 "source_sha256": rule_file_sha, "equals_draw_new_rule": NEW_RULE_INDEX},
+        "rule": {
+            "token": S.TOKENS[new_id],
+            "kind": "symbol",
+            "table": list(table),
+            "source": str(rule_path),
+            "source_sha256": rule_file_sha,
+            "equals_draw_new_rule": NEW_RULE_INDEX,
+        },
         "row_stream": list(ROW_STREAM),
         "draw": "seqops.draw_unique from one generator, single rows first, then composed rows",
-        "single": {"spec": S.new_single_rows(new_id, SINGLE_LENGTHS).as_dict(), "n": N_SINGLE,
-                   "by_length": length_counts(single[1]), "redraw": single_counts,
-                   "sha256": params_sha256({"x": x_gen[:N_SINGLE], "y": y_gen[:N_SINGLE]})},
-        "composed": {"spec": S.new_composed_rows(new_id, COMPOSED_LENGTHS).as_dict(), "n": N_COMPOSED,
-                     "by_length": length_counts(composed[1]), "by_pair": pair_counts(composed[2], composed[3]),
-                     "redraw": composed_counts,
-                     "sha256": params_sha256({"x": x_gen[N_SINGLE:], "y": y_gen[N_SINGLE:]})},
+        "single": {
+            "spec": S.new_single_rows(new_id, SINGLE_LENGTHS).as_dict(),
+            "n": N_SINGLE,
+            "by_length": length_counts(single[1]),
+            "redraw": single_counts,
+            "sha256": params_sha256({"x": x_gen[:N_SINGLE], "y": y_gen[:N_SINGLE]}),
+        },
+        "composed": {
+            "spec": S.new_composed_rows(new_id, COMPOSED_LENGTHS).as_dict(),
+            "n": N_COMPOSED,
+            "by_length": length_counts(composed[1]),
+            "by_pair": pair_counts(composed[2], composed[3]),
+            "redraw": composed_counts,
+            "sha256": params_sha256({"x": x_gen[N_SINGLE:], "y": y_gen[N_SINGLE:]}),
+        },
         "generated_sha256": new_sha,
         "generated_sha256_rule": "cryowisp.common.identity.params_sha256 of {'x': x [2000, SEQ_LEN], 'y': y [2000, "
         "SEQ_LEN]} int64, single rows then composed rows",
     }
-    replay_block = {"n": int(len(x_rep)), "sha256": params_sha256({"x_old": instance.evidence["x_old"],
-                                                                   "y_old": instance.evidence["y_old"]})}
+    replay_block = {
+        "n": int(len(x_rep)),
+        "sha256": params_sha256({"x_old": instance.evidence["x_old"], "y_old": instance.evidence["y_old"]}),
+    }
     fit_sets: dict[str, dict[str, Any]] = {
         "full": {
-            "x": np.concatenate([x_gen, x_rep]), "y": np.concatenate([y_gen, y_rep]),
-            "words": (f"{len(x_gen) + len(x_rep)} fit rows ({N_SINGLE} generated from the rule alone at n "
-                      f"{SINGLE_LENGTHS[0]} to {SINGLE_LENGTHS[1]}, {N_COMPOSED} generated composed at n "
-                      f"{COMPOSED_LENGTHS[0]} to {COMPOSED_LENGTHS[1]}, {len(x_rep)} replay)"),
+            "x": np.concatenate([x_gen, x_rep]),
+            "y": np.concatenate([y_gen, y_rep]),
+            "words": (
+                f"{len(x_gen) + len(x_rep)} fit rows ({N_SINGLE} generated from the rule alone at n "
+                f"{SINGLE_LENGTHS[0]} to {SINGLE_LENGTHS[1]}, {N_COMPOSED} generated composed at n "
+                f"{COMPOSED_LENGTHS[0]} to {COMPOSED_LENGTHS[1]}, {len(x_rep)} replay)"
+            ),
             "retention": f"retention is fitted on the {len(x_rep)} replay rows",
             "record": {
                 "source": "rows generated from the condition rule plus the instance's replay rows; the 64 V_evidence "
@@ -405,46 +487,74 @@ def main(argv: list[str] | None = None) -> int:
             },
         },
         "mixed": {
-            "x": np.concatenate([x_gen, x_old, x_rep]), "y": np.concatenate([y_gen, y_old, y_rep]),
-            "words": (f"{len(x_gen) + len(x_old) + len(x_rep)} fit rows ({N_SINGLE} generated from the rule alone at n "
-                      f"{SINGLE_LENGTHS[0]} to {SINGLE_LENGTHS[1]}, {N_COMPOSED} generated composed at n "
-                      f"{COMPOSED_LENGTHS[0]} to {COMPOSED_LENGTHS[1]}, {N_OLD} generated old-operator rows, "
-                      f"{len(x_rep)} replay)"),
-            "retention": (f"retention is fitted on the {N_OLD} old-operator rows generated from the stated old rules "
-                          f"and the {len(x_rep)} replay rows"),
+            "x": np.concatenate([x_gen, x_old, x_rep]),
+            "y": np.concatenate([y_gen, y_old, y_rep]),
+            "words": (
+                f"{len(x_gen) + len(x_old) + len(x_rep)} fit rows ({N_SINGLE} generated from the rule alone at n "
+                f"{SINGLE_LENGTHS[0]} to {SINGLE_LENGTHS[1]}, {N_COMPOSED} generated composed at n "
+                f"{COMPOSED_LENGTHS[0]} to {COMPOSED_LENGTHS[1]}, {N_OLD} generated old-operator rows, "
+                f"{len(x_rep)} replay)"
+            ),
+            "retention": (
+                f"retention is fitted on the {N_OLD} old-operator rows generated from the stated old rules "
+                f"and the {len(x_rep)} replay rows"
+            ),
             "record": {
                 "source": "rows generated from the condition rule, old-operator rows generated from the old rules "
                 "model_spec.json states, and the instance's replay rows; the 64 V_evidence new-operator rows of the "
                 "evidence are not in the fit",
                 **new_block,
-                "old": {"spec": S.OLD_ROWS.as_dict(), "generator": "seqops.OLD_ROWS through seqops.draw_unique, the "
-                        "distribution of the base's old-operator training rows", "row_stream": list(OLD_ROW_STREAM),
-                        "n": N_OLD, "by_length": length_counts(old_parts[1]),
-                        "n_two_operator": int(np.count_nonzero(old_parts[3] != S.NONE)),
-                        "by_pair": pair_counts(old_parts[2], old_parts[3]), "redraw": old_counts,
-                        "n_equal_to_a_replay_row": old_in_replay,
-                        "sha256": params_sha256({"x": x_old, "y": y_old})},
+                "old": {
+                    "spec": S.OLD_ROWS.as_dict(),
+                    "generator": "seqops.OLD_ROWS through seqops.draw_unique, the "
+                    "distribution of the base's old-operator training rows",
+                    "row_stream": list(OLD_ROW_STREAM),
+                    "n": N_OLD,
+                    "by_length": length_counts(old_parts[1]),
+                    "n_two_operator": int(np.count_nonzero(old_parts[3] != S.NONE)),
+                    "by_pair": pair_counts(old_parts[2], old_parts[3]),
+                    "redraw": old_counts,
+                    "n_equal_to_a_replay_row": old_in_replay,
+                    "sha256": params_sha256({"x": x_old, "y": y_old}),
+                },
                 "order": "generated single rows, generated composed rows, generated old-operator rows, replay rows",
             },
         },
     }
     for name, fit in fit_sets.items():
-        fit["record"].update({
-            "evidence_new_rows_in_fit": False, "excluded": excluded, "replay": replay_block,
-            "stated_rule_check": stated_check, "n_fit": int(len(fit["x"])),
-            "fit_sha256": params_sha256({"x": fit["x"], "y": fit["y"]}),
-            "fit_sha256_rule": f"params_sha256 of {{'x', 'y'}} [{len(fit['x'])}, SEQ_LEN] int64 in the order above",
-        })
-    print(f"new rows: {N_SINGLE} single (by length {new_block['single']['by_length']}, redraw {single_counts}), "
-          f"{N_COMPOSED} composed (by length {new_block['composed']['by_length']}, redraw {composed_counts}); "
-          f"sha256 {new_sha}", flush=True)
+        fit["record"].update(
+            {
+                "evidence_new_rows_in_fit": False,
+                "excluded": excluded,
+                "replay": replay_block,
+                "stated_rule_check": stated_check,
+                "n_fit": int(len(fit["x"])),
+                "fit_sha256": params_sha256({"x": fit["x"], "y": fit["y"]}),
+                "fit_sha256_rule": f"params_sha256 of {{'x', 'y'}} [{len(fit['x'])}, SEQ_LEN] int64 in the order above",
+            }
+        )
+    print(
+        f"new rows: {N_SINGLE} single (by length {new_block['single']['by_length']}, redraw {single_counts}), "
+        f"{N_COMPOSED} composed (by length {new_block['composed']['by_length']}, redraw {composed_counts}); "
+        f"sha256 {new_sha}",
+        flush=True,
+    )
     old_record = fit_sets["mixed"]["record"]["old"]
-    print(f"old rows: {N_OLD} (by length {old_record['by_length']}, two-operator {old_record['n_two_operator']}, "
-          f"redraw {old_counts}, equal to a replay row {old_in_replay}); sha256 {old_record['sha256']}", flush=True)
-    print(f"stated-rule check: {stated_check['n_rows']} rows, operators {stated_check['operators_stated']}, "
-          f"{stated_check['n_operator_pairs']} operator pairs, 0 mismatches", flush=True)
+    print(
+        f"old rows: {N_OLD} (by length {old_record['by_length']}, two-operator {old_record['n_two_operator']}, "
+        f"redraw {old_counts}, equal to a replay row {old_in_replay}); sha256 {old_record['sha256']}",
+        flush=True,
+    )
+    print(
+        f"stated-rule check: {stated_check['n_rows']} rows, operators {stated_check['operators_stated']}, "
+        f"{stated_check['n_operator_pairs']} operator pairs, 0 mismatches",
+        flush=True,
+    )
     for name, fit in fit_sets.items():
-        print(f"fit set {name}: {fit['record']['n_fit']} rows, fit sha256 {fit['record']['fit_sha256']}", flush=True)
+        print(
+            f"fit set {name}: {fit['record']['n_fit']} rows, fit sha256 {fit['record']['fit_sha256']}",
+            flush=True,
+        )
     if args.rows_only:
         return 0
 
@@ -453,8 +563,20 @@ def main(argv: list[str] | None = None) -> int:
     torch.set_num_threads(args.threads)
     from cryowisp.baselines.fit.edits import scale_to_norm_limit
     from cryowisp.baselines.fit.grad import LEARNING_RATES, STEP_CHECKPOINTS
-    from cryowisp.baselines.fit.runner import CandidatePatch, Evidence, MethodSpec, baseline_run_dir, execute_run
-    from cryowisp.baselines.fit.seqgrad import adam_checkpoints, rebuild, seq_grad_config, seq_parity, token_loss
+    from cryowisp.baselines.fit.runner import (
+        CandidatePatch,
+        Evidence,
+        MethodSpec,
+        baseline_run_dir,
+        execute_run,
+    )
+    from cryowisp.baselines.fit.seqgrad import (
+        adam_checkpoints,
+        rebuild,
+        seq_grad_config,
+        seq_parity,
+        token_loss,
+    )
 
     limits = seqskill_program_limits(instance.task["limits"], len(params))
     trainable = sorted(params)
@@ -482,17 +604,26 @@ def main(argv: list[str] | None = None) -> int:
 
         def generate(evidence: Evidence):
             k = evidence.n_deployment
-            if (evidence.n_replay != len(x_rep) or not np.array_equal(evidence.x[k:], x_rep)
-                    or not np.array_equal(evidence.y[k:], y_rep)):
+            if (
+                evidence.n_replay != len(x_rep)
+                or not np.array_equal(evidence.x[k:], x_rep)
+                or not np.array_equal(evidence.y[k:], y_rep)
+            ):
                 raise RuntimeError("the evidence's replay part is not the instance's replay rows")
             model = rebuild(params)
             parity, parity_bound = seq_parity(model, params, instance.forward, x_fit)
             masks = None
-            info: dict[str, Any] = {"model_config": model.config.as_dict(), "parity_max_abs_logit_diff": parity,
-                                    "parity_bound": parity_bound, "parity_rows": "the fit rows",
-                                    "evidence_new_rows_in_fit": False, "n_fit": int(len(x_fit)),
-                                    "fit_set": FIT_OF[method], "fit_sha256": fit["record"]["fit_sha256"],
-                                    "fit_generated_sha256": new_sha}
+            info: dict[str, Any] = {
+                "model_config": model.config.as_dict(),
+                "parity_max_abs_logit_diff": parity,
+                "parity_bound": parity_bound,
+                "parity_rows": "the fit rows",
+                "evidence_new_rows_in_fit": False,
+                "n_fit": int(len(x_fit)),
+                "fit_set": FIT_OF[method],
+                "fit_sha256": fit["record"]["fit_sha256"],
+                "fit_generated_sha256": new_sha,
+            }
             if sparse:
                 if recipe == "sparse19_sal":
                     for tensor in model.parameters():
@@ -500,51 +631,101 @@ def main(argv: list[str] | None = None) -> int:
                     token_loss(model, x_t, y_t).backward()
                     score = {name: p.grad.detach().numpy().copy() for name, p in model.named_parameters()}
                 else:
-                    (_, traj, _), = adam_checkpoints(params, x_t, y_t, trainable=trainable, lr=TRAJ_LR,
-                                                     checkpoints=(TRAJ_STEPS,), seed=args.seed)
-                    score = {name: traj[name].astype(np.float64) - params[name].astype(np.float64)
-                             for name in trainable}
+                    ((_, traj, _),) = adam_checkpoints(
+                        params,
+                        x_t,
+                        y_t,
+                        trainable=trainable,
+                        lr=TRAJ_LR,
+                        checkpoints=(TRAJ_STEPS,),
+                        seed=args.seed,
+                    )
+                    score = {
+                        name: traj[name].astype(np.float64) - params[name].astype(np.float64)
+                        for name in trainable
+                    }
                 if set(score) != set(trainable):
-                    raise RuntimeError(f"score keys differ from the student's: {sorted(set(score) ^ set(trainable))}")
+                    raise RuntimeError(
+                        f"score keys differ from the student's: {sorted(set(score) ^ set(trainable))}"
+                    )
                 masks = top_fraction(score)
                 n_trainable = int(sum(m.sum() for m in masks.values()))
-                info.update({"mask_rule": method, "mask_fraction_per_tensor": MASK_FRACTION,
-                             "mask_rows": "the fit rows"})
+                info.update(
+                    {
+                        "mask_rule": method,
+                        "mask_fraction_per_tensor": MASK_FRACTION,
+                        "mask_rows": "the fit rows",
+                    }
+                )
             else:
                 n_trainable = int(sum(params[name].size for name in trainable))
                 info["trainable"] = trainable
             n_params = int(sum(v.size for v in params.values()))
-            info.update({"n_trainable_entries": n_trainable, "n_params": n_params,
-                         "trainable_frac": n_trainable / n_params})
+            info.update(
+                {
+                    "n_trainable_entries": n_trainable,
+                    "n_params": n_params,
+                    "trainable_frac": n_trainable / n_params,
+                }
+            )
             with torch.no_grad():
                 info["base_fit_loss"] = float(token_loss(rebuild(params), x_t, y_t))
-            scope = (f"every tensor, top {MASK_FRACTION:g} of each tensor's entries by the {method} mask" if sparse
-                     else "all tensors, no edit limits")
+            scope = (
+                f"every tensor, top {MASK_FRACTION:g} of each tensor's entries by the {method} mask"
+                if sparse
+                else "all tensors, no edit limits"
+            )
             candidates = []
             for lr in LEARNING_RATES:
-                for steps, child, loss in adam_checkpoints(params, x_t, y_t, trainable=trainable, lr=lr,
-                                                           checkpoints=STEP_CHECKPOINTS, seed=args.seed, masks=masks):
+                for steps, child, loss in adam_checkpoints(
+                    params,
+                    x_t,
+                    y_t,
+                    trainable=trainable,
+                    lr=lr,
+                    checkpoints=STEP_CHECKPOINTS,
+                    seed=args.seed,
+                    masks=masks,
+                ):
                     notes: dict[str, Any] = {"fit_loss_at_checkpoint": loss}
                     if sparse:
                         for name in trainable:
                             if not np.array_equal(child[name][~masks[name]], params[name][~masks[name]]):
                                 raise RuntimeError(f"{name} changed outside its mask")
-                        child, scaling = scale_to_norm_limit(params, child, trainable, limit=limits.max_rel_frob,
-                                                             min_ndim=limits.rel_frob_min_ndim,
-                                                             exempt=limits.rel_frob_exempt)
-                        notes["norm_scaled_tensors"] = [name for name, entry in scaling.items() if entry["scaled"]]
+                        child, scaling = scale_to_norm_limit(
+                            params,
+                            child,
+                            trainable,
+                            limit=limits.max_rel_frob,
+                            min_ndim=limits.rel_frob_min_ndim,
+                            exempt=limits.rel_frob_exempt,
+                        )
+                        notes["norm_scaled_tensors"] = [
+                            name for name, entry in scaling.items() if entry["scaled"]
+                        ]
                         if notes["norm_scaled_tensors"]:
                             with torch.no_grad():
                                 notes["fit_loss_after_scaling"] = float(token_loss(rebuild(child), x_t, y_t))
-                    candidates.append(CandidatePatch(
-                        slot=len(candidates), child=child, config={"lr": lr, "steps": steps},
-                        hypothesis=(f"{method}: Adam lr={lr:g} for {steps} full-batch steps on the mean token "
-                                    f"cross-entropy over the {fit['words']}; trained: {scope}"),
-                        predicted_effect=(f"rows of {S.TOKENS[new_id]} answered right, alone and composed, if a fit "
-                                          f"on rows written from the rule generalizes; {fit['retention']}"),
-                        notes=notes))
+                    candidates.append(
+                        CandidatePatch(
+                            slot=len(candidates),
+                            child=child,
+                            config={"lr": lr, "steps": steps},
+                            hypothesis=(
+                                f"{method}: Adam lr={lr:g} for {steps} full-batch steps on the mean token "
+                                f"cross-entropy over the {fit['words']}; trained: {scope}"
+                            ),
+                            predicted_effect=(
+                                f"rows of {S.TOKENS[new_id]} answered right, alone and composed, if a fit "
+                                f"on rows written from the rule generalizes; {fit['retention']}"
+                            ),
+                            notes=notes,
+                        )
+                    )
             if sparse:
-                info["n_candidates_norm_scaled"] = sum(1 for c in candidates if c.notes["norm_scaled_tensors"])
+                info["n_candidates_norm_scaled"] = sum(
+                    1 for c in candidates if c.notes["norm_scaled_tensors"]
+                )
             return candidates, info
 
         return generate
@@ -552,21 +733,36 @@ def main(argv: list[str] | None = None) -> int:
     for method in args.methods:
         sparse = RECIPE_OF[method] != "grad_full"
         fit = fit_sets[FIT_OF[method]]
-        spec = MethodSpec(method=method, label=LABELS[method], uses_labels_for_fit=True, edit_limits_enforced=sparse)
+        spec = MethodSpec(
+            method=method, label=LABELS[method], uses_labels_for_fit=True, edit_limits_enforced=sparse
+        )
         config = seq_grad_config("seq_grad_full", args.seed, instance)
-        config.update({
-            "loss": f"mean cross-entropy over the labelled (OUT) positions of the {fit['words']}",
-            "trained": (f"every tensor, top {MASK_FRACTION:g} of its entries by the {method} mask" if sparse
-                        else "all tensors"),
-            "norm_limit": limits.max_rel_frob if sparse else None,
-            "mask_fraction_per_tensor": MASK_FRACTION if sparse else None,
-            "traj_mask": {"lr": TRAJ_LR, "steps": TRAJ_STEPS} if method.endswith("traj") else None,
-            "fit_rows": fit["record"],
-            "prereg": PREREG_REFS[FIT_OF[method]],
-        })
+        config.update(
+            {
+                "loss": f"mean cross-entropy over the labelled (OUT) positions of the {fit['words']}",
+                "trained": (
+                    f"every tensor, top {MASK_FRACTION:g} of its entries by the {method} mask"
+                    if sparse
+                    else "all tensors"
+                ),
+                "norm_limit": limits.max_rel_frob if sparse else None,
+                "mask_fraction_per_tensor": MASK_FRACTION if sparse else None,
+                "traj_mask": {"lr": TRAJ_LR, "steps": TRAJ_STEPS} if method.endswith("traj") else None,
+                "fit_rows": fit["record"],
+                "prereg": PREREG_REFS[FIT_OF[method]],
+            }
+        )
         run_dir = baseline_run_dir(instance.instance_id, method, args.seed, REF_LABEL)
-        record = execute_run(instance=instance, spec=spec, run_dir=run_dir, run_seed=args.seed, config=config,
-                             generate=make_generator(method), require_valid_candidate=True, seqskill=True)
+        record = execute_run(
+            instance=instance,
+            spec=spec,
+            run_dir=run_dir,
+            run_seed=args.seed,
+            config=config,
+            generate=make_generator(method),
+            require_valid_candidate=True,
+            seqskill=True,
+        )
         print(method, run_dir / "run.json", record.get("final", {}).get("patch_id"), flush=True)
     return 0
 

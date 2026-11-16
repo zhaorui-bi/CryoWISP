@@ -38,9 +38,13 @@ def test_summarize_counts_rows_of_sequences() -> None:
 
 def _student(tmp_path: Path):
     torch.manual_seed(0)
-    config = T.TfmConfig(S.VOCAB_SIZE, S.SEQ_LEN, S.N_SYMBOLS, S.PAD, d_model=32, n_layers=1, n_heads=2, d_mlp=48)
+    config = T.TfmConfig(
+        S.VOCAB_SIZE, S.SEQ_LEN, S.N_SYMBOLS, S.PAD, d_model=32, n_layers=1, n_heads=2, d_mlp=48
+    )
     params = T.export_seq_params(T.build_seq_model(config))
-    source = render_seq_forward(config.seq_len, config.vocab_size, config.n_out, config.n_heads, config.pad_id, T.LN_EPS)
+    source = render_seq_forward(
+        config.seq_len, config.vocab_size, config.n_out, config.n_heads, config.pad_id, T.LN_EPS
+    )
     write_forward(tmp_path / "forward.py", source)
     forward, _ = load_forward(tmp_path / "forward.py")
     return params, forward
@@ -58,7 +62,9 @@ def test_joint_patch_check_on_new_and_old_sequence_sets(tmp_path: Path) -> None:
     params, forward = _student(tmp_path)
     old = S.build_base_splits()["V_check"]
     new = S.build_condition_splits(S.draw_new_rule(0), 0)["V_check"]
-    oracle = JointPatchCheckOracle(new["x"][:200], new["y"][:200], old["x"][:200], old["y"][:200], forward, params, budget=2)
+    oracle = JointPatchCheckOracle(
+        new["x"][:200], new["y"][:200], old["x"][:200], old["y"][:200], forward, params, budget=2
+    )
     same = oracle.query(params, "noop")
     assert same["score"] == 0 and same["n"] == 400 and same["n_new"] == 200 and same["n_old"] == 200
     child = {key: value.copy() for key, value in params.items()}

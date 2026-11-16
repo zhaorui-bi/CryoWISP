@@ -33,17 +33,33 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("session_dir", type=Path, help="session directory holding logs/cells.jsonl")
     parser.add_argument("--out", type=Path, help="report path (default <session_dir>/logs/audit.json)")
-    parser.add_argument("--label-key", action="append", dest="label_keys", metavar="KEY",
-                        help="evidence key holding labels (repeatable; default y_fail, y_rand, y_new, y_old, y_prev)")
-    parser.add_argument("--recover-inflight-in-memory", action="store_true",
-                        help="audit a cell left in flight as the interrupted cell, without changing the logs")
-    parser.add_argument("--no-overwrite", action="store_true", help="exit 2 if the report path already exists")
+    parser.add_argument(
+        "--label-key",
+        action="append",
+        dest="label_keys",
+        metavar="KEY",
+        help="evidence key holding labels (repeatable; default y_fail, y_rand, y_new, y_old, y_prev)",
+    )
+    parser.add_argument(
+        "--recover-inflight-in-memory",
+        action="store_true",
+        help="audit a cell left in flight as the interrupted cell, without changing the logs",
+    )
+    parser.add_argument(
+        "--no-overwrite", action="store_true", help="exit 2 if the report path already exists"
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    from cryowisp.audit.session import AUDIT_FILENAME, DEFAULT_LABEL_KEYS, AuditInputError, audit_session, write_report
+    from cryowisp.audit.session import (
+        AUDIT_FILENAME,
+        DEFAULT_LABEL_KEYS,
+        AuditInputError,
+        audit_session,
+        write_report,
+    )
 
     cells = args.session_dir / "logs" / "cells.jsonl"
     if not cells.is_file():
@@ -65,10 +81,12 @@ def main(argv: list[str] | None = None) -> int:
     write_report(report, out)
     bound = " or more" if report.candidate_count_is_lower_bound else ""
     config_bound = " or more" if report.config_count_is_lower_bound else ""
-    print(f"verdict {report.verdict}: {len(report.violation_flags())} violation flags, {len(report.soft_flags())} "
-          f"soft flags, (L) {report.candidate_count}{bound} label-scored candidate settings (limit "
-          f"{report.candidate_limit}), (C) {report.config_count}{config_bound} configurations (reported only), "
-          f"{report.n_analysed} of {report.n_cells} cells analysed")
+    print(
+        f"verdict {report.verdict}: {len(report.violation_flags())} violation flags, {len(report.soft_flags())} "
+        f"soft flags, (L) {report.candidate_count}{bound} label-scored candidate settings (limit "
+        f"{report.candidate_limit}), (C) {report.config_count}{config_bound} configurations (reported only), "
+        f"{report.n_analysed} of {report.n_cells} cells analysed"
+    )
     for flag in report.flags:
         print(f"  {flag.flag_id} {flag.rule} cell {flag.cell_index} line {flag.line}: {flag.excerpt}")
         print(f"      {flag.reason}")

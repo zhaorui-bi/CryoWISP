@@ -69,7 +69,9 @@ def test_ridge_targets_anchor_on_base_logits_and_are_shift_invariant() -> None:
     expected_scale = np.mean(z0.max(axis=1) - z0.mean(axis=1))
     assert scale == pytest.approx(expected_scale)
     np.testing.assert_allclose(targets[0], z0[0], atol=1e-6 * scale)  # confidently correct: no pull
-    assert targets[1, 0] - targets[1, 1] > z0[1, 0] - z0[1, 1]  # wrong: label pushed above the predicted class
+    assert (
+        targets[1, 0] - targets[1, 1] > z0[1, 0] - z0[1, 1]
+    )  # wrong: label pushed above the predicted class
     shifted, shifted_scale = ridge_targets(z0 + 5.0, y)
     assert shifted_scale == pytest.approx(scale)
     np.testing.assert_allclose(shifted, targets + 5.0)
@@ -91,7 +93,9 @@ def test_rel_frob_and_edit_stats() -> None:
     over = {key: value.copy() for key, value in base.items()}
     over["fc1.weight"] = over["fc1.weight"] * 3.0
     assert not edit_stats(base, over)["within_limits"]
-    assert edit_stats(base, over, max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)["within_limits"]
+    assert edit_stats(base, over, max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)[
+        "within_limits"
+    ]
     assert stats["edit_size"] == 1 and stats["per_tensor"]["fc2.bias"]["encoding"] == "add"
     full = edit_stats(base, over, max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)
     assert full["per_tensor"]["fc1.weight"]["encoding"] == "add_dense"
@@ -113,15 +117,19 @@ def test_scale_to_norm_limit_scales_only_over_limit_tensors() -> None:
     assert records["fc2.weight"]["rel_frob_after"] == pytest.approx(0.5, rel=1e-3)
     assert np.array_equal(scaled["fc2.bias"], child["fc2.bias"])
     direction = scaled["fc2.weight"].astype(np.float64) - base["fc2.weight"]
-    np.testing.assert_allclose(direction / np.linalg.norm(direction), 1.5 * base["fc2.weight"] / np.linalg.norm(
-        1.5 * base["fc2.weight"].astype(np.float64)), atol=1e-5)
+    np.testing.assert_allclose(
+        direction / np.linalg.norm(direction),
+        1.5 * base["fc2.weight"] / np.linalg.norm(1.5 * base["fc2.weight"].astype(np.float64)),
+        atol=1e-5,
+    )
     zero_base = dict(base, **{"fc2.weight": np.zeros((3, 5), dtype=np.float32)})
     moved = dict(zero_base, **{"fc2.weight": np.ones((3, 5), dtype=np.float32)})
     cleared, info = scale_to_norm_limit(zero_base, moved, ["fc2.weight"])
     assert info["fc2.weight"]["factor"] == 0.0
     assert np.array_equal(cleared["fc2.weight"], zero_base["fc2.weight"])
-    exempt, exempt_info = scale_to_norm_limit(base, dict(base, **{"fc2.bias": base["fc2.bias"] * 9}), ["fc2.bias"],
-                                              min_ndim=2)
+    exempt, exempt_info = scale_to_norm_limit(
+        base, dict(base, **{"fc2.bias": base["fc2.bias"] * 9}), ["fc2.bias"], min_ndim=2
+    )
     assert not exempt_info["fc2.bias"]["scaled"]
 
 
@@ -155,7 +163,9 @@ def test_gaussian_delta_keeps_the_reference_positions_and_norm() -> None:
     seed = control_run_seed("inst/grad_last/0", "gaussian", 2)
     drawn = gaussian_delta(delta, candidate_rng(seed, 5))
     for key, value in delta.items():
-        assert np.array_equal(drawn[key] != 0.0, value != 0.0), "gaussian keeps the reference's changed positions"
+        assert np.array_equal(drawn[key] != 0.0, value != 0.0), (
+            "gaussian keeps the reference's changed positions"
+        )
         assert np.linalg.norm(drawn[key]) == pytest.approx(np.linalg.norm(value), rel=1e-12, abs=0.0)
     assert not np.array_equal(drawn["a.weight"], gaussian_delta(delta, candidate_rng(seed, 6))["a.weight"])
 
@@ -167,7 +177,9 @@ def test_control_seeds_follow_the_prereg_rule() -> None:
     assert session == "i1234abcd/grad_last/0"
     digest = hashlib.sha256(b"i1234abcd/grad_last/0|gaussian|2").digest()
     assert control_run_seed(session, "gaussian", 2) == int.from_bytes(digest[:8], "big")
-    seeds = {control_run_seed(session, kind, index) for kind in ("permuted", "gaussian") for index in range(3)}
+    seeds = {
+        control_run_seed(session, kind, index) for kind in ("permuted", "gaussian") for index in range(3)
+    }
     assert len(seeds) == 6 and all(0 <= seed < 2**64 for seed in seeds)
     expected = np.random.default_rng([control_run_seed(session, "permuted", 1), 3]).standard_normal(4)
     drawn = candidate_rng(control_run_seed(session, "permuted", 1), 3).standard_normal(4)
@@ -201,7 +213,9 @@ def test_delta_patch_roundtrips_through_the_executor_with_and_without_limits(tmp
     dense = dict(base, **{"fc2.weight": (base["fc2.weight"] * 1.01).astype(np.float32)})
     dense_path = write_delta_patch(tmp_path / "dense", sha, base, dense, "h", "e")
     assert [op["op"] for op in json.loads(dense_path.read_text())["ops"]] == ["add_dense"]
-    assert params_sha256(apply_patch_path(base, dense_path, sha, enforce_limits=False)) == params_sha256(dense)
+    assert params_sha256(apply_patch_path(base, dense_path, sha, enforce_limits=False)) == params_sha256(
+        dense
+    )
 
 
 def test_norm_limit_on_a_vector_follows_the_executor_rank_rule(tmp_path) -> None:
@@ -260,22 +274,34 @@ def test_label_shift_direction_matches_the_closed_form_and_ignores_logit_shifts(
     rng = np.random.default_rng(4)
     logits = rng.normal(size=(6, 4))
     shifted = label_shift_direction(logits + 7.5, y)
-    np.testing.assert_allclose(shifted["direction"], label_shift_direction(logits, y)["direction"], atol=1e-12)
+    np.testing.assert_allclose(
+        shifted["direction"], label_shift_direction(logits, y)["direction"], atol=1e-12
+    )
     with pytest.raises(ValueError):
         label_shift_direction(logits, np.array([0, 1, 2, 3, 4, 0]))
 
 
-@pytest.mark.parametrize(("shape", "groups"), [((4, 12), np.arange(12) % 4), ((3, 2, 3, 3), np.arange(18) % 9)])
+@pytest.mark.parametrize(
+    ("shape", "groups"), [((4, 12), np.arange(12) % 4), ((3, 2, 3, 3), np.arange(18) % 9)]
+)
 @pytest.mark.parametrize("strength", [0.37, 1.0])
 def test_tie_columns_matches_the_executor_bit_for_bit(shape, groups, strength) -> None:
     from cryowisp.baselines.fit.rules import tie_columns
     from cryowisp.patch import Limits, apply_patch
 
     rng = np.random.default_rng(11)
-    params = {"w": rng.normal(size=shape).astype(np.float32), "b": rng.normal(size=(shape[0],)).astype(np.float32)}
+    params = {
+        "w": rng.normal(size=shape).astype(np.float32),
+        "b": rng.normal(size=(shape[0],)).astype(np.float32),
+    }
     sha = params_sha256(params)
-    patch = {"schema": "cryowisp.patch.v0", "parent_sha256": sha, "hypothesis": "h", "predicted_effect": "p",
-             "ops": [{"op": "tie", "tensor": "w", "axis": 1, "groups": groups.tolist(), "strength": strength}]}
+    patch = {
+        "schema": "cryowisp.patch.v0",
+        "parent_sha256": sha,
+        "hypothesis": "h",
+        "predicted_effect": "p",
+        "ops": [{"op": "tie", "tensor": "w", "axis": 1, "groups": groups.tolist(), "strength": strength}],
+    }
     result = apply_patch(params, patch, None, Limits().without_size_limits(), sha)
     expected = tie_columns(params["w"], groups, strength)
     assert expected.dtype == np.float32 and expected.shape == shape
@@ -334,7 +360,13 @@ def test_write_ops_patch_writes_a_patch_the_executor_applies(tmp_path) -> None:
 
     base = _params()
     sha = params_sha256(base)
-    op = {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": (np.arange(12) % 4).tolist(), "strength": 0.5}
+    op = {
+        "op": "tie",
+        "tensor": "fc1.weight",
+        "axis": 1,
+        "groups": (np.arange(12) % 4).tolist(),
+        "strength": 0.5,
+    }
     path = write_ops_patch(tmp_path / "q0", sha, [op], "h", "p")
     assert json.loads(path.read_text())["ops"] == [op]
     result = apply_patch_result(base, path, sha, enforce_limits=False)

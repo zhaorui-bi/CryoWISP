@@ -28,7 +28,9 @@ class Block(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = None
         if stride != 1 or inplanes != planes:
-            self.downsample = nn.Sequential(nn.Conv2d(inplanes, planes, 1, stride, bias=False), nn.BatchNorm2d(planes))
+            self.downsample = nn.Sequential(
+                nn.Conv2d(inplanes, planes, 1, stride, bias=False), nn.BatchNorm2d(planes)
+            )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = F.relu(self.bn1(self.conv1(x)))
@@ -46,7 +48,11 @@ class Net(nn.Module):
         self.bn1 = nn.BatchNorm2d(16)
         inplanes, stages = 16, []
         for planes, stride in ((16, 1), (32, 2), (64, 2)):
-            stages.append(nn.Sequential(Block(inplanes, planes, stride), Block(planes, planes, 1), Block(planes, planes, 1)))
+            stages.append(
+                nn.Sequential(
+                    Block(inplanes, planes, stride), Block(planes, planes, 1), Block(planes, planes, 1)
+                )
+            )
             inplanes = planes
         self.layer1, self.layer2, self.layer3 = stages
         self.fc = nn.Linear(64, n_classes, bias=False)
@@ -106,8 +112,9 @@ def test_parity_with_torch(tmp_path, shape):
     x = rng.integers(0, 256, size=(7, *shape), dtype=np.uint8)
     mine = forward(params, x)
     assert mine.dtype == np.float32 and mine.shape == (7, 100)
-    result = check_logit_parity(mine, _torch_logits(net, params, x, torch.float64),
-                                _torch_logits(net, params, x, torch.float32))
+    result = check_logit_parity(
+        mine, _torch_logits(net, params, x, torch.float64), _torch_logits(net, params, x, torch.float32)
+    )
     assert result["float64_max_rel_diff"] <= result["float64_tolerance"]
 
 
@@ -151,7 +158,9 @@ def test_cosine_head(tmp_path):
     logits = forward(params, x)
     assert np.all(np.abs(logits) <= SCALE + 1e-5)
     # A positive rescaling of a class row leaves every logit unchanged.
-    scaled = dict(params, **{"fc.weight": params["fc.weight"] * np.linspace(0.1, 7.0, 100, dtype=np.float32)[:, None]})
+    scaled = dict(
+        params, **{"fc.weight": params["fc.weight"] * np.linspace(0.1, 7.0, 100, dtype=np.float32)[:, None]}
+    )
     np.testing.assert_allclose(forward(scaled, x), logits, rtol=0, atol=1e-5)
     # Each logit is SCALE times the cosine between the pooled features and the class row.
     namespace: dict = {}

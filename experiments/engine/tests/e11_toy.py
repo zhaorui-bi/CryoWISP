@@ -27,17 +27,31 @@ ROWS = {"train": 96, "V_select": 160, "V_evidence": 128, "V_check": 160, "test":
 
 def activate(root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Point CRYOWISP_PRIVATE, CRYOWISP_SEALED and CRYOWISP_RUNS at ``root``."""
-    for variable, sub in (("CRYOWISP_PRIVATE", "private"), ("CRYOWISP_SEALED", "sealed"), ("CRYOWISP_RUNS", "runs")):
+    for variable, sub in (
+        ("CRYOWISP_PRIVATE", "private"),
+        ("CRYOWISP_SEALED", "sealed"),
+        ("CRYOWISP_RUNS", "runs"),
+    ):
         monkeypatch.setenv(variable, str(root / sub))
 
 
-def build_e11_store(root: Path, monkeypatch: pytest.MonkeyPatch, *,
-                    instance_conditions: tuple[str, ...] | None = None) -> V.SyntheticStore:
+def build_e11_store(
+    root: Path, monkeypatch: pytest.MonkeyPatch, *, instance_conditions: tuple[str, ...] | None = None
+) -> V.SyntheticStore:
     """The activated toy store (module docstring); ``instance_conditions`` limits which conditions get instances."""
     activate(root, monkeypatch)
-    return V.build_store(root, V.TINY, dataset=e11.DATASET, conditions=CONDITION_CORRUPTIONS,
-                         plant_condition=PLANT_CONDITION, class_names=CLASSES, seeds=DEV_SEEDS, decoys=DECOYS,
-                         rows=ROWS, instance_conditions=instance_conditions)
+    return V.build_store(
+        root,
+        V.TINY,
+        dataset=e11.DATASET,
+        conditions=CONDITION_CORRUPTIONS,
+        plant_condition=PLANT_CONDITION,
+        class_names=CLASSES,
+        seeds=DEV_SEEDS,
+        decoys=DECOYS,
+        rows=ROWS,
+        instance_conditions=instance_conditions,
+    )
 
 
 @pytest.fixture

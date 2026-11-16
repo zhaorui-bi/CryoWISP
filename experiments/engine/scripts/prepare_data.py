@@ -53,7 +53,9 @@ def prepare(name: str, fetch_note: str | None) -> None:
     provenance = record_provenance(raw.source, fetch_note)
     built = B.build(name, raw)
     config = DATASETS[name]
-    source = render_forward(config.image_shape, built.manifest["norm"]["mean"], built.manifest["norm"]["std"], N_CLASSES)
+    source = render_forward(
+        config.image_shape, built.manifest["norm"]["mean"], built.manifest["norm"]["std"], N_CLASSES
+    )
     forward_sha = write_forward(forward_path(name), source)
     manifest = B.write(built, forward_sha, provenance, run_info(REPO_ROOT))
     summary = {
@@ -87,7 +89,9 @@ def prepare_condition(name: str, raw_test: dict[str, np.ndarray]) -> None:
     """Build and write one deployment condition; refuses an existing one."""
     condition = C.get_condition(name)
     if dataset_json_path(condition.dataset, name).exists():
-        raise FileExistsError(f"{dataset_json_path(condition.dataset, name)} exists; run with --verify to check it")
+        raise FileExistsError(
+            f"{dataset_json_path(condition.dataset, name)} exists; run with --verify to check it"
+        )
     manifest = C.write_condition(C.build_from_store(name, raw_test), run_info(REPO_ROOT))
     summary = {
         "condition": name,
@@ -110,11 +114,23 @@ def calibrate_condition(name: str) -> None:
     log = calibrate(name, run_info(REPO_ROOT))
     path = write_calibration(log)
     chosen = log["chosen"]
-    print(json.dumps({"condition": name, "calibration": str(path), "target_drop": log["target_drop"]["value"], **chosen}, indent=2))
+    print(
+        json.dumps(
+            {
+                "condition": name,
+                "calibration": str(path),
+                "target_drop": log["target_drop"]["value"],
+                **chosen,
+            },
+            indent=2,
+        )
+    )
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--dataset", required=True, choices=[*DATASETS, "all"])
     parser.add_argument("--condition", help=f"a deployment condition ({sorted(C.CONDITIONS)}) or 'all'")
     parser.add_argument("--verify", action="store_true", help="re-derive and compare instead of writing")
@@ -125,7 +141,9 @@ def main() -> int:
     args = parser.parse_args()
     if args.calibrate:
         if args.verify or args.condition not in C.DRAWN_CONDITIONS:
-            raise SystemExit(f"--calibrate needs one drawn --condition ({sorted(C.DRAWN_CONDITIONS)}), without --verify")
+            raise SystemExit(
+                f"--calibrate needs one drawn --condition ({sorted(C.DRAWN_CONDITIONS)}), without --verify"
+            )
         if C.DRAWN_CONDITIONS[args.condition].dataset != args.dataset:
             raise SystemExit(f"{args.condition} is not a condition of {args.dataset}")
         calibrate_condition(args.condition)

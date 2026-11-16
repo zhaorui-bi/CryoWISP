@@ -33,8 +33,8 @@ from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, applied_limits, arm_
 from cryowisp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
 from cryowisp.harness.instance import InstanceRefused, read_instance_record
 from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.leaks import file_text
+from cryowisp.harness.ledger import CheckLedger
 from cryowisp.harness.prompts import PROMPT_DIR, render_system
 from cryowisp.harness.retention import (
     RetentionRuleError,
@@ -72,7 +72,7 @@ KEPT_TEMPLATE_SHA256 = {
 }
 # Lifts every new-class head bias to the mean old-class bias, after one forward of the student on the new nodes (the
 # run's forward reads the graph.npz copy beside it); the head is the last graph_conv layer of the layout.
-LIFT = '''HYPOTHESIS = "the new-class outputs are silenced by their head biases"
+LIFT = """HYPOTHESIS = "the new-class outputs are silenced by their head biases"
 PREDICTED_EFFECT = "some new-class nodes become correct and some old-class nodes break"
 import numpy as np
 def update(student, experience):
@@ -85,7 +85,7 @@ def update(student, experience):
     delta[new] = float(np.mean(bias[old])) - bias[new]
     print("lifted", new, "rows", logits.shape[0])
     return {head["bias"]: delta}
-'''
+"""
 
 
 @pytest.fixture
@@ -105,10 +105,12 @@ def _floor(instance_id: str) -> int:
 
 def _program_cell(programs: dict[str, str]) -> str:
     payload = json.dumps(json.dumps(programs))
-    return ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n"
-            f"print(sorted(json.loads({payload})))\n")
+    return (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        f"print(sorted(json.loads({payload})))\n"
+    )
 
 
 def _paragraphs(text: str) -> list[str]:
@@ -143,22 +145,42 @@ def test_a_graphnew_id_resolves_in_its_store_and_refusals_come_before_writes(gid
         (InstanceRefused, "not a fraction", dict(arm="LEARN", retention_floor_frac=0.01)),
         (ValueError, "at most 0", dict(arm="LEARN", retention_floor_rows=1)),
         (ValueError, "an int", dict(arm="LEARN", retention_floor_rows=-1.5)),
-        (InstanceRefused, "lies in", dict(arm="LEARN", retention_floor_rows=-10**6)),
-        (ValueError, "goes with a floor in rows",
-         dict(arm="LEARN", retention_floor_frac=0.01, retention_floor_source=SOURCE)),
-        (ValueError, "JSON object", dict(arm="LEARN", retention_floor_rows=floor, retention_floor_source=[1])),
-        (InstanceRefused, "rule_only", dict(arm="LEARN", retention_floor_rows=floor, seqskill_variant="rule_only")),
+        (InstanceRefused, "lies in", dict(arm="LEARN", retention_floor_rows=-(10**6))),
+        (
+            ValueError,
+            "goes with a floor in rows",
+            dict(arm="LEARN", retention_floor_frac=0.01, retention_floor_source=SOURCE),
+        ),
+        (
+            ValueError,
+            "JSON object",
+            dict(arm="LEARN", retention_floor_rows=floor, retention_floor_source=[1]),
+        ),
+        (
+            InstanceRefused,
+            "rule_only",
+            dict(arm="LEARN", retention_floor_rows=floor, seqskill_variant="rule_only"),
+        ),
     ]
     for error, message, kwargs in refusals:
         arm = kwargs.pop("arm")
         with pytest.raises(error, match=message):
             run_session(gid, arm, 0, effort="low", wall_timeout_s=60.0, dry_run=True, **kwargs)
     with pytest.raises(ValueError, match="dry run only"):  # a placeholder floor never reaches a real session
-        run_session(gid, "LEARN", 0, effort="low", wall_timeout_s=60.0, retention_floor_rows=floor,
-                    retention_floor_source=PLACEHOLDER)
+        run_session(
+            gid,
+            "LEARN",
+            0,
+            effort="low",
+            wall_timeout_s=60.0,
+            retention_floor_rows=floor,
+            retention_floor_source=PLACEHOLDER,
+        )
     assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
     task_path = GN.graphnew_instance_dir(gid) / "task.json"
-    task_path.write_text(task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8")
+    task_path.write_text(
+        task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8"
+    )
     with pytest.raises(InstanceRefused, match="never runs a stale"):
         read_instance_record(gid)
 
@@ -190,10 +212,14 @@ def test_the_graphnew_view_is_the_evidence_and_the_graph(gid: str, tmp_path: Pat
     assert task["parent_sha256"] == instance.params_sha256 and task["graph"]["file"] == "graph.npz"
     assert "evidence" not in task and "patch_format" not in task
     assert task["experience"]["new"]["classes"] == private["new_classes"]
-    assert task["experience"]["old"]["count"] == record["n_old"] and "node ids" in task["experience"]["inputs"]
+    assert (
+        task["experience"]["old"]["count"] == record["n_old"] and "node ids" in task["experience"]["inputs"]
+    )
     assert "citation graph" in task["statement"] and "nodes" in task["patch_check"]["readout"]
     for name in TRIAL_FILES:  # E6's list: no category code, year, split name or dataset word in the trial
-        assert graphnew.scan(name + "\n" + file_text(view.trial_dir / name), graphnew.leak_words()) == [], name
+        assert graphnew.scan(name + "\n" + file_text(view.trial_dir / name), graphnew.leak_words()) == [], (
+            name
+        )
     (tmp_path / "other" / "private").mkdir(parents=True)
     with pytest.raises(TrialError, match="program arm only"):
         assemble(root, "M2", tmp_path / "other")
@@ -211,33 +237,59 @@ def test_the_graphnew_limits_exempt_the_head_and_count_batchnorm(gid: str, tmp_p
     expected = GN.graphnew_program_limits(instance.task["limits"], n_tensors)
     assert Limits(**view.limits) == expected == applied_limits(instance.task["limits"], "LEARN", n_tensors)
     assert view.limits["rel_frob_exempt"] == HEAD == GN.head_tensors(read_json(root / "model_spec.json"))
-    assert view.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC and view.limits["max_edit_frac"] is None
+    assert (
+        view.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC and view.limits["max_edit_frac"] is None
+    )
     assert view.limits["max_ops"] >= n_tensors
     limits = Limits(**view.limits)
 
     def one_entry(tensor: str, value: float) -> dict:
         index = [0] * params[tensor].ndim
-        return {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, **WHY,
-                "ops": [{"op": "add", "tensor": tensor, "index": [index], "values": [value]}]}
+        return {
+            "schema": "cryowisp.patch.v0",
+            "parent_sha256": instance.params_sha256,
+            **WHY,
+            "ops": [{"op": "add", "tensor": tensor, "index": [index], "values": [value]}],
+        }
 
     big = 1e3
-    apply_patch(params, one_entry("conv3.weight", big), None, limits, instance.params_sha256)  # the head is exempt
-    apply_patch(params, one_entry("bn1.running_mean", big), None, limits, instance.params_sha256)  # 1-D: no rel-Frob
+    apply_patch(
+        params, one_entry("conv3.weight", big), None, limits, instance.params_sha256
+    )  # the head is exempt
+    apply_patch(
+        params, one_entry("bn1.running_mean", big), None, limits, instance.params_sha256
+    )  # 1-D: no rel-Frob
     with pytest.raises(PatchError, match="rel"):
         apply_patch(params, one_entry("conv2.weight", big), None, limits, instance.params_sha256)
     head = params["conv3.weight"]  # more than 20% of all entries, in the exempt head: the cap still binds
     assert head.size > PROGRAM_MAX_CHANGED_FRAC * sum(value.size for value in params.values())
-    whole = {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, **WHY,
-             "ops": [{"op": "add", "tensor": "conv3.weight",
-                      "index": [[i, j] for i in range(head.shape[0]) for j in range(head.shape[1])],
-                      "values": [0.01] * head.size}]}
+    whole = {
+        "schema": "cryowisp.patch.v0",
+        "parent_sha256": instance.params_sha256,
+        **WHY,
+        "ops": [
+            {
+                "op": "add",
+                "tensor": "conv3.weight",
+                "index": [[i, j] for i in range(head.shape[0]) for j in range(head.shape[1])],
+                "values": [0.01] * head.size,
+            }
+        ],
+    }
     with pytest.raises(PatchError, match="parameters change"):
         apply_patch(params, whole, None, limits, instance.params_sha256)
     n_total = sum(value.size for value in params.values())
     running = [name for name in params if name.endswith("running_mean") or name.endswith("running_var")]
     counted = sum(params[name].size for name in running)
-    ops = [{"op": "add", "tensor": name, "index": [[i] for i in range(params[name].size)],
-            "values": [0.01] * params[name].size} for name in running]
+    ops = [
+        {
+            "op": "add",
+            "tensor": name,
+            "index": [[i] for i in range(params[name].size)],
+            "values": [0.01] * params[name].size,
+        }
+        for name in running
+    ]
     patch = {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, **WHY, "ops": ops}
     if counted > PROGRAM_MAX_CHANGED_FRAC * n_total:  # BatchNorm statistics count in the 20% cap
         with pytest.raises(PatchError):
@@ -311,15 +363,22 @@ def test_the_graphnew_templates_derive_from_the_fewshot_ones() -> None:
         render_system("LEARN", fewshot=True, graphnew=True)
     kept = kept_rule_record_rows(-37, 3002, graphnew.CHECK_SET, SOURCE)
     stated = render_system("LEARN", graphnew=True, kept_rule=kept)
-    assert "score_old is at least -37 (at most 37 more old-class check-set nodes broken than fixed)" in " ".join(
-        stated.split())
+    assert (
+        "score_old is at least -37 (at most 37 more old-class check-set nodes broken than fixed)"
+        in " ".join(stated.split())
+    )
     assert stated.split("## What is kept")[0] == graph.split("## What is kept")[0]
     # a floor in rows is stated exactly as the frac form states the same floor (E2: 0.01 of 2000 rows, -20)
     frac, rows = kept_rule_record(0.01, 2000, "old-class"), kept_rule_record_rows(-20, 2000, "old-class")
     for flags in ({"fewshot": True}, {"graphnew": True}):
-        assert render_system("LEARN", kept_rule=rows, **flags) == render_system("LEARN", kept_rule=frac, **flags)
-    assert "at least 0 (at most 0 more" in " ".join(render_system(
-        "LEARN", graphnew=True, kept_rule=kept_rule_record_rows(0, 3002, graphnew.CHECK_SET)).split())
+        assert render_system("LEARN", kept_rule=rows, **flags) == render_system(
+            "LEARN", kept_rule=frac, **flags
+        )
+    assert "at least 0 (at most 0 more" in " ".join(
+        render_system(
+            "LEARN", graphnew=True, kept_rule=kept_rule_record_rows(0, 3002, graphnew.CHECK_SET)
+        ).split()
+    )
 
 
 def test_the_graphnew_tools_name_nodes_and_the_floor() -> None:
@@ -328,10 +387,13 @@ def test_the_graphnew_tools_name_nodes_and_the_floor() -> None:
     shown = {spec["name"]: spec["description"] for spec in tool_specs(tools, program=True, graphnew=True)}
     assert shown["patch_check"] == plain["patch_check"].replace(PROGRAM_CHECK_SETS, GRAPHNEW_CHECK_SETS)
     assert shown["patch_check"] != plain["patch_check"]
-    assert {k: v for k, v in shown.items() if k != "patch_check"} == {k: v for k, v in plain.items()
-                                                                      if k != "patch_check"}
-    floored = {spec["name"]: spec["description"]
-               for spec in tool_specs(tools, program=True, graphnew=True, s_old_floor=-37)}
+    assert {k: v for k, v in shown.items() if k != "patch_check"} == {
+        k: v for k, v in plain.items() if k != "patch_check"
+    }
+    floored = {
+        spec["name"]: spec["description"]
+        for spec in tool_specs(tools, program=True, graphnew=True, s_old_floor=-37)
+    }
     assert "score_old of at least -37" in floored["declare_final"]
     assert graphnew.scan(json.dumps(list(floored.values())), graphnew.leak_words()) == []
     with pytest.raises(ValueError, match="program arm"):
@@ -342,8 +404,14 @@ def test_the_graphnew_tools_name_nodes_and_the_floor() -> None:
 
 def test_the_floor_in_rows_is_a_checked_count() -> None:
     record = kept_rule_record_rows(-151, 3002, graphnew.CHECK_SET, SOURCE)
-    assert record == {"name": "joint-retain-v1", "s_old_floor": -151, "n_old": 3002, "check_set": "old-class",
-                      "floor_kind": "rows", "floor_source": SOURCE}
+    assert record == {
+        "name": "joint-retain-v1",
+        "s_old_floor": -151,
+        "n_old": 3002,
+        "check_set": "old-class",
+        "floor_kind": "rows",
+        "floor_source": SOURCE,
+    }
     assert kept_rule_record_rows(-151, 3002, "old-class")["floor_source"] is None
     assert session_floor({"kept_rule": record}) == -151
     assert session_floor({"kept_rule": kept_rule_record_rows(0, 3002, "old-class")}) == 0
@@ -356,13 +424,22 @@ def test_the_floor_in_rows_is_a_checked_count() -> None:
     assert session_floor({"kept_rule": placeholder, "dry_run": True}) == -100
     with pytest.raises(RetentionRuleError, match="dry run only"):
         session_floor({"kept_rule": placeholder, "dry_run": False})
-    for broken in ({**record, "frac": 0.01}, {**record, "floor_kind": "frac"}, {**record, "s_old_floor": 3},
-                   {**record, "s_old_floor": -151.0}):
+    for broken in (
+        {**record, "frac": 0.01},
+        {**record, "floor_kind": "frac"},
+        {**record, "s_old_floor": 3},
+        {**record, "s_old_floor": -151.0},
+    ):
         with pytest.raises(RetentionRuleError):
             session_floor({"kept_rule": broken})
     frac = kept_rule_record(0.01, 2000, "old-class")  # the E2 record, byte for byte as before
-    assert frac == {"name": "joint-retain-v1", "frac": 0.01, "n_old": 2000, "check_set": "old-class",
-                    "s_old_floor": -20}
+    assert frac == {
+        "name": "joint-retain-v1",
+        "frac": 0.01,
+        "n_old": 2000,
+        "check_set": "old-class",
+        "s_old_floor": -20,
+    }
     assert session_floor({"kept_rule": frac}) == -20
 
 
@@ -370,7 +447,9 @@ def test_the_graphnew_strings_scan_whole_words_in_text_only(gid: str) -> None:
     record = read_instance_record(gid)
     forbidden = session_forbidden_strings(record)
     assert set(graphnew.leak_words()) <= set(forbidden.text)
-    assert "2018" not in forbidden.selftest and "valid" not in forbidden.selftest  # mount ids can spell a year
+    assert (
+        "2018" not in forbidden.selftest and "valid" not in forbidden.selftest
+    )  # mount ids can spell a year
     assert {"arxiv", "ind", "seed"} <= set(forbidden.selftest)
     assert record.private["vcheck_path"] in forbidden.text and record.private["graph_path"] in forbidden.text
     assert graphnew.scan("see cs.LG and the 2018 snapshot", forbidden.text) == ["2018", "cs.lg"]
@@ -380,13 +459,22 @@ def test_the_graphnew_strings_scan_whole_words_in_text_only(gid: str) -> None:
 @needs_sandbox
 def test_a_graphnew_dry_run_records_its_placeholder_floor(gid: str) -> None:
     floor = _floor(gid)
-    result = run_session(gid, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                         retention_floor_rows=floor, retention_floor_source=PLACEHOLDER)
+    result = run_session(
+        gid,
+        "LEARN",
+        0,
+        effort="low",
+        wall_timeout_s=60.0,
+        dry_run=True,
+        retention_floor_rows=floor,
+        retention_floor_source=PLACEHOLDER,
+    )
     assert result.status == "dry_run", result.record
     assert result.root.parent.name == "dry_runs"
     session = read_json(SessionPaths(result.root).session_json)
-    assert session["kept_rule"] == kept_rule_record_rows(floor, int(session["graphnew"]["n_vcheck_old"]),
-                                                         graphnew.CHECK_SET, PLACEHOLDER)
+    assert session["kept_rule"] == kept_rule_record_rows(
+        floor, int(session["graphnew"]["n_vcheck_old"]), graphnew.CHECK_SET, PLACEHOLDER
+    )
     assert session["leak_scan"]["passed"] is True and result.record["selftest"]["status"] == "pass"
     assert sorted(result.record["trial_files"]) == sorted(TRIAL_FILES)
 
@@ -396,12 +484,17 @@ def test_a_graphnew_learn_session_scores_programs_on_the_class_cut(gid: str, tmp
     floor = _floor(gid)
     steps = [
         ("python", {"code": _program_cell({"lift.py": LIFT})}),
-        ("python", {"code": "import numpy as np\ng = np.load('/work/trial/graph.npz')\nprint(sorted(g.files))\n"}),
+        (
+            "python",
+            {"code": "import numpy as np\ng = np.load('/work/trial/graph.npz')\nprint(sorted(g.files))\n"},
+        ),
         ("patch_check", {"program_file": "lift.py"}),
         ("status", {}),
         ("declare_final", {"program_file": "lift.py", "rationale": "the only program"}),
     ]
-    result, replies = scripted_session(gid, "LEARN", steps, retention_floor_rows=floor, retention_floor_source=SOURCE)
+    result, replies = scripted_session(
+        gid, "LEARN", steps, retention_floor_rows=floor, retention_floor_source=SOURCE
+    )
     assert result.status == "complete", result.record.get("infra_reasons")
     _, graph_cell, check, _, declared = replies
     assert not graph_cell.is_error and "features" in json.dumps(graph_cell.payload)
@@ -414,12 +507,14 @@ def test_a_graphnew_learn_session_scores_programs_on_the_class_cut(gid: str, tmp
     session = read_json(paths.session_json)
     instance = load_instance(GN.graphnew_instance_dir(gid))
     assert session["graphnew"] == graphnew.session_record(instance.private) and session["clean_check"] is None
-    assert session["kept_rule"] == kept_rule_record_rows(floor, int(instance.private["n_vcheck_old"]),
-                                                         graphnew.CHECK_SET, SOURCE)
+    assert session["kept_rule"] == kept_rule_record_rows(
+        floor, int(instance.private["n_vcheck_old"]), graphnew.CHECK_SET, SOURCE
+    )
     assert session["vcheck_sha256"] == file_sha256(Path(instance.private["vcheck_path"]))
     assert session["leak_scan"]["passed"] is True and "cs.lg" in session["leak_scan"]["tokens"]
     assert paths.system_prompt.read_text(encoding="utf-8") == render_system(
-        "LEARN", graphnew=True, kept_rule=session["kept_rule"])
+        "LEARN", graphnew=True, kept_rule=session["kept_rule"]
+    )
     task_prompt = paths.task_prompt.read_text(encoding="utf-8")
     assert "int64 node ids into\n  `graph.npz`" in task_prompt and "`graph.npz`" in task_prompt
     entry = read_jsonl(paths.checks_log)[0]
@@ -427,7 +522,10 @@ def test_a_graphnew_learn_session_scores_programs_on_the_class_cut(gid: str, tmp
     child = ArmApplier(session).apply(read_json(attempt_dir / str(entry["patch_file"])), attempt_dir).child
     assert params_sha256(child) == entry["child_sha256"]
     expected = GN.make_graphnew_oracle(gid).query(child, "lift")  # evalkit's own class-cut oracle
-    assert (check.payload["score_new"], check.payload["score_old"]) == (expected["score_new"], expected["score_old"])
+    assert (check.payload["score_new"], check.payload["score_old"]) == (
+        expected["score_new"],
+        expected["score_old"],
+    )
     ledger = CheckLedger(session, paths)  # rebuilt from session.json alone, as the MCP server builds it
     assert [row["score"] for row in ledger.checked()] == [check.payload["score"]] == [entry["score"]]
     private_graph = Path(session["forward_path"]).parent / "graph.npz"
@@ -452,10 +550,14 @@ def test_a_graphnew_learn_session_scores_programs_on_the_class_cut(gid: str, tmp
     sandbox = ProgramSandbox(python=SANDBOX_PYTHON, memory_bytes=4 * 2**30, threads=1)
     (path,) = run_transfer(program, [gid], tmp_path / "transfer", sandbox)
     record = json.loads(path.read_text())
-    assert record["status"] == "ok" and record["within_limits"] is True and record["tensors"] == ["conv3.bias"]
+    assert (
+        record["status"] == "ok" and record["within_limits"] is True and record["tensors"] == ["conv3.bias"]
+    )
     assert record["experience"]["source"] == graphnew.EXPERIENCE_SOURCE
     assert record["limits"]["rel_frob_exempt"] == HEAD
     assert record["readouts"]["delta_acc"] == record["readouts_graphnew"]["delta_all"]
     assert record["readout_source"] == GN.GRAPHNEW_RULE and "readouts_clean" not in record
     assert sorted(record["student_norms"]) == ["conv1.weight", "conv2.weight", "conv3.weight"]
-    assert record["child_sha256"] == entry["child_sha256"]  # the same program on the same student: the same child
+    assert (
+        record["child_sha256"] == entry["child_sha256"]
+    )  # the same program on the same student: the same child

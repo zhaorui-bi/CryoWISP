@@ -56,12 +56,21 @@ def main(argv: list[str] | None = None) -> int:
     files = {}
     for path in sorted((args.dest / TOP).rglob("*")):
         if path.is_file():
-            files[str(path.relative_to(args.dest))] = {"size": path.stat().st_size,
-                                                       "sha256": _digests(path)[1]}
+            files[str(path.relative_to(args.dest))] = {
+                "size": path.stat().st_size,
+                "sha256": _digests(path)[1],
+            }
     record = {
         "schema": "cryowisp.e10.cifar10c_install.v1",
-        "source": {"zenodo_record": ZENODO_RECORD, "doi": ZENODO_DOI, "url": ZENODO_URL,
-                   "tar_size": size, "tar_md5": md5, "tar_md5_expected": ZENODO_MD5, "tar_sha256": sha},
+        "source": {
+            "zenodo_record": ZENODO_RECORD,
+            "doi": ZENODO_DOI,
+            "url": ZENODO_URL,
+            "tar_size": size,
+            "tar_md5": md5,
+            "tar_md5_expected": ZENODO_MD5,
+            "tar_sha256": sha,
+        },
         "extracted_to": str(args.dest / TOP),
         "n_files": len(files),
         "files": files,
@@ -71,7 +80,9 @@ def main(argv: list[str] | None = None) -> int:
     text = json.dumps(record, indent=1, sort_keys=True) + "\n"
     with open(record_path, "x", encoding="utf-8") as handle:
         handle.write(text)
-    print(f"{len(files)} files; tar sha256 {sha}; -> {record_path} {hashlib.sha256(text.encode()).hexdigest()}")
+    print(
+        f"{len(files)} files; tar sha256 {sha}; -> {record_path} {hashlib.sha256(text.encode()).hexdigest()}"
+    )
     return 0
 
 

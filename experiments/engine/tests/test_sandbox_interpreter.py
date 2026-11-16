@@ -23,9 +23,17 @@ def _fake_bwrap(tmp_path: Path, output: str) -> Path:
     return path
 
 
-@pytest.mark.parametrize("output,ok", [("bubblewrap 0.8.0", True), ("bubblewrap 0.11.1", True),
-                                       ("bubblewrap 0.10.0", True), ("bubblewrap 0.6.1", False),
-                                       ("bubblewrap 0.7.9", False), ("something else", False)])
+@pytest.mark.parametrize(
+    "output,ok",
+    [
+        ("bubblewrap 0.8.0", True),
+        ("bubblewrap 0.11.1", True),
+        ("bubblewrap 0.10.0", True),
+        ("bubblewrap 0.6.1", False),
+        ("bubblewrap 0.7.9", False),
+        ("something else", False),
+    ],
+)
 def test_check_bwrap_needs_0_8(tmp_path: Path, output: str, ok: bool) -> None:
     bwrap = _fake_bwrap(tmp_path, output)
     if ok:
@@ -69,8 +77,11 @@ def test_a_base_outside_usr_is_mounted_file_by_file(tmp_path: Path) -> None:
     mounts = interpreter_mounts(python)
     prefix = tmp_path / "uv" / "cpython-3.14.9-linux"
     assert mounts.venv == tmp_path / "venv"
-    assert mounts.binds == (prefix / "bin" / "python3.14", prefix / "lib" / "python3.14",
-                            prefix / "lib" / "libpython3.14.so.1.0")
+    assert mounts.binds == (
+        prefix / "bin" / "python3.14",
+        prefix / "lib" / "python3.14",
+        prefix / "lib" / "libpython3.14.so.1.0",
+    )
     assert mounts.symlinks == (("cpython-3.14.9-linux", str(tmp_path / "uv" / "cpython-3.14-linux")),)
     argv = mounts.argv()
     assert argv[argv.index("--symlink") - 1] == str(tmp_path / "uv")  # its parent directory is created first
@@ -79,7 +90,9 @@ def test_a_base_outside_usr_is_mounted_file_by_file(tmp_path: Path) -> None:
 
 def test_a_base_under_usr_needs_only_the_venv(tmp_path: Path) -> None:
     candidates = sorted(Path("/usr/bin").glob("python3.[0-9]*"))
-    base = next((p for p in candidates if p.name.count(".") == 1 and os.path.realpath(p).startswith("/usr/")), None)
+    base = next(
+        (p for p in candidates if p.name.count(".") == 1 and os.path.realpath(p).startswith("/usr/")), None
+    )
     if base is None:
         pytest.skip("no /usr/bin/python3.X on this host")
     mounts = interpreter_mounts(_venv(tmp_path / "venv", base))
@@ -106,10 +119,14 @@ def test_a_link_on_the_venv_path_is_refused(tmp_path: Path) -> None:
     base = _installation(real / "uv")
     _venv(real / "venv", base)
     (tmp_path / "alias").symlink_to(real)
-    python = _venv(tmp_path / "venv2", tmp_path / "alias" / "uv" / "cpython-3.14-linux" / "bin" / "python3.14")
+    python = _venv(
+        tmp_path / "venv2", tmp_path / "alias" / "uv" / "cpython-3.14-linux" / "bin" / "python3.14"
+    )
     mounts = interpreter_mounts(python)  # the alias link lies beside the venv: recreated
     assert (str(real), str(tmp_path / "alias")) in mounts.symlinks
-    nested = _venv(real / "uv" / "venv3", tmp_path / "alias" / "uv" / "cpython-3.14-linux" / "bin" / "python3.14")
+    nested = _venv(
+        real / "uv" / "venv3", tmp_path / "alias" / "uv" / "cpython-3.14-linux" / "bin" / "python3.14"
+    )
     assert interpreter_mounts(nested).binds  # a venv inside the real tree, reached without the alias: fine
     # The venv is reached through the alias and so is its base: the alias link would sit on the venv's own path.
     _venv(real / "venv4", tmp_path / "alias" / "uv" / "cpython-3.14-linux" / "bin" / "python3.14")
@@ -139,8 +156,14 @@ def test_the_mcp_server_takes_bwrap_from_the_session_record(tmp_path: Path) -> N
     from cryowisp.harness.tools import sandbox_config
     from cryowisp.sandbox import DEFAULT_BWRAP
 
-    sandbox = {"python": "/x/bin/python", "cell_timeout_s": 1.0, "max_cells": 1, "memory_bytes": 2**30, "threads": 1,
-               "max_output_chars": 100}
+    sandbox = {
+        "python": "/x/bin/python",
+        "cell_timeout_s": 1.0,
+        "max_cells": 1,
+        "memory_bytes": 2**30,
+        "threads": 1,
+        "max_output_chars": 100,
+    }
     paths = SessionPaths(tmp_path)
     recorded = sandbox_config({"sandbox": {**sandbox, "bwrap": "/opt/bubblewrap/bin/bwrap"}}, paths)
     assert recorded.bwrap == Path("/opt/bubblewrap/bin/bwrap")

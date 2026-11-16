@@ -57,13 +57,31 @@ def main(argv: list[str] | None = None) -> int:
         reloaded = params_sha256(load_params(path))
         if digest != entry.child_sha256 or reloaded != entry.child_sha256:
             raise SystemExit(f"{entry.name}: saved {digest}, reloaded {reloaded}, list {entry.child_sha256}")
-        rows.append({"name": entry.name, "block": entry.block, "instance_id": entry.instance_id,
-                     "base_params_sha256": instance.params_sha256, "is_base": entry.child_sha256 == instance.params_sha256,
-                     "child_sha256": entry.child_sha256, "params_sha256": reloaded, "path": str(path),
-                     "file_sha256": file_sha256(path), "bytes": path.stat().st_size, "child": provenance})
+        rows.append(
+            {
+                "name": entry.name,
+                "block": entry.block,
+                "instance_id": entry.instance_id,
+                "base_params_sha256": instance.params_sha256,
+                "is_base": entry.child_sha256 == instance.params_sha256,
+                "child_sha256": entry.child_sha256,
+                "params_sha256": reloaded,
+                "path": str(path),
+                "file_sha256": file_sha256(path),
+                "bytes": path.stat().st_size,
+                "child": provenance,
+            }
+        )
         print(f"{entry.name}: {path} params_sha256 {reloaded}", flush=True)
-    record = {"schema": SCHEMA, "list": str(args.list), "list_sha256": manifest_sha256(parsed),
-              "list_status": parsed["status"], "code": state, "time": utc_now(), "entries": rows}
+    record = {
+        "schema": SCHEMA,
+        "list": str(args.list),
+        "list_sha256": manifest_sha256(parsed),
+        "list_status": parsed["status"],
+        "code": state,
+        "time": utc_now(),
+        "entries": rows,
+    }
     args.record.parent.mkdir(parents=True, exist_ok=True)
     with open(args.record, "x", encoding="utf-8") as handle:
         json.dump(record, handle, indent=1, sort_keys=True)

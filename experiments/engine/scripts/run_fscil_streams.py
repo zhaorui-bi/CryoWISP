@@ -66,10 +66,17 @@ def main(argv: list[str] | None = None) -> int:
     data = FR.load_stream_data(need_allclass=False)
     if validity["base"]["params_sha256"] != data.base_row["params_sha256"]:
         raise SystemExit("the validity record is of another base student")
-    provenance = {"validity": {"path": str(args.validity), "sha256": hashlib.sha256(validity_bytes).hexdigest(),
-                               "R": r_points},
-                  "fit_threads": args.fit_threads, "code_commit": args.code_commit,
-                  "host": socket.gethostname(), "argv": sys.argv}
+    provenance = {
+        "validity": {
+            "path": str(args.validity),
+            "sha256": hashlib.sha256(validity_bytes).hexdigest(),
+            "R": r_points,
+        },
+        "fit_threads": args.fit_threads,
+        "code_commit": args.code_commit,
+        "host": socket.gethostname(),
+        "argv": sys.argv,
+    }
 
     def log(message: str) -> None:
         print(f"{time.strftime('%H:%M:%S')} {message}", flush=True)
@@ -77,9 +84,16 @@ def main(argv: list[str] | None = None) -> int:
     log(f"R {r_points}; base {data.base_row['model_id']}; sessions {args.sessions}; workers {args.workers}")
     with mp.get_context("spawn").Pool(args.workers, initializer=_init, initargs=(args.fit_threads,)) as pool:
         forward = FR.ChunkedForward(data.forward, pool_map=pool.starmap, chunk_fn=_logits)
-        floors = FR.run_streams(data, r_points=r_points, out_dir=args.out, sessions=args.sessions,
-                                fit_many=lambda tasks: pool.starmap(_fit, tasks), forward=forward,
-                                provenance=provenance, log=log)
+        floors = FR.run_streams(
+            data,
+            r_points=r_points,
+            out_dir=args.out,
+            sessions=args.sessions,
+            fit_many=lambda tasks: pool.starmap(_fit, tasks),
+            forward=forward,
+            provenance=provenance,
+            log=log,
+        )
     print(json.dumps({str(t): v for t, v in floors.items()}, indent=1, sort_keys=True))
     return 0
 

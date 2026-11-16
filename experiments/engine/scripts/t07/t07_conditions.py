@@ -46,9 +46,27 @@ from typing import Any
 import numpy as np
 
 SCHEMA = "cryowisp.t07.conditions.v1"
-REGISTRY = ("gaussian_noise", "shot_noise", "impulse_noise", "defocus_blur", "glass_blur", "motion_blur", "zoom_blur",
-            "snow", "frost", "fog", "brightness", "contrast", "elastic_transform", "pixelate", "jpeg_compression",
-            "speckle_noise", "gaussian_blur", "spatter", "saturate")
+REGISTRY = (
+    "gaussian_noise",
+    "shot_noise",
+    "impulse_noise",
+    "defocus_blur",
+    "glass_blur",
+    "motion_blur",
+    "zoom_blur",
+    "snow",
+    "frost",
+    "fog",
+    "brightness",
+    "contrast",
+    "elastic_transform",
+    "pixelate",
+    "jpeg_compression",
+    "speckle_noise",
+    "gaussian_blur",
+    "spatter",
+    "saturate",
+)
 """The official file's corruptions in the order of its list ``d`` (lines 421 to 441: the 15 of CIFAR-10-C, then the
 four extra ones)."""
 NOT_RUNNABLE = {
@@ -70,18 +88,30 @@ E10_SELECT_SEEDS = {"gaussian_noise": 1003, "defocus_blur": 2003, "snow": 3003, 
 """scripts/e10/cifar10c_make_dev.py DEV_SEEDS for V_select (the reproduction check)."""
 STORED = tuple(f"{name}_s{SEVERITY}" for name in DEV_USED)
 FROST_FILES = {
-    "frost1.png": ("c7b78a17938df51894497b4782decbd82532dd5f",
-                   "ff9f907860bd7a835d459e32f9d588062b7f61ee267343cc7222b56753a14755"),
-    "frost2.png": ("48f7a861ffa41b6d7496b701fef96d5edf739282",
-                   "fe211a89b336999c207a852ce05818d4545d0b57c5beadd824b4cc9d9a9b6137"),
-    "frost3.png": ("d47f9d25f41251ee9a66b294c0bbfad6053017c9",
-                   "2d0d50b4a9bb213f38b024ef7768731bb83cc08d2f26b5766bbc167cdfa0e504"),
-    "frost4.jpg": ("f8b0c413176d70150b593e029d84b4a88c21dd4b",
-                   "3f8b91ca1a9fa7167b09e773da53f5ae60d0a1fd88f02a783f6e328a72887f6e"),
-    "frost5.jpg": ("95dc9056926d8201df760535f9bb9112f012e862",
-                   "5fc6a19df4a429ba68abdcc8f8a4278d4c9f81c9ccafd2c92ab0c8cf8992ebd2"),
-    "frost6.jpg": ("14e5d58e762a5d0808df9fa6494fd6d78ee4409b",
-                   "1f92b2f48408748085b68dd81d816ef239f42cef3029c25d041fcb6760fb4f25"),
+    "frost1.png": (
+        "c7b78a17938df51894497b4782decbd82532dd5f",
+        "ff9f907860bd7a835d459e32f9d588062b7f61ee267343cc7222b56753a14755",
+    ),
+    "frost2.png": (
+        "48f7a861ffa41b6d7496b701fef96d5edf739282",
+        "fe211a89b336999c207a852ce05818d4545d0b57c5beadd824b4cc9d9a9b6137",
+    ),
+    "frost3.png": (
+        "d47f9d25f41251ee9a66b294c0bbfad6053017c9",
+        "2d0d50b4a9bb213f38b024ef7768731bb83cc08d2f26b5766bbc167cdfa0e504",
+    ),
+    "frost4.jpg": (
+        "f8b0c413176d70150b593e029d84b4a88c21dd4b",
+        "3f8b91ca1a9fa7167b09e773da53f5ae60d0a1fd88f02a783f6e328a72887f6e",
+    ),
+    "frost5.jpg": (
+        "95dc9056926d8201df760535f9bb9112f012e862",
+        "5fc6a19df4a429ba68abdcc8f8a4278d4c9f81c9ccafd2c92ab0c8cf8992ebd2",
+    ),
+    "frost6.jpg": (
+        "14e5d58e762a5d0808df9fa6494fd6d78ee4409b",
+        "1f92b2f48408748085b68dd81d816ef239f42cef3029c25d041fcb6760fb4f25",
+    ),
 }
 """ImageNet-C/create_c/frost{1..6} at hendrycks/robustness 8190fe3 (git blob SHA1 from the commit's tree, sha256 of the
 downloaded bytes). ``frost`` draws np.random.randint(5), so frost6.jpg is never read; all six are checked."""
@@ -112,10 +142,13 @@ def new_sets() -> list[tuple[str, str, int]]:
 
 
 NEW = tuple(row[0] for row in new_sets())
-SETS = ((CLEAN,) + tuple(set_name("gaussian_noise", s) for s in range(1, 6))
-        + tuple(set_name("contrast", s) for s in range(1, 6))
-        + tuple(set_name(name, SEVERITY) for name in DEV_USED if name not in OWN)
-        + tuple(set_name(name, SEVERITY) for name in UNSEEN))
+SETS = (
+    (CLEAN,)
+    + tuple(set_name("gaussian_noise", s) for s in range(1, 6))
+    + tuple(set_name("contrast", s) for s in range(1, 6))
+    + tuple(set_name(name, SEVERITY) for name in DEV_USED if name not in OWN)
+    + tuple(set_name(name, SEVERITY) for name in UNSEEN)
+)
 """The 26 T07 sets in table order: clean; each own corruption at severities 1 to 5; the other two E10 conditions;
 the 13 unseen corruptions."""
 
@@ -169,8 +202,15 @@ def check_frost_dir(frost_dir: Path) -> dict[str, Any]:
     return out
 
 
-def corrupt_set(official: Mapping[str, Any], name: str, x: np.ndarray, seed: int, severity: int, frost_dir: Path,
-                corrupt: Any) -> np.ndarray:
+def corrupt_set(
+    official: Mapping[str, Any],
+    name: str,
+    x: np.ndarray,
+    seed: int,
+    severity: int,
+    frost_dir: Path,
+    corrupt: Any,
+) -> np.ndarray:
     """``corrupt`` of the official code; frost runs with the frost directory as working directory."""
     if name != "frost":
         return corrupt(official, name, x, seed, severity=severity)
@@ -183,7 +223,9 @@ def corrupt_set(official: Mapping[str, Any], name: str, x: np.ndarray, seed: int
 
 
 def median_mad(out: np.ndarray, x: np.ndarray) -> float:
-    return float(np.median(np.abs(out.astype(np.int16) - x.astype(np.int16)).reshape(len(x), -1).mean(axis=1)))
+    return float(
+        np.median(np.abs(out.astype(np.int16) - x.astype(np.int16)).reshape(len(x), -1).mean(axis=1))
+    )
 
 
 def cmd_make(args: argparse.Namespace) -> int:
@@ -203,29 +245,47 @@ def cmd_make(args: argparse.Namespace) -> int:
         x = np.ascontiguousarray(arrays["x"])
     dev_rows_path = Path(args.dev_rows) / "dev_rows.json"
     dev_rows = json.loads(dev_rows_path.read_text(encoding="utf-8"))
-    clean_files = {row["clean_file_sha256"] for key, row in dev_rows["rows"].items() if key.endswith("/V_select")}
+    clean_files = {
+        row["clean_file_sha256"] for key, row in dev_rows["rows"].items() if key.endswith("/V_select")
+    }
     if clean_files != {file_sha256(clean_path)}:
         raise ConditionsError(f"{clean_path} is not the clean V_select file E10's dev rows were made from")
     record: dict[str, Any] = {
-        "schema": SCHEMA, "spec": args.spec,
+        "schema": SCHEMA,
+        "spec": args.spec,
         "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
-        "libraries": O.library_versions(), "frost_files": frost, "not_runnable": NOT_RUNNABLE,
-        "clean": {"path": str(clean_path), "file_sha256": file_sha256(clean_path), "x_sha256": x_sha256(x),
-                  "n": int(len(x))},
+        "libraries": O.library_versions(),
+        "frost_files": frost,
+        "not_runnable": NOT_RUNNABLE,
+        "clean": {
+            "path": str(clean_path),
+            "file_sha256": file_sha256(clean_path),
+            "x_sha256": x_sha256(x),
+            "n": int(len(x)),
+        },
         "dev_rows": {"path": str(dev_rows_path), "sha256": file_sha256(dev_rows_path)},
-        "seed_rule": "70000 + 100 * (1 + REGISTRY.index(corruption)) + severity", "registry": list(REGISTRY),
-        "reproduction": {}, "sets": {}}
+        "seed_rule": "70000 + 100 * (1 + REGISTRY.index(corruption)) + severity",
+        "registry": list(REGISTRY),
+        "reproduction": {},
+        "sets": {},
+    }
     for name, seed in E10_SELECT_SEEDS.items():  # the stored dev rows, regenerated before anything is written
         started = time.time()
         out = corrupt_set(official, name, x, seed, SEVERITY, Path(args.frost_dir), O.corrupt)
         expected = dev_rows["rows"][f"{name}/V_select"]
         ok = x_sha256(out) == expected["x_sha256"] and seed == expected["seed"]
         record["reproduction"][set_name(name, SEVERITY)] = {
-            "seed": seed, "x_sha256": x_sha256(out), "expected_x_sha256": expected["x_sha256"], "equal": ok,
-            "seconds": round(time.time() - started, 1)}
+            "seed": seed,
+            "x_sha256": x_sha256(out),
+            "expected_x_sha256": expected["x_sha256"],
+            "equal": ok,
+            "seconds": round(time.time() - started, 1),
+        }
         print(f"reproduction {name} s{SEVERITY} seed {seed}: equal {ok}", flush=True)
         if not ok:
-            raise ConditionsError(f"{name}: the regenerated V_select does not hash to E10's dev rows; nothing written")
+            raise ConditionsError(
+                f"{name}: the regenerated V_select does not hash to E10's dev rows; nothing written"
+            )
     staging = out_dir.with_name(out_dir.name + ".partial")
     staging.mkdir(parents=True)
     only = set(args.only.split(",")) if args.only else None
@@ -237,12 +297,21 @@ def cmd_make(args: argparse.Namespace) -> int:
         out = corrupt_set(official, corruption, x, seed, severity, Path(args.frost_dir), O.corrupt)
         target = staging / f"{name}.npz"
         np.savez(target, x=out)
-        record["sets"][name] = {"corruption": corruption, "severity": severity, "seed": seed, "n": int(len(out)),
-                                "file_sha256": file_sha256(target), "x_sha256": x_sha256(out),
-                                "median_mad_from_clean": median_mad(out, x),
-                                "seconds": round(time.time() - started, 1)}
-        print(f"{name}: seed {seed}, median MAD {record['sets'][name]['median_mad_from_clean']:.2f}, "
-              f"{record['sets'][name]['seconds']} s", flush=True)
+        record["sets"][name] = {
+            "corruption": corruption,
+            "severity": severity,
+            "seed": seed,
+            "n": int(len(out)),
+            "file_sha256": file_sha256(target),
+            "x_sha256": x_sha256(out),
+            "median_mad_from_clean": median_mad(out, x),
+            "seconds": round(time.time() - started, 1),
+        }
+        print(
+            f"{name}: seed {seed}, median MAD {record['sets'][name]['median_mad_from_clean']:.2f}, "
+            f"{record['sets'][name]['seconds']} s",
+            flush=True,
+        )
     text = json.dumps(record, indent=1, sort_keys=True) + "\n"
     (staging / OUT_JSON).write_text(text, encoding="utf-8")
     staging.rename(out_dir)

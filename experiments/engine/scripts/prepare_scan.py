@@ -34,8 +34,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def install(checkout: Path) -> dict:
-    head = subprocess.run(["git", "-C", str(checkout), "rev-parse", "HEAD"], check=True, capture_output=True,
-                          text=True).stdout.strip()
+    head = subprocess.run(
+        ["git", "-C", str(checkout), "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+    ).stdout.strip()
     if head != S.SCAN_COMMIT:
         raise SystemExit(f"{checkout} is at {head}, not the recorded commit {S.SCAN_COMMIT}")
     provenance = B.install_raw(checkout)
@@ -55,17 +56,23 @@ def main() -> int:
         summary = install(args.install_raw)
     elif args.base:
         manifest = B.write_base(run_info(REPO_ROOT))
-        summary = {"forward_sha256": manifest["forward_sha256"], "forward_constants": manifest["forward_constants"]}
+        summary = {
+            "forward_sha256": manifest["forward_sha256"],
+            "forward_constants": manifest["forward_constants"],
+        }
     elif args.verify:
         report = B.verify_condition(args.condition)
         print(json.dumps({key: value["match"] for key, value in report.items()}, indent=2))
         return 0 if all(value["match"] for value in report.values()) else 1
     else:
         manifest = B.write_condition(B.build_condition(args.condition), run_info(REPO_ROOT))
-        summary = {"condition": args.condition, "split_sizes": manifest["split_sizes"],
-                   "split_sha256": {name: record["sha256"] for name, record in manifest["splits"].items()},
-                   "sealed": {key: manifest["test"][key] for key in ("n", "sha256", "part_counts")},
-                   "draw": manifest["draw"]}
+        summary = {
+            "condition": args.condition,
+            "split_sizes": manifest["split_sizes"],
+            "split_sha256": {name: record["sha256"] for name, record in manifest["splits"].items()},
+            "sealed": {key: manifest["test"][key] for key in ("n", "sha256", "part_counts")},
+            "draw": manifest["draw"],
+        }
     print(json.dumps(summary, indent=2))
     return 0
 

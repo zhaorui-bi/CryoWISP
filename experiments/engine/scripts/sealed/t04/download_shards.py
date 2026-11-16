@@ -39,7 +39,9 @@ MIN_FREE_GB = 10.0
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--kit", type=Path, required=True, help="the pulled kit (scripts/sealed/t04/pull_kit.sh)")
+    parser.add_argument(
+        "--kit", type=Path, required=True, help="the pulled kit (scripts/sealed/t04/pull_kit.sh)"
+    )
     parser.add_argument("--min-free-gb", type=float, default=MIN_FREE_GB)
     parser.add_argument("--max-workers", type=int, default=4)
     args = parser.parse_args(argv)
@@ -50,11 +52,19 @@ def main(argv: list[str] | None = None) -> int:
     target = SF.resolve_location(ST.SHARDS_LOCATION, "the in1k_t04 shards")
     free_gb = shutil.disk_usage(sealed_dir()).free / 1e9
     if free_gb < args.min_free_gb:
-        raise SystemExit(f"{free_gb:.1f} GB free under $CRYOWISP_SEALED; {args.min_free_gb} GB needed; nothing downloaded")
+        raise SystemExit(
+            f"{free_gb:.1f} GB free under $CRYOWISP_SEALED; {args.min_free_gb} GB needed; nothing downloaded"
+        )
     target.mkdir(parents=True, exist_ok=True, mode=0o700)
     started = time.time()
-    snapshot_download(V.REPO_ID, repo_type="dataset", revision=V.REVISION, local_dir=str(target),
-                      allow_patterns=ALLOW_PATTERNS, max_workers=args.max_workers)
+    snapshot_download(
+        V.REPO_ID,
+        repo_type="dataset",
+        revision=V.REVISION,
+        local_dir=str(target),
+        allow_patterns=ALLOW_PATTERNS,
+        max_workers=args.max_workers,
+    )
     manifest = target / V.MANIFEST
     source_manifest = Path(args.kit) / V.MANIFEST
     if manifest.exists() and file_sha256(manifest) != file_sha256(source_manifest):
@@ -63,12 +73,24 @@ def main(argv: list[str] | None = None) -> int:
     listed = V.verify_manifest(target)
     expected = {V.CLASSES_FILE} | {f"data/{name}" for name in V.shard_names()}
     if set(listed) != expected:
-        raise SystemExit(f"the manifest lists {sorted(set(listed) ^ expected)} beyond or short of the 15 files")
-    record = {"schema": "cryowisp.t04.shard_download.v1", "time": utc_now(), "repo_id": V.REPO_ID,
-              "revision": V.REVISION, "location": ST.SHARDS_LOCATION, "manifest_sha256": file_sha256(manifest),
-              "files": {name: {"sha256": digest, "bytes": (target / name).stat().st_size}
-                        for name, digest in sorted(listed.items())},
-              "huggingface_hub": hub_version, "wall_s": time.time() - started, "manifest_check": "passed"}
+        raise SystemExit(
+            f"the manifest lists {sorted(set(listed) ^ expected)} beyond or short of the 15 files"
+        )
+    record = {
+        "schema": "cryowisp.t04.shard_download.v1",
+        "time": utc_now(),
+        "repo_id": V.REPO_ID,
+        "revision": V.REVISION,
+        "location": ST.SHARDS_LOCATION,
+        "manifest_sha256": file_sha256(manifest),
+        "files": {
+            name: {"sha256": digest, "bytes": (target / name).stat().st_size}
+            for name, digest in sorted(listed.items())
+        },
+        "huggingface_hub": hub_version,
+        "wall_s": time.time() - started,
+        "manifest_check": "passed",
+    }
     out = runs_dir() / "t04" / "sealed_download" / f"download_{time.strftime('%Y%m%d_%H%M%S')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "x", encoding="utf-8") as handle:

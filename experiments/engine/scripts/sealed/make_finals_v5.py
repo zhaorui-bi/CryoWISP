@@ -77,13 +77,16 @@ def earlier_reads(lists: Sequence[Path]) -> dict[tuple[str, str, str], dict[str,
             rows = SF._vision_rows(row["instance_id"])  # noqa: SLF001, the registry's own (dataset, condition)
             if rows is None:
                 raise ListError(f"{path.name} {row['name']}: {row['instance_id']} is not a vision instance")
-            reads.setdefault((row["child_sha256"], *rows), {"list": path.name, "entry": row["name"],
-                                                             "instance_id": row["instance_id"]})
+            reads.setdefault(
+                (row["child_sha256"], *rows),
+                {"list": path.name, "entry": row["name"], "instance_id": row["instance_id"]},
+            )
     return reads
 
 
-def build(record: Mapping[str, Any], network_list: Path, earlier: Sequence[Path]
-          ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def build(
+    record: Mapping[str, Any], network_list: Path, earlier: Sequence[Path]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """The v5 entries and the reuse map of all of T07's cells."""
     listed = _json(network_list)
     by_name = {(block, row["name"]): row for block in ("finals", "references") for row in listed[block]}
@@ -94,41 +97,83 @@ def build(record: Mapping[str, Any], network_list: Path, earlier: Sequence[Path]
         block, name = NETWORKS[(arch, network)]
         own = by_name[(block, name)]
         source = own["source"]
-        if block == "references" and (source.get("kind") != SF.SOURCE_REFERENCE or source.get("pick") != SF.PICK_KEPT
-                                      or source.get("s_old_floor") != -20):
+        if block == "references" and (
+            source.get("kind") != SF.SOURCE_REFERENCE
+            or source.get("pick") != SF.PICK_KEPT
+            or source.get("s_old_floor") != -20
+        ):
             raise ListError(f"{name}: not F1's kept pick at floor -20")
         if block == "finals" and source.get("kind") != SF.SOURCE_SESSION:
             raise ListError(f"{name}: not a session final")
         dataset, condition = SF._vision_rows(own["instance_id"])  # noqa: SLF001
         if dataset != DATASETS[arch]:
-            raise ListError(f"{name}: {own['instance_id']} is on {dataset}, T07's {arch} reads {DATASETS[arch]}")
-        cell = {"arch": arch, "network": network, "set": set_name, "dataset": dataset,
-                "instance_id": own["instance_id"], "child_sha256": own["child_sha256"]}
+            raise ListError(
+                f"{name}: {own['instance_id']} is on {dataset}, T07's {arch} reads {DATASETS[arch]}"
+            )
+        cell = {
+            "arch": arch,
+            "network": network,
+            "set": set_name,
+            "dataset": dataset,
+            "instance_id": own["instance_id"],
+            "child_sha256": own["child_sha256"],
+        }
         if set_name == CLEAN:
-            cells.append({**cell, "status": "reused", "list": network_list.name, "entry": name,
-                          "field": "readouts_clean"})
+            cells.append(
+                {
+                    **cell,
+                    "status": "reused",
+                    "list": network_list.name,
+                    "entry": name,
+                    "field": "readouts_clean",
+                }
+            )
             continue
         earlier_read = reads.get((own["child_sha256"], dataset, set_name))
         if earlier_read is not None:
-            cells.append({**cell, "status": "reused", "list": earlier_read["list"], "entry": earlier_read["entry"],
-                          "earlier_instance_id": earlier_read["instance_id"], "field": "readouts"})
+            cells.append(
+                {
+                    **cell,
+                    "status": "reused",
+                    "list": earlier_read["list"],
+                    "entry": earlier_read["entry"],
+                    "earlier_instance_id": earlier_read["instance_id"],
+                    "field": "readouts",
+                }
+            )
             continue
         if set_name == condition:
             raise ListError(f"{name}: its own condition {condition} has no earlier read")
-        entry = {"name": f"T07_{arch}_{network}__{set_name}", "readout": SF.READOUT_VISION_RANGE,
-                 "source": {"kind": SF.SOURCE_RANGE, "set": set_name, "network": dict(source),
-                            "dev_record": T07_RECORD, "t07_arch": arch, "t07_network": network},
-                 "instance_id": own["instance_id"], "child_sha256": own["child_sha256"]}
+        entry = {
+            "name": f"T07_{arch}_{network}__{set_name}",
+            "readout": SF.READOUT_VISION_RANGE,
+            "source": {
+                "kind": SF.SOURCE_RANGE,
+                "set": set_name,
+                "network": dict(source),
+                "dev_record": T07_RECORD,
+                "t07_arch": arch,
+                "t07_network": network,
+            },
+            "instance_id": own["instance_id"],
+            "child_sha256": own["child_sha256"],
+        }
         entries.append(entry)
-        cells.append({**cell, "status": "new", "list": "finals_v5.json", "entry": entry["name"], "field": "readouts"})
+        cells.append(
+            {**cell, "status": "new", "list": "finals_v5.json", "entry": entry["name"], "field": "readouts"}
+        )
     return entries, cells
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--reuse-out", type=Path, required=True)
-    parser.add_argument("--network-list", type=Path, required=True, help="list v2 (the networks' entries of record)")
+    parser.add_argument(
+        "--network-list", type=Path, required=True, help="list v2 (the networks' entries of record)"
+    )
     parser.add_argument("--earlier", type=Path, nargs="+", required=True, help="lists v2 to v4")
     args = parser.parse_args(argv)
     t07_path = runs_dir() / T07_RECORD
@@ -137,11 +182,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     entries, cells = build(_json(t07_path), args.network_list, args.earlier)
     reused = [c for c in cells if c["status"] == "reused"]
     counts = {f"{arch}": sum(1 for e in entries if e["source"]["t07_arch"] == arch) for arch in DATASETS}
-    reuse_text = "; ".join(f"{c['arch']} {c['network']} {c['set']} from {c['list']} {c['entry']} ({c['field']})"
-                           for c in reused)
+    reuse_text = "; ".join(
+        f"{c['arch']} {c['network']} {c['set']} from {c['list']} {c['entry']} ({c['field']})" for c in reused
+    )
     note = (
-        "List v5 of the sealed read (PREREG \"T07 sealed read (list v5)\"; user 2026-11-07 about 13:40 Beijing via "
-        "CRYOWISP-main, \"2、要\"), built by scripts/sealed/make_finals_v5.py from T07's table of record "
+        'List v5 of the sealed read (PREREG "T07 sealed read (list v5)"; user 2026-11-07 about 13:40 Beijing via '
+        'CRYOWISP-main, "2、要"), built by scripts/sealed/make_finals_v5.py from T07\'s table of record '
         f"({T07_RECORD}, sha256 {T07_RECORD_SHA256[:16]}...). T07's eight networks (B finals of record and F1's kept "
         "picks at floor -20, sources copied from list v2) on T07's 25 corruption sets, each read on the official "
         "CIFAR-10-C test rows of its corruption and severity (10,000 per set) through the range index "
@@ -151,17 +197,34 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"{reuse_text}. Each entry is dev-checked equal to its T07 row and predictions on NSCC before the read. Read "
         "once, after the user approves the list."
     )
-    out = {"schema": SF.LIST_SCHEMA, "status": "draft", "approval": None, "note": note, "finals": entries,
-           "references": []}
+    out = {
+        "schema": SF.LIST_SCHEMA,
+        "status": "draft",
+        "approval": None,
+        "note": note,
+        "finals": entries,
+        "references": [],
+    }
     args.out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     SF.load_list(args.out)  # the list validates as the pipeline reads it
-    reuse = {"schema": "cryowisp.t07_v5_cells.v1", "t07_record": T07_RECORD, "t07_record_sha256": T07_RECORD_SHA256,
-             "list": args.out.name, "n_cells": len(cells), "n_new": len(entries), "n_reused": len(reused),
-             "cells": cells}
+    reuse = {
+        "schema": "cryowisp.t07_v5_cells.v1",
+        "t07_record": T07_RECORD,
+        "t07_record_sha256": T07_RECORD_SHA256,
+        "list": args.out.name,
+        "n_cells": len(cells),
+        "n_new": len(entries),
+        "n_reused": len(reused),
+        "cells": cells,
+    }
     args.reuse_out.write_text(json.dumps(reuse, indent=1) + "\n", encoding="utf-8")
-    print(f"{args.out}: {len(entries)} entries {counts}; {args.reuse_out}: {len(cells)} cells, {len(reused)} reused")
+    print(
+        f"{args.out}: {len(entries)} entries {counts}; {args.reuse_out}: {len(cells)} cells, {len(reused)} reused"
+    )
     for c in reused:
-        print(f"  reused {c['arch']:<3} {c['network']:<19} {c['set']:<18} <- {c['list']} {c['entry']} ({c['field']})")
+        print(
+            f"  reused {c['arch']:<3} {c['network']:<19} {c['set']:<18} <- {c['list']} {c['entry']} ({c['field']})"
+        )
     return 0
 
 

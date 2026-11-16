@@ -34,26 +34,37 @@ from cryowisp.harness.program_stream import (
 from cryowisp.sandbox.program import ProgramSandbox
 
 SECOND = "toyblur2_s2"
-STRINGS = 'HYPOTHESIS = "unit 0 should read the class-0 pixel"\nPREDICTED_EFFECT = "fixes errors, breaks none"\n'
-FIX = STRINGS + """import numpy as np
+STRINGS = (
+    'HYPOTHESIS = "unit 0 should read the class-0 pixel"\nPREDICTED_EFFECT = "fixes errors, breaks none"\n'
+)
+FIX = (
+    STRINGS
+    + """import numpy as np
 def update(student, experience):
     w = student["params"]["fc1.weight"]
     delta = np.zeros_like(w)
     delta[0, 4], delta[1, 4] = 6.0, -6.0
     return {"fc1.weight": delta}
 """
-SHIFT = STRINGS + """import numpy as np
+)
+SHIFT = (
+    STRINGS
+    + """import numpy as np
 def update(student, experience):
     delta = np.zeros_like(student["params"]["fc2.bias"])
     delta[2] = 0.5 * float(len(experience["y_new"]) > 0)
     return {"fc2.bias": delta}
 """
-BIG = STRINGS + """import numpy as np
+)
+BIG = (
+    STRINGS
+    + """import numpy as np
 def update(student, experience):
     delta = np.zeros_like(student["params"]["fc1.weight"])
     delta[0, 0] = 1000.0
     return {"fc1.weight": delta}
 """
+)
 
 
 @dataclass
@@ -118,8 +129,10 @@ def _predict(instance: Instance, params: dict[str, np.ndarray], x: np.ndarray) -
 
 @needs_sandbox
 def test_a_stream_chains_rounds_and_reads_every_condition(stream_store: StreamStore, tmp_path: Path) -> None:
-    fix, shift, big = (_program(tmp_path, name, source) for name, source in
-                       (("fix.py", FIX), ("shift.py", SHIFT), ("big.py", BIG)))
+    fix, shift, big = (
+        _program(tmp_path, name, source)
+        for name, source in (("fix.py", FIX), ("shift.py", SHIFT), ("big.py", BIG))
+    )
     first, second = stream_store.ids[(CONDITION, 100)], stream_store.ids[(SECOND, 100)]
     out = tmp_path / "streams"
     path = run_stream([fix, shift], [first, second], out, _sandbox())
@@ -127,22 +140,31 @@ def test_a_stream_chains_rounds_and_reads_every_condition(stream_store: StreamSt
     rounds = record["rounds"]
     assert [row["status"] for row in rounds] == [STATUS_OK, STATUS_OK]
     assert rounds[0]["experience"]["same_as_instance_experience"] is True
-    assert rounds[1]["parent_sha256"] == rounds[0]["child_sha256"] == rounds[1]["experience"]["student_params_sha256"]
+    assert (
+        rounds[1]["parent_sha256"]
+        == rounds[0]["child_sha256"]
+        == rounds[1]["experience"]["student_params_sha256"]
+    )
     assert "same_as_instance_experience" not in rounds[1]["experience"]
     for row in rounds:
         assert set(row["readouts"]) == {first, second}
-        assert all(item["select"]["delta_acc"] is not None and item["clean"]["delta_acc"] is not None
-                   for item in row["readouts"].values())
+        assert all(
+            item["select"]["delta_acc"] is not None and item["clean"]["delta_acc"] is not None
+            for item in row["readouts"].values()
+        )
     work = Path(record["work_dir"])
     assert params_sha256(load_params(work / "round_2" / "student_after.npz")) == rounds[1]["child_sha256"]
     summary = record["summary"]
     noise = summary["conditions"][CONDITION]
     assert noise["gain_after_own_round"] == rounds[0]["readouts"][first]["select"]["delta_acc"]
     assert noise["gain_after_last_round"] == rounds[1]["readouts"][first]["select"]["delta_acc"]
-    assert noise["forgetting"] == pytest.approx(noise["gain_after_own_round"] - noise["gain_after_last_round"])
+    assert noise["forgetting"] == pytest.approx(
+        noise["gain_after_own_round"] - noise["gain_after_last_round"]
+    )
     assert summary["max_forgetting"] == noise["forgetting"] and summary["n_rounds_ok"] == 2
     assert summary["mean_gain_after_last_round"] == pytest.approx(
-        np.mean([summary["conditions"][name]["gain_after_last_round"] for name in (CONDITION, SECOND)]))
+        np.mean([summary["conditions"][name]["gain_after_last_round"] for name in (CONDITION, SECOND)])
+    )
 
     refused = json.loads(run_stream([big, fix], [first, second], out, _sandbox()).read_text())
     assert refused["rounds"][0]["status"] == STATUS_PATCH_REFUSED
@@ -157,13 +179,21 @@ def test_a_stream_chains_rounds_and_reads_every_condition(stream_store: StreamSt
 def test_a_stream_has_one_base_model_and_distinct_rounds(stream_store: StreamStore, tmp_path: Path) -> None:
     fix = _program(tmp_path, "fix.py", FIX)
     with pytest.raises(StreamError, match="different base models"):
-        run_stream([fix, fix], [stream_store.ids[(CONDITION, 100)], stream_store.ids[(SECOND, 101)]], tmp_path / "a",
-                   _sandbox())
+        run_stream(
+            [fix, fix],
+            [stream_store.ids[(CONDITION, 100)], stream_store.ids[(SECOND, 101)]],
+            tmp_path / "a",
+            _sandbox(),
+        )
     with pytest.raises(StreamError, match="appears twice"):
         run_stream([fix, fix], [stream_store.ids[(CONDITION, 100)]] * 2, tmp_path / "b", _sandbox())
     with pytest.raises(StreamError, match="one program per round"):
-        run_stream([fix], [stream_store.ids[(CONDITION, 100)], stream_store.ids[(SECOND, 100)]], tmp_path / "c",
-                   _sandbox())
+        run_stream(
+            [fix],
+            [stream_store.ids[(CONDITION, 100)], stream_store.ids[(SECOND, 100)]],
+            tmp_path / "c",
+            _sandbox(),
+        )
 
 
 def test_the_summary_leaves_out_the_excluded_conditions() -> None:
@@ -172,12 +202,20 @@ def test_the_summary_leaves_out_the_excluded_conditions() -> None:
             self.instance_id, self.private = instance_id, {"condition": condition}
 
     def readout(gain: float, clean: float) -> dict:
-        return {"select": {"delta_acc": gain, "base_acc": 0.5}, "clean": {"delta_acc": clean}, "clean_split_sha256": "c"}
+        return {
+            "select": {"delta_acc": gain, "base_acc": 0.5},
+            "clean": {"delta_acc": clean},
+            "clean_split_sha256": "c",
+        }
 
     instances = [Fake("a", "noise"), Fake("b", "colormix_d1")]
-    rounds = [{"status": "ok", "readouts": {"a": readout(0.10, -0.01), "b": readout(0.0, -0.01)}},
-              {"status": "ok", "readouts": {"a": readout(0.07, -0.02), "b": readout(0.01, -0.02)}}]
+    rounds = [
+        {"status": "ok", "readouts": {"a": readout(0.10, -0.01), "b": readout(0.0, -0.01)}},
+        {"status": "ok", "readouts": {"a": readout(0.07, -0.02), "b": readout(0.01, -0.02)}},
+    ]
     summary = stream_summary(instances, rounds, ("colormix_d1",))  # type: ignore[arg-type]
     assert summary["mean_gain_after_last_round"] == pytest.approx(0.07)
     assert summary["conditions"]["noise"]["forgetting"] == pytest.approx(0.03) == summary["max_forgetting"]
-    assert summary["clean_split_shared"] and summary["clean_delta_acc_mean_after_last_round"] == pytest.approx(-0.02)
+    assert summary["clean_split_shared"] and summary[
+        "clean_delta_acc_mean_after_last_round"
+    ] == pytest.approx(-0.02)

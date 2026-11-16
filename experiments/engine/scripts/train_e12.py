@@ -65,8 +65,13 @@ def train_one(args: argparse.Namespace, seed: int, root: Path) -> dict[str, Any]
         config = dataclasses.replace(config, epochs=args.smoke_epochs)
     model_config = M.ResNet18UpConfig(resize=args.resize)
     weights_path = E.weights_path()
-    weights = {"name": M.WEIGHTS_NAME, "file": M.WEIGHTS_FILE, "url": M.WEIGHTS_URL,
-               "sha256": M.file_sha256(weights_path), "store_path": E.WEIGHTS_RELPATH}
+    weights = {
+        "name": M.WEIGHTS_NAME,
+        "file": M.WEIGHTS_FILE,
+        "url": M.WEIGHTS_URL,
+        "sha256": M.file_sha256(weights_path),
+        "store_path": E.WEIGHTS_RELPATH,
+    }
     if weights["sha256"] != M.WEIGHTS_SHA256:
         raise SystemExit(f"{weights_path}: sha256 {weights['sha256']}, expected {M.WEIGHTS_SHA256}")
     determinism = configure_determinism(seed)
@@ -81,22 +86,58 @@ def train_one(args: argparse.Namespace, seed: int, root: Path) -> dict[str, Any]
     if check["max_abs_diff"] is None or not check["max_abs_diff"] <= TORCHVISION_MAX_ABS_DIFF:
         raise SystemExit(f"the student differs from torchvision resnet18: {check}")
     extra: dict[str, Any] = {"smoke": True, "smoke_rows": args.smoke_rows} if smoke else {}
-    entry = E.export_pending(manifest=manifest, seed=seed, config=config, model_config=model_config, result=result,
-                             training_splits=used, x_train=x, determinism=determinism, run_info=info,
-                             weights=weights, torchvision_check=check, models_root=root, extra_private=extra)
-    print(json.dumps({"seed": seed, "model_id": entry["model_id"], "params_sha256": entry["params_sha256"],
-                      "resize": model_config.resize, **result.final,
-                      "final_train_loss_augmented": result.log[-1]["train_loss"],
-                      "mean_epoch_time_s": sum(e["epoch_time_s"] for e in result.log) / len(result.log),
-                      "torchvision_max_abs_diff": check["max_abs_diff"],
-                      "wall_time_s": round(result.wall_time_s, 1)}), flush=True)
+    entry = E.export_pending(
+        manifest=manifest,
+        seed=seed,
+        config=config,
+        model_config=model_config,
+        result=result,
+        training_splits=used,
+        x_train=x,
+        determinism=determinism,
+        run_info=info,
+        weights=weights,
+        torchvision_check=check,
+        models_root=root,
+        extra_private=extra,
+    )
+    print(
+        json.dumps(
+            {
+                "seed": seed,
+                "model_id": entry["model_id"],
+                "params_sha256": entry["params_sha256"],
+                "resize": model_config.resize,
+                **result.final,
+                "final_train_loss_augmented": result.log[-1]["train_loss"],
+                "mean_epoch_time_s": sum(e["epoch_time_s"] for e in result.log) / len(result.log),
+                "torchvision_max_abs_diff": check["max_abs_diff"],
+                "wall_time_s": round(result.wall_time_s, 1),
+            }
+        ),
+        flush=True,
+    )
     return entry
 
 
 def _child_command(args: argparse.Namespace, seed: int, root: Path, row_file: Path) -> list[str]:
-    cmd = [sys.executable, "-u", str(Path(__file__).resolve()), "--group", "train", "--seeds", str(seed),
-           "--resize", str(args.resize), "--device", args.device, "--models-root", str(root), "--row-file",
-           str(row_file)]
+    cmd = [
+        sys.executable,
+        "-u",
+        str(Path(__file__).resolve()),
+        "--group",
+        "train",
+        "--seeds",
+        str(seed),
+        "--resize",
+        str(args.resize),
+        "--device",
+        args.device,
+        "--models-root",
+        str(root),
+        "--row-file",
+        str(row_file),
+    ]
     if args.git_state_file is not None:
         cmd += ["--git-state-file", str(args.git_state_file)]
     if args.smoke_epochs is not None:
@@ -119,8 +160,14 @@ def train_concurrent(args: argparse.Namespace) -> int:
             raise SystemExit("--duplicate-seed must be one of --seeds")
         dup = root / "duplicate"
         dup.mkdir(exist_ok=True)
-        jobs.append((args.duplicate_seed, dup, rows_dir / f"{args.duplicate_seed}_duplicate.json",
-                     logs / f"train_{args.duplicate_seed}_duplicate.log"))
+        jobs.append(
+            (
+                args.duplicate_seed,
+                dup,
+                rows_dir / f"{args.duplicate_seed}_duplicate.json",
+                logs / f"train_{args.duplicate_seed}_duplicate.log",
+            )
+        )
     for _, _, row_file, _ in jobs:
         if row_file.exists():
             raise SystemExit(f"{row_file} exists; nothing started")
@@ -128,18 +175,41 @@ def train_concurrent(args: argparse.Namespace) -> int:
     procs = []
     for seed, target, row_file, log_file in jobs:
         handle = open(log_file, "w", encoding="utf-8")  # closed after the child exits
-        procs.append((seed, row_file, log_file, handle,
-                      subprocess.Popen(_child_command(args, seed, target, row_file), stdout=handle,
-                                       stderr=subprocess.STDOUT, cwd=REPO_ROOT)))
-    print(json.dumps({"concurrent": len(procs), "seeds": [p[0] for p in procs], "started": started}), flush=True)
+        procs.append(
+            (
+                seed,
+                row_file,
+                log_file,
+                handle,
+                subprocess.Popen(
+                    _child_command(args, seed, target, row_file),
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    cwd=REPO_ROOT,
+                ),
+            )
+        )
+    print(
+        json.dumps({"concurrent": len(procs), "seeds": [p[0] for p in procs], "started": started}), flush=True
+    )
     codes = []
     for seed, row_file, log_file, handle, proc in procs:
         code = proc.wait()
         handle.close()
         codes.append(code)
         tail = log_file.read_text(encoding="utf-8").strip().splitlines()[-1:] or [""]
-        print(json.dumps({"seed": seed, "exit": code, "elapsed_s": round(time.time() - started, 1),
-                          "log": str(log_file), "last_line": tail[0][:400]}), flush=True)
+        print(
+            json.dumps(
+                {
+                    "seed": seed,
+                    "exit": code,
+                    "elapsed_s": round(time.time() - started, 1),
+                    "log": str(log_file),
+                    "last_line": tail[0][:400],
+                }
+            ),
+            flush=True,
+        )
     if any(codes):
         print(f"children failed: {codes}; no index written", file=sys.stderr)
         return 1
@@ -151,13 +221,30 @@ def train_concurrent(args: argparse.Namespace) -> int:
         first = next(e for e in entries if e["seed"] == args.duplicate_seed)
         second = read_json(rows_dir / f"{args.duplicate_seed}_duplicate.json")
         same = first["params_sha256"] == second["params_sha256"]
-        print(json.dumps({"determinism_check": {"seed": args.duplicate_seed, "first": first["params_sha256"],
-                                                "duplicate": second["params_sha256"], "equal": same}}), flush=True)
+        print(
+            json.dumps(
+                {
+                    "determinism_check": {
+                        "seed": args.duplicate_seed,
+                        "first": first["params_sha256"],
+                        "duplicate": second["params_sha256"],
+                        "equal": same,
+                    }
+                }
+            ),
+            flush=True,
+        )
         if not same:
-            print("the duplicate run differs: training is not deterministic under concurrency", file=sys.stderr)
+            print(
+                "the duplicate run differs: training is not deterministic under concurrency", file=sys.stderr
+            )
             return 2
-    print(json.dumps({"index": str(index_file), "n": len(entries), "elapsed_s": round(time.time() - started, 1)}),
-          flush=True)
+    print(
+        json.dumps(
+            {"index": str(index_file), "n": len(entries), "elapsed_s": round(time.time() - started, 1)}
+        ),
+        flush=True,
+    )
     return 0
 
 
@@ -191,8 +278,13 @@ def train_group(args: argparse.Namespace) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--group", choices=("train",), required=True)
-    parser.add_argument("--resize", type=int, required=True, choices=M.RESIZES,
-                        help="the upsampled size R chosen by PREREG E12's forward.py timing")
+    parser.add_argument(
+        "--resize",
+        type=int,
+        required=True,
+        choices=M.RESIZES,
+        help="the upsampled size R chosen by PREREG E12's forward.py timing",
+    )
     parser.add_argument("--seeds", type=int, nargs="+", default=list(E.SEEDS))
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--concurrent", action="store_true")

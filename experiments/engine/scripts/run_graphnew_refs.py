@@ -21,8 +21,16 @@ import os
 import sys
 
 THREAD_VARIABLES = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
-METHODS = ("grad_full", "grad_last", "grad_sparse19_sal", "grad_sparse19_traj", "interp", "ridge_margin", "imprint",
-           "imprint_retain")
+METHODS = (
+    "grad_full",
+    "grad_last",
+    "grad_sparse19_sal",
+    "grad_sparse19_traj",
+    "interp",
+    "ridge_margin",
+    "imprint",
+    "imprint_retain",
+)
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -40,7 +48,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)

@@ -39,7 +39,7 @@ from cryowisp.sandbox.program import ProgramSandbox
 OLD = [0, 1, 2, 3, 4]
 # Sets every new-class head bias to the mean old-class bias: an architecture-agnostic edit (the head is the last
 # linear layer of the layout), so the same file runs on the cnn and the cnn4 students.
-LIFT = '''HYPOTHESIS = "the new-class outputs are silenced by their head biases"
+LIFT = """HYPOTHESIS = "the new-class outputs are silenced by their head biases"
 PREDICTED_EFFECT = "some new-class images become correct and some old-class images break"
 import numpy as np
 def update(student, experience):
@@ -51,12 +51,15 @@ def update(student, experience):
     delta[new] = float(np.mean(bias[old])) - bias[new]
     print("lifted", new)
     return {head["bias"]: delta}
-'''
+"""
 
 
 @pytest.fixture
-def fewshot_ids(fewshot_store: list[dict[str, object]], tmp_path: Path,  # noqa: F811
-                monkeypatch: pytest.MonkeyPatch) -> dict[tuple[str, int], str]:
+def fewshot_ids(
+    fewshot_store: list[dict[str, object]],
+    tmp_path: Path,  # noqa: F811
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[tuple[str, int], str]:
     """The toy fewshot instances built, with a runs root for sessions: {(arch, seed): instance id}."""
     runs = tmp_path / "store" / "runs"
     runs.mkdir()
@@ -74,17 +77,21 @@ def _paragraphs(text: str) -> list[str]:
 
 def _program_cell(programs: dict[str, str]) -> str:
     payload = json.dumps(json.dumps(programs))
-    return ("import json\n"
-            f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n"
-            f"print(sorted(json.loads({payload})))\n")
+    return (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        f"print(sorted(json.loads({payload})))\n"
+    )
 
 
 def _sandbox() -> ProgramSandbox:
     return ProgramSandbox(python=SANDBOX_PYTHON, memory_bytes=4 * 2**30, threads=1)
 
 
-def test_the_harness_names_agree_with_the_evalkit_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_harness_names_agree_with_the_evalkit_rule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
     assert fewshot.FEWSHOT_RULE == F.FEWSHOT_RULE
     assert fewshot.INSTANCE_ID_RE.pattern == F.INSTANCE_ID_RE.pattern
@@ -96,7 +103,8 @@ def test_the_harness_names_agree_with_the_evalkit_rule(tmp_path: Path, monkeypat
 
 
 def test_a_fewshot_id_resolves_in_its_own_store_and_is_refused_when_not_current(
-        fewshot_ids: dict[tuple[str, int], str]) -> None:
+    fewshot_ids: dict[tuple[str, int], str],
+) -> None:
     instance_id = fewshot_ids[("cnn", 100)]
     record = read_instance_record(instance_id)
     assert record.is_fewshot and record.instance_dir == F.fewshot_instance_dir(instance_id)
@@ -108,13 +116,16 @@ def test_a_fewshot_id_resolves_in_its_own_store_and_is_refused_when_not_current(
     assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
     other = fewshot_ids[("cnn", 101)]
     task_path = F.fewshot_instance_dir(other) / "task.json"
-    task_path.write_text(task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8")
+    task_path.write_text(
+        task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8"
+    )
     with pytest.raises(InstanceRefused, match="never runs a stale"):
         read_instance_record(other)
 
 
-def test_the_learn_view_is_the_evidence_with_the_class_lists(fewshot_ids: dict[tuple[str, int], str],
-                                                             tmp_path: Path) -> None:
+def test_the_learn_view_is_the_evidence_with_the_class_lists(
+    fewshot_ids: dict[tuple[str, int], str], tmp_path: Path
+) -> None:
     instance_id = fewshot_ids[("cnn", 100)]
     root = F.fewshot_instance_dir(instance_id)
     session_dir = tmp_path / "session"
@@ -126,7 +137,8 @@ def test_the_learn_view_is_the_evidence_with_the_class_lists(fewshot_ids: dict[t
     assert sorted(shown) == sorted(F.EVIDENCE_KEYS)
     assert all(np.array_equal(shown[key], instance.evidence[key]) for key in F.EVIDENCE_KEYS)
     assert sorted(path.name for path in view.trial_dir.iterdir()) == sorted(
-        ["model.npz", "model_spec.json", "forward.py", "task.json", EXPERIENCE_FILE])
+        ["model.npz", "model_spec.json", "forward.py", "task.json", EXPERIENCE_FILE]
+    )
     record = view.experience
     assert record is not None and record["source"] == fewshot.EXPERIENCE_SOURCE
     assert (record["n_new"], record["per_class"], record["n_old"]) == (50, 10, 64)
@@ -135,10 +147,15 @@ def test_the_learn_view_is_the_evidence_with_the_class_lists(fewshot_ids: dict[t
     assert view.decoy_model_sha256 is None and view.clean_check is None
     assert not (session_dir / "private" / CLEAN_VCHECK_FILE).exists()
     private = instance.private
-    assert view.fewshot == {"rule": F.FEWSHOT_RULE, "train_classes": OLD, "new_classes": NEW,
-                            "n_vcheck_new": private["n_vcheck_new"], "n_vcheck_old": private["n_vcheck_old"],
-                            "n_base_errors_vcheck_new": private["n_base_errors_vcheck_new"],
-                            "n_base_errors_vcheck_old": private["n_base_errors_vcheck_old"]}
+    assert view.fewshot == {
+        "rule": F.FEWSHOT_RULE,
+        "train_classes": OLD,
+        "new_classes": NEW,
+        "n_vcheck_new": private["n_vcheck_new"],
+        "n_vcheck_old": private["n_vcheck_old"],
+        "n_base_errors_vcheck_new": private["n_base_errors_vcheck_new"],
+        "n_base_errors_vcheck_old": private["n_base_errors_vcheck_old"],
+    }
     task = view.task
     assert task["parent_sha256"] == instance.params_sha256
     assert "evidence" not in task and "patch_format" not in task and task["train_classes"] == OLD
@@ -146,13 +163,17 @@ def test_the_learn_view_is_the_evidence_with_the_class_lists(fewshot_ids: dict[t
     assert task["experience"]["new"]["count"] == 50 and task["experience"]["old"]["count"] == 64
     assert "never saw an image of their class" in task["statement"]
     assert view.limits["rel_frob_exempt"] == ["fc2.weight", "fc2.bias"]
-    assert view.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC and view.limits["max_edit_frac"] is None
+    assert (
+        view.limits["max_changed_frac"] == PROGRAM_MAX_CHANGED_FRAC and view.limits["max_edit_frac"] is None
+    )
     (tmp_path / "other" / "private").mkdir(parents=True)
     with pytest.raises(TrialError, match="program arm only"):
         assemble(root, "M2", tmp_path / "other")
 
 
-def test_the_fewshot_cut_refuses_part_sizes_other_than_recorded(fewshot_ids: dict[tuple[str, int], str]) -> None:
+def test_the_fewshot_cut_refuses_part_sizes_other_than_recorded(
+    fewshot_ids: dict[tuple[str, int], str],
+) -> None:
     instance = load_instance(F.fewshot_instance_dir(fewshot_ids[("cnn", 100)]))
     record = fewshot.session_record(instance.private)
     with np.load(instance.private["vcheck_path"], allow_pickle=False) as archive:
@@ -181,15 +202,17 @@ def test_the_fewshot_prompts_change_only_the_sentences_false_for_new_classes() -
     shown = {spec["name"]: spec["description"] for spec in tool_specs(tools, program=True, fewshot=True)}
     assert shown["patch_check"] == plain["patch_check"].replace(PROGRAM_CHECK_SETS, FEWSHOT_CHECK_SETS)
     assert shown["patch_check"] != plain["patch_check"]
-    assert {k: v for k, v in shown.items() if k != "patch_check"} == {k: v for k, v in plain.items()
-                                                                      if k != "patch_check"}
+    assert {k: v for k, v in shown.items() if k != "patch_check"} == {
+        k: v for k, v in plain.items() if k != "patch_check"
+    }
     with pytest.raises(ValueError, match="program arm"):
         tool_specs(arm_spec("M2").tools, fewshot=True)
 
 
 @needs_sandbox
-def test_a_fewshot_learn_session_scores_programs_on_the_class_cut(fewshot_ids: dict[tuple[str, int], str],
-                                                                  tmp_path: Path) -> None:
+def test_a_fewshot_learn_session_scores_programs_on_the_class_cut(
+    fewshot_ids: dict[tuple[str, int], str], tmp_path: Path
+) -> None:
     instance_id = fewshot_ids[("cnn", 100)]
     steps = [
         ("python", {"code": _program_cell({"lift.py": LIFT})}),
@@ -216,7 +239,10 @@ def test_a_fewshot_learn_session_scores_programs_on_the_class_cut(fewshot_ids: d
     child = ArmApplier(session).apply(read_json(attempt_dir / str(entry["patch_file"])), attempt_dir).child
     assert params_sha256(child) == entry["child_sha256"]
     expected = F.make_fewshot_oracle(instance_id).query(child, "lift")  # evalkit's own class-cut oracle
-    assert (check.payload["score_new"], check.payload["score_old"]) == (expected["score_new"], expected["score_old"])
+    assert (check.payload["score_new"], check.payload["score_old"]) == (
+        expected["score_new"],
+        expected["score_old"],
+    )
     ledger = CheckLedger(session, paths)  # rebuilt from session.json alone, as the MCP server builds it
     assert [row["score"] for row in ledger.checked()] == [check.payload["score"]]
 
@@ -230,8 +256,10 @@ def test_a_fewshot_learn_session_scores_programs_on_the_class_cut(fewshot_ids: d
     program = tmp_path / "lift.py"
     program.write_text(LIFT, encoding="utf-8")
     targets = [fewshot_ids[("cnn", 101)], fewshot_ids[("cnn4", 100)]]
-    records = [json.loads(path.read_text()) for path in run_transfer(program, targets, tmp_path / "transfer",
-                                                                      _sandbox())]
+    records = [
+        json.loads(path.read_text())
+        for path in run_transfer(program, targets, tmp_path / "transfer", _sandbox())
+    ]
     assert [record["target"]["instance_id"] for record in records] == targets
     assert [record["tensors"] for record in records] == [["fc2.bias"], ["fc1.bias"]]  # cnn4's head is fc1
     for record in records:

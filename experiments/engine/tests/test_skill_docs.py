@@ -17,7 +17,12 @@ from cryowisp.application.cli import parser
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "cryowisp"
-DOCS = [ROOT / "README.md", ROOT / "README.zh-CN.md", SKILL / "SKILL.md", *sorted((SKILL / "references").glob("*.md"))]
+DOCS = [
+    ROOT / "README.md",
+    ROOT / "README.zh-CN.md",
+    SKILL / "SKILL.md",
+    *sorted((SKILL / "references").glob("*.md")),
+]
 COMMAND = re.compile(r"^(?:uv run(?: --project \S+)? |\.venv/bin/)?cryowisp (\S.*)$")
 
 
@@ -38,7 +43,15 @@ def documented_commands() -> list[tuple[str, str]]:
 
 def test_the_documents_name_every_subcommand() -> None:
     used = {shlex.split(args)[0] for _, args in documented_commands()}
-    assert used >= {"doctor", "import-model", "prepare-data", "prepare-task", "pack-program", "apply", "synthesize"}
+    assert used >= {
+        "doctor",
+        "import-model",
+        "prepare-data",
+        "prepare-task",
+        "pack-program",
+        "apply",
+        "synthesize",
+    }
 
 
 @pytest.mark.parametrize("where, args", documented_commands(), ids=lambda value: value[:60])
@@ -61,8 +74,9 @@ def test_the_skill_front_matter() -> None:
 
 @needs_sandbox
 def test_the_reuse_walkthrough_runs_the_documented_commands(tmp_path: Path) -> None:
-    spec = importlib.util.spec_from_file_location("skill_cli_walkthrough",
-                                                  ROOT / "scripts/demo/skill_cli_walkthrough.py")
+    spec = importlib.util.spec_from_file_location(
+        "skill_cli_walkthrough", ROOT / "scripts/demo/skill_cli_walkthrough.py"
+    )
     walkthrough = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(walkthrough)  # type: ignore[union-attr]
     root = tmp_path / "project"
@@ -70,5 +84,7 @@ def test_the_reuse_walkthrough_runs_the_documented_commands(tmp_path: Path) -> N
     final = root / "work" / "reuse" / "final"
     report = json.loads((final / "report.json").read_text())
     assert report["status"] in {"accepted", "base-kept", "final-rejected"}
-    assert (final / "model.pt").is_file() and report["output_is_updated_model"] == (report["status"] == "accepted")
+    assert (final / "model.pt").is_file() and report["output_is_updated_model"] == (
+        report["status"] == "accepted"
+    )
     assert report["final_base"]["old"]["n"] == report["final_base"]["new"]["n"] == 18

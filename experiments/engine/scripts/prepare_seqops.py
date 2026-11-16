@@ -35,19 +35,35 @@ def prepare_base() -> dict:
     built = B.build_base()
     constants = B.forward_constants()
     forward_sha = write_forward(forward_path(DATASET), render_seq_forward(**constants))
-    manifest = B.write_built(built, {"forward_path": "forward.py", "forward_sha256": forward_sha,
-                                     "forward_constants": constants, "created_by": run_info(REPO_ROOT)})
-    return {"dataset": DATASET, "split_sizes": manifest["split_sizes"], "test_n": manifest["test"]["n"],
-            "held_out_keys": manifest["held_out"]["n_keys"], "forward_sha256": forward_sha}
+    manifest = B.write_built(
+        built,
+        {
+            "forward_path": "forward.py",
+            "forward_sha256": forward_sha,
+            "forward_constants": constants,
+            "created_by": run_info(REPO_ROOT),
+        },
+    )
+    return {
+        "dataset": DATASET,
+        "split_sizes": manifest["split_sizes"],
+        "test_n": manifest["test"]["n"],
+        "held_out_keys": manifest["held_out"]["n_keys"],
+        "forward_sha256": forward_sha,
+    }
 
 
 def prepare_condition(name: str) -> dict:
     base_manifest = read_dataset_json(DATASET)
     built = B.build_condition(name)
     manifest = B.write_built(built, {**B.condition_extra(base_manifest), "created_by": run_info(REPO_ROOT)})
-    return {"condition": name, "split_sizes": manifest["split_sizes"], "test_n": manifest["test"]["n"],
-            "part_counts": {split: record["part_counts"] for split, record in manifest["splits"].items()},
-            "rule_agreement_max": manifest["condition"]["rule_agreement"]["max_overall"]}
+    return {
+        "condition": name,
+        "split_sizes": manifest["split_sizes"],
+        "test_n": manifest["test"]["n"],
+        "part_counts": {split: record["part_counts"] for split, record in manifest["splits"].items()},
+        "rule_agreement_max": manifest["condition"]["rule_agreement"]["max_overall"],
+    }
 
 
 def main() -> int:

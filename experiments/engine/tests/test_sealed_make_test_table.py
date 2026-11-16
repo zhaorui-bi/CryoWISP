@@ -33,14 +33,23 @@ def test_every_entry_is_used_and_cells_follow_their_definitions() -> None:
     result = MT.build(records, MT.list_entries(LIST), CELLS)
     assert result["missing"] == [] and result["not_used_by_any_cell"] == []
     main = result["cells"]["main"]
-    assert main["vit_gauss"] == {"gain": 12.0, "clean": -0.5, "net": 11.5, "ft_kept": 11.5, "ft_free": 11.5,
-                                 "ft_free_clean": -0.5, "ref_kept": 11.5}
+    assert main["vit_gauss"] == {
+        "gain": 12.0,
+        "clean": -0.5,
+        "net": 11.5,
+        "ft_kept": 11.5,
+        "ft_free": 11.5,
+        "ft_free_clean": -0.5,
+        "ref_kept": 11.5,
+    }
     assert main["babyai_pickup"]["ft_kept"] == 0.0  # base no-op by construction
     gauss = result["cells"]["reuse"]["gaussian"]["program"]
     assert gauss["gain"] == pytest.approx((4 * 12.0 + 6.0) / 5)
     assert gauss["share"] == pytest.approx(gauss["gain"] / 12.0)
     assert gauss["n_ratio_and_clean_ok"] == 4
-    assert result["cells"]["reuse"]["contrast"]["reselect"]["gain"] == pytest.approx(4 * 12.0 / 5)  # s104 no-op
+    assert result["cells"]["reuse"]["contrast"]["reselect"]["gain"] == pytest.approx(
+        4 * 12.0 / 5
+    )  # s104 no-op
     assert result["cells"]["stack"]["program"] == [11.5] * 4
     assert result["cells"]["stack"]["max_forgetting"] == 0.0
     assert result["bars"]["B E11_B_gaussian_s100"]["reading"] == "missed"  # joint not >= reference joint + 1
@@ -52,8 +61,12 @@ def test_missing_entry_leaves_cells_null_and_reading_unreadable() -> None:
     del records["E10_stream_v2_W4_snow"]
     result = MT.build(records, MT.list_entries(LIST), CELLS)
     assert result["missing"] == ["E10_stream_v2_W4_snow"]
-    assert result["cells"]["stack"]["program"][3] is None and result["cells"]["stack"]["max_forgetting"] is None
-    assert result["bars"]["E10 stream v2 (absolute criteria and the F4 comparison)"]["reading"].startswith("not readable")
+    assert (
+        result["cells"]["stack"]["program"][3] is None and result["cells"]["stack"]["max_forgetting"] is None
+    )
+    assert result["bars"]["E10 stream v2 (absolute criteria and the F4 comparison)"]["reading"].startswith(
+        "not readable"
+    )
 
 
 def test_stream_forgetting_is_signed_and_clean_must_agree() -> None:

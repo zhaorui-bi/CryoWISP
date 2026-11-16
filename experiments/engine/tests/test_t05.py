@@ -67,12 +67,27 @@ def setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         nets[name] = (path, params_sha256(params))
     frozen = tmp_path / "frozen.json"
     frozen.write_text(json.dumps({name: sha for name, (_, sha) in nets.items()}))
-    return {"module": module, "archive": archive, "record": record, "frozen": frozen, "nets": nets, "tmp": tmp_path}
+    return {
+        "module": module,
+        "archive": archive,
+        "record": record,
+        "frozen": frozen,
+        "nets": nets,
+        "tmp": tmp_path,
+    }
 
 
 def _args(s: dict, out: Path, nets: dict | None = None) -> list[str]:
-    args = ["--archive", str(s["archive"]), "--download-record", str(s["record"]), "--frozen", str(s["frozen"]),
-            "--out", str(out)]
+    args = [
+        "--archive",
+        str(s["archive"]),
+        "--download-record",
+        str(s["record"]),
+        "--frozen",
+        str(s["frozen"]),
+        "--out",
+        str(out),
+    ]
     for name, (path, sha) in (nets or s["nets"]).items():
         args += ["--network", f"{name}={path}:{sha}"]
     return args
@@ -108,10 +123,15 @@ def test_plain_tar_named_tar_gz_reads_the_same(setup: dict) -> None:
     """The published imagenetv2-matched-frequency.tar.gz is a plain POSIX tar: the same members, read the same way."""
     module = setup["module"]
     plain = setup["tmp"] / "plain.tar.gz"
-    with tarfile.open(setup["archive"], "r:gz") as source, tarfile.open(plain, "w", format=tarfile.PAX_FORMAT) as tar:
+    with (
+        tarfile.open(setup["archive"], "r:gz") as source,
+        tarfile.open(plain, "w", format=tarfile.PAX_FORMAT) as tar,
+    ):
         for member in source.getmembers():
             tar.addfile(member, source.extractfile(member))
-    assert module.archive_compression(plain) == "none" and module.archive_compression(setup["archive"]) == "gzip"
+    assert (
+        module.archive_compression(plain) == "none" and module.archive_compression(setup["archive"]) == "gzip"
+    )
     setup["record"].write_text(json.dumps({"sha256": hashlib.sha256(plain.read_bytes()).hexdigest()}))
     out = setup["tmp"] / "plain.json"
     assert module.main(_args({**setup, "archive": plain}, out)) == 0

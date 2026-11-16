@@ -34,15 +34,34 @@ def main() -> int:
     data = (json.dumps(report, indent=2) + "\n").encode("utf-8")
     out.write_bytes(data)
     d = report["diagnostics"]
-    print(json.dumps({
-        "file": str(out), "sha256": hashlib.sha256(data).hexdigest(), "accuracy": report["accuracy"],
-        "G_new": {k: report["G_new"][k] for k in ("diff_points", "paired_se_points", "only_b_right", "only_a_right")},
-        "G_old": {k: report["G_old"][k] for k in ("diff_points", "paired_se_points", "only_b_right", "only_a_right")},
-        "G_shift": report["G_shift"], "gate": report["gate"],
-        "prior_oracle": {k: d["prior_oracle"][k] for k in ("gain_points", "old_change_points", "recovered_fraction")},
-        "last_many_best_joint": d["last_many"]["best_joint"],
-        "separability": {k: d["separability"][k] for k in ("degree_auc", "logistic_auc", "degree_median")},
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "file": str(out),
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "accuracy": report["accuracy"],
+                "G_new": {
+                    k: report["G_new"][k]
+                    for k in ("diff_points", "paired_se_points", "only_b_right", "only_a_right")
+                },
+                "G_old": {
+                    k: report["G_old"][k]
+                    for k in ("diff_points", "paired_se_points", "only_b_right", "only_a_right")
+                },
+                "G_shift": report["G_shift"],
+                "gate": report["gate"],
+                "prior_oracle": {
+                    k: d["prior_oracle"][k]
+                    for k in ("gain_points", "old_change_points", "recovered_fraction")
+                },
+                "last_many_best_joint": d["last_many"]["best_joint"],
+                "separability": {
+                    k: d["separability"][k] for k in ("degree_auc", "logistic_auc", "degree_median")
+                },
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

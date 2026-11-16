@@ -86,41 +86,93 @@ DEFAULT_METHODS = (
     "input_stats",
 )
 """Default methods on repair instances (the E1 set)."""
-METHODS = (*DEFAULT_METHODS, "ridge_margin", "imprint", "imprint_retain", "grad_sparse19_sal", "grad_sparse19_traj",
-           "interp", "bn_adapt", "tent", "tent_ln", "sar")
+METHODS = (
+    *DEFAULT_METHODS,
+    "ridge_margin",
+    "imprint",
+    "imprint_retain",
+    "grad_sparse19_sal",
+    "grad_sparse19_traj",
+    "interp",
+    "bn_adapt",
+    "tent",
+    "tent_ln",
+    "sar",
+)
 FEWSHOT_ONLY = ("imprint", "imprint_retain")
 """Methods that add classes and run with --fewshot only; imprint_retain belongs to the E2 supplement, not the gate."""
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--instance", action="append", help="instance id (repeatable); default: select from index")
-    parser.add_argument("--split-role", choices=("dev", "main"), default="dev", help="index selection (default dev)")
+    parser.add_argument(
+        "--instance", action="append", help="instance id (repeatable); default: select from index"
+    )
+    parser.add_argument(
+        "--split-role", choices=("dev", "main"), default="dev", help="index selection (default dev)"
+    )
     parser.add_argument("--dataset", help="restrict the index selection to one dataset")
-    parser.add_argument("--methods", nargs="+", choices=METHODS,
-                        help="default: the E1 set, or with --fewshot the four E2 references")
-    parser.add_argument("--seed", type=int, default=0, help="run seed (torch seed for grad_*; directory name)")
+    parser.add_argument(
+        "--methods",
+        nargs="+",
+        choices=METHODS,
+        help="default: the E1 set, or with --fewshot the four E2 references",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=0, help="run seed (torch seed for grad_*; directory name)"
+    )
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
-    parser.add_argument("--allow-main", action="store_true", help="permit main instances (only after the freeze)")
-    parser.add_argument("--joint", action="store_true", help="E1: replay rows in the label fits, joint oracle")
-    parser.add_argument("--e10", action="store_true",
-                        help="E10: joint runs under the E10 program limits, the E10 references by default")
-    parser.add_argument("--e11", action="store_true",
-                        help="E11: --e10's limits and oracle on cifar10_vl7, the E11 references by default")
-    parser.add_argument("--e11-grid2", action="store_true",
-                        help="with --e11: PREREG E11's second grid (lr 1e-5/1e-4, interp alpha k/64), run label e11g2")
-    parser.add_argument("--e12", action="store_true",
-                        help="E12: --e10's limits and oracle on cifar10_r18, E10's references by default")
-    parser.add_argument("--e12-grid2", action="store_true",
-                        help="with --e12: the second grid on the E12 student, run label e12g2")
-    parser.add_argument("--t04", action="store_true",
-                        help="T04: --e10's limits and oracle on in1k_t04 (native ImageNet), E12's references by default")
-    parser.add_argument("--t04-grid2", action="store_true",
-                        help="with --t04: the second grid on the native network, run label t04g2")
-    parser.add_argument("--t04-edge", action="store_true",
-                        help="with --t04: the edge-extension grid (PREREG T04 amendment), run label t04g3")
-    parser.add_argument("--fewshot", action="store_true",
-                        help="E2: fewshot-v1 instances, new-class plus replay rows, fewshot joint oracle")
+    parser.add_argument(
+        "--allow-main", action="store_true", help="permit main instances (only after the freeze)"
+    )
+    parser.add_argument(
+        "--joint", action="store_true", help="E1: replay rows in the label fits, joint oracle"
+    )
+    parser.add_argument(
+        "--e10",
+        action="store_true",
+        help="E10: joint runs under the E10 program limits, the E10 references by default",
+    )
+    parser.add_argument(
+        "--e11",
+        action="store_true",
+        help="E11: --e10's limits and oracle on cifar10_vl7, the E11 references by default",
+    )
+    parser.add_argument(
+        "--e11-grid2",
+        action="store_true",
+        help="with --e11: PREREG E11's second grid (lr 1e-5/1e-4, interp alpha k/64), run label e11g2",
+    )
+    parser.add_argument(
+        "--e12",
+        action="store_true",
+        help="E12: --e10's limits and oracle on cifar10_r18, E10's references by default",
+    )
+    parser.add_argument(
+        "--e12-grid2",
+        action="store_true",
+        help="with --e12: the second grid on the E12 student, run label e12g2",
+    )
+    parser.add_argument(
+        "--t04",
+        action="store_true",
+        help="T04: --e10's limits and oracle on in1k_t04 (native ImageNet), E12's references by default",
+    )
+    parser.add_argument(
+        "--t04-grid2",
+        action="store_true",
+        help="with --t04: the second grid on the native network, run label t04g2",
+    )
+    parser.add_argument(
+        "--t04-edge",
+        action="store_true",
+        help="with --t04: the edge-extension grid (PREREG T04 amendment), run label t04g3",
+    )
+    parser.add_argument(
+        "--fewshot",
+        action="store_true",
+        help="E2: fewshot-v1 instances, new-class plus replay rows, fewshot joint oracle",
+    )
     return parser.parse_args(argv)
 
 
@@ -130,7 +182,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)
@@ -148,17 +202,17 @@ def main(argv: list[str] | None = None) -> int:
         E12_METHODS,
         E12_REF_LABEL,
         EXIT_REFUSED,
+        FEWSHOT_CAPABLE,
+        FEWSHOT_METHODS,
+        FEWSHOT_REF_LABEL,
+        FIT_METHODS,
+        JOINT_REF_LABEL,
         T04_EDGE_LABEL,
         T04_EDGE_METHODS,
         T04_GRID2_LABEL,
         T04_GRID2_METHODS,
         T04_METHODS,
         T04_REF_LABEL,
-        FEWSHOT_CAPABLE,
-        FEWSHOT_METHODS,
-        FEWSHOT_REF_LABEL,
-        FIT_METHODS,
-        JOINT_REF_LABEL,
         SelectionError,
         load_checked_fewshot_instances,
         load_checked_instances,
@@ -214,7 +268,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.fewshot:
             if args.joint or args.allow_main or args.split_role != "dev":
-                raise SelectionError("--fewshot runs dev fewshot instances only; drop --joint, --allow-main, --split-role")
+                raise SelectionError(
+                    "--fewshot runs dev fewshot instances only; drop --joint, --allow-main, --split-role"
+                )
             unfit = [method for method in methods if method not in FEWSHOT_CAPABLE]
             if unfit:
                 raise SelectionError(f"methods {unfit} do not run on fewshot instances")
@@ -226,16 +282,24 @@ def main(argv: list[str] | None = None) -> int:
                 raise SelectionError(f"{fewshot_only} add classes and run with --fewshot only")
             e10_only = [method for method in methods if method in E10_ONLY and (not args.e10 or args.e11)]
             if e10_only:
-                raise SelectionError(f"{e10_only} are BatchNorm references of PREREG E10 and run with --e10 only")
+                raise SelectionError(
+                    f"{e10_only} are BatchNorm references of PREREG E10 and run with --e10 only"
+                )
             e11_only = [method for method in methods if method in E11_ONLY and not args.e11]
             if e11_only:
-                raise SelectionError(f"{e11_only} are LayerNorm references of PREREG E11 and run with --e11 only")
+                raise SelectionError(
+                    f"{e11_only} are LayerNorm references of PREREG E11 and run with --e11 only"
+                )
             no_edge = [method for method in methods if args.t04_edge and method not in T04_EDGE_METHODS]
             if no_edge:
-                raise SelectionError(f"{no_edge} have no edge-extension run; expected some of {T04_EDGE_METHODS}")
+                raise SelectionError(
+                    f"{no_edge} have no edge-extension run; expected some of {T04_EDGE_METHODS}"
+                )
             no_grid2 = [method for method in methods if grid2 and method not in E11_GRID2_METHODS]
             if no_grid2:
-                raise SelectionError(f"{no_grid2} have no second-grid run; expected some of {E11_GRID2_METHODS}")
+                raise SelectionError(
+                    f"{no_grid2} have no second-grid run; expected some of {E11_GRID2_METHODS}"
+                )
             ids = select_instance_ids(args.instance, split_role=args.split_role, dataset=args.dataset)
             instances = load_checked_instances(ids, allow_main=args.allow_main)
     except (SplitRoleError, SelectionError) as error:
@@ -245,11 +309,25 @@ def main(argv: list[str] | None = None) -> int:
     if args.fewshot:
         ref_label: str | None = FEWSHOT_REF_LABEL
     else:
-        ref_label = (E11_GRID2_LABEL if args.e11_grid2 else E12_GRID2_LABEL if args.e12_grid2 else
-                     T04_GRID2_LABEL if args.t04_grid2 else T04_EDGE_LABEL if args.t04_edge else
-                     E11_REF_LABEL if args.e11 else
-                     E12_REF_LABEL if args.e12 else T04_REF_LABEL if args.t04 else
-                     E10_REF_LABEL if args.e10 else (JOINT_REF_LABEL if args.joint else None))
+        ref_label = (
+            E11_GRID2_LABEL
+            if args.e11_grid2
+            else E12_GRID2_LABEL
+            if args.e12_grid2
+            else T04_GRID2_LABEL
+            if args.t04_grid2
+            else T04_EDGE_LABEL
+            if args.t04_edge
+            else E11_REF_LABEL
+            if args.e11
+            else E12_REF_LABEL
+            if args.e12
+            else T04_REF_LABEL
+            if args.t04
+            else E10_REF_LABEL
+            if args.e10
+            else (JOINT_REF_LABEL if args.joint else None)
+        )
     for instance in instances:
         for method in methods:
             run_dir = baseline_run_dir(instance.instance_id, method, args.seed, ref_label)

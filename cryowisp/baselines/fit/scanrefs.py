@@ -77,13 +77,13 @@ from cryowisp.models import transformer as T
 
 from . import seqgrad as SG
 from .ftcompare import (
+    F1_LABEL,
     FT_LRS,
     L2SP_WEIGHTS,
     LORA_ALPHA_OVER_RANK,
     LORA_LRS,
     LORA_RANKS,
     LWF_TEMPERATURE,
-    F1_LABEL,
     LWF_WEIGHTS,
     PREREG_F1,
     REG_STEPS,

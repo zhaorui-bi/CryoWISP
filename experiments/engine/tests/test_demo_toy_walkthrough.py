@@ -18,12 +18,15 @@ SPEC.loader.exec_module(TW)  # type: ignore[union-attr]
 
 
 @needs_sandbox
-def test_the_walkthrough_runs_end_to_end(tmp_path_factory: pytest.TempPathFactory,
-                                         monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_walkthrough_runs_end_to_end(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # main() sets the three store variables itself; setting them here first lets monkeypatch restore them afterwards.
     for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
         monkeypatch.setenv(name, "unset-by-the-test")
-    root = tmp_path_factory.mktemp("hs") / "store"  # a neutral name: the sandbox self-test sees the session's paths
+    root = (
+        tmp_path_factory.mktemp("hs") / "store"
+    )  # a neutral name: the sandbox self-test sees the session's paths
     assert TW.main(["--root", str(root)]) == 0
 
     (session,) = (root / "runs" / "sessions").iterdir()

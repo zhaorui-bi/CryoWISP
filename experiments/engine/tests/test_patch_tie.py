@@ -55,8 +55,9 @@ def test_tie_columns_of_a_linear_weight_matches_reference(s: float) -> None:
     params = _model()
     groups = [0, 0, 0, 3, 3, 5, 6, 6, 8, 9, 6, 11]
     result = _apply(params, {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": groups, "strength": s})
-    np.testing.assert_allclose(result.child["fc1.weight"], _reference(params["fc1.weight"], 1, groups, s), rtol=0,
-                               atol=1e-6)
+    np.testing.assert_allclose(
+        result.child["fc1.weight"], _reference(params["fc1.weight"], 1, groups, s), rtol=0, atol=1e-6
+    )
     for column in (5, 8, 9, 11):  # alone in their group: bitwise unchanged
         assert result.child["fc1.weight"][:, column].tobytes() == params["fc1.weight"][:, column].tobytes()
     assert result.edit_size == 12
@@ -67,7 +68,9 @@ def test_tie_columns_of_a_linear_weight_matches_reference(s: float) -> None:
 def test_full_strength_makes_group_members_equal_to_their_mean() -> None:
     params = _model(1)
     groups = [1, 1, 2, 2]
-    result = _apply(params, {"op": "tie", "tensor": "conv.weight", "axis": 0, "groups": groups, "strength": 1.0})
+    result = _apply(
+        params, {"op": "tie", "tensor": "conv.weight", "axis": 0, "groups": groups, "strength": 1.0}
+    )
     child, parent = result.child["conv.weight"], params["conv.weight"].astype(np.float64)
     np.testing.assert_allclose(child[0], (parent[0] + parent[1]) / 2, atol=1e-6, rtol=0)
     assert child[0].tobytes() == child[1].tobytes() and child[2].tobytes() == child[3].tobytes()
@@ -78,21 +81,32 @@ def test_tie_columns_of_a_conv_weight_use_the_flattened_in_kh_kw_order() -> None
     params = _model(2)
     # Tie the 3 input channels at each of the 4 kernel positions: column j = c * 4 + k belongs to group k.
     groups = [j % 4 for j in range(12)]
-    result = _apply(params, {"op": "tie", "tensor": "conv.weight", "axis": 1, "groups": groups, "strength": 1.0})
+    result = _apply(
+        params, {"op": "tie", "tensor": "conv.weight", "axis": 1, "groups": groups, "strength": 1.0}
+    )
     child = result.child["conv.weight"]
     for c in (1, 2):
         np.testing.assert_array_equal(child[:, c], child[:, 0])
-    np.testing.assert_allclose(child[:, 0], params["conv.weight"].astype(np.float64).mean(axis=1), atol=1e-6, rtol=0)
+    np.testing.assert_allclose(
+        child[:, 0], params["conv.weight"].astype(np.float64).mean(axis=1), atol=1e-6, rtol=0
+    )
 
 
 def test_tie_on_a_bias_and_group_ids_are_labels_only() -> None:
     params = _model(3)
-    first = _apply(params, {"op": "tie", "tensor": "fc1.bias", "axis": 0, "groups": [0, 0, 2, 3, 0], "strength": 0.5})
-    relabelled = _apply(params, {"op": "tie", "tensor": "fc1.bias", "axis": 0, "groups": [4, 4, 1, 0, 4],
-                                 "strength": 0.5})
+    first = _apply(
+        params, {"op": "tie", "tensor": "fc1.bias", "axis": 0, "groups": [0, 0, 2, 3, 0], "strength": 0.5}
+    )
+    relabelled = _apply(
+        params, {"op": "tie", "tensor": "fc1.bias", "axis": 0, "groups": [4, 4, 1, 0, 4], "strength": 0.5}
+    )
     assert first.child_sha256 == relabelled.child_sha256
-    np.testing.assert_allclose(first.child["fc1.bias"], _reference(params["fc1.bias"][:, None], 0, [0, 0, 2, 3, 0],
-                                                                   0.5)[:, 0], atol=1e-6, rtol=0)
+    np.testing.assert_allclose(
+        first.child["fc1.bias"],
+        _reference(params["fc1.bias"][:, None], 0, [0, 0, 2, 3, 0], 0.5)[:, 0],
+        atol=1e-6,
+        rtol=0,
+    )
 
 
 def test_groups_from_a_file_match_inline_groups(tmp_path) -> None:
@@ -100,16 +114,27 @@ def test_groups_from_a_file_match_inline_groups(tmp_path) -> None:
     groups = [j // 3 for j in range(12)]
     np.save(tmp_path / "g_int.npy", np.array(groups, dtype=np.int32))
     np.save(tmp_path / "g_float.npy", np.array(groups, dtype=np.float64))
-    inline = _apply(params, {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": groups, "strength": 0.7})
+    inline = _apply(
+        params, {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": groups, "strength": 0.7}
+    )
     for name in ("g_int.npy", "g_float.npy"):
-        from_file = _apply(params, {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": name, "strength": 0.7},
-                           patch_dir=tmp_path)
+        from_file = _apply(
+            params,
+            {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": name, "strength": 0.7},
+            patch_dir=tmp_path,
+        )
         assert from_file.child_sha256 == inline.child_sha256
 
 
 def test_tie_is_deterministic() -> None:
     params = _model(5)
-    op = {"op": "tie", "tensor": "conv.weight", "axis": 1, "groups": [j % 3 for j in range(12)], "strength": 0.3}
+    op = {
+        "op": "tie",
+        "tensor": "conv.weight",
+        "axis": 1,
+        "groups": [j % 3 for j in range(12)],
+        "strength": 0.3,
+    }
     assert _apply(params, op).child_sha256 == _apply(params, op).child_sha256
 
 
@@ -153,8 +178,11 @@ def test_axis_one_needs_rank_two() -> None:
 def test_tie_group_file_errors(tmp_path, values: np.ndarray, message: str) -> None:
     np.save(tmp_path / "g.npy", values)
     with pytest.raises(PatchError) as raised:
-        _apply(_model(), {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": "g.npy", "strength": 0.5},
-               patch_dir=tmp_path)
+        _apply(
+            _model(),
+            {"op": "tie", "tensor": "fc1.weight", "axis": 1, "groups": "g.npy", "strength": 0.5},
+            patch_dir=tmp_path,
+        )
     assert any(message in text for text in raised.value.messages), raised.value.messages
 
 

@@ -144,7 +144,7 @@ def import_e10_models(run_dir: Path, note: str) -> list[dict[str, Any]]:
     import torch
 
     from cryowisp.data import e10 as D
-    from cryowisp.data.store import forward_path, models_dir, read_json
+    from cryowisp.data.store import models_dir, read_json
     from cryowisp.evalkit.targets import load_dataset_forward, read_dataset_meta
 
     if not note or not note.strip():

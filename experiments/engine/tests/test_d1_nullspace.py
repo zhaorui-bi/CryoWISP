@@ -73,7 +73,9 @@ def test_layer_inputs_replay_the_forward_pass(tmp_path: Path) -> None:
     tokens = inputs[N.PATCH_WEIGHT] @ w.T + params["tokenizer.conv_layers.0.0.bias"]
     h = x.astype(np.float64) / 255.0
     h = (h - np.asarray(MEAN).reshape(1, -1, 1, 1)) / np.asarray(STD).reshape(1, -1, 1, 1)
-    expected = module._linear(module._patches(h), w, params["tokenizer.conv_layers.0.0.bias"].astype(np.float64))
+    expected = module._linear(
+        module._patches(h), w, params["tokenizer.conv_layers.0.0.bias"].astype(np.float64)
+    )
     assert np.allclose(tokens, expected.reshape(-1, 256), atol=1e-10)
     with pytest.raises(N.NullspaceError, match="patch projection and MLP weights only"):
         N.layer_inputs(module, params, x, ["classifier.blocks.0.self_attn.qkv.weight"])
@@ -109,8 +111,9 @@ def test_projected_child_changes_only_the_scope_and_shrinks_the_old_response(tmp
         r_before = np.linalg.norm(x @ before.reshape(before.shape[0], -1).T)
         r_after = np.linalg.norm(x @ after.reshape(after.shape[0], -1).T)
         assert r_after < r_before
-        bound = np.sqrt((1 - bases[t].captured) * np.trace(moments[t]) * len(x)) * np.linalg.norm(before.reshape(
-            before.shape[0], -1), 2)
+        bound = np.sqrt((1 - bases[t].captured) * np.trace(moments[t]) * len(x)) * np.linalg.norm(
+            before.reshape(before.shape[0], -1), 2
+        )
         assert r_after <= bound * (1 + 1e-4) + 1e-4  # float32 storage of the projected weight
         assert record[t]["k"] == bases[t].k and 0 < record[t]["kept_frob_ratio"] < 1
 
@@ -139,12 +142,14 @@ def test_scopes_and_grids_are_the_prereg_ones() -> None:
     c_edited = ["classifier.blocks.2.linear1.weight", "classifier.blocks.2.linear2.weight", N.PATCH_WEIGHT]
     scopes = script.scope_tensors(contrast, c_edited, {2: [1, 2]})
     assert scopes == {"s1": c_edited, "s2": [N.PATCH_WEIGHT]}
-    assert script.wrapper_configs(contrast, scopes) == [{"scope": s, "e": e} for s in ("s1", "s2")
-                                                         for e in (0.90, 0.99, 0.999)]
+    assert script.wrapper_configs(contrast, scopes) == [
+        {"scope": s, "e": e} for s in ("s1", "s2") for e in (0.90, 0.99, 0.999)
+    ]
     g_edited = [f"classifier.blocks.{b}.{p}.weight" for b in (3, 4, 6) for p in ("linear1", "linear2")]
     g_scopes = script.scope_tensors(gaussian, g_edited, {3: [0, 1], 4: [5, 6], 6: [8, 9]})
     assert g_scopes["s2"] == [] and script.wrapper_configs(gaussian, g_scopes) == [
-        {"scope": "s1", "e": e} for e in (0.90, 0.99, 0.999)]
+        {"scope": "s1", "e": e} for e in (0.90, 0.99, 0.999)
+    ]
     with pytest.raises(script.D1Error, match="PREREG D1 names"):
         script.scope_tensors(gaussian, g_edited + [N.PATCH_WEIGHT], {3: [0], 4: [5], 6: [8]})
     with pytest.raises(script.D1Error, match="not all edited"):
@@ -156,9 +161,19 @@ def test_summarize_reads_both_record_shapes() -> None:
     part = {"delta_acc": 0.1, "worst_class_delta": -0.02, "fixed": 5, "broken": 1}
     clean = {"delta_acc": -0.005, "worst_class_delta": -0.03, "fixed": 2, "broken": 4}
     joint = {"readouts": part, "readouts_clean": clean, "n": 4000, "n_clean": 4000, "clean_split_sha256": "a"}
-    transfer = {"readouts": part, "readouts_clean": clean, "n_select": 4000, "n_clean": 4000,
-                "clean_split_sha256": "a", "schema": "cryowisp.harness.program_transfer.v0"}
+    transfer = {
+        "readouts": part,
+        "readouts_clean": clean,
+        "n_select": 4000,
+        "n_clean": 4000,
+        "clean_split_sha256": "a",
+        "schema": "cryowisp.harness.program_transfer.v0",
+    }
     for record in (joint, transfer):
         v = script.summarize(record)
         assert v["gain"] == pytest.approx(10.0) and v["clean"] == pytest.approx(-0.5)
-        assert v["joint"] == pytest.approx(9.5) and v["n"] == 4000 and v["worst_class_clean"] == pytest.approx(-3.0)
+        assert (
+            v["joint"] == pytest.approx(9.5)
+            and v["n"] == 4000
+            and v["worst_class_clean"] == pytest.approx(-3.0)
+        )

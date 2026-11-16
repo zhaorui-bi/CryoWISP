@@ -45,17 +45,35 @@ EXIT_REFUSED = 2
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--method", required=True,
-                        help="grad_last, ridge_last or grad_full; on E10 instances also bn_adapt or tent")
-    parser.add_argument("--instances", nargs="+", default=list(E4_SEED100),
-                        help="one dev instance per round, in round order (default: the seed-100 E4 stream)")
-    parser.add_argument("--loop-record", nargs="*", type=Path, default=[],
-                        help="loop stream records to rebuild and check first; the first is compared row by row")
-    parser.add_argument("--out", type=Path, help="directory for the record (default $CRYOWISP_RUNS/loop_control_b)")
+    parser.add_argument(
+        "--method",
+        required=True,
+        help="grad_last, ridge_last or grad_full; on E10 instances also bn_adapt or tent",
+    )
+    parser.add_argument(
+        "--instances",
+        nargs="+",
+        default=list(E4_SEED100),
+        help="one dev instance per round, in round order (default: the seed-100 E4 stream)",
+    )
+    parser.add_argument(
+        "--loop-record",
+        nargs="*",
+        type=Path,
+        default=[],
+        help="loop stream records to rebuild and check first; the first is compared row by row",
+    )
+    parser.add_argument(
+        "--out", type=Path, help="directory for the record (default $CRYOWISP_RUNS/loop_control_b)"
+    )
     parser.add_argument("--seed", type=int, default=0, help="run seed of the fits (E1's)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
-    parser.add_argument("--kept-rule", default="loop-retain-v1", choices=("loop-retain-v1", "loop-retain-v2"),
-                        help="the loop's kept rule the rounds re-select by (cryowisp.harness.loop.KEPT_RULES)")
+    parser.add_argument(
+        "--kept-rule",
+        default="loop-retain-v1",
+        choices=("loop-retain-v1", "loop-retain-v2"),
+        help="the loop's kept rule the rounds re-select by (cryowisp.harness.loop.KEPT_RULES)",
+    )
     return parser.parse_args(argv)
 
 
@@ -69,11 +87,17 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    sys.dont_write_bytecode = (
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.checked_reference_stream import METHODS, loop_round_rows, run_checked_reference_stream
+    from cryowisp.baselines.fit.checked_reference_stream import (
+        METHODS,
+        loop_round_rows,
+        run_checked_reference_stream,
+    )
     from cryowisp.common.paths import runs_dir
 
     if args.method not in METHODS:
@@ -84,29 +108,45 @@ def main(argv: list[str] | None = None) -> int:
     for record in args.loop_record:
         rows = loop_round_rows(record)
         checked.append(rows)
-        print(f"loop rows rebuilt and matched: {record} "
-              f"({[row['content_sha256'][:12] for row in rows]})", flush=True)
+        print(
+            f"loop rows rebuilt and matched: {record} ({[row['content_sha256'][:12] for row in rows]})",
+            flush=True,
+        )
     out = args.out if args.out is not None else runs_dir() / "loop_control_b"
-    path = run_checked_reference_stream(args.method, args.instances, out,
-                                        loop_rows=checked[0] if checked else None,
-                                        loop_record=args.loop_record[0] if args.loop_record else None,
-                                        run_seed=args.seed, kept_rule=args.kept_rule)
+    path = run_checked_reference_stream(
+        args.method,
+        args.instances,
+        out,
+        loop_rows=checked[0] if checked else None,
+        loop_record=args.loop_record[0] if args.loop_record else None,
+        run_seed=args.seed,
+        kept_rule=args.kept_rule,
+    )
     record = json.loads(path.read_text())
     for row in record["rounds"]:
         kept = row.get("kept_check") or {}
-        print(f"round {row['round']} {row['condition']}: {row['status']} kept {row['kept']} {row['kept_config']} "
-              f"score {kept.get('score')} (checks {row['queries_used']}, eligible {row['n_eligible']})", flush=True)
+        print(
+            f"round {row['round']} {row['condition']}: {row['status']} kept {row['kept']} {row['kept_config']} "
+            f"score {kept.get('score')} (checks {row['queries_used']}, eligible {row['n_eligible']})",
+            flush=True,
+        )
     summary = record["summary"]
     gains = {name: _points(item["gain_after_last_round"]) for name, item in summary["conditions"].items()}
-    print(f"{args.method}: mean gain {_points(summary['mean_gain_after_last_round'])} points, clean "
-          f"{_points(summary['clean_delta_acc_mean_after_last_round'])}, max forgetting "
-          f"{_points(summary['max_forgetting'])}, rounds ok {summary['n_rounds_ok']}; gains {gains}; "
-          f"wall {time.perf_counter() - started:.0f} s", flush=True)
+    print(
+        f"{args.method}: mean gain {_points(summary['mean_gain_after_last_round'])} points, clean "
+        f"{_points(summary['clean_delta_acc_mean_after_last_round'])}, max forgetting "
+        f"{_points(summary['max_forgetting'])}, rounds ok {summary['n_rounds_ok']}; gains {gains}; "
+        f"wall {time.perf_counter() - started:.0f} s",
+        flush=True,
+    )
     if "kept_rule" in record:
         rule = record["kept_rule"]
-        print(f"{rule['name']}: clean floors {rule['s_old_floor']}, kept score_old "
-              f"{[item['s_old'] for item in rule['clean_used']]} (total {rule['clean_used_total']} of "
-              f"{rule['clean_budget_floor']})", flush=True)
+        print(
+            f"{rule['name']}: clean floors {rule['s_old_floor']}, kept score_old "
+            f"{[item['s_old'] for item in rule['clean_used']]} (total {rule['clean_used_total']} of "
+            f"{rule['clean_budget_floor']})",
+            flush=True,
+        )
     print(f"  -> {path}", flush=True)
     return 0
 

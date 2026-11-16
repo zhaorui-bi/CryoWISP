@@ -41,7 +41,6 @@ from cryowisp.models.export import (
     INDEX_KEYS,
     PARITY_N,
     PARITY_SPLIT,
-    PARITY_TOL,
     ParityError,
     all_model_ids,
     load_forward_no_cache,
@@ -57,7 +56,10 @@ from cryowisp.models.importer import (
     models_source,
     run_record,
 )
-from cryowisp.models.parity import FLOAT32_STEP, PARITY_RULE, check_logit_parity, float32_tolerance, logit_scale
+from cryowisp.models.parity import (
+    PARITY_RULE,
+    check_logit_parity,
+)
 from cryowisp.models.train_seq import SeqTrainConfig, SeqTrainResult, em_by_operator, torch_predict
 
 SEQ_PRIVATE_SCHEMA = "cryowisp.model_private.seqops.v1"

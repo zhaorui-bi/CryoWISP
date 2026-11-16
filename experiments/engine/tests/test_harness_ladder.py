@@ -70,7 +70,9 @@ U, K0B, K0A = e11.UNLABELLED, e11.NAMED, e11.NAMED_NOCHECK
 SENTENCE = e11.CAPABILITY_SENTENCES[PLANT_CONDITION]
 WALL_S = 300.0
 LN = "classifier.norm.weight"
-PROBE = STRINGS + f"""import numpy as np
+PROBE = (
+    STRINGS
+    + f"""import numpy as np
 
 def update(student, experience):
     print("KEYS", ",".join(sorted(experience)))
@@ -80,17 +82,24 @@ def update(student, experience):
     delta[:cut] = -2.0 * w[:cut]
     return {{{LN!r}: delta}}
 """
-BREAK = STRINGS + """import numpy as np
+)
+BREAK = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     b = np.asarray(student["params"]["classifier.fc.bias"], dtype=np.float64)
     delta = np.zeros_like(b)
     delta[1] = 50.0
     return {"classifier.fc.bias": delta}
-"""  # every image to class 1: on the toy student score -15, score_old -11 below the floor -1
-CRASH = STRINGS + """def update(student, experience):
+"""
+)  # every image to class 1: on the toy student score -15, score_old -11 below the floor -1
+CRASH = (
+    STRINGS
+    + """def update(student, experience):
     raise RuntimeError("no update")
 """
+)
 KERNEL_PROBE = """import json, os
 _files = sorted(os.path.join(root, name) for root, _, names in os.walk("/work") for name in names)
 print(json.dumps({"files": _files, "store": os.path.exists(STORE)}))
@@ -120,16 +129,18 @@ def row_keys(rows: np.ndarray) -> dict[int, list[tuple[int, int]]]:
         row = flat[index]
         chosen = max(0, width // 2 - 4)
         for offset in range(chosen, width - 8):
-            window = row[offset:offset + 8]
+            window = row[offset : offset + 8]
             if window.min() != window.max():
                 chosen = offset
                 break
-        key = int(np.frombuffer(row[chosen:chosen + 8].tobytes(), dtype=np.uint64)[0])
+        key = int(np.frombuffer(row[chosen : chosen + 8].tobytes(), dtype=np.uint64)[0])
         keys.setdefault(key, []).append((index, chosen))
     return keys
 
 
-def rows_in_bytes(data: bytes, rows: np.ndarray, keys: dict[int, list[tuple[int, int]]] | None = None) -> list[int]:
+def rows_in_bytes(
+    data: bytes, rows: np.ndarray, keys: dict[int, list[tuple[int, int]]] | None = None
+) -> list[int]:
     """The rows of ``rows`` (uint8, [N, ...]) whose bytes occur anywhere in ``data``: every 8-byte window of ``data``
     at every offset is matched against ``row_keys`` and each candidate is compared in full."""
     flat = np.ascontiguousarray(rows).reshape(len(rows), -1)
@@ -149,7 +160,7 @@ def rows_in_bytes(data: bytes, rows: np.ndarray, keys: dict[int, list[tuple[int,
             at = shift + 8 * int(position)
             for index, offset in keys[int(values[position])]:
                 start = at - offset
-                if 0 <= start <= len(buffer) - width and data[start:start + width] == flat[index].tobytes():
+                if 0 <= start <= len(buffer) - width and data[start : start + width] == flat[index].tobytes():
                     found.add(index)
     return sorted(found)
 
@@ -157,7 +168,9 @@ def rows_in_bytes(data: bytes, rows: np.ndarray, keys: dict[int, list[tuple[int,
 def label_patterns(labels: np.ndarray) -> dict[str, bytes]:
     """The bytes of a label array as int64, int32 and uint8."""
     values = np.asarray(labels)
-    return {dtype: np.ascontiguousarray(values.astype(dtype)).tobytes() for dtype in ("int64", "int32", "uint8")}
+    return {
+        dtype: np.ascontiguousarray(values.astype(dtype)).tobytes() for dtype in ("int64", "int32", "uint8")
+    }
 
 
 def labels_in(paths: list[Path], labels: np.ndarray) -> list[str]:
@@ -170,7 +183,9 @@ def labels_in(paths: list[Path], labels: np.ndarray) -> list[str]:
         found += [f"{path.name}: {dtype} bytes" for dtype, pattern in patterns.items() if pattern in data]
         for key, array in _arrays(path).items():
             raw = np.ascontiguousarray(array).tobytes()
-            found += [f"{path.name}:{key}: {dtype} bytes" for dtype, pattern in patterns.items() if pattern in raw]
+            found += [
+                f"{path.name}:{key}: {dtype} bytes" for dtype, pattern in patterns.items() if pattern in raw
+            ]
             if array.shape == np.shape(labels) and np.array_equal(array, labels):
                 found.append(f"{path.name}:{key}: equal")
     return found
@@ -194,7 +209,10 @@ def image_arrays_in(paths: list[Path], image_shape: tuple[int, ...]) -> list[str
     found = []
     for path in paths:
         for key, array in _arrays(path).items():
-            if array.ndim >= len(image_shape) and tuple(array.shape[array.ndim - len(image_shape):]) == image_shape:
+            if (
+                array.ndim >= len(image_shape)
+                and tuple(array.shape[array.ndim - len(image_shape) :]) == image_shape
+            ):
                 found.append(f"{path.name}:{key}")
     return found
 
@@ -204,12 +222,16 @@ def split_rows_in(paths: list[Path], splits: dict[str, dict[str, np.ndarray]]) -
     blobs = []
     for path in paths:
         blobs.append((path.name, path.read_bytes()))
-        blobs += [(f"{path.name}:{key}", np.ascontiguousarray(array).tobytes())
-                  for key, array in _arrays(path).items()]
+        blobs += [
+            (f"{path.name}:{key}", np.ascontiguousarray(array).tobytes())
+            for key, array in _arrays(path).items()
+        ]
     found: dict[str, list[str]] = {}
     for name, arrays in splits.items():
         keys = row_keys(arrays["x"])
-        hits = [f"{where}:{index}" for where, data in blobs for index in rows_in_bytes(data, arrays["x"], keys)]
+        hits = [
+            f"{where}:{index}" for where, data in blobs for index in rows_in_bytes(data, arrays["x"], keys)
+        ]
         if hits:
             found[name] = hits
     return found
@@ -220,7 +242,9 @@ def split_rows_in(paths: list[Path], splits: dict[str, dict[str, np.ndarray]]) -
 
 
 @pytest.fixture
-def ladder_store(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> V.SyntheticStore:
+def ladder_store(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> V.SyntheticStore:
     """The toy E11 store under a neutral directory name."""
     return build_e11_store(tmp_path_factory.mktemp("hs") / "store", monkeypatch)
 
@@ -236,13 +260,26 @@ def _assembled(store: V.SyntheticStore, directory: Path, **kwargs: Any):  # type
 
 def _sandbox_files(root: Path) -> list[Path]:
     paths = SessionPaths(root)
-    return sorted(path for directory in (paths.trial, paths.patches, paths.scratch) for path in directory.rglob("*")
-                  if path.is_file())
+    return sorted(
+        path
+        for directory in (paths.trial, paths.patches, paths.scratch)
+        for path in directory.rglob("*")
+        if path.is_file()
+    )
 
 
 def _dry(instance_id: str, variant: str | None = None, **kwargs: Any) -> runner.SessionResult:
-    result = runner.run_session(instance_id, "LEARN", 0, effort="max", wall_timeout_s=7200.0, dry_run=True,
-                                retention_floor_frac=0.005, e11_variant=variant, **kwargs)
+    result = runner.run_session(
+        instance_id,
+        "LEARN",
+        0,
+        effort="max",
+        wall_timeout_s=7200.0,
+        dry_run=True,
+        retention_floor_frac=0.005,
+        e11_variant=variant,
+        **kwargs,
+    )
     assert result.status == STATUS_DRY_RUN, result.record
     return result
 
@@ -251,17 +288,34 @@ def _texts(root: Path) -> dict[str, str]:
     """The prompts and the tool descriptions of a session, as the editor gets them."""
     session = read_json(root / "session.json")
     spec = arm_spec(str(session["arm"]))
-    tools = tool_specs(session["tools"], spec.program, s_old_floor=int(session["kept_rule"]["s_old_floor"]),
-                       e11_variant=session.get("e11_variant"))
-    return {"system": (root / "prompts" / "system.md").read_text(), "task": (root / "prompts" / "task.md").read_text(),
-            "tools": json.dumps(tools, sort_keys=True)}
+    tools = tool_specs(
+        session["tools"],
+        spec.program,
+        s_old_floor=int(session["kept_rule"]["s_old_floor"]),
+        e11_variant=session.get("e11_variant"),
+    )
+    return {
+        "system": (root / "prompts" / "system.md").read_text(),
+        "task": (root / "prompts" / "task.md").read_text(),
+        "tools": json.dumps(tools, sort_keys=True),
+    }
 
 
-def _session(store: V.SyntheticStore, variant: str | None,
-             script: Any) -> tuple[runner.SessionResult, ScriptedLauncher]:
+def _session(
+    store: V.SyntheticStore, variant: str | None, script: Any
+) -> tuple[runner.SessionResult, ScriptedLauncher]:
     launcher = ScriptedLauncher(script)
-    result = runner.run_session(_id(store), "LEARN", 0, effort="max", wall_timeout_s=WALL_S, launcher=launcher,
-                                skip_audit=True, retention_floor_frac=0.005, e11_variant=variant)
+    result = runner.run_session(
+        _id(store),
+        "LEARN",
+        0,
+        effort="max",
+        wall_timeout_s=WALL_S,
+        launcher=launcher,
+        skip_audit=True,
+        retention_floor_frac=0.005,
+        e11_variant=variant,
+    )
     return result, launcher
 
 
@@ -284,8 +338,8 @@ def _budgets(checks: int = 8) -> Budgets:
 @needs_prereg
 def test_the_capability_sentence_is_the_prereg_one() -> None:
     prereg = " ".join(PREREG.read_text(encoding="utf-8").split())
-    entry = prereg[prereg.index("Information ladder on one student: K0a, K0b, U"):]
-    assert f'"{SENTENCE}"' in entry[:entry.index("K0b: K0a plus")]
+    entry = prereg[prereg.index("Information ladder on one student: K0a, K0b, U") :]
+    assert f'"{SENTENCE}"' in entry[: entry.index("K0b: K0a plus")]
 
 
 def test_the_ladder_has_one_student() -> None:
@@ -293,13 +347,16 @@ def test_the_ladder_has_one_student() -> None:
     assert e11.VARIANTS == ("standard", "rule", U, K0B, K0A) and e11.LADDER_CONDITION == PLANT_CONDITION
     base = {"dataset": e11.DATASET, "evidence_rule": "evidence-v1", "condition": PLANT_CONDITION, "seed": 100}
     assert e11.ladder_view(base, U) == {"variant": U, "condition": PLANT_CONDITION, "seed": 100}
-    assert e11.ladder_view(base, K0B)["capability_sentence"] == SENTENCE and "hidden_check" not in e11.ladder_view(
-        base, K0B)
+    assert e11.ladder_view(base, K0B)[
+        "capability_sentence"
+    ] == SENTENCE and "hidden_check" not in e11.ladder_view(base, K0B)
     assert e11.ladder_view(base, K0A)["hidden_check"] == e11.HIDDEN_CHECK
-    for private, text in (({**base, "seed": 101}, "seed-100 student only"),
-                          ({**base, "condition": "contrast_s5"}, "seed-100 student only"),
-                          ({**base, "dataset": "cifar10_r20"}, "E11 evidence-v1 instance"),
-                          ({**base, "evidence_rule": "fewshot-v1"}, "E11 evidence-v1 instance")):
+    for private, text in (
+        ({**base, "seed": 101}, "seed-100 student only"),
+        ({**base, "condition": "contrast_s5"}, "seed-100 student only"),
+        ({**base, "dataset": "cifar10_r20"}, "E11 evidence-v1 instance"),
+        ({**base, "evidence_rule": "fewshot-v1"}, "E11 evidence-v1 instance"),
+    ):
         with pytest.raises(e11.E11HarnessError, match=text):
             e11.ladder_view(private, K0B)
     with pytest.raises(e11.E11HarnessError, match="not a ladder view"):
@@ -318,24 +375,34 @@ def test_each_ladder_task_template_is_derived_by_edits_found_exactly_once() -> N
         doubled = learn.replace(edits[0][0], edits[0][0] + "\n" + edits[0][0])
         with pytest.raises(ValueError, match="exactly once"):
             ladder_task_template(variant, doubled)
-    assert "y_new" not in ladder_task_template(U, learn) and "experience.npz" not in ladder_task_template(K0B, learn)
+    assert "y_new" not in ladder_task_template(U, learn) and "experience.npz" not in ladder_task_template(
+        K0B, learn
+    )
     nocheck = ladder_task_template(K0A, learn)
     assert "check" not in nocheck.lower() and "$readout" not in nocheck and "$budget_queries" not in nocheck
     system = (PROMPT_DIR / "system_LEARN.md").read_text(encoding="utf-8")
     kept = nocheck_kept_section(system, -20)
-    assert "check" not in kept.lower() and "at least -20 (at most 20 more clean held-out images" in " ".join(
-        kept.split()) and max(len(line) for line in kept.splitlines()) <= 116
+    assert (
+        "check" not in kept.lower()
+        and "at least -20 (at most 20 more clean held-out images" in " ".join(kept.split())
+        and max(len(line) for line in kept.splitlines()) <= 116
+    )
     # every paragraph but What is kept and the two closing passages is system_LEARN.md's, byte for byte
-    assert kept.split("## Rules")[1].split("## Environment")[0] == system.split("## Rules")[1].split(
-        "## Environment")[0]
+    assert (
+        kept.split("## Rules")[1].split("## Environment")[0]
+        == system.split("## Rules")[1].split("## Environment")[0]
+    )
     with pytest.raises(ValueError, match="word for word"):
-        nocheck_kept_section(system.replace("Unchecked programs are never kept.", "Unchecked programs are kept."), -20)
+        nocheck_kept_section(
+            system.replace("Unchecked programs are never kept.", "Unchecked programs are kept."), -20
+        )
     with pytest.raises(ValueError, match="exactly once"):
         nocheck_kept_section(system.replace("A program counts only once", "A file counts only once"), -20)
 
 
-def test_the_ladder_task_views_refuse_what_they_cannot_derive(ladder_store: V.SyntheticStore,
-                                                              tmp_path: Path) -> None:
+def test_the_ladder_task_views_refuse_what_they_cannot_derive(
+    ladder_store: V.SyntheticStore, tmp_path: Path
+) -> None:
     task = _assembled(ladder_store, tmp_path / "learn").task
     assert learn_task_unlabelled(task)["experience"]["new"]["keys"] == ["x_new", "pred_new"]
     for checks in (True, False):
@@ -343,13 +410,23 @@ def test_the_ladder_task_views_refuse_what_they_cannot_derive(ladder_store: V.Sy
         with pytest.raises(ExperienceError, match="already names the capability"):
             learn_task_named(once, SENTENCE, checks)
     for key, edit, view in (
-            ("statement",
-             lambda s: s.replace("holds labelled examples from the new", "holds some examples from the new"),
-             "unlabelled"),
-            ("statement", lambda s: s + " The experience file holds labelled examples from the new condition.",
-             "unlabelled"),
-            ("statement", lambda s: s.replace("with the classifier's predictions on both.", "and more."), "named"),
-            ("statement", lambda s: s.replace("its experience, without", "its data, without"), "named")):
+        (
+            "statement",
+            lambda s: s.replace("holds labelled examples from the new", "holds some examples from the new"),
+            "unlabelled",
+        ),
+        (
+            "statement",
+            lambda s: s + " The experience file holds labelled examples from the new condition.",
+            "unlabelled",
+        ),
+        (
+            "statement",
+            lambda s: s.replace("with the classifier's predictions on both.", "and more."),
+            "named",
+        ),
+        ("statement", lambda s: s.replace("its experience, without", "its data, without"), "named"),
+    ):
         changed = json.loads(json.dumps(task))
         changed[key] = edit(changed[key])
         with pytest.raises(ExperienceError, match="does not say"):
@@ -367,7 +444,9 @@ def test_the_ladder_task_views_refuse_what_they_cannot_derive(ladder_store: V.Sy
     with pytest.raises(ExperienceError, match="program transfer does not say"):
         learn_task_named(moved, SENTENCE, True)
     reread = json.loads(json.dumps(task))
-    reread["patch_check"]["readout"] = reread["patch_check"]["readout"].replace("and its experience", "and its rows")
+    reread["patch_check"]["readout"] = reread["patch_check"]["readout"].replace(
+        "and its experience", "and its rows"
+    )
     with pytest.raises(ExperienceError, match="readout does not say"):
         learn_task_named(reread, SENTENCE, True)
     assert "readout" not in learn_task_named(reread, SENTENCE, False).get("patch_check", {})  # K0a has none
@@ -382,51 +461,77 @@ def test_u_shows_e11s_experience_without_y_new(ladder_store: V.SyntheticStore, t
     view = _assembled(ladder_store, tmp_path / "u", e11_variant=U)
     assert sorted(view.files) == sorted(standard.files) and view.limits == standard.limits
     assert {k: v for k, v in view.files.items() if k not in ("experience.npz", "task.json")} == {
-        k: v for k, v in standard.files.items() if k not in ("experience.npz", "task.json")}
+        k: v for k, v in standard.files.items() if k not in ("experience.npz", "task.json")
+    }
     assert {k: v for k, v in view.clean_check.items() if k != "path"} == {
-        k: v for k, v in standard.clean_check.items() if k != "path"}
+        k: v for k, v in standard.clean_check.items() if k != "path"
+    }
     with np.load(view.trial_dir / "experience.npz") as archive:
         shown = {key: archive[key] for key in archive.files}
     with np.load(standard.trial_dir / "experience.npz") as archive:
         full = {key: archive[key] for key in archive.files}
     assert sorted(shown) == sorted(UNLABELLED_EXPERIENCE_KEYS) == sorted(set(EXPERIENCE_KEYS) - {"y_new"})
-    assert all(shown[key].dtype == full[key].dtype and shown[key].tobytes() == full[key].tobytes() for key in shown)
+    assert all(
+        shown[key].dtype == full[key].dtype and shown[key].tobytes() == full[key].tobytes() for key in shown
+    )
     record = view.experience
-    assert record["variant"] == U and record["withheld_keys"] == ["y_new"] and record["labels_new_shown"] is False
+    assert (
+        record["variant"] == U
+        and record["withheld_keys"] == ["y_new"]
+        and record["labels_new_shown"] is False
+    )
     assert (record["n_new"], record["n_new_fail"], record["n_old"]) == (64, 16, standard.experience["n_old"])
     assert record["learn_content_sha256"] == standard.experience["content_sha256"]
     assert view.e11_view == {"variant": U, "condition": PLANT_CONDITION, "seed": 100}
     # task.json: the statement, the new part's keys, description and n_from_errors and the program's label item
     # differ, nothing else
-    assert _differences(view.task, standard.task) == [".experience.new.description", ".experience.new.keys",
-                                                      ".experience.new.n_from_errors", ".statement",
-                                                      ".training_free_rule.program"]
-    assert "n_from_errors" not in view.task["experience"]["new"] and view.task["experience"]["new"]["count"] == 64
+    assert _differences(view.task, standard.task) == [
+        ".experience.new.description",
+        ".experience.new.keys",
+        ".experience.new.n_from_errors",
+        ".statement",
+        ".training_free_rule.program",
+    ]
+    assert (
+        "n_from_errors" not in view.task["experience"]["new"]
+        and view.task["experience"]["new"]["count"] == 64
+    )
     assert view.task["statement"] == standard.task["statement"].replace(
-        "holds labelled examples from the new condition", "holds unlabelled examples from the new condition")
+        "holds labelled examples from the new condition", "holds unlabelled examples from the new condition"
+    )
     assert view.task["training_free_rule"]["program"][0].endswith("its labels are y_old")
     assert "y_new" not in (view.trial_dir / "task.json").read_text()
     prompt = render_task("LEARN", view.task, view.limits, _budgets(), view.input_files, e11_variant=U)
     plain = render_task("LEARN", standard.task, standard.limits, _budgets(), standard.input_files)
     assert "y_new" not in prompt and "only the clean part is labelled" in prompt and "$" not in prompt
-    assert [line for line in plain.splitlines() if line not in prompt.splitlines()][0].startswith("Make a trained")
+    assert [line for line in plain.splitlines() if line not in prompt.splitlines()][0].startswith(
+        "Make a trained"
+    )
 
 
-def test_u_does_not_say_which_condition_rows_are_errors(ladder_store: V.SyntheticStore, tmp_path: Path) -> None:
+def test_u_does_not_say_which_condition_rows_are_errors(
+    ladder_store: V.SyntheticStore, tmp_path: Path
+) -> None:
     standard = _assembled(ladder_store, tmp_path / "standard")
     view = _assembled(ladder_store, tmp_path / "u", e11_variant=U)
     selection = learn_new_selection(16, 48)
     kept = {"name": "joint-retain-v1", "s_old_floor": -20, "check_set": "clean"}
-    texts = {"task.json": (view.trial_dir / "task.json").read_text(),
-             "task.md": render_task("LEARN", view.task, view.limits, _budgets(), view.input_files, e11_variant=U),
-             "system.md": render_system("LEARN", kept_rule=kept, e11_variant=U),
-             "tools": json.dumps(tool_specs(arm_spec("LEARN").tools, True, s_old_floor=-20, e11_variant=U))}
-    plain = {"task.json": (standard.trial_dir / "task.json").read_text(),
-             "task.md": render_task("LEARN", standard.task, standard.limits, _budgets(), standard.input_files)}
+    texts = {
+        "task.json": (view.trial_dir / "task.json").read_text(),
+        "task.md": render_task("LEARN", view.task, view.limits, _budgets(), view.input_files, e11_variant=U),
+        "system.md": render_system("LEARN", kept_rule=kept, e11_variant=U),
+        "tools": json.dumps(tool_specs(arm_spec("LEARN").tools, True, s_old_floor=-20, e11_variant=U)),
+    }
+    plain = {
+        "task.json": (standard.trial_dir / "task.json").read_text(),
+        "task.md": render_task("LEARN", standard.task, standard.limits, _budgets(), standard.input_files),
+    }
     # positive control: E11's texts say it, in the description (task.json, task.md) and in n_from_errors (task.json)
     assert standard.task["experience"]["new"]["description"] == LEARN_NEW_DESCRIPTION + selection
     assert all(word in plain["task.json"] for word in UNLABELLED_ERROR_WORDS)
-    assert [word for word in UNLABELLED_ERROR_WORDS if word in plain["task.md"]] == list(UNLABELLED_ERROR_WORDS[1:])
+    assert [word for word in UNLABELLED_ERROR_WORDS if word in plain["task.md"]] == list(
+        UNLABELLED_ERROR_WORDS[1:]
+    )
     assert "the first 16 drawn" in plain["task.md"]
     for name, text in texts.items():
         assert [word for word in UNLABELLED_ERROR_WORDS if word in text] == [], name
@@ -439,21 +544,46 @@ def test_u_does_not_say_which_condition_rows_are_errors(ladder_store: V.Syntheti
     # the removed text must be found exactly once, n_from_errors must be given, and nothing may still say it
     task = standard.task
     for edit, text in (
-            (lambda t: t["experience"]["new"].update(description=t["experience"]["new"]["description"] + selection),
-             "new-part description does not say"),
-            (lambda t: t["experience"]["new"].update(description=t["experience"]["new"]["description"].replace(
-                "the first 16", "the first 15")), "new-part description does not say"),
-            (lambda t: t["experience"]["new"].pop("n_from_errors"), "does not give its count and n_from_errors"),
-            (lambda t: t.update(statement=t["statement"] + " The first rows are the classifier's errors."),
-             "still says which condition rows are errors")):
+        (
+            lambda t: t["experience"]["new"].update(
+                description=t["experience"]["new"]["description"] + selection
+            ),
+            "new-part description does not say",
+        ),
+        (
+            lambda t: t["experience"]["new"].update(
+                description=t["experience"]["new"]["description"].replace("the first 16", "the first 15")
+            ),
+            "new-part description does not say",
+        ),
+        (lambda t: t["experience"]["new"].pop("n_from_errors"), "does not give its count and n_from_errors"),
+        (
+            lambda t: t.update(statement=t["statement"] + " The first rows are the classifier's errors."),
+            "still says which condition rows are errors",
+        ),
+    ):
         changed = json.loads(json.dumps(task))
         edit(changed)
         with pytest.raises(ExperienceError, match=text):
             learn_task_unlabelled(changed)
     with pytest.raises(ValueError, match="names"):
-        render_task("LEARN", {**view.task, "experience": {**view.task["experience"], "new": {
-            **view.task["experience"]["new"], "description": LEARN_NEW_DESCRIPTION + selection}}}, view.limits,
-            _budgets(), view.input_files, e11_variant=U)
+        render_task(
+            "LEARN",
+            {
+                **view.task,
+                "experience": {
+                    **view.task["experience"],
+                    "new": {
+                        **view.task["experience"]["new"],
+                        "description": LEARN_NEW_DESCRIPTION + selection,
+                    },
+                },
+            },
+            view.limits,
+            _budgets(),
+            view.input_files,
+            e11_variant=U,
+        )
 
 
 def test_no_y_new_array_or_label_bytes_reach_u(ladder_store: V.SyntheticStore, tmp_path: Path) -> None:
@@ -474,18 +604,21 @@ def test_no_y_new_array_or_label_bytes_reach_u(ladder_store: V.SyntheticStore, t
 
 
 @pytest.mark.parametrize("variant", [K0B, K0A])
-def test_the_no_data_view_holds_the_network_and_task_json_alone(ladder_store: V.SyntheticStore, tmp_path: Path,
-                                                                variant: str) -> None:
+def test_the_no_data_view_holds_the_network_and_task_json_alone(
+    ladder_store: V.SyntheticStore, tmp_path: Path, variant: str
+) -> None:
     standard = _assembled(ladder_store, tmp_path / "standard")
     view = _assembled(ladder_store, tmp_path / variant, e11_variant=variant)
     assert sorted(view.files) == ["forward.py", "model.npz", "model_spec.json", "task.json"]
     assert {k: v for k, v in view.files.items() if k != "task.json"} == {
-        k: v for k, v in standard.files.items() if k not in ("experience.npz", "task.json")}
+        k: v for k, v in standard.files.items() if k not in ("experience.npz", "task.json")
+    }
     assert view.limits == standard.limits and view.shown_model_sha256 == standard.shown_model_sha256
     assert view.evidence_source_path is None and view.experience["withheld_keys"] == sorted(EXPERIENCE_KEYS)
     assert (view.experience["n_new"], view.experience["n_old"]) == (0, 0)
     assert {k: v for k, v in view.clean_check.items() if k != "path"} == {
-        k: v for k, v in standard.clean_check.items() if k != "path"}
+        k: v for k, v in standard.clean_check.items() if k != "path"
+    }
     empty = Path(view.e11_view["program_experience_path"])
     assert empty.parent == tmp_path / variant / "private" and empty.name == NAMED_PROGRAM_EXPERIENCE_FILE
     with np.load(empty) as archive:
@@ -500,24 +633,50 @@ def test_the_no_data_view_holds_the_network_and_task_json_alone(ladder_store: V.
     assert [word for word in NAMED_EXPERIENCE_WORDS if word in text] == []
     differences = _differences(task, standard.task)
     if variant == K0B:
-        assert differences == [".experience", ".patch_check.readout", ".program.experience", ".program.transfer",
-                               ".statement", ".training_free_rule.program"]
-        assert task["patch_check"]["readout"].startswith("each query runs the program once on this classifier, ")
+        assert differences == [
+            ".experience",
+            ".patch_check.readout",
+            ".program.experience",
+            ".program.transfer",
+            ".statement",
+            ".training_free_rule.program",
+        ]
+        assert task["patch_check"]["readout"].startswith(
+            "each query runs the program once on this classifier, "
+        )
     else:
-        assert differences == [".experience", ".final_selection", ".patch_check", ".program.experience",
-                               ".program.transfer", ".statement", ".training_free_rule.program"]
+        assert differences == [
+            ".experience",
+            ".final_selection",
+            ".patch_check",
+            ".program.experience",
+            ".program.transfer",
+            ".statement",
+            ".training_free_rule.program",
+        ]
         assert task["final_selection"] == NAMED_NOCHECK_FINAL_SELECTION and "check" not in text.lower()
-        assert task["training_free_rule"]["program"][-1] == "every declared program is stored with the session record"
-    assert task["training_free_rule"]["program"][0] == "in this task no evidence is given: no example and no label"
+        assert (
+            task["training_free_rule"]["program"][-1]
+            == "every declared program is stored with the session record"
+        )
+    assert (
+        task["training_free_rule"]["program"][0]
+        == "in this task no evidence is given: no example and no label"
+    )
     assert scan_label_arrays(view.trial_dir) == {}
 
 
 @pytest.mark.parametrize("variant", [K0B, K0A])
-def test_no_image_array_or_label_of_any_split_reaches_the_no_data_view(ladder_store: V.SyntheticStore,
-                                                                       tmp_path: Path, variant: str) -> None:
+def test_no_image_array_or_label_of_any_split_reaches_the_no_data_view(
+    ladder_store: V.SyntheticStore, tmp_path: Path, variant: str
+) -> None:
     splits = every_split(e11.DATASET)
-    assert {"clean/train", "clean/V_check", f"{PLANT_CONDITION}/V_evidence", f"{PLANT_CONDITION}/V_select"} <= set(
-        splits)
+    assert {
+        "clean/train",
+        "clean/V_check",
+        f"{PLANT_CONDITION}/V_evidence",
+        f"{PLANT_CONDITION}/V_select",
+    } <= set(splits)
     image_shape = tuple(splits["clean/train"]["x"].shape[1:])
     standard = _assembled(ladder_store, tmp_path / "standard")
     view = _assembled(ladder_store, tmp_path / variant, e11_variant=variant)
@@ -533,12 +692,19 @@ def test_no_image_array_or_label_of_any_split_reaches_the_no_data_view(ladder_st
         assert labels_in(files, arrays["y"][:64]) == [], name
 
 
-def test_the_no_data_prompts_name_the_capability_once_and_k0a_says_no_check(ladder_store: V.SyntheticStore,
-                                                                             tmp_path: Path) -> None:
+def test_the_no_data_prompts_name_the_capability_once_and_k0a_says_no_check(
+    ladder_store: V.SyntheticStore, tmp_path: Path
+) -> None:
     for variant in (K0B, K0A):
         view = _assembled(ladder_store, tmp_path / variant, e11_variant=variant)
-        prompt = render_task("LEARN", view.task, view.limits, _budgets(1 if variant == K0A else 8), view.input_files,
-                             e11_variant=variant)
+        prompt = render_task(
+            "LEARN",
+            view.task,
+            view.limits,
+            _budgets(1 if variant == K0A else 8),
+            view.input_files,
+            e11_variant=variant,
+        )
         assert prompt.count(SENTENCE) == 1 and "$" not in prompt
         assert [word for word in NAMED_EXPERIENCE_WORDS if word in prompt] == []
         kept = {"name": "joint-retain-v1", "s_old_floor": -20, "check_set": "clean"}
@@ -551,19 +717,25 @@ def test_the_no_data_prompts_name_the_capability_once_and_k0a_says_no_check(ladd
                 render_system("LEARN", e11_variant=K0A)
         else:
             assert "patch_check" in prompt and system == render_system("LEARN", kept_rule=kept)
-        with pytest.raises(KeyError):  # the standard template needs the experience, which this task.json lacks
+        with pytest.raises(
+            KeyError
+        ):  # the standard template needs the experience, which this task.json lacks
             render_task("LEARN", view.task, view.limits, _budgets(), view.input_files)
     for arm in ("LEARN_BLIND", "M2"):
         with pytest.raises(ValueError, match="is a LEARN view"):
             render_task(arm, view.task, view.limits, _budgets(), view.input_files, e11_variant=K0B)
     tools = tool_specs(("python", "status", "declare_final"), True, s_old_floor=-20, e11_variant=K0A)
-    assert "check" not in json.dumps(tools).lower() and [tool["name"] for tool in tools] == ["python", "status",
-                                                                                            "declare_final"]
+    assert "check" not in json.dumps(tools).lower() and [tool["name"] for tool in tools] == [
+        "python",
+        "status",
+        "declare_final",
+    ]
     named = tool_specs(arm_spec("LEARN").tools, True, s_old_floor=-20, e11_variant=K0B)
     standard = tool_specs(arm_spec("LEARN").tools, True, s_old_floor=-20)
     assert [a == b for a, b in zip(named, standard)] == [True, False, True, True]
-    assert named[1]["description"] == standard[1]["description"].replace("on this classifier and its experience;",
-                                                                         "on this classifier;")
+    assert named[1]["description"] == standard[1]["description"].replace(
+        "on this classifier and its experience;", "on this classifier;"
+    )
     with pytest.raises(ValueError, match="no patch_check"):
         tool_specs(arm_spec("LEARN").tools, True, s_old_floor=-20, e11_variant=K0A)
     with pytest.raises(ValueError, match="no patch_check"):
@@ -592,18 +764,27 @@ def test_ladder_dry_runs_pass_the_scans_and_keep_the_other_views(ladder_store: V
         staged = _sandbox_files(result.root)
         assert [path.name for path in staged] == sorted(session["trial_files_sha256"])
         if variant == U:
-            assert session["forbidden_strings"] == plain["forbidden_strings"] and "sentence_exempt" not in scan
+            assert (
+                session["forbidden_strings"] == plain["forbidden_strings"] and "sentence_exempt" not in scan
+            )
             assert texts["system"] == plain_texts["system"] and texts["tools"] == plain_texts["tools"]
             assert session["tools"] == plain["tools"] and session["budget"] == plain["budget"]
             continue
         forbidden = session["forbidden_strings"]
-        assert forbidden["sentence_exempt"] == [SENTENCE] and forbidden["text"] == plain["forbidden_strings"]["text"]
-        assert {key: value for key, value in forbidden.items() if not key.startswith("sentence_exempt")} == plain[
-            "forbidden_strings"]
+        assert (
+            forbidden["sentence_exempt"] == [SENTENCE]
+            and forbidden["text"] == plain["forbidden_strings"]["text"]
+        )
+        assert {
+            key: value for key, value in forbidden.items() if not key.startswith("sentence_exempt")
+        } == plain["forbidden_strings"]
         assert scan["sentence_placed"] is True and scan["sentence_counts"]["trial/task.json"] == {SENTENCE: 1}
         assert scan["sentence_counts"]["prompts/task.md"] == {SENTENCE: 1}
-        assert all(count == {SENTENCE: 0} for name, count in scan["sentence_counts"].items()
-                   if name not in ("trial/task.json", "prompts/task.md"))
+        assert all(
+            count == {SENTENCE: 0}
+            for name, count in scan["sentence_counts"].items()
+            if name not in ("trial/task.json", "prompts/task.md")
+        )
         # only the sentence is exempt: its words are leak and hint words everywhere else
         assert sorted(set(scan_for_tokens(SENTENCE, forbidden["text"]))) == ["corrupt", "gaussian", "noise"]
         assert [word for word in HINT_WORDS if word in SENTENCE.lower()] == ["noise", "corrupt"]
@@ -621,8 +802,20 @@ def test_ladder_dry_runs_pass_the_scans_and_keep_the_other_views(ladder_store: V
             assert all("check" not in text.lower() for text in texts.values())
     # the standard, blind and two-check views and the rule view's inputs are as at main f155d9b (BEFORE_K1)
     assert _view_digest(standard) == BEFORE_K1["e11_learn"]
-    assert _view_digest(runner.run_session(instance_id, "LEARN_BLIND", 0, effort="max", wall_timeout_s=7200.0,
-                                           dry_run=True, retention_floor_frac=0.005)) == BEFORE_K1["e11_blind"]
+    assert (
+        _view_digest(
+            runner.run_session(
+                instance_id,
+                "LEARN_BLIND",
+                0,
+                effort="max",
+                wall_timeout_s=7200.0,
+                dry_run=True,
+                retention_floor_frac=0.005,
+            )
+        )
+        == BEFORE_K1["e11_blind"]
+    )
 
 
 @needs_sandbox
@@ -633,8 +826,12 @@ def test_a_leak_word_outside_the_sentence_still_fails_the_scan(ladder_store: V.S
     from cryowisp.harness.leaks import ForbiddenStrings
 
     record = session["forbidden_strings"]
-    forbidden = ForbiddenStrings(selftest=tuple(record["selftest"]), text=tuple(record["text"]),
-                                 text_exempt=tuple(record["text_exempt"]), sentence_exempt=(SENTENCE,))
+    forbidden = ForbiddenStrings(
+        selftest=tuple(record["selftest"]),
+        text=tuple(record["text"]),
+        text_exempt=tuple(record["text_exempt"]),
+        sentence_exempt=(SENTENCE,),
+    )
     texts = _texts(result.root)
     prompts = {"prompts/system.md": texts["system"], "prompts/task.md": texts["task"]}
     tools = json.loads(texts["tools"])
@@ -646,8 +843,12 @@ def test_a_leak_word_outside_the_sentence_still_fails_the_scan(ladder_store: V.S
     twice = {**prompts, "prompts/system.md": texts["system"] + "\n" + SENTENCE + "\n"}
     scan = runner.leak_scan(paths, twice, tools, forbidden)
     assert scan["passed"] is False and scan["sentence_placed"] is False and scan["hits"] == {}
-    without = runner.leak_scan(paths, prompts, tools, ForbiddenStrings(
-        selftest=forbidden.selftest, text=forbidden.text, text_exempt=forbidden.text_exempt))
+    without = runner.leak_scan(
+        paths,
+        prompts,
+        tools,
+        ForbiddenStrings(selftest=forbidden.selftest, text=forbidden.text, text_exempt=forbidden.text_exempt),
+    )
     assert without["passed"] is False and "gaussian" in without["hits"]["prompts/task.md"]
 
 
@@ -663,16 +864,20 @@ def test_a_u_session_never_gives_y_new_and_runs_as_e11(ladder_store: V.Synthetic
         call_and_record(client, replies, "python", {"code": probe})
         call_and_record(client, replies, "python", {"code": _program_cell({"probe.py": PROBE})})
         call_and_record(client, replies, "patch_check", {"program_file": "probe.py"})
-        call_and_record(client, replies, "declare_final", {"program_file": "probe.py", "rationale": "it scored"})
+        call_and_record(
+            client, replies, "declare_final", {"program_file": "probe.py", "rationale": "it scored"}
+        )
 
     result, launcher = _session(ladder_store, U, script)
     assert result.status == "complete", result.record.get("infra_reasons")
     kernel, _, check, declared = launcher.replies
     session = read_json(result.root / "session.json")
-    assert json.loads(kernel.payload["stdout"])["files"] == [f"/work/trial/{name}"
-                                                             for name in sorted(session["trial_files_sha256"])]
+    assert json.loads(kernel.payload["stdout"])["files"] == [
+        f"/work/trial/{name}" for name in sorted(session["trial_files_sha256"])
+    ]
     assert not check.is_error and check.payload["program_stdout"].startswith(
-        "KEYS " + ",".join(sorted(UNLABELLED_EXPERIENCE_KEYS)))
+        "KEYS " + ",".join(sorted(UNLABELLED_EXPERIENCE_KEYS))
+    )
     assert check.payload["score_new"] > 0 and declared.payload["valid"]
     run = read_json(result.root / "attempts" / "a0000" / "program_run.json")
     assert run["inputs_sha256"]["experience.npz"] == session["trial_files_sha256"]["experience.npz"]
@@ -689,7 +894,9 @@ def test_a_k0b_session_gives_the_program_an_empty_experience(ladder_store: V.Syn
         call_and_record(client, replies, "python", {"code": _program_cell({"probe.py": PROBE})})
         call_and_record(client, replies, "patch_check", {"program_file": "probe.py"})
         call_and_record(client, replies, "status", {})
-        call_and_record(client, replies, "declare_final", {"program_file": "probe.py", "rationale": "it scored"})
+        call_and_record(
+            client, replies, "declare_final", {"program_file": "probe.py", "rationale": "it scored"}
+        )
 
     result, launcher = _session(ladder_store, K0B, script)
     assert result.status == "complete", result.record.get("infra_reasons")
@@ -706,24 +913,33 @@ def test_a_k0b_session_gives_the_program_an_empty_experience(ladder_store: V.Syn
 
 
 @needs_sandbox
-def test_a_k0a_session_has_no_check_and_keeps_an_eligible_declaration_after_one(ladder_store: V.SyntheticStore
-                                                                               ) -> None:
+def test_a_k0a_session_has_no_check_and_keeps_an_eligible_declaration_after_one(
+    ladder_store: V.SyntheticStore,
+) -> None:
     refused: list[str] = []
 
     def script(client: Any, replies: list[Any]) -> None:
-        call_and_record(client, replies, "python", {"code": _program_cell({"probe.py": PROBE, "crash.py": CRASH})})
+        call_and_record(
+            client, replies, "python", {"code": _program_cell({"probe.py": PROBE, "crash.py": CRASH})}
+        )
         try:
             client.call("patch_check", {"program_file": "probe.py"})
         except McpError as exc:
             refused.append(str(exc))
         call_and_record(client, replies, "status", {})
-        call_and_record(client, replies, "declare_final", {"program_file": "probe.py", "rationale": "the edit"})
-        call_and_record(client, replies, "declare_final", {"program_file": "crash.py", "rationale": "a crash"})
+        call_and_record(
+            client, replies, "declare_final", {"program_file": "probe.py", "rationale": "the edit"}
+        )
+        call_and_record(
+            client, replies, "declare_final", {"program_file": "crash.py", "rationale": "a crash"}
+        )
         call_and_record(client, replies, "status", {})
 
     result, launcher = _session(ladder_store, K0A, script)
     assert result.status == "complete", result.record.get("infra_reasons")
-    assert launcher.tool_names == ["python", "status", "declare_final"] and refused == ["unknown tool: patch_check"]
+    assert launcher.tool_names == ["python", "status", "declare_final"] and refused == [
+        "unknown tool: patch_check"
+    ]
     _, before, declared, crashed, after = launcher.replies
     replies = json.dumps([reply.payload for reply in launcher.replies])
     assert "check" not in replies.lower() and "score_new" not in replies and "query" not in replies
@@ -738,19 +954,28 @@ def test_a_k0a_session_has_no_check_and_keeps_an_eligible_declaration_after_one(
     checks = read_jsonl(paths.checks_log)
     assert len(checks) == 1 and checks[0]["hidden"] is True and checks[0]["program_file"] == "probe.py"
     declarations = read_jsonl(paths.declared_log)
-    assert checks[0]["attempt"] == declarations[0]["attempt"] and checks[0]["child_sha256"] == declarations[0][
-        "child_sha256"]
+    assert (
+        checks[0]["attempt"] == declarations[0]["attempt"]
+        and checks[0]["child_sha256"] == declarations[0]["child_sha256"]
+    )
     selection = read_json(paths.selection_json)
     hidden = selection["hidden_check"]
     assert hidden["ran"] and hidden["declaration"]["program_file"] == "probe.py" and hidden["score_new"] > 0
     floor = int(read_json(result.root / "session.json")["kept_rule"]["s_old_floor"])
     assert hidden["score_old"] >= floor and hidden["score"] > 0
     final = selection["final"]
-    assert final["kind"] == "checked" and final["patch_id"] == "probe.py" and final["program"]["file"].endswith(
-        "probe.py")
+    assert (
+        final["kind"] == "checked"
+        and final["patch_id"] == "probe.py"
+        and final["program"]["file"].endswith("probe.py")
+    )
     assert "hidden check (hidden-check-v1)" in final["reason"] and "so it is kept" in final["reason"]
     record = read_json(result.root / "session_result.json")
-    assert record["hidden_check"] == hidden and record["queries"]["used"] == 1 and record["queries"]["budget"] == 1
+    assert (
+        record["hidden_check"] == hidden
+        and record["queries"]["used"] == 1
+        and record["queries"]["budget"] == 1
+    )
     _assert_variant_recorded(ladder_store, result, K0A)
     # the declared program's V_select readout: session_info reads the hidden check like any check
     info = session_info(result.root)
@@ -761,14 +986,20 @@ def test_a_k0a_session_has_no_check_and_keeps_an_eligible_declaration_after_one(
 
 @needs_sandbox
 @pytest.mark.parametrize("case", ["ineligible", "null", "none", "invalid"])
-def test_a_k0a_session_keeps_the_base_otherwise_and_says_why(ladder_store: V.SyntheticStore, case: str) -> None:
+def test_a_k0a_session_keeps_the_base_otherwise_and_says_why(
+    ladder_store: V.SyntheticStore, case: str
+) -> None:
     def script(client: Any, replies: list[Any]) -> None:
-        call_and_record(client, replies, "python", {"code": _program_cell({"break.py": BREAK, "crash.py": CRASH})})
+        call_and_record(
+            client, replies, "python", {"code": _program_cell({"break.py": BREAK, "crash.py": CRASH})}
+        )
         if case == "ineligible":
             call_and_record(client, replies, "declare_final", {"program_file": "break.py", "rationale": "x"})
         elif case == "null":
             call_and_record(client, replies, "declare_final", {"program_file": "break.py", "rationale": "x"})
-            call_and_record(client, replies, "declare_final", {"program_file": None, "rationale": "the original"})
+            call_and_record(
+                client, replies, "declare_final", {"program_file": None, "rationale": "the original"}
+            )
         elif case == "invalid":
             call_and_record(client, replies, "declare_final", {"program_file": "crash.py", "rationale": "x"})
 
@@ -785,13 +1016,20 @@ def test_a_k0a_session_keeps_the_base_otherwise_and_says_why(ladder_store: V.Syn
         assert hidden["score_old"] < floor and hidden["declaration"]["program_file"] == "break.py"
         assert "it is not eligible, so the base model is kept" in final["reason"]
         info = session_info(result.root)  # the declared program's V_select readout, beside the base final
-        assert [row["patch_id"] for row in info["trajectory"]] == ["break.py"] and info["final"]["vselect"] is None
-        assert "delta_acc" in info["trajectory"][0]["vselect"] and "delta_acc" in info["trajectory"][0][
-            "vselect_clean"]
+        assert [row["patch_id"] for row in info["trajectory"]] == ["break.py"] and info["final"][
+            "vselect"
+        ] is None
+        assert (
+            "delta_acc" in info["trajectory"][0]["vselect"]
+            and "delta_acc" in info["trajectory"][0]["vselect_clean"]
+        )
     else:
         assert not hidden["ran"] and checks == [] and result.record["queries"]["used"] == 0
-        reason = {"null": "names the original model", "none": "no valid declaration was made",
-                  "invalid": "no valid declaration was made"}[case]
+        reason = {
+            "null": "names the original model",
+            "none": "no valid declaration was made",
+            "invalid": "no valid declaration was made",
+        }[case]
         assert reason in hidden["reason"] and reason in final["reason"]
 
 
@@ -815,7 +1053,9 @@ def test_the_hidden_check_refuses_a_session_it_cannot_read(tmp_path: Path) -> No
 # Refusals and the command line
 
 
-def test_the_ladder_is_refused_where_it_does_not_apply(ladder_store: V.SyntheticStore, tmp_path: Path) -> None:
+def test_the_ladder_is_refused_where_it_does_not_apply(
+    ladder_store: V.SyntheticStore, tmp_path: Path
+) -> None:
     instance_id = _id(ladder_store)
     runs = ladder_store.root / "runs"
     before = sorted(path.relative_to(runs) for path in runs.rglob("*"))
@@ -831,43 +1071,79 @@ def test_the_ladder_is_refused_where_it_does_not_apply(ladder_store: V.Synthetic
         ]
         for arm, kwargs, error, text in cases:
             with pytest.raises(error, match=text):
-                runner.run_session(instance_id, arm, 0, effort="max", wall_timeout_s=WALL_S, launcher=launcher,
-                                   e11_variant=variant, **{"retention_floor_frac": 0.005, **kwargs})
+                runner.run_session(
+                    instance_id,
+                    arm,
+                    0,
+                    effort="max",
+                    wall_timeout_s=WALL_S,
+                    launcher=launcher,
+                    e11_variant=variant,
+                    **{"retention_floor_frac": 0.005, **kwargs},
+                )
         for other in (_id(ladder_store, "contrast_s5"), _id(ladder_store, PLANT_CONDITION, 101)):
             with pytest.raises(InstanceRefused, match="seed-100 student only"):
-                runner.run_session(other, "LEARN", 0, effort="max", wall_timeout_s=WALL_S, launcher=launcher,
-                                   retention_floor_frac=0.005, e11_variant=variant)
+                runner.run_session(
+                    other,
+                    "LEARN",
+                    0,
+                    effort="max",
+                    wall_timeout_s=WALL_S,
+                    launcher=launcher,
+                    retention_floor_frac=0.005,
+                    e11_variant=variant,
+                )
             with pytest.raises(TrialError, match="seed-100 student only"):
                 directory = tmp_path / f"{variant}_{other}"
                 (directory / "private").mkdir(parents=True)
                 assemble(read_instance_record(other).instance_dir, "LEARN", directory, e11_variant=variant)
     with pytest.raises(ValueError, match="give its retention floor"):
-        runner.run_session(instance_id, "LEARN", 0, effort="max", wall_timeout_s=WALL_S, launcher=launcher,
-                           e11_variant=K0A)
+        runner.run_session(
+            instance_id, "LEARN", 0, effort="max", wall_timeout_s=WALL_S, launcher=launcher, e11_variant=K0A
+        )
     assert sorted(path.relative_to(runs) for path in runs.rglob("*")) == before  # refused before any write
     override = StudentOverride(params={}, experience={}, record={}, keys=(), task=lambda task: task)
     for variant in (U, K0B, K0A):
-        for arm, kwargs in (("LEARN_BLIND", {}), ("LEARN", {"override": override}), ("LEARN", {"max_checks": 2})):
+        for arm, kwargs in (
+            ("LEARN_BLIND", {}),
+            ("LEARN", {"override": override}),
+            ("LEARN", {"max_checks": 2}),
+        ):
             with pytest.raises(TrialError, match="assembled in the LEARN arm on the instance's own student"):
                 assemble(tmp_path / "none", arm, tmp_path / "none", e11_variant=variant, **kwargs)
 
 
 def test_the_session_command_takes_the_ladder_variants() -> None:
-    spec = importlib.util.spec_from_file_location("run_editor_session_ladder",
-                                                  REPO / "scripts" / "run_editor_session.py")
+    spec = importlib.util.spec_from_file_location(
+        "run_editor_session_ladder", REPO / "scripts" / "run_editor_session.py"
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    base = ["--instance", "i00000000", "--arm", "LEARN", "--repeat", "0", "--effort", "max", "--wall-timeout-min",
-            "120", "--retention-floor-frac", "0.005"]
+    base = [
+        "--instance",
+        "i00000000",
+        "--arm",
+        "LEARN",
+        "--repeat",
+        "0",
+        "--effort",
+        "max",
+        "--wall-timeout-min",
+        "120",
+        "--retention-floor-frac",
+        "0.005",
+    ]
     for variant in (U, K0B, K0A):
         assert module.parse_args([*base, "--e11-variant", variant]).e11_variant == variant
 
 
-@pytest.mark.skipif(not POST_LEARN.is_file(),
-                    reason="scripts/dev/post_learn.sh is a local cluster script, not part of the public repository")
+@pytest.mark.skipif(
+    not POST_LEARN.is_file(),
+    reason="scripts/dev/post_learn.sh is a local cluster script, not part of the public repository",
+)
 def test_post_learn_refuses_e3_for_every_variant_session() -> None:
     text = POST_LEARN.read_text()
-    guard = text[text.index("VARIANT=$("):text.index("run_program_transfer.py --program")]
+    guard = text[text.index("VARIANT=$(") : text.index("run_program_transfer.py --program")]
     assert "get('e11_variant') or ''" in guard and 'if [ -n "$VARIANT" ]; then' in guard and "exit 3" in guard
     assert text.index("exit 3") < text.index("run_program_transfer.py --program")

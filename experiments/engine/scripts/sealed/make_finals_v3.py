@@ -39,10 +39,24 @@ from cryowisp.evalkit import sealed_finals as SF
 
 READOUT = SF.READOUT_VISION_JOINT
 FLOOR = -20
-TARGETS = {"gaussian": {100: "i00802425", 101: "i905213a3", 102: "iab18c0aa", 103: "ib1b195f6", 104: "ie1be7cd9",
-                        105: "i36df1f8f"},
-           "contrast": {100: "i3eb3fc78", 101: "i4a486d70", 102: "i5d76f25c", 103: "id83bf155", 104: "ib1e4e794",
-                        105: "iecf07b07"}}
+TARGETS = {
+    "gaussian": {
+        100: "i00802425",
+        101: "i905213a3",
+        102: "iab18c0aa",
+        103: "ib1b195f6",
+        104: "ie1be7cd9",
+        105: "i36df1f8f",
+    },
+    "contrast": {
+        100: "i3eb3fc78",
+        101: "i4a486d70",
+        102: "i5d76f25c",
+        103: "id83bf155",
+        104: "ib1e4e794",
+        105: "iecf07b07",
+    },
+}
 CONDITIONS = {"gaussian": "gaussian_noise_s5", "contrast": "contrast_s5"}
 FINALS = (
     # name, session, condition, seed, repeat (session.json)
@@ -58,28 +72,89 @@ FINALS = (
 T08_PROGRAM = "t08/program"
 REFERENCES = (
     # name, condition, seed, method, grid tag, dev record stem, DEV_RESULTS gain / clean / joint (points)
-    ("ref_E11_gaussian_s101_bar_interp", "gaussian", 101, "interp", "e11",
-     "e11_refs_i905213a3_gaussian_noise_s5_floor20_dev_20261105", (28.325, -1.150, 27.175)),
-    ("ref_E11_gaussian_s101_F1_lora_r16", "gaussian", 101, "lora_r16", "f1",
-     "f1_i905213a3_gaussian_noise_s5_floor20_dev_nscc_20261106", (16.675, -0.500, 16.175)),
-    ("ref_E11_gaussian_s102_bar_interp_e11g2", "gaussian", 102, "interp", "e11g2",
-     "e11g2_refs_iab18c0aa_gaussian_noise_s5_floor20_dev_nscc_20261106", (21.675, -0.675, 21.000)),
-    ("ref_E11_gaussian_s102_F1_grad_last_e11g2", "gaussian", 102, "grad_last", "e11g2",
-     "e11g2_refs_iab18c0aa_gaussian_noise_s5_floor20_dev_nscc_20261106", (11.025, -0.775, 10.250)),
-    ("ref_E11_contrast_s101_bar_grad_sparse19_sal_e11g2", "contrast", 101, "grad_sparse19_sal", "e11g2",
-     "e11g2_refs_i4a486d70_contrast_s5_floor20_dev_nscc_20261106", (7.225, -0.300, 6.925)),
-    ("ref_E11_contrast_s101_F1_ft_full_lwf", "contrast", 101, "ft_full_lwf", "f1",
-     "f1_i4a486d70_contrast_s5_floor20_dev_nscc_20261106", (7.375, -0.025, 7.350)),
-    ("ref_E11_contrast_s102_bar_grad_full_e11g2", "contrast", 102, "grad_full", "e11g2",
-     "e11g2_refs_i5d76f25c_contrast_s5_floor20_dev_nscc_20261106", (10.050, -0.550, 9.500)),
-    ("ref_E11_contrast_s102_F1_lora_r16", "contrast", 102, "lora_r16", "f1",
-     "f1_i5d76f25c_contrast_s5_floor20_dev_nscc_20261106", (10.350, -0.400, 9.950)),
+    (
+        "ref_E11_gaussian_s101_bar_interp",
+        "gaussian",
+        101,
+        "interp",
+        "e11",
+        "e11_refs_i905213a3_gaussian_noise_s5_floor20_dev_20261105",
+        (28.325, -1.150, 27.175),
+    ),
+    (
+        "ref_E11_gaussian_s101_F1_lora_r16",
+        "gaussian",
+        101,
+        "lora_r16",
+        "f1",
+        "f1_i905213a3_gaussian_noise_s5_floor20_dev_nscc_20261106",
+        (16.675, -0.500, 16.175),
+    ),
+    (
+        "ref_E11_gaussian_s102_bar_interp_e11g2",
+        "gaussian",
+        102,
+        "interp",
+        "e11g2",
+        "e11g2_refs_iab18c0aa_gaussian_noise_s5_floor20_dev_nscc_20261106",
+        (21.675, -0.675, 21.000),
+    ),
+    (
+        "ref_E11_gaussian_s102_F1_grad_last_e11g2",
+        "gaussian",
+        102,
+        "grad_last",
+        "e11g2",
+        "e11g2_refs_iab18c0aa_gaussian_noise_s5_floor20_dev_nscc_20261106",
+        (11.025, -0.775, 10.250),
+    ),
+    (
+        "ref_E11_contrast_s101_bar_grad_sparse19_sal_e11g2",
+        "contrast",
+        101,
+        "grad_sparse19_sal",
+        "e11g2",
+        "e11g2_refs_i4a486d70_contrast_s5_floor20_dev_nscc_20261106",
+        (7.225, -0.300, 6.925),
+    ),
+    (
+        "ref_E11_contrast_s101_F1_ft_full_lwf",
+        "contrast",
+        101,
+        "ft_full_lwf",
+        "f1",
+        "f1_i4a486d70_contrast_s5_floor20_dev_nscc_20261106",
+        (7.375, -0.025, 7.350),
+    ),
+    (
+        "ref_E11_contrast_s102_bar_grad_full_e11g2",
+        "contrast",
+        102,
+        "grad_full",
+        "e11g2",
+        "e11g2_refs_i5d76f25c_contrast_s5_floor20_dev_nscc_20261106",
+        (10.050, -0.550, 9.500),
+    ),
+    (
+        "ref_E11_contrast_s102_F1_lora_r16",
+        "contrast",
+        102,
+        "lora_r16",
+        "f1",
+        "f1_i5d76f25c_contrast_s5_floor20_dev_nscc_20261106",
+        (10.350, -0.400, 9.950),
+    ),
 )
 """The table of DEV_RESULTS "E11 replication references and F1 on seeds 101 and 102": per instance the best kept
 reference of both grids (the B bar, PREREG 92a96af) and the best kept F1 pick. F1's full and last-layer methods are
 the e11g2 grid's grad_full and grad_last runs (scripts/store/e11rep_tables.py ``f1``), so iab18c0aa's grad_last
 is the e11g2 run. Bars of record: i905213a3 +28.175, iab18c0aa +22.000, i4a486d70 +7.925, i5d76f25c +10.500."""
-TIE_TWIN = {"ref_E11_gaussian_s101_bar_interp": ("e11g2", "e11g2_refs_i905213a3_gaussian_noise_s5_floor20_dev_20261105")}
+TIE_TWIN = {
+    "ref_E11_gaussian_s101_bar_interp": (
+        "e11g2",
+        "e11g2_refs_i905213a3_gaussian_noise_s5_floor20_dev_20261105",
+    )
+}
 """The table's one tie: the same interp child in the second grid (alpha 8/64 = 1/8), checked to be the same child with
 the same readouts and left off the list (one child is read once)."""
 
@@ -99,16 +174,23 @@ def session_final(name: str, session: str, cond: str, seed: int, repeat: int) ->
     spec = _json(root / "sessions" / session / "session.json")
     inst = TARGETS[cond][seed]
     if run["instance"]["instance_id"] != inst or spec.get("repeat") != repeat or spec.get("seed") != seed:
-        raise SystemExit(f"{name}: session {session} is on {run['instance']['instance_id']} seed {spec.get('seed')} "
-                         f"repeat {spec.get('repeat')}, expected {inst} seed {seed} repeat {repeat}")
+        raise SystemExit(
+            f"{name}: session {session} is on {run['instance']['instance_id']} seed {spec.get('seed')} "
+            f"repeat {spec.get('repeat')}, expected {inst} seed {seed} repeat {repeat}"
+        )
     final = run["final"]
     if final.get("is_base_noop") or not final.get("child_sha256"):
         raise SystemExit(f"{name}: session {session}'s final is the base no-op; it has no child to read")
     info = _json(root / "devreadouts" / "learn" / session / "info.json")
     if info["instance_id"] != inst or info["final"]["child_sha256"] != final["child_sha256"]:
         raise SystemExit(f"{name}: the dev readout of {session} is not of its final")
-    return {"name": name, "readout": READOUT, "source": {"kind": SF.SOURCE_SESSION, "session_id": session},
-            "instance_id": inst, "child_sha256": final["child_sha256"]}
+    return {
+        "name": name,
+        "readout": READOUT,
+        "source": {"kind": SF.SOURCE_SESSION, "session_id": session},
+        "instance_id": inst,
+        "child_sha256": final["child_sha256"],
+    }
 
 
 def transfer_children(final_name: str, session: str, cond: str, seed: int) -> list[dict[str, Any]]:
@@ -126,18 +208,33 @@ def transfer_children(final_name: str, session: str, cond: str, seed: int) -> li
         path = hits[0]
         record = _json(path)
         sha12 = path.stem.split("_")[1]
-        if (record.get("schema") != SF.TRANSFER_SCHEMA or record["target"]["instance_id"] != inst
-                or record["target"]["condition"] != CONDITIONS[cond]
-                or not record["program"]["sha256"].startswith(sha12)
-                or Path(record["program"]["path"]).parent != root / "sessions" / session / "final"
-                or Path(record["program"]["path"]).name != program.get("patch_id")):
+        if (
+            record.get("schema") != SF.TRANSFER_SCHEMA
+            or record["target"]["instance_id"] != inst
+            or record["target"]["condition"] != CONDITIONS[cond]
+            or not record["program"]["sha256"].startswith(sha12)
+            or Path(record["program"]["path"]).parent != root / "sessions" / session / "final"
+            or Path(record["program"]["path"]).name != program.get("patch_id")
+        ):
             raise SystemExit(f"{final_name}: {path} is not the final program of {session} on {inst}")
-        if record["status"] != "ok" or record["within_limits"] is not True or record["readout_child"] != "within_limits":
-            raise SystemExit(f"{final_name}: {path} has status {record['status']!r}; only an admitted child is read")
+        if (
+            record["status"] != "ok"
+            or record["within_limits"] is not True
+            or record["readout_child"] != "within_limits"
+        ):
+            raise SystemExit(
+                f"{final_name}: {path} has status {record['status']!r}; only an admitted child is read"
+            )
         short = final_name.replace("_B_", "_")
-        entries.append({"name": f"T08_{short}_on_s{target_seed}", "readout": READOUT,
-                        "source": {"kind": SF.SOURCE_TRANSFER, "record": str(path.relative_to(root))},
-                        "instance_id": inst, "child_sha256": record["child_sha256"]})
+        entries.append(
+            {
+                "name": f"T08_{short}_on_s{target_seed}",
+                "readout": READOUT,
+                "source": {"kind": SF.SOURCE_TRANSFER, "record": str(path.relative_to(root))},
+                "instance_id": inst,
+                "child_sha256": record["child_sha256"],
+            }
+        )
     return entries
 
 
@@ -147,8 +244,9 @@ def _points(line: Mapping[str, Any]) -> tuple[float, float, float]:
     return gain, clean, round(gain + clean, 3)
 
 
-def kept_reference(name: str, cond: str, seed: int, method: str, tag: str, stem: str,
-                   expected: Sequence[float]) -> tuple[dict[str, Any], dict[str, Any]]:
+def kept_reference(
+    name: str, cond: str, seed: int, method: str, tag: str, stem: str, expected: Sequence[float]
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """A kept pick at S_old >= -20 and the line of its dev record, checked against the DEV_RESULTS numbers."""
     root = runs_dir()
     inst = TARGETS[cond][seed]
@@ -159,42 +257,77 @@ def kept_reference(name: str, cond: str, seed: int, method: str, tag: str, stem:
     if pick["is_base_noop"]:
         raise SystemExit(f"{name}: {rel} keeps the base no-op at S_old >= {FLOOR}")
     dev_record = f"devreadouts/{stem}.jsonl"
-    lines = [line for line in _jsonl(root / dev_record)
-             if Path(str(line.get("run"))).resolve() == (root / rel).resolve()
-             and (line.get("selection") or {}).get("patch_id") == pick["patch_id"]
-             and (line.get("selection") or {}).get("s_old_floor") == FLOOR and line.get("instance_id") == inst]
+    lines = [
+        line
+        for line in _jsonl(root / dev_record)
+        if Path(str(line.get("run"))).resolve() == (root / rel).resolve()
+        and (line.get("selection") or {}).get("patch_id") == pick["patch_id"]
+        and (line.get("selection") or {}).get("s_old_floor") == FLOOR
+        and line.get("instance_id") == inst
+    ]
     if len(lines) != 1:
-        raise SystemExit(f"{name}: {len(lines)} lines of {dev_record} select {pick['patch_id']} of {rel} at {FLOOR}")
+        raise SystemExit(
+            f"{name}: {len(lines)} lines of {dev_record} select {pick['patch_id']} of {rel} at {FLOOR}"
+        )
     if _points(lines[0]) != tuple(expected):
-        raise SystemExit(f"{name}: {dev_record} reads {_points(lines[0])}, DEV_RESULTS says {tuple(expected)}")
-    entry = {"name": name, "readout": READOUT,
-             "source": {"kind": SF.SOURCE_REFERENCE, "run": rel, "pick": SF.PICK_KEPT, "s_old_floor": FLOOR,
-                        "dev_record": dev_record},
-             "instance_id": inst, "child_sha256": pick["child_sha256"]}
+        raise SystemExit(
+            f"{name}: {dev_record} reads {_points(lines[0])}, DEV_RESULTS says {tuple(expected)}"
+        )
+    entry = {
+        "name": name,
+        "readout": READOUT,
+        "source": {
+            "kind": SF.SOURCE_REFERENCE,
+            "run": rel,
+            "pick": SF.PICK_KEPT,
+            "s_old_floor": FLOOR,
+            "dev_record": dev_record,
+        },
+        "instance_id": inst,
+        "child_sha256": pick["child_sha256"],
+    }
     return entry, {"patch_id": pick["patch_id"], "line": lines[0]}
 
 
-def check_twin(name: str, cond: str, seed: int, method: str, entry: Mapping[str, Any], listed: Mapping[str, Any],
-               expected: Sequence[float]) -> str:
+def check_twin(
+    name: str,
+    cond: str,
+    seed: int,
+    method: str,
+    entry: Mapping[str, Any],
+    listed: Mapping[str, Any],
+    expected: Sequence[float],
+) -> str:
     """The tie's second-grid pick has the listed child and the same readouts; returns a sentence for the note."""
     tag, stem = TIE_TWIN[name]
     twin, found = kept_reference(f"{name} ({tag})", cond, seed, method, tag, stem, expected)
     if twin["child_sha256"] != entry["child_sha256"]:
-        raise SystemExit(f"{name}: the {tag} pick has child {twin['child_sha256']}, not {entry['child_sha256']}; the "
-                         "tie is between two children and is not resolved here")
+        raise SystemExit(
+            f"{name}: the {tag} pick has child {twin['child_sha256']}, not {entry['child_sha256']}; the "
+            "tie is between two children and is not resolved here"
+        )
     for part in ("readouts", "readouts_clean"):
         if found["line"][part] != listed["line"][part]:
             raise SystemExit(f"{name}: the {tag} pick's {part} differ from the listed pick's")
-    return (f"The table's one tie: {entry['source']['run']} ({listed['patch_id']}) and {twin['source']['run']} "
-            f"({found['patch_id']}) keep the same child ({entry['child_sha256'][:16]}...) with the same readouts; it "
-            "is listed once, from the first grid, as the table's bar names it")
+    return (
+        f"The table's one tie: {entry['source']['run']} ({listed['patch_id']}) and {twin['source']['run']} "
+        f"({found['patch_id']}) keep the same child ({entry['child_sha256'][:16]}...) with the same readouts; it "
+        "is listed once, from the first grid, as the table's bar names it"
+    )
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--earlier", type=Path, nargs="+", required=True,
-                        help="earlier lists (v1, v2) whose (instance, child) pairs v3 may not repeat")
+    parser.add_argument(
+        "--earlier",
+        type=Path,
+        nargs="+",
+        required=True,
+        help="earlier lists (v1, v2) whose (instance, child) pairs v3 may not repeat",
+    )
     args = parser.parse_args()
     finals: list[dict[str, Any]] = []
     children: list[dict[str, Any]] = []
@@ -214,15 +347,18 @@ def main() -> int:
         listed = _json(path)
         for row in listed["finals"] + listed.get("references", []):
             earlier[(row["instance_id"], row["child_sha256"])] = f"{path.name} {row['name']}"
-    repeats = [f"{row['name']} = {earlier[(row['instance_id'], row['child_sha256'])]}"
-               for row in finals + children + references if (row["instance_id"], row["child_sha256"]) in earlier]
+    repeats = [
+        f"{row['name']} = {earlier[(row['instance_id'], row['child_sha256'])]}"
+        for row in finals + children + references
+        if (row["instance_id"], row["child_sha256"]) in earlier
+    ]
     if repeats:
         raise SystemExit(f"entries already on an earlier list: {repeats}")
     all_finals = finals + children
     n = len(all_finals) + len(references)
     note = (
-        "List v3 of the sealed read (PREREG Sealed read, \"List v3\", main 0119883: user 2026-11-06 about 17:45 Beijing, "
-        "\"单独预注册 v3，读一次\"; composition about 22:20 Beijing, \"全部，约 56 条\", written after T01, T02 and T08 "
+        'List v3 of the sealed read (PREREG Sealed read, "List v3", main 0119883: user 2026-11-06 about 17:45 Beijing, '
+        '"单独预注册 v3，读一次"; composition about 22:20 Beijing, "全部，约 56 条", written after T01, T02 and T08 '
         "ended and before this list was built), drafted by the list-v3 subagent of CRYOWISP-main from the store's run "
         "records (scripts/sealed/make_finals_v3.py). (1) The eight T01 and T02 finals, met or missed alike: T02 repeats "
         "1 and 2 on the seed-100 students (gaussian s4253319a365b126a, scb92c3eb5d5226cc; contrast s7ae7d105d7655ed5, "
@@ -231,7 +367,7 @@ def main() -> int:
         "non-own students (NSCC R31, runs/t08/program/), 40 entries, every cell whatever its dev reading; the copy arm "
         "is not read, and the two B finals of record are not sources here (their children are list v2's E11 C "
         "entries). (3) For seeds 101 and 102 and each condition, the kept reference that sets the B bar (PREREG "
-        "92a96af) and the best kept F1 pick (DEV_RESULTS \"E11 replication references and F1 on seeds 101 and 102\"), "
+        '92a96af) and the best kept F1 pick (DEV_RESULTS "E11 replication references and F1 on seeds 101 and 102"), '
         f"joint-retain-v1 at S_old >= {FLOOR}, each paired with the T01 final on its instance: i905213a3 interp and "
         "lora_r16; iab18c0aa interp e11g2 and grad_last e11g2 (F1's last-layer method is the e11g2 grad_last run); "
         "i4a486d70 grad_sparse19_sal e11g2 and ft_full_lwf; i5d76f25c grad_full e11g2 and lora_r16. "
@@ -240,12 +376,20 @@ def main() -> int:
         "entry is dev-checked equal to its readout of record (NSCC R32) before the read. Read once, locally, after the "
         "v2 read ends, only once the user has approved the list and it is committed with status approved."
     )
-    out = {"schema": SF.LIST_SCHEMA, "status": SF.STATUS_DRAFT, "approval": None, "note": note,
-           "finals": all_finals, "references": references}
+    out = {
+        "schema": SF.LIST_SCHEMA,
+        "status": SF.STATUS_DRAFT,
+        "approval": None,
+        "note": note,
+        "finals": all_finals,
+        "references": references,
+    }
     args.out.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     SF.load_list(args.out)
-    print(f"{args.out}: {len(all_finals)} finals ({len(finals)} sessions, {len(children)} transfers), "
-          f"{len(references)} references ({n} entries)")
+    print(
+        f"{args.out}: {len(all_finals)} finals ({len(finals)} sessions, {len(children)} transfers), "
+        f"{len(references)} references ({n} entries)"
+    )
     return 0
 
 

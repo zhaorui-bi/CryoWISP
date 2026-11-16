@@ -44,12 +44,21 @@ from cryowisp.baselines.instance_io import Instance, load_instance
 from cryowisp.common.identity import load_params, params_sha256
 from cryowisp.evalkit.companions import load_clean_rows
 from cryowisp.evalkit.e10 import e10_program_limits
-from cryowisp.patch.limits import dense_delta_bytes
-from cryowisp.evalkit.fewshot import FEWSHOT_RULE, fewshot_instance_dir, fewshot_program_limits, fewshot_readout
+from cryowisp.evalkit.fewshot import (
+    FEWSHOT_RULE,
+    fewshot_instance_dir,
+    fewshot_program_limits,
+    fewshot_readout,
+)
 from cryowisp.evalkit.fewshot import INSTANCE_ID_RE as FEWSHOT_ID_RE
+from cryowisp.evalkit.fscil import (
+    FSCIL_RULE,
+    check_fscil_current,
+    fscil_instance_dir,
+    fscil_program_limits,
+    fscil_readout,
+)
 from cryowisp.evalkit.fscil import INSTANCE_ID_RE as FSCIL_ID_RE
-from cryowisp.evalkit.fscil import FSCIL_RULE, check_fscil_current, fscil_instance_dir, fscil_program_limits, fscil_readout
-from cryowisp.evalkit.graphnew import INSTANCE_ID_RE as GRAPHNEW_ID_RE
 from cryowisp.evalkit.graphnew import (
     GRAPHNEW_RULE,
     check_graphnew_current,
@@ -57,7 +66,10 @@ from cryowisp.evalkit.graphnew import (
     graphnew_program_limits,
     graphnew_readout,
 )
+from cryowisp.evalkit.graphnew import INSTANCE_ID_RE as GRAPHNEW_ID_RE
 from cryowisp.evalkit.instances import check_task_current, instances_root
+from cryowisp.evalkit.metrics import Candidate, choose_final
+from cryowisp.evalkit.patch_check import predict
 from cryowisp.evalkit.scanskill import INSTANCE_ID_RE as SCAN_ID_RE
 from cryowisp.evalkit.scanskill import (
     SCAN_RULE,
@@ -68,13 +80,17 @@ from cryowisp.evalkit.scanskill import (
     scan_readout,
     scan_readout_arrays,
 )
-from cryowisp.evalkit.metrics import Candidate, choose_final
-from cryowisp.evalkit.patch_check import predict
 from cryowisp.evalkit.sealed import split_readouts
 from cryowisp.evalkit.seqskill import INSTANCE_ID_RE as SEQSKILL_ID_RE
-from cryowisp.evalkit.seqskill import SEQSKILL_RULE, seqskill_instance_dir, seqskill_program_limits, seqskill_readout
+from cryowisp.evalkit.seqskill import (
+    SEQSKILL_RULE,
+    seqskill_instance_dir,
+    seqskill_program_limits,
+    seqskill_readout,
+)
 from cryowisp.evalkit.targets import deployment_splits, load_checked_split
 from cryowisp.patch import Limits, apply_patch_file, task_limits
+from cryowisp.patch.limits import dense_delta_bytes
 
 DEFAULT_BATCH_SIZE = 1024
 READOUT_SPLIT = "V_select"

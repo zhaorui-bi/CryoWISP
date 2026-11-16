@@ -61,8 +61,16 @@ from cryowisp.data import e14 as D
 from cryowisp.models import e14_policy as P
 from cryowisp.models.parity import check_logit_parity
 
-from .grad import ADAM_BETAS, ADAM_EPS, LEARNING_RATES, MASK_FRACTION, STEP_CHECKPOINTS, TRAJ_LR, TRAJ_STEPS
-from .grad import top_fraction_masks
+from .grad import (
+    ADAM_BETAS,
+    ADAM_EPS,
+    LEARNING_RATES,
+    MASK_FRACTION,
+    STEP_CHECKPOINTS,
+    TRAJ_LR,
+    TRAJ_STEPS,
+    top_fraction_masks,
+)
 from .runner import CandidatePatch, Evidence, MethodSpec, execute_run, load_e14_evidence
 
 PREREG_E14 = "PREREG E14 (main 9df26e9; as built and decisions main 8baaabd, d744142)"

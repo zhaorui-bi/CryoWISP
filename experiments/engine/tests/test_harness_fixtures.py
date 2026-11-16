@@ -34,7 +34,9 @@ FIX_OPS: list[dict[str, Any]] = [
 ]
 FIX_SCORE = 12  # the planted (0 -> 1) errors of V_check
 BREAK_OPS: list[dict[str, Any]] = [{"op": "add", "tensor": "fc2.bias", "index": [[2]], "values": [100.0]}]
-OVER_FROB_OPS: list[dict[str, Any]] = [{"op": "add", "tensor": "fc1.weight", "index": [[0, 0]], "values": [1000.0]}]
+OVER_FROB_OPS: list[dict[str, Any]] = [
+    {"op": "add", "tensor": "fc1.weight", "index": [[0, 0]], "values": [1000.0]}
+]
 OVER_SIZE_OPS: list[dict[str, Any]] = [
     {"op": "add", "tensor": "fc1.weight", "index": [[5, k] for k in range(9)], "values": [0.01] * 9}
 ]
@@ -71,8 +73,15 @@ def harness_store(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.
 def patch_code(patches: Mapping[str, list[dict[str, Any]]], **extra: str) -> str:
     """Sandbox code writing each patch to /work/patches, signed with ``parent_sha256`` from /work/trial/task.json."""
     payload = json.dumps(json.dumps(dict(patches)))
-    fields = json.dumps(json.dumps({"hypothesis": "unit 0 should read the class-0 pixel",
-                                    "predicted_effect": "fixes (0 -> 1) errors, breaks none", **extra}))
+    fields = json.dumps(
+        json.dumps(
+            {
+                "hypothesis": "unit 0 should read the class-0 pixel",
+                "predicted_effect": "fixes (0 -> 1) errors, breaks none",
+                **extra,
+            }
+        )
+    )
     return (
         "import json\n"
         "parent = json.load(open('/work/trial/task.json'))['parent_sha256']\n"
@@ -87,8 +96,15 @@ def patch_code(patches: Mapping[str, list[dict[str, Any]]], **extra: str) -> str
 Step = tuple[str, dict[str, Any] | None]
 
 
-def scripted_session(instance_id: str, arm: str, steps: Iterable[Step], *, repeat: int = 0,
-                     skip_audit: bool = True, **kwargs: Any) -> tuple[SessionResult, list[ToolReply]]:
+def scripted_session(
+    instance_id: str,
+    arm: str,
+    steps: Iterable[Step],
+    *,
+    repeat: int = 0,
+    skip_audit: bool = True,
+    **kwargs: Any,
+) -> tuple[SessionResult, list[ToolReply]]:
     """Run one session whose editor is a fixed list of tool calls against the session's real MCP server."""
     calls = list(steps)
 
@@ -97,8 +113,16 @@ def scripted_session(instance_id: str, arm: str, steps: Iterable[Step], *, repea
             call_and_record(client, replies, name, arguments)
 
     launcher = ScriptedLauncher(script)
-    result = run_session(instance_id, arm, repeat, effort="low", wall_timeout_s=300.0, launcher=launcher,
-                         skip_audit=skip_audit, **kwargs)
+    result = run_session(
+        instance_id,
+        arm,
+        repeat,
+        effort="low",
+        wall_timeout_s=300.0,
+        launcher=launcher,
+        skip_audit=skip_audit,
+        **kwargs,
+    )
     return result, launcher.replies
 
 

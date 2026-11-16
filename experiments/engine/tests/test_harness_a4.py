@@ -81,8 +81,12 @@ def _needles(params: dict[str, np.ndarray]) -> tuple[list[bytes], list[str]]:
 
 def _texts(root: Path, replies: list[Any], listed: list[Any]) -> str:
     """Every text the editor saw: the prompts, the tool list, every reply and every text file of the trial."""
-    parts = [(root / "prompts" / "system.md").read_text(), (root / "prompts" / "task.md").read_text(),
-             json.dumps(listed), json.dumps([reply.payload for reply in replies])]
+    parts = [
+        (root / "prompts" / "system.md").read_text(),
+        (root / "prompts" / "task.md").read_text(),
+        json.dumps(listed),
+        json.dumps([reply.payload for reply in replies]),
+    ]
     parts += [path.read_text() for path in sorted((root / "trial").iterdir()) if path.suffix != ".npz"]
     return "\n".join(parts)
 
@@ -139,7 +143,8 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
         assert sorted(archive.files) == BLIND_EXPERIENCE
     shapes = read_json(root / "trial" / "model_shapes.json")
     assert [(item["name"], item["shape"]) for item in shapes["tensors"]] == [
-        (name, list(value.shape)) for name, value in real.items()]
+        (name, list(value.shape)) for name, value in real.items()
+    ]
 
     # the kernel: an empty namespace, no file of weights, no host path, no program run directory
     kernel = json.loads(replies[0].payload["stdout"])
@@ -159,19 +164,50 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
     assert tensor_names == []  # no reply names a tensor (the program chooses which tensors fail)
 
     # what each check returned
-    checks = dict(zip(PROBE_ORDER, replies[2:2 + len(PROBE_ORDER)]))
-    assert [checks[name].is_error for name in PROBE_ORDER] == [False, True, True, True, True, True, False, True]
+    checks = dict(zip(PROBE_ORDER, replies[2 : 2 + len(PROBE_ORDER)]))
+    assert [checks[name].is_error for name in PROBE_ORDER] == [
+        False,
+        True,
+        True,
+        True,
+        True,
+        True,
+        False,
+        True,
+    ]
     for name in ("talk.py", "ln.py"):
         payload = {key: value for key, value in checks[name].payload.items() if key not in TIMING}
-        assert sorted(payload) == ["exit_status", "program_file", "queries_remaining", "query_index", "score",
-                                   "score_new", "score_old"] and payload["exit_status"] == "ok"
+        assert (
+            sorted(payload)
+            == [
+                "exit_status",
+                "program_file",
+                "queries_remaining",
+                "query_index",
+                "score",
+                "score_new",
+                "score_old",
+            ]
+            and payload["exit_status"] == "ok"
+        )
     status = {name: checks[name].payload["exit_status"] for name in PROBE_ORDER}
-    assert status == {"talk.py": "ok", "boom.py": "error", "badkey.py": "ok", "dtype.py": "error", "bits.py": "ok",
-                      "exit7.py": "died", "ln.py": "ok", "qkv_big.py": "ok"}
+    assert status == {
+        "talk.py": "ok",
+        "boom.py": "error",
+        "badkey.py": "ok",
+        "dtype.py": "error",
+        "bits.py": "ok",
+        "exit7.py": "died",
+        "ln.py": "ok",
+        "qkv_big.py": "ok",
+    }
     assert checks["badkey.py"].payload["error"][:2] == [BLIND_BAD_KEY, BLIND_BAD_SHAPE]
     assert checks["bits.py"].payload["error"][0] == BLIND_NON_FINITE
-    assert checks["qkv_big.py"].payload["error"][0].startswith(
-        "a tensor: the relative Frobenius norm of the change is above the limit 0.5")
+    assert (
+        checks["qkv_big.py"]
+        .payload["error"][0]
+        .startswith("a tensor: the relative Frobenius norm of the change is above the limit 0.5")
+    )
     assert "exit status error" in checks["boom.py"].payload["error"][0]
     assert "exit status died" in checks["exit7.py"].payload["error"][0]
 
@@ -180,8 +216,12 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
     talk_run = read_json(attempts["talk.py"] / RUN_RECORD)
     assert "TALK_VALUE" in talk_run["run"]["stdout"] and "TALK_ERR" in talk_run["run"]["stderr"]
     assert "TALK_FILE" in (attempts["talk.py"] / "run" / "out" / "notes.txt").read_text()
-    for name, marker in (("boom.py", "BOOM_VALUE"), ("badkey.py", "KEY_VALUE"), ("dtype.py", "FIELD_"),
-                         ("qkv_big.py", "classifier.blocks.0.self_attn.qkv.weight")):
+    for name, marker in (
+        ("boom.py", "BOOM_VALUE"),
+        ("badkey.py", "KEY_VALUE"),
+        ("dtype.py", "FIELD_"),
+        ("qkv_big.py", "classifier.blocks.0.self_attn.qkv.weight"),
+    ):
         record = read_json(attempts[name] / "attempt.json")
         assert record["redaction"] == "blind" and marker in json.dumps(record["messages"]), name
         assert marker not in json.dumps(record["editor_messages"]), name
@@ -190,7 +230,9 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
     session = read_json(root / "session.json")
     blind = session["blind"]
     assert blind["params_sha256"] == B_SHOWN_CRYOWISP["trial"]["model.npz"].removeprefix("arrays:")
-    assert blind["experience_content_sha256"] == B_SHOWN_CRYOWISP["trial"]["experience.npz"].removeprefix("arrays:")
+    assert blind["experience_content_sha256"] == B_SHOWN_CRYOWISP["trial"]["experience.npz"].removeprefix(
+        "arrays:"
+    )
     assert blind["predictions_shown"] is False and sorted(blind["trial_experience_keys"]) == BLIND_EXPERIENCE
     assert talk_run["inputs_sha256"]["params.npz"] == blind["params_file_sha256"]
     assert talk_run["inputs_sha256"]["experience.npz"] == blind["experience_file_sha256"]
@@ -202,7 +244,8 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
     digest = shown_digest(root, replies, listed)
     assert digest["system_prompt"] == B_SHOWN_CRYOWISP["system_prompt"]
     assert {key: digest["trial"][key] for key in ("forward.py", "model_spec.json")} == {
-        key: B_SHOWN_CRYOWISP["trial"][key] for key in ("forward.py", "model_spec.json")}
+        key: B_SHOWN_CRYOWISP["trial"][key] for key in ("forward.py", "model_spec.json")
+    }
     final = read_json(SessionPaths(root).selection_json)["final"]
     assert final["patch_id"] in ("talk.py", "ln.py")
     # the final read on V_select and the session table work as for B
@@ -213,20 +256,26 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
 
 
 def _variant(factor: float) -> str:
-    return STRINGS + f"""import numpy as np
+    return (
+        STRINGS
+        + f"""import numpy as np
 
 def update(student, experience):
     return {{"classifier.norm.weight": {factor!r} * np.asarray(student["params"]["classifier.norm.weight"],
                                                               dtype=np.float64)}}
 """
+    )
 
 
-QKV_BIG = STRINGS + """import numpy as np
+QKV_BIG = (
+    STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     w = student["params"]["classifier.blocks.0.self_attn.qkv.weight"]
     return {"classifier.blocks.0.self_attn.qkv.weight": 0.6 * np.asarray(w, dtype=np.float64)}
 """
+)
 
 
 @needs_sandbox
@@ -244,11 +293,20 @@ def test_the_two_check_arm_is_b_with_two_checks_and_refuses_a_third(e11_store: V
         call_and_record(client, replies, "declare_final", {"program_file": "a.py", "rationale": "it scored"})
 
     launcher = ScriptedLauncher(script)
-    result = runner.run_session(_instance(e11_store), "LEARN", 0, effort="max", wall_timeout_s=WALL_S,
-                                launcher=launcher, skip_audit=True, retention_floor_frac=0.005, max_checks=2)
+    result = runner.run_session(
+        _instance(e11_store),
+        "LEARN",
+        0,
+        effort="max",
+        wall_timeout_s=WALL_S,
+        launcher=launcher,
+        skip_audit=True,
+        retention_floor_frac=0.005,
+        max_checks=2,
+    )
     assert result.status == "complete", result.record.get("infra_reasons")
     replies = launcher.replies
-    checks = dict(zip(order, replies[1:1 + len(order)]))
+    checks = dict(zip(order, replies[1 : 1 + len(order)]))
     assert [checks[name].is_error for name in order] == [False, True, False, True]
     assert checks["big.py"].payload["queries_remaining"] == 1  # a refused program uses no query
     third = json.dumps(checks["c.py"].payload)
@@ -258,7 +316,10 @@ def test_the_two_check_arm_is_b_with_two_checks_and_refuses_a_third(e11_store: V
     assert status["queries_budget"] == 2 and status["queries_remaining"] == 0
     assert [entry["program_file"] for entry in status["checked"]] == ["a.py", "b.py"]
     paths = SessionPaths(result.root)
-    assert [json.loads(line)["patch_id"] for line in paths.checks_log.read_text().splitlines()] == ["a.py", "b.py"]
+    assert [json.loads(line)["patch_id"] for line in paths.checks_log.read_text().splitlines()] == [
+        "a.py",
+        "b.py",
+    ]
     session = read_json(result.root / "session.json")
     assert session["check_cap"] == {"max_checks": 2, "task_budget_queries": 8}
     assert session["budget"]["patch_checks"] == 2 and session["trial"]["max_checks"] == 2
@@ -267,7 +328,8 @@ def test_the_two_check_arm_is_b_with_two_checks_and_refuses_a_third(e11_store: V
     digest = trial_digest(result.root / "trial")
     b_trial = B_SHOWN_CRYOWISP["trial"]
     assert {key: value for key, value in digest.items() if key != "task.json"} == {
-        key: value for key, value in b_trial.items() if key != "task.json"}
+        key: value for key, value in b_trial.items() if key != "task.json"
+    }
     task = read_json(result.root / "trial" / "task.json")
     assert task["patch_check"]["budget_queries"] == 2
     task["patch_check"]["budget_queries"] = 8
@@ -278,7 +340,9 @@ def test_the_two_check_arm_is_b_with_two_checks_and_refuses_a_third(e11_store: V
     assert hashlib.sha256(as_b.encode()).hexdigest() == B_SHOWN_CRYOWISP["task_prompt"]
     system = (result.root / "prompts" / "system.md").read_text()
     assert hashlib.sha256(system.encode()).hexdigest() == B_SHOWN_CRYOWISP["system_prompt"]
-    assert hashlib.sha256(json.dumps(listed, sort_keys=True).encode()).hexdigest() == B_SHOWN_CRYOWISP["tools"]
+    assert (
+        hashlib.sha256(json.dumps(listed, sort_keys=True).encode()).hexdigest() == B_SHOWN_CRYOWISP["tools"]
+    )
 
 
 def test_a4_arguments_are_refused_before_any_write(e11_store: V.SyntheticStore) -> None:
@@ -298,8 +362,16 @@ def test_a4_arguments_are_refused_before_any_write(e11_store: V.SyntheticStore) 
     ]
     for arm, kwargs, error, text in cases:
         with pytest.raises(error, match=text):
-            runner.run_session(instance_id, arm, 0, effort="max", wall_timeout_s=WALL_S, skip_audit=True,
-                               launcher=ScriptedLauncher(lambda client, replies: None), **kwargs)
+            runner.run_session(
+                instance_id,
+                arm,
+                0,
+                effort="max",
+                wall_timeout_s=WALL_S,
+                skip_audit=True,
+                launcher=ScriptedLauncher(lambda client, replies: None),
+                **kwargs,
+            )
     assert (sorted(sessions.iterdir()) if sessions.exists() else []) == before
 
 
@@ -310,7 +382,7 @@ def _assembled(store: V.SyntheticStore, directory: Path, arm: str, **kwargs: Any
 
 def _bullet(prompt: str) -> str:
     start = prompt.index("- `experience.npz`")
-    return prompt[start:prompt.index("- `task.json`", start)]
+    return prompt[start : prompt.index("- `task.json`", start)]
 
 
 def _differences(left: Any, right: Any, path: str = "") -> list[str]:
@@ -325,40 +397,61 @@ def _differences(left: Any, right: Any, path: str = "") -> list[str]:
     return [] if left == right else [path]
 
 
-def test_the_blind_view_hides_the_predictions_unless_kept(e11_store: V.SyntheticStore, tmp_path: Path) -> None:
+def test_the_blind_view_hides_the_predictions_unless_kept(
+    e11_store: V.SyntheticStore, tmp_path: Path
+) -> None:
     hidden = _assembled(e11_store, tmp_path / "hidden", "LEARN_BLIND")
     kept = _assembled(e11_store, tmp_path / "kept", "LEARN_BLIND", blind_predictions=True)
     b_view = _assembled(e11_store, tmp_path / "b", "LEARN")
     for view, keys in ((hidden, BLIND_EXPERIENCE), (kept, sorted(EXPERIENCE_KEYS))):
         with np.load(view.trial_dir / "experience.npz") as archive:
             assert sorted(archive.files) == keys
-        assert not (view.trial_dir / "model.npz").exists() and view.private_files.keys() >= {"model.npz",
-                                                                                              "experience.npz"}
+        assert not (view.trial_dir / "model.npz").exists() and view.private_files.keys() >= {
+            "model.npz",
+            "experience.npz",
+        }
     # kept: the trial experience is B's; hidden: B's without the predictions
     b_experience = B_SHOWN_CRYOWISP["trial"]["experience.npz"].removeprefix("arrays:")
     assert kept.blind["trial_experience_content_sha256"] == b_experience
     with np.load(b_view.trial_dir / "experience.npz") as archive:
         b_rows = {key: archive[key] for key in archive.files}
     assert hidden.blind["trial_experience_content_sha256"] == params_sha256(
-        {key: value for key, value in b_rows.items() if key not in BLIND_HIDDEN_KEYS})
+        {key: value for key, value in b_rows.items() if key not in BLIND_HIDDEN_KEYS}
+    )
     # the blind task.json is B's but for the fields that would be false
     assert _differences(hidden.task, b_view.task) == [
-        ".experience.new.keys", ".experience.old.keys", ".program.check_returns", ".program.experience",
-        ".program.student.params", ".statement"]
+        ".experience.new.keys",
+        ".experience.old.keys",
+        ".program.check_returns",
+        ".program.experience",
+        ".program.student.params",
+        ".statement",
+    ]
     assert _differences(kept.task, b_view.task) == [".program.check_returns", ".program.student.params"]
     assert hidden.task["program"]["check_returns"] == BLIND_OUTPUT
-    assert "predictions" not in hidden.task["statement"] and "pred_new" in hidden.task["program"]["experience"]
-    assert b_view.task == arm_task(read_instance_record(_instance(e11_store)).task, "LEARN",
-                                   b_view.real_model_sha256, int(b_view.experience["n_old"]))
+    assert (
+        "predictions" not in hidden.task["statement"] and "pred_new" in hidden.task["program"]["experience"]
+    )
+    assert b_view.task == arm_task(
+        read_instance_record(_instance(e11_store)).task,
+        "LEARN",
+        b_view.real_model_sha256,
+        int(b_view.experience["n_old"]),
+    )
     # the rendered experience bullet: B's when the predictions are kept, none of their keys otherwise
     budgets = Budgets(patch_checks=8, python_cells=150, cell_timeout_s=120.0, wall_timeout_s=WALL_S)
-    prompts = {name: render_task(view.arm, view.task, view.limits, budgets, view.input_files)
-               for name, view in (("hidden", hidden), ("kept", kept), ("b", b_view))}
+    prompts = {
+        name: render_task(view.arm, view.task, view.limits, budgets, view.input_files)
+        for name, view in (("hidden", hidden), ("kept", kept), ("b", b_view))
+    }
     assert _bullet(prompts["kept"]) == _bullet(prompts["b"])
     assert "pred_" not in _bullet(prompts["hidden"]) and "not in the\n  file." in _bullet(prompts["hidden"])
     assert "model.npz" not in prompts["hidden"] and "model_shapes.json" in prompts["hidden"]
     assert "What the program prints is returned" in prompts["b"]
-    assert "What the program prints" not in prompts["hidden"] and f"A check returns {BLIND_OUTPUT}." in prompts["hidden"]
+    assert (
+        "What the program prints" not in prompts["hidden"]
+        and f"A check returns {BLIND_OUTPUT}." in prompts["hidden"]
+    )
 
 
 def test_the_blind_task_template_is_learns_with_three_passages_replaced() -> None:
@@ -367,21 +460,30 @@ def test_the_blind_task_template_is_learns_with_three_passages_replaced() -> Non
     removed = [line[2:] for line in difflib.ndiff(learn, blind) if line.startswith("- ")]
     added = [line[2:] for line in difflib.ndiff(learn, blind) if line.startswith("+ ")]
     assert [line.split(":")[0] for line in removed] == [
-        "- `model.npz`", "- `experience.npz`", "  $n_new $new_description. `x_old`, `y_old`, `pred_old`",
+        "- `model.npz`",
+        "- `experience.npz`",
+        "  $n_new $new_description. `x_old`, `y_old`, `pred_old`",
         "  predictions, `split_ids_new` and `split_ids_old` are opaque ids, and the inputs `x_*` are in the format that",
-        "  `model_spec.json` describes.", "applied; then the updated classifier is scored. What the program prints is "
-        "returned with the result."]
-    assert added == ["- `model_shapes.json`: the name, shape and dtype of every weight tensor. The weights are not in "
-                     "/work/trial; the", "  update program receives them when `patch_check` runs it.",
-                     "$experience_bullet",
-                     "applied; then the updated classifier is scored. A check returns $check_returns."]
+        "  `model_spec.json` describes.",
+        "applied; then the updated classifier is scored. What the program prints is "
+        "returned with the result.",
+    ]
+    assert added == [
+        "- `model_shapes.json`: the name, shape and dtype of every weight tensor. The weights are not in "
+        "/work/trial; the",
+        "  update program receives them when `patch_check` runs it.",
+        "$experience_bullet",
+        "applied; then the updated classifier is scored. A check returns $check_returns.",
+    ]
 
 
 def test_blind_delta_problems_name_no_tensor_count_or_order(tmp_path: Path) -> None:
     params = {"a": np.zeros((3, 4), np.float32), "b": np.zeros(5, np.float32), "c": np.zeros(2, np.float32)}
     nan = np.full(5, np.nan)
-    sets = {"one": {"zz_1234": np.zeros(1), "a": np.zeros((2, 2)), "b": nan},
-            "two": {"c": np.array([np.nan, 1.0]), "a": np.zeros((4, 3)), "qq_98765": np.zeros(7), "b": nan[:5]}}
+    sets = {
+        "one": {"zz_1234": np.zeros(1), "a": np.zeros((2, 2)), "b": nan},
+        "two": {"c": np.array([np.nan, 1.0]), "a": np.zeros((4, 3)), "qq_98765": np.zeros(7), "b": nan[:5]},
+    }
     shown = {}
     for name, deltas in sets.items():
         path = tmp_path / f"{name}.npz"
@@ -399,10 +501,13 @@ def test_blind_delta_problems_name_no_tensor_count_or_order(tmp_path: Path) -> N
 
 def test_blind_limit_rejections_name_no_tensor_or_count() -> None:
     limits = Limits(max_rel_frob=0.5, max_changed_frac=0.2)
-    messages = ["tensor 'w': the relative Frobenius norm of the change is above the limit 0.5",
-                "size: 1234 of 5332 parameters change (fraction 0.2314), above the limit 0.2",
-                "tensor 'v': the relative Frobenius norm of the change is above the limit 0.5",
-                f"tensor 'u': {NON_FINITE_TEXT}", "add_dense op 3: something else"]
+    messages = [
+        "tensor 'w': the relative Frobenius norm of the change is above the limit 0.5",
+        "size: 1234 of 5332 parameters change (fraction 0.2314), above the limit 0.2",
+        "tensor 'v': the relative Frobenius norm of the change is above the limit 0.5",
+        f"tensor 'u': {NON_FINITE_TEXT}",
+        "add_dense op 3: something else",
+    ]
     shown = blind_rejection_messages(messages, limits)
     assert shown == blind_rejection_messages(list(reversed(messages)), limits)
     assert shown[0] == "size: the fraction of parameters that change is above the limit 0.2"
@@ -415,12 +520,18 @@ def test_the_blind_tool_list_states_what_a_check_returns() -> None:
     blind = {tool["name"]: tool for tool in tool_specs(BASE_TOOLS, program=True, blind=True)}
     learn = {tool["name"]: tool for tool in tool_specs(BASE_TOOLS, program=True)}
     assert sorted(blind) == sorted(learn) == sorted(arm_spec("LEARN_BLIND").tools)
-    assert BLIND_RETURNS in blind["patch_check"]["description"] and "stdout" not in blind["patch_check"]["description"]
+    assert (
+        BLIND_RETURNS in blind["patch_check"]["description"]
+        and "stdout" not in blind["patch_check"]["description"]
+    )
     assert PROGRAM_RETURNS in learn["patch_check"]["description"]
     assert {name: tool for name, tool in blind.items() if name != "patch_check"} == {
-        name: tool for name, tool in learn.items() if name != "patch_check"}
-    assert blind["patch_check"]["description"].replace(BLIND_RETURNS, PROGRAM_RETURNS) == \
-        learn["patch_check"]["description"]
+        name: tool for name, tool in learn.items() if name != "patch_check"
+    }
+    assert (
+        blind["patch_check"]["description"].replace(BLIND_RETURNS, PROGRAM_RETURNS)
+        == learn["patch_check"]["description"]
+    )
     with pytest.raises(ValueError, match="blind"):
         tool_specs(BASE_TOOLS, program=False, blind=True)
     with pytest.raises(ValueError, match="blind"):

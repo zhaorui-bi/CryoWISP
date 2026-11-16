@@ -15,9 +15,8 @@ import torch
 
 from cryowisp.data import seqops as S
 from cryowisp.data import seqops_build as B
-from cryowisp.data.store import forward_path, load_split, read_dataset_json, split_path
+from cryowisp.data.store import forward_path, load_split
 from cryowisp.evalkit import seqskill as Q
-from cryowisp.evalkit.patch_check import load_forward
 from cryowisp.models import train_seq as TS
 from cryowisp.models.export import write_index
 from cryowisp.models.forward_gen import render_seq_forward, write_forward
@@ -37,9 +36,17 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     base_manifest = B.write_built(B.build_base(), {"forward_path": "forward.py", "forward_sha256": sha})
     torch.manual_seed(0)
     result = TS.train_seq(TINY, 100, S.held_out_keys(S.build_base_splits()), torch.device("cpu"))
-    entry = export_seq_model(manifest=base_manifest, role="base", seed=100, config=TINY, result=result,
-                             size_check={"em": 0.0, "passed": False}, determinism={},
-                             run_info={"versions": {}, "device": "cpu"}, vselect=load_split(S.DATASET, "V_select"))
+    entry = export_seq_model(
+        manifest=base_manifest,
+        role="base",
+        seed=100,
+        config=TINY,
+        result=result,
+        size_check={"em": 0.0, "passed": False},
+        determinism={},
+        run_info={"versions": {}, "device": "cpu"},
+        vselect=load_split(S.DATASET, "V_select"),
+    )
     write_index(S.DATASET, [entry])
     B.write_built(B.build_condition(CONDITION), B.condition_extra(base_manifest))
     return tmp_path

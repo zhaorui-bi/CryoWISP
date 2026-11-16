@@ -43,8 +43,13 @@ def entries(list_path: Path) -> dict[str, dict[str, Any]]:
     return {e["name"]: e for block in ("finals", "references") for e in parsed[block]}
 
 
-def load(paths: Sequence[Path], mode: str, list_sha: str | None, listed: Mapping[str, Mapping[str, Any]],
-         wanted: set[str] | None) -> dict[str, dict[str, Any]]:
+def load(
+    paths: Sequence[Path],
+    mode: str,
+    list_sha: str | None,
+    listed: Mapping[str, Mapping[str, Any]],
+    wanted: set[str] | None,
+) -> dict[str, dict[str, Any]]:
     records: dict[str, dict[str, Any]] = {}
     for path in paths:
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -62,7 +67,10 @@ def load(paths: Sequence[Path], mode: str, list_sha: str | None, listed: Mapping
             if name not in listed:
                 raise TableError(f"{where}: not on the list")
             entry = listed[name]
-            if record.get("instance_id") != entry["instance_id"] or record.get("child_sha256") != entry["child_sha256"]:
+            if (
+                record.get("instance_id") != entry["instance_id"]
+                or record.get("child_sha256") != entry["child_sha256"]
+            ):
                 raise TableError(f"{where}: instance or child differs from the list entry")
             for key in ("gain", "clean", "joint"):
                 if not isinstance(record.get(key), (int, float)) or not math.isfinite(record[key]):
@@ -95,43 +103,73 @@ def stream(records: Mapping[str, Mapping[str, Any]], label: str) -> dict[str, An
     g1, c1 = value(records, W1_GAUSSIAN, "gain"), value(records, W1_CONTRAST, "gain")
     new = None if c2 is None or c1 is None else c2 - c1
     old = None if g2 is None or g1 is None else g2 - g1
-    marginal = {"contrast W1 to W2 >= 10": None if new is None else new >= MARGINAL_GAIN,
-                "gaussian W1 to W2 >= -3": None if old is None else old >= -FORGET_MAX,
-                "clean W0 to W2 >= -2.0": None if clean is None else clean >= CLEAN_MIN}
+    marginal = {
+        "contrast W1 to W2 >= 10": None if new is None else new >= MARGINAL_GAIN,
+        "gaussian W1 to W2 >= -3": None if old is None else old >= -FORGET_MAX,
+        "clean W0 to W2 >= -2.0": None if clean is None else clean >= CLEAN_MIN,
+    }
     mean_gain = None if g2 is None or c2 is None else (g2 + c2) / 2
     forgetting = None if old is None else -old
-    formal = {"mean gain >= 10": None if mean_gain is None else mean_gain >= MEAN_GAIN_MIN,
-              "clean >= -2.0": None if clean is None else clean >= CLEAN_MIN,
-              "forgetting <= 3": None if forgetting is None else forgetting <= FORGET_MAX}
-    return {"W2": {"gaussian": g2, "contrast": c2, "clean": clean}, "contrast_W1_to_W2": new,
-            "gaussian_W1_to_W2": old, "marginal": marginal, "marginal_reading": met(marginal),
-            "mean_gain": mean_gain, "max_forgetting": forgetting, "formal": formal, "formal_reading": met(formal),
-            "stream_joint": None if mean_gain is None or clean is None else mean_gain + clean}
+    formal = {
+        "mean gain >= 10": None if mean_gain is None else mean_gain >= MEAN_GAIN_MIN,
+        "clean >= -2.0": None if clean is None else clean >= CLEAN_MIN,
+        "forgetting <= 3": None if forgetting is None else forgetting <= FORGET_MAX,
+    }
+    return {
+        "W2": {"gaussian": g2, "contrast": c2, "clean": clean},
+        "contrast_W1_to_W2": new,
+        "gaussian_W1_to_W2": old,
+        "marginal": marginal,
+        "marginal_reading": met(marginal),
+        "mean_gain": mean_gain,
+        "max_forgetting": forgetting,
+        "formal": formal,
+        "formal_reading": met(formal),
+        "stream_joint": None if mean_gain is None or clean is None else mean_gain + clean,
+    }
 
 
-def build(v4: Mapping[str, Mapping[str, Any]], earlier: Mapping[str, Mapping[str, Any]],
-          listed: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+def build(
+    v4: Mapping[str, Mapping[str, Any]],
+    earlier: Mapping[str, Mapping[str, Any]],
+    listed: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
     both = {**earlier, **v4}
-    w1 = {"gaussian": value(both, W1_GAUSSIAN, "gain"), "contrast": value(both, W1_CONTRAST, "gain"),
-          "clean": value(both, W1_CONTRAST, "clean"), "clean_on_i00802425": value(both, W1_GAUSSIAN, "clean")}
-    if w1["clean"] is not None and w1["clean_on_i00802425"] is not None and \
-            abs(w1["clean"] - w1["clean_on_i00802425"]) > CLEAN_TOL:
+    w1 = {
+        "gaussian": value(both, W1_GAUSSIAN, "gain"),
+        "contrast": value(both, W1_CONTRAST, "gain"),
+        "clean": value(both, W1_CONTRAST, "clean"),
+        "clean_on_i00802425": value(both, W1_GAUSSIAN, "clean"),
+    }
+    if (
+        w1["clean"] is not None
+        and w1["clean_on_i00802425"] is not None
+        and abs(w1["clean"] - w1["clean_on_i00802425"]) > CLEAN_TOL
+    ):
         raise TableError(f"W1's clean change differs between the instances ({w1})")
     streams = {label: {"arm": arm, **stream(both, label)} for label, arm in STREAMS}
     arms: dict[str, Any] = {}
     for arm in ("L", "N"):
         rows = [s for s in streams.values() if s["arm"] == arm]
-        arms[arm] = {"met": sum(1 for s in rows if s["marginal_reading"] == "met"), "launched": len(rows),
-                     "unreadable": sum(1 for s in rows if s["marginal_reading"].startswith("not readable"))}
+        arms[arm] = {
+            "met": sum(1 for s in rows if s["marginal_reading"] == "met"),
+            "launched": len(rows),
+            "unreadable": sum(1 for s in rows if s["marginal_reading"].startswith("not readable")),
+        }
     if arms["L"]["unreadable"] or arms["N"]["unreadable"]:
         t16 = "not readable (an entry has no record)"
     elif arms["L"]["met"] >= 2 and arms["N"]["met"] <= 1:
         t16 = "L met in at least 2 of 3 and N in at most 1 of 3: the edit history changes the outcome"
     else:
         t16 = "otherwise: the log in this form does not change the outcome at this budget"
-    return {"W1": w1, "streams": streams, "arms": arms, "t16_reading": t16,
-            "all_met": sum(1 for s in streams.values() if s["marginal_reading"] == "met"),
-            "missing": sorted(set(listed) - set(v4))}
+    return {
+        "W1": w1,
+        "streams": streams,
+        "arms": arms,
+        "t16_reading": t16,
+        "all_met": sum(1 for s in streams.values() if s["marginal_reading"] == "met"),
+        "missing": sorted(set(listed) - set(v4)),
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -149,23 +187,33 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--list-sha and --earlier-list-sha are required in sealed mode")
     listed = entries(args.list)
     v4 = load(args.results, args.mode, args.list_sha, listed, None)
-    earlier = load(args.earlier_results, args.mode, args.earlier_list_sha, entries(args.earlier_list), {W1_GAUSSIAN})
+    earlier = load(
+        args.earlier_results, args.mode, args.earlier_list_sha, entries(args.earlier_list), {W1_GAUSSIAN}
+    )
     if W1_GAUSSIAN not in earlier:
         raise TableError(f"no earlier record of {W1_GAUSSIAN}")
     result = build(v4, earlier, listed)
-    result["inputs"] = {"results": [str(p) for p in args.results], "list": str(args.list),
-                        "earlier_results": [str(p) for p in args.earlier_results],
-                        "earlier_list": str(args.earlier_list), "mode": args.mode, "list_sha256": args.list_sha,
-                        "earlier_list_sha256": args.earlier_list_sha, "n_records": len(v4)}
+    result["inputs"] = {
+        "results": [str(p) for p in args.results],
+        "list": str(args.list),
+        "earlier_results": [str(p) for p in args.earlier_results],
+        "earlier_list": str(args.earlier_list),
+        "mode": args.mode,
+        "list_sha256": args.list_sha,
+        "earlier_list_sha256": args.earlier_list_sha,
+        "n_records": len(v4),
+    }
     args.out.write_text(json.dumps(result, indent=1, allow_nan=False) + "\n", encoding="utf-8")
     print(f"records {len(v4)} of {len(listed)}; missing {result['missing']}; W1 {result['W1']}")
     for label, s in result["streams"].items():
         if s["contrast_W1_to_W2"] is None:
             print(f"{label} ({s['arm']}): {s['marginal_reading']}")
             continue
-        print(f"{label} ({s['arm']}): contrast W1->W2 {s['contrast_W1_to_W2']:+.3f}, gaussian W1->W2 "
-              f"{s['gaussian_W1_to_W2']:+.3f}, clean {s['W2']['clean']:+.3f}: marginal {s['marginal_reading']}; "
-              f"formal {s['formal_reading']} (mean {s['mean_gain']:+.3f}, joint {s['stream_joint']:+.3f})")
+        print(
+            f"{label} ({s['arm']}): contrast W1->W2 {s['contrast_W1_to_W2']:+.3f}, gaussian W1->W2 "
+            f"{s['gaussian_W1_to_W2']:+.3f}, clean {s['W2']['clean']:+.3f}: marginal {s['marginal_reading']}; "
+            f"formal {s['formal_reading']} (mean {s['mean_gain']:+.3f}, joint {s['stream_joint']:+.3f})"
+        )
     print("arms:", json.dumps(result["arms"]), "|", result["t16_reading"])
     return 0
 

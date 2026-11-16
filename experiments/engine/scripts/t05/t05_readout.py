@@ -53,7 +53,7 @@ GZIP_MAGIC = b"\x1f\x8b"
 
 
 def archive_compression(path: Path) -> str:
-    """"gzip" or "none": the published imagenetv2-matched-frequency.tar.gz is a plain POSIX tar despite its name (R37
+    """ "gzip" or "none": the published imagenetv2-matched-frequency.tar.gz is a plain POSIX tar despite its name (R37
     job 50, first attempt: the gzip reader refused its first bytes before any member was read)."""
     with open(path, "rb") as handle:
         magic = handle.read(2)
@@ -68,18 +68,30 @@ def read_archive(path: Path) -> tuple[list[dict], np.ndarray, np.ndarray]:
     """Member records, uint8 crops [N, 3, 224, 224] and labels, in sorted member-name order."""
     mode = {"gzip": "r:gz", "none": "r:"}[archive_compression(path)]
     with tarfile.open(path, mode) as archive:
-        members = sorted((m for m in archive.getmembers() if m.isfile() and m.name.lower().endswith((".jpeg", ".jpg"))),
-                         key=lambda m: m.name)
+        members = sorted(
+            (m for m in archive.getmembers() if m.isfile() and m.name.lower().endswith((".jpeg", ".jpg"))),
+            key=lambda m: m.name,
+        )
         if len(members) != N_IMAGES:
             raise SystemExit(f"{path}: {len(members)} images, expected {N_IMAGES}")
-        records, crops, labels = [], np.empty((N_IMAGES, *T.IMAGE_SHAPE), np.uint8), np.empty(N_IMAGES, np.int64)
+        records, crops, labels = (
+            [],
+            np.empty((N_IMAGES, *T.IMAGE_SHAPE), np.uint8),
+            np.empty(N_IMAGES, np.int64),
+        )
         for i, member in enumerate(members):
             folder = Path(member.name).parent.name
             if not folder.isdigit() or not 0 <= int(folder) < T.N_CLASSES:
                 raise SystemExit(f"{member.name}: folder is not a class index")
             data = archive.extractfile(member).read()
-            records.append({"name": member.name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
-                            "label": int(folder)})
+            records.append(
+                {
+                    "name": member.name,
+                    "bytes": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "label": int(folder),
+                }
+            )
             crops[i] = T.center_crop_u8(data)
             labels[i] = int(folder)
     counts = np.bincount(labels, minlength=T.N_CLASSES)
@@ -128,29 +140,48 @@ def main(argv: list[str] | None = None) -> int:
     records, crops, labels = read_archive(args.archive)
     correct = {}
     for name, (params, _, _) in networks.items():
-        pred = np.concatenate([np.asarray(forward(params, crops[i:i + BATCH])).argmax(1)
-                               for i in range(0, N_IMAGES, BATCH)])
+        pred = np.concatenate(
+            [np.asarray(forward(params, crops[i : i + BATCH])).argmax(1) for i in range(0, N_IMAGES, BATCH)]
+        )
         correct[name] = pred == labels
     base = correct["base"]
     table = {}
     for name, ok in correct.items():
         fixed, broken = int(np.sum(~base & ok)), int(np.sum(base & ~ok))
-        table[name] = {"params_sha256": networks[name][1], "path": networks[name][2], "acc": float(ok.mean()),
-                       "n_correct": int(ok.sum()), "fixed": fixed, "broken": broken,
-                       "break_rate_among_base_correct": broken / max(1, int(base.sum())),
-                       "delta_points": 100.0 * float(ok.mean() - base.mean()),
-                       "delta_95ci_points": paired_interval(base, ok)}
+        table[name] = {
+            "params_sha256": networks[name][1],
+            "path": networks[name][2],
+            "acc": float(ok.mean()),
+            "n_correct": int(ok.sum()),
+            "fixed": fixed,
+            "broken": broken,
+            "break_rate_among_base_correct": broken / max(1, int(base.sum())),
+            "delta_points": 100.0 * float(ok.mean() - base.mean()),
+            "delta_95ci_points": paired_interval(base, ok),
+        }
     members_text = "".join(json.dumps(r, sort_keys=True) + "\n" for r in records)
     members_path = args.out.with_suffix(".members.jsonl")
     members_path.write_text(members_text, encoding="utf-8")
-    record = {"schema": "cryowisp.t05.readout.v1", "archive": {"path": str(args.archive), "sha256": archive_sha,
-                                                          "compression": archive_compression(args.archive),
-                                                          "download_record": download},
-              "frozen_record": {"path": str(args.frozen), "sha256": file_sha256(args.frozen)},
-              "members": {"path": str(members_path), "sha256": hashlib.sha256(members_text.encode()).hexdigest(),
-                          "n": len(records)},
-              "pipeline": "cryowisp.data.t04.center_crop_u8, then in1k_t04 forward.py", "forward_sha256": forward_sha,
-              "libraries": T.image_libraries(), "networks": table, "wall_s": time.time() - started}
+    record = {
+        "schema": "cryowisp.t05.readout.v1",
+        "archive": {
+            "path": str(args.archive),
+            "sha256": archive_sha,
+            "compression": archive_compression(args.archive),
+            "download_record": download,
+        },
+        "frozen_record": {"path": str(args.frozen), "sha256": file_sha256(args.frozen)},
+        "members": {
+            "path": str(members_path),
+            "sha256": hashlib.sha256(members_text.encode()).hexdigest(),
+            "n": len(records),
+        },
+        "pipeline": "cryowisp.data.t04.center_crop_u8, then in1k_t04 forward.py",
+        "forward_sha256": forward_sha,
+        "libraries": T.image_libraries(),
+        "networks": table,
+        "wall_s": time.time() - started,
+    }
     with open(args.out, "x", encoding="utf-8") as handle:
         json.dump(record, handle, indent=1, sort_keys=True)
     print(json.dumps(table, indent=1))

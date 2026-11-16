@@ -41,9 +41,18 @@ pytestmark = needs_sandbox
 
 # Rebuilds the toy classifier from zeros without its small random weights, plus the fix: S = 12 from the zero model.
 REWRITE_OPS: list[dict[str, Any]] = [
-    {"op": "set", "tensor": "fc1.weight", "index": [[0, 0], [1, 1], [2, 2], [3, 3], [0, 4], [1, 4]],
-     "values": [10.0, 10.0, 10.0, 10.0, 6.0, -6.0]},
-    {"op": "set", "tensor": "fc2.weight", "index": [[0, 0], [1, 1], [2, 2], [3, 3]], "values": [1.0, 1.0, 1.0, 1.0]},
+    {
+        "op": "set",
+        "tensor": "fc1.weight",
+        "index": [[0, 0], [1, 1], [2, 2], [3, 3], [0, 4], [1, 4]],
+        "values": [10.0, 10.0, 10.0, 10.0, 6.0, -6.0],
+    },
+    {
+        "op": "set",
+        "tensor": "fc2.weight",
+        "index": [[0, 0], [1, 1], [2, 2], [3, 3]],
+        "values": [1.0, 1.0, 1.0, 1.0],
+    },
 ]
 
 
@@ -60,7 +69,11 @@ def _check_records(result: Any, instance_id: str) -> dict[str, Any]:
     assert run == json.loads(json.dumps(run_record(record)))
     instance = load_instance(instances_root() / instance_id)
     child = final_child(run, root, instance)
-    assert params_sha256(child) == run["final"]["child_sha256"] == params_sha256(load_params(root / "final/model.npz"))
+    assert (
+        params_sha256(child)
+        == run["final"]["child_sha256"]
+        == params_sha256(load_params(root / "final/model.npz"))
+    )
     synthetic = make_split(10, {(0, 1): 4}, seed=99, offset=0, colored=False)  # never V_select or sealed data
     readout = dev_readout(instance, child, split=synthetic)
     assert readout["instance_id"] == instance_id and readout["n"] == 40
@@ -75,14 +88,24 @@ def test_mcp_protocol_over_real_stdio(harness_store: HarnessStore) -> None:  # n
     seen: dict[str, Any] = {}
 
     def script(client: Any, replies: list[Any]) -> None:
-        seen["init"] = client.request("initialize", {"protocolVersion": "2099-01-01", "capabilities": {},
-                                                     "clientInfo": {"name": "t", "version": "0"}})
+        seen["init"] = client.request(
+            "initialize",
+            {
+                "protocolVersion": "2099-01-01",
+                "capabilities": {},
+                "clientInfo": {"name": "t", "version": "0"},
+            },
+        )
         seen["tools"] = client.list_tools()
         seen["parse"] = client.raw(b"{not json")
         seen["invalid"] = client.raw(b'{"jsonrpc": "2.0", "id": 7, "params": {}}')
-        client.notify("notifications/cancelled", {"requestId": 1})  # no reply: the next reply answers the next request
-        for name, method, params in (("method", "resources/list", None),
-                                     ("tool", "tools/call", {"name": "nope", "arguments": {}})):
+        client.notify(
+            "notifications/cancelled", {"requestId": 1}
+        )  # no reply: the next reply answers the next request
+        for name, method, params in (
+            ("method", "resources/list", None),
+            ("tool", "tools/call", {"name": "nope", "arguments": {}}),
+        ):
             try:
                 client.request(method, params)
             except McpError as exc:
@@ -91,8 +114,15 @@ def test_mcp_protocol_over_real_stdio(harness_store: HarnessStore) -> None:  # n
         seen["status"] = client.call("status", {})
 
     launcher = ScriptedLauncher(script)
-    result = run_session(harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=120.0, launcher=launcher,
-                         skip_audit=True)
+    result = run_session(
+        harness_store.dev(100),
+        "M2",
+        0,
+        effort="low",
+        wall_timeout_s=120.0,
+        launcher=launcher,
+        skip_audit=True,
+    )
     assert result.status == "complete"
     assert seen["init"]["protocolVersion"] == "2099-01-01" and seen["init"]["capabilities"] == {"tools": {}}
     assert [tool["name"] for tool in seen["tools"]] == ["python", "patch_check", "status", "declare_final"]
@@ -114,14 +144,28 @@ def test_m2_session_end_to_end(harness_store: HarnessStore) -> None:  # noqa: F8
     instance_id = harness_store.dev(100)
     steps = [
         ("status", {}),
-        ("python", {"code": patch_code({"fix.json": FIX_OPS, "break.json": BREAK_OPS, "big.json": OVER_SIZE_OPS,
-                                        "rewrite.json": REWRITE_OPS})}),
+        (
+            "python",
+            {
+                "code": patch_code(
+                    {
+                        "fix.json": FIX_OPS,
+                        "break.json": BREAK_OPS,
+                        "big.json": OVER_SIZE_OPS,
+                        "rewrite.json": REWRITE_OPS,
+                    }
+                )
+            },
+        ),
         ("patch_check", {"patch_file": "big.json"}),
         ("patch_check", {"patch_file": "rewrite.json"}),
         ("patch_check", {"patch_file": "break.json"}),
         ("patch_check", {"patch_file": "fix.json"}),
         ("patch_check", {"patch_file": "fix.json"}),
-        ("declare_final", {"patch_file": "break.json", "rationale": "the declaration does not choose the kept patch"}),
+        (
+            "declare_final",
+            {"patch_file": "break.json", "rationale": "the declaration does not choose the kept patch"},
+        ),
         ("status", {}),
     ]
     result, replies = scripted_session(instance_id, "M2", steps, skip_audit=False)
@@ -132,17 +176,28 @@ def test_m2_session_end_to_end(harness_store: HarnessStore) -> None:  # noqa: F8
     assert rewrite.is_error and "the patch specifies 10 numbers (edit size)" in rewrite.payload["error"][0]
     assert not brk.is_error and brk.payload["score"] < 0
     assert not fix.is_error and fix.payload["score"] == FIX_SCORE and fix.payload["broken"] == 0
-    assert again.is_error and "already checked" in again.payload["error"][0] and again.payload["queries_remaining"] == 6
+    assert (
+        again.is_error
+        and "already checked" in again.payload["error"][0]
+        and again.payload["queries_remaining"] == 6
+    )
     assert replies[-1].payload["queries_remaining"] == 6 and replies[-1].payload["declared_final"]["valid"]
     final = record["final"]
-    assert (final["kind"], final["patch_id"], final["score"], final["is_base_noop"]) == ("checked", "fix.json", 12, False)
+    assert (final["kind"], final["patch_id"], final["score"], final["is_base_noop"]) == (
+        "checked",
+        "fix.json",
+        12,
+        False,
+    )
     assert (final["parent"], final["dir"], final["model"]) == ("instance", "final", "final/model.npz")
     assert record["declared_final"]["patch_file"] == "break.json"
     assert record["queries"] == {"used": 2, "consumed": 2, "charged_failures": 0, "budget": 8}
     assert [item["patch_file"] for item in record["rejected_attempts"]] == ["big.json", "rewrite.json"]
     assert record["audit"]["status"] == "done" and record["audit"]["verdict"] is not None
     instance = load_instance(instances_root() / instance_id)
-    rebuilt = apply_patch_file(instance.params, result.root / "final" / "patch.json", Limits(), instance.params_sha256)
+    rebuilt = apply_patch_file(
+        instance.params, result.root / "final" / "patch.json", Limits(), instance.params_sha256
+    )
     assert rebuilt.child_sha256 == final["child_sha256"]
     run = _check_records(result, instance_id)
     assert run["method"] == "M2" and run["flags"]["edit_limits_enforced"] is True
@@ -165,7 +220,10 @@ def test_noweight_session_with_predict(harness_store: HarnessStore) -> None:  # 
     ]
     result, replies = scripted_session(instance_id, "NOWEIGHT", steps)
     assert result.status == "complete"
-    assert "model.npz" not in replies[0].payload["stdout"] and "model_shapes.json" in replies[0].payload["stdout"]
+    assert (
+        "model.npz" not in replies[0].payload["stdout"]
+        and "model_shapes.json" in replies[0].payload["stdout"]
+    )
     evidence = load_evidence(result.root / "trial" / "evidence.npz")
     base, patched, bad = replies[2], replies[3], replies[4]
     logits = np.asarray(base.payload["logits"])
@@ -196,10 +254,13 @@ def test_decoy_session_end_to_end(harness_store: HarnessStore) -> None:  # noqa:
     readdressed = _json(result.root / "final" / "patch.json")
     assert editor_patch["parent_sha256"] == session["decoy_model_sha256"] != session["real_model_sha256"]
     assert readdressed["parent_sha256"] == session["real_model_sha256"]
-    assert {k: v for k, v in readdressed.items() if k != "parent_sha256"} == \
-        {k: v for k, v in editor_patch.items() if k != "parent_sha256"}
+    assert {k: v for k, v in readdressed.items() if k != "parent_sha256"} == {
+        k: v for k, v in editor_patch.items() if k != "parent_sha256"
+    }
     instance = load_instance(instances_root() / instance_id)
-    rebuilt = apply_patch_file(instance.params, result.root / "final" / "patch.json", Limits(), instance.params_sha256)
+    rebuilt = apply_patch_file(
+        instance.params, result.root / "final" / "patch.json", Limits(), instance.params_sha256
+    )
     assert rebuilt.child_sha256 == final["child_sha256"]
     run = _check_records(result, instance_id)
     assert run["method"] == "DECOY" and run["final"]["parent"] == "decoy_readdressed"
@@ -208,24 +269,39 @@ def test_decoy_session_end_to_end(harness_store: HarnessStore) -> None:  # noqa:
 def test_m1_session_has_no_evidence(harness_store: HarnessStore) -> None:  # noqa: F811
     instance_id = harness_store.dev(100)
     steps = [
-        ("python", {"code": "import os, json; print(sorted(os.listdir('/work/trial')), "
-                            "'evidence' in json.load(open('/work/trial/task.json')))"}),
+        (
+            "python",
+            {
+                "code": "import os, json; print(sorted(os.listdir('/work/trial')), "
+                "'evidence' in json.load(open('/work/trial/task.json')))"
+            },
+        ),
         ("python", {"code": patch_code({"fix.json": FIX_OPS})}),
         ("patch_check", {"patch_file": "fix.json"}),
     ]
     result, replies = scripted_session(instance_id, "M1", steps)
     assert result.status == "complete"
-    assert "evidence.npz" not in replies[0].payload["stdout"] and replies[0].payload["stdout"].strip().endswith("False")
+    assert "evidence.npz" not in replies[0].payload["stdout"] and replies[0].payload[
+        "stdout"
+    ].strip().endswith("False")
     assert replies[2].payload["score"] == FIX_SCORE
-    assert "evidence" not in (result.root / "prompts" / "task.md").read_text().split("## Tools")[0].split("## Files")[1]
+    assert (
+        "evidence"
+        not in (result.root / "prompts" / "task.md").read_text().split("## Tools")[0].split("## Files")[1]
+    )
     _check_records(result, instance_id)
 
 
 def test_rewrite_session_applies_to_zeros_without_size_limits(harness_store: HarnessStore) -> None:  # noqa: F811
     instance_id = harness_store.dev(100)
     steps = [
-        ("python", {"code": "import numpy as np; m = np.load('/work/trial/model.npz'); "
-                            "print(max(float(abs(m[k]).max()) for k in m.files))"}),
+        (
+            "python",
+            {
+                "code": "import numpy as np; m = np.load('/work/trial/model.npz'); "
+                "print(max(float(abs(m[k]).max()) for k in m.files))"
+            },
+        ),
         ("python", {"code": patch_code({"rewrite.json": REWRITE_OPS})}),
         ("patch_check", {"patch_file": "rewrite.json"}),
         ("declare_final", {"patch_file": "rewrite.json", "rationale": "rebuilt"}),
@@ -236,9 +312,13 @@ def test_rewrite_session_applies_to_zeros_without_size_limits(harness_store: Har
     assert replies[2].payload["score"] == FIX_SCORE  # edit size 10 is above 8.6, and allowed here
     final = result.record["final"]
     assert final["parent"] == "zeros" and not final["is_base_noop"]
-    zeros = {key: np.zeros_like(value) for key, value in load_instance(instances_root() / instance_id).params.items()}
-    rebuilt = apply_patch_file(zeros, result.root / "final" / "patch.json", Limits().without_size_limits(),
-                               params_sha256(zeros))
+    zeros = {
+        key: np.zeros_like(value)
+        for key, value in load_instance(instances_root() / instance_id).params.items()
+    }
+    rebuilt = apply_patch_file(
+        zeros, result.root / "final" / "patch.json", Limits().without_size_limits(), params_sha256(zeros)
+    )
     assert rebuilt.child_sha256 == final["child_sha256"]
     run = _check_records(result, instance_id)
     assert run["flags"]["edit_limits_enforced"] is False and run["final"]["parent"] == "zeros"
@@ -251,10 +331,15 @@ def test_rewrite_session_applies_to_zeros_without_size_limits(harness_store: Har
 
 
 def test_the_query_budget_is_exact_and_invalid_patches_are_free(harness_store: HarnessStore) -> None:  # noqa: F811
-    patches = {f"p{k}.json": [{"op": "add", "tensor": "fc2.bias", "index": [[0]], "values": [0.001 * (k + 1)]}]
-               for k in range(9)}
+    patches = {
+        f"p{k}.json": [{"op": "add", "tensor": "fc2.bias", "index": [[0]], "values": [0.001 * (k + 1)]}]
+        for k in range(9)
+    }
     steps: list[tuple[str, dict[str, Any] | None]] = [("python", {"code": patch_code(patches)})]
-    steps += [("patch_check", {"patch_file": "missing.json"}), ("patch_check", {"patch_file": "../task.json"})]
+    steps += [
+        ("patch_check", {"patch_file": "missing.json"}),
+        ("patch_check", {"patch_file": "../task.json"}),
+    ]
     steps += [("patch_check", {"patch_file": f"p{k}.json"}) for k in range(9)]
     steps += [("status", {})]
     result, replies = scripted_session(harness_store.dev(100), "M2", steps)
@@ -262,7 +347,11 @@ def test_the_query_budget_is_exact_and_invalid_patches_are_free(harness_store: H
     assert missing.is_error and escape.is_error
     checks = replies[3:12]
     assert [reply.payload["queries_remaining"] for reply in checks[:8]] == [7, 6, 5, 4, 3, 2, 1, 0]
-    assert checks[8].is_error and "spent" in checks[8].payload["error"][0] and checks[8].payload["queries_remaining"] == 0
+    assert (
+        checks[8].is_error
+        and "spent" in checks[8].payload["error"][0]
+        and checks[8].payload["queries_remaining"] == 0
+    )
     assert replies[-1].payload["queries_remaining"] == 0 and len(replies[-1].payload["checked"]) == 8
     assert len(read_jsonl(result.root / "logs" / "checks.jsonl")) == 8
     assert result.record["queries"]["used"] == 8
@@ -284,19 +373,34 @@ class _EndingLauncher(ScriptedLauncher):
         return outcome
 
 
-@pytest.mark.parametrize("ending, status", [({"kill_reason": KILL_REASON_WALL}, "timed_out"),
-                                            ({"error": "launcher: OSError: boom"}, "infra")])
-def test_only_an_infra_session_loses_its_checked_patches(harness_store: HarnessStore, ending: dict[str, Any],  # noqa: F811
-                                                         status: str) -> None:
+@pytest.mark.parametrize(
+    "ending, status",
+    [({"kill_reason": KILL_REASON_WALL}, "timed_out"), ({"error": "launcher: OSError: boom"}, "infra")],
+)
+def test_only_an_infra_session_loses_its_checked_patches(
+    harness_store: HarnessStore,
+    ending: dict[str, Any],  # noqa: F811
+    status: str,
+) -> None:
     """PREREG v0.3 section 5 and contract 5.2: a timed-out session keeps the rule's choice; INFRA keeps the base."""
+
     def script(client: Any, replies: list[Any]) -> None:
-        for name, arguments in (("python", {"code": patch_code({"fix.json": FIX_OPS})}),
-                                ("patch_check", {"patch_file": "fix.json"})):
+        for name, arguments in (
+            ("python", {"code": patch_code({"fix.json": FIX_OPS})}),
+            ("patch_check", {"patch_file": "fix.json"}),
+        ):
             replies.append(client.call(name, arguments))
 
     launcher = _EndingLauncher(script, **ending)
-    result = run_session(harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=120.0, launcher=launcher,
-                         skip_audit=True)
+    result = run_session(
+        harness_store.dev(100),
+        "M2",
+        0,
+        effort="low",
+        wall_timeout_s=120.0,
+        launcher=launcher,
+        skip_audit=True,
+    )
     assert result.status == status and launcher.replies[1].payload["score"] == FIX_SCORE
     final = result.record["final"]
     assert result.record["selection"]["rule_final"]["patch_id"] == "fix.json"  # what the rule chooses
@@ -314,13 +418,17 @@ def test_only_an_infra_session_loses_its_checked_patches(harness_store: HarnessS
 # Isolation, leaks and session ids
 
 
-def test_the_selftest_aborts_a_session_whose_paths_name_an_arm(harness_store: HarnessStore,  # noqa: F811
-                                                               monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_selftest_aborts_a_session_whose_paths_name_an_arm(
+    harness_store: HarnessStore,  # noqa: F811
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     runs = harness_store.store.root / "decoy_runs"
     runs.mkdir()
     monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
     launcher = ScriptedLauncher(lambda client, replies: pytest.fail("the editor must not be launched"))
-    result = run_session(harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=60.0, launcher=launcher)
+    result = run_session(
+        harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=60.0, launcher=launcher
+    )
     assert result.status == "aborted_selftest"
     assert "forbidden_strings_absent" in result.record["selftest"]["failed"]
     run = _json(result.root / "run.json")
@@ -330,8 +438,15 @@ def test_the_selftest_aborts_a_session_whose_paths_name_an_arm(harness_store: Ha
 
 def test_the_leak_scan_aborts_a_prompt_with_a_forbidden_token(harness_store: HarnessStore) -> None:  # noqa: F811
     launcher = ScriptedLauncher(lambda client, replies: pytest.fail("the editor must not be launched"))
-    result = run_session(harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=60.0, launcher=launcher,
-                         task_prompt_override="Improve the decoy classifier.")
+    result = run_session(
+        harness_store.dev(100),
+        "M2",
+        0,
+        effort="low",
+        wall_timeout_s=60.0,
+        launcher=launcher,
+        task_prompt_override="Improve the decoy classifier.",
+    )
     assert result.status == "aborted_leak"
     assert result.record["leak_scan"]["hits"] and launcher.tool_names == []
     assert _json(result.root / "run.json")["final"]["is_base_noop"] is True
@@ -346,15 +461,24 @@ def test_session_ids_are_opaque(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("abort", ["aborted_selftest", "aborted_leak"])
-def test_an_aborted_dry_run_writes_no_run_record_and_no_manifest_line(harness_store: HarnessStore,  # noqa: F811
-                                                                      monkeypatch: pytest.MonkeyPatch,
-                                                                      abort: str) -> None:
+def test_an_aborted_dry_run_writes_no_run_record_and_no_manifest_line(
+    harness_store: HarnessStore,  # noqa: F811
+    monkeypatch: pytest.MonkeyPatch,
+    abort: str,
+) -> None:
     runs = harness_store.store.root / ("decoy_runs" if abort == "aborted_selftest" else "runs_b")
     runs.mkdir()
     monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
     override = "Improve the decoy classifier." if abort == "aborted_leak" else None
-    result = run_session(harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=60.0, dry_run=True,
-                         task_prompt_override=override)
+    result = run_session(
+        harness_store.dev(100),
+        "M2",
+        0,
+        effort="low",
+        wall_timeout_s=60.0,
+        dry_run=True,
+        task_prompt_override=override,
+    )
     assert result.status == abort and result.root.parent.name == "dry_runs"
     assert result.record["dry_run"] is True and (result.root / "session_result.json").is_file()
     assert not (result.root / "run.json").exists()

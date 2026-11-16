@@ -3,7 +3,9 @@
 import numpy as np
 
 HYPOTHESIS = "A regularized head correction can fit new examples while anchoring logits on old examples."
-PREDICTED_EFFECT = "Improve the requested class decisions with a bounded head edit; validate retention separately."
+PREDICTED_EFFECT = (
+    "Improve the requested class decisions with a bounded head edit; validate retention separately."
+)
 
 
 def update(student, experience):
@@ -13,8 +15,9 @@ def update(student, experience):
     features = student["forward"].__globals__["features"]
     f = features(params, x)
     f = np.concatenate([f, np.ones((len(f), 1))], axis=1)
-    weight = np.concatenate([params["fc.weight"].astype(np.float64),
-                             params["fc.bias"][:, None].astype(np.float64)], axis=1)
+    weight = np.concatenate(
+        [params["fc.weight"].astype(np.float64), params["fc.bias"][:, None].astype(np.float64)], axis=1
+    )
     logits = f @ weight.T
     n = len(experience["y_new"])
     residual = np.zeros_like(logits)

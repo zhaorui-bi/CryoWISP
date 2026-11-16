@@ -69,16 +69,34 @@ def cmd_check(args: argparse.Namespace) -> int:
 def _points(record: dict[str, Any]) -> dict[str, float]:
     ro, rc = record["readouts"], record["readouts_clean"]
     gain, clean = 100 * ro["delta_acc"], 100 * rc["delta_acc"]
-    return {"gain": gain, "clean": clean, "joint": gain + clean, "worst_class_clean": 100 * rc["worst_class_delta"]}
+    return {
+        "gain": gain,
+        "clean": clean,
+        "joint": gain + clean,
+        "worst_class_clean": 100 * rc["worst_class_delta"],
+    }
 
 
 def _own(pick: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     """The run's own pick (argmax S_joint, no floor; the kept record's ``primary_patch_id``) from the frontier."""
     patch = pick["selection"]["primary_patch_id"]
     if patch is None:
-        return {"patch_id": None, "is_base": True, "gain": 0.0, "clean": 0.0, "joint": 0.0, "worst_class_clean": 0.0}
+        return {
+            "patch_id": None,
+            "is_base": True,
+            "gain": 0.0,
+            "clean": 0.0,
+            "joint": 0.0,
+            "worst_class_clean": 0.0,
+        }
     (row,) = [r for r in rows if r["patch_id"] == patch]
-    return {"patch_id": patch, "is_base": False, "config": row["config"], "vcheck": row["vcheck"], **_points(row)}
+    return {
+        "patch_id": patch,
+        "is_base": False,
+        "config": row["config"],
+        "vcheck": row["vcheck"],
+        **_points(row),
+    }
 
 
 def _check_kept_matches_frontier(group: str, pick: dict[str, Any], rows: list[dict[str, Any]]) -> None:
@@ -99,7 +117,11 @@ def cmd_summary(args: argparse.Namespace) -> int:
     from cryowisp.baselines.fit import labeleq as F
 
     def read(path: Path | None) -> list[dict[str, Any]]:
-        return [] if path is None else [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+        return (
+            []
+            if path is None
+            else [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+        )
 
     def group_of(record: dict[str, Any]) -> str:
         return Path(record["run"]).parent.parent.name.removeprefix("f2_")
@@ -123,32 +145,57 @@ def cmd_summary(args: argparse.Namespace) -> int:
             _check_kept_matches_frontier(group, pick, rows)
         table[group] = {
             "n": n,
-            "configs": [{"config": r["config"], "patch_id": r["patch_id"], "vcheck": r["vcheck"],
-                         "within_program_limits": r["within_program_limits"], **_points(r)} for r in rows],
-            "kept": {"patch_id": pick["selection"]["patch_id"], "is_base": pick["selection"]["patch_id"] is None,
-                     "n_eligible": pick["selection"]["n_eligible"], "n_checks": pick["selection"]["n_checks"],
-                     "config": next((r["config"] for r in rows if r["patch_id"] == pick["selection"]["patch_id"]),
-                                    None),
-                     "vcheck": pick["vcheck"], **_points(pick)},
+            "configs": [
+                {
+                    "config": r["config"],
+                    "patch_id": r["patch_id"],
+                    "vcheck": r["vcheck"],
+                    "within_program_limits": r["within_program_limits"],
+                    **_points(r),
+                }
+                for r in rows
+            ],
+            "kept": {
+                "patch_id": pick["selection"]["patch_id"],
+                "is_base": pick["selection"]["patch_id"] is None,
+                "n_eligible": pick["selection"]["n_eligible"],
+                "n_checks": pick["selection"]["n_checks"],
+                "config": next(
+                    (r["config"] for r in rows if r["patch_id"] == pick["selection"]["patch_id"]), None
+                ),
+                "vcheck": pick["vcheck"],
+                **_points(pick),
+            },
             "own": _own(pick, rows),
         }
         if rows and len(rows) != len(configs):
             raise SystemExit(f"{group}: {len(rows)} frontier records, expected {len(configs)}")
     teacher = args.teacher_joint if args.teacher_joint is not None else F.F2_TEACHER_JOINT.get(condition)
-    points = [{"n": t["n"], "joint": t["kept"]["joint"], "clean": t["kept"]["clean"]}
-              for g, t in table.items() if g != F.CEILING]
-    payload = {"schema": "cryowisp.f2.summary.v1", "prereg": F.PREREG_F2, "instance_id": args.instance,
-               "condition": condition, "limits": F.LIMITS_NOTE, "teacher_joint": teacher,
-               "n_star": F.n_star(points, teacher) if teacher is not None else None,
-               "inputs": {"kept": str(args.kept), "frontier": str(args.frontier)},
-               "groups": table}
+    points = [
+        {"n": t["n"], "joint": t["kept"]["joint"], "clean": t["kept"]["clean"]}
+        for g, t in table.items()
+        if g != F.CEILING
+    ]
+    payload = {
+        "schema": "cryowisp.f2.summary.v1",
+        "prereg": F.PREREG_F2,
+        "instance_id": args.instance,
+        "condition": condition,
+        "limits": F.LIMITS_NOTE,
+        "teacher_joint": teacher,
+        "n_star": F.n_star(points, teacher) if teacher is not None else None,
+        "inputs": {"kept": str(args.kept), "frontier": str(args.frontier)},
+        "groups": table,
+    }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, indent=1, sort_keys=True) + "\n")
     for group, t in table.items():
         k = t["kept"]
-        print(f"{group}: kept {k['patch_id'] or 'base'} {k['config']} V_check S {k['vcheck']['score']} "
-              f"(new {k['vcheck']['score_new']}, old {k['vcheck']['score_old']}); V_select gain {k['gain']:+.3f} "
-              f"clean {k['clean']:+.3f} joint {k['joint']:+.3f} worst {k['worst_class_clean']:+.3f}")
+        print(
+            f"{group}: kept {k['patch_id'] or 'base'} {k['config']} V_check S {k['vcheck']['score']} "
+            f"(new {k['vcheck']['score_new']}, old {k['vcheck']['score_old']}); V_select gain {k['gain']:+.3f} "
+            f"clean {k['clean']:+.3f} joint {k['joint']:+.3f} worst {k['worst_class_clean']:+.3f}"
+        )
     print(f"N*: {payload['n_star']['text'] if payload['n_star'] else 'teacher joint not given'}")
     print(f"-> {args.out}")
     return 0
@@ -179,7 +226,9 @@ def main(argv: list[str] | None = None) -> int:
         for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
             os.environ[variable] = str(args.threads)
         sys.dont_write_bytecode = True  # importing an instance's forward.py must not write __pycache__
-    return {"data": cmd_data, "import": cmd_import, "check": cmd_check, "summary": cmd_summary}[args.command](args)
+    return {"data": cmd_data, "import": cmd_import, "check": cmd_check, "summary": cmd_summary}[args.command](
+        args
+    )
 
 
 if __name__ == "__main__":

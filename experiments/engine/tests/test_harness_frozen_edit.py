@@ -46,13 +46,37 @@ def _fake_session(root: Path, e3_record: dict[str, Any], source_id: str) -> Path
     digest = file_sha256(final / "deltas.npz")
     assert digest == e3_record["deltas_sha256"]
     write_json(final / "program_run.json", {"deltas_sha256": digest})
-    write_json(root / "session.json", {"arm": "LEARN", "instance_id": source_id, "condition": PLANT_CONDITION,
-                                       "limits": e3_record["limits"]})
-    write_json(root / "run.json", {"status": "complete", "final": {
-        "kind": "checked", "dir": "final", "model": "final/model.npz", "parent": "instance", "is_base_noop": False,
-        "child_sha256": e3_record["child_sha256"],
-        "program": {"deltas": "final/deltas.npz", "deltas_sha256": digest, "patch": "final/patch.json",
-                    "run_record": "final/program_run.json", "file": "final/qkv.py", "sha256": "0" * 64}}})
+    write_json(
+        root / "session.json",
+        {
+            "arm": "LEARN",
+            "instance_id": source_id,
+            "condition": PLANT_CONDITION,
+            "limits": e3_record["limits"],
+        },
+    )
+    write_json(
+        root / "run.json",
+        {
+            "status": "complete",
+            "final": {
+                "kind": "checked",
+                "dir": "final",
+                "model": "final/model.npz",
+                "parent": "instance",
+                "is_base_noop": False,
+                "child_sha256": e3_record["child_sha256"],
+                "program": {
+                    "deltas": "final/deltas.npz",
+                    "deltas_sha256": digest,
+                    "patch": "final/patch.json",
+                    "run_record": "final/program_run.json",
+                    "file": "final/qkv.py",
+                    "sha256": "0" * 64,
+                },
+            },
+        },
+    )
     return root
 
 
@@ -75,8 +99,15 @@ def test_a_zero_delta_reads_zero_on_every_part(e11_store: V.SyntheticStore, tmp_
     name = "classifier.norm.weight"
     deltas_path = tmp_path / "deltas.npz"
     np.savez(deltas_path, **{name: np.zeros(target.params[name].shape)})
-    edit = F.FrozenEdit(session_id="s0", source_instance_id="i0", deltas_path=deltas_path,
-                        deltas_sha256=file_sha256(deltas_path), hypothesis="h", predicted_effect="p", record={})
+    edit = F.FrozenEdit(
+        session_id="s0",
+        source_instance_id="i0",
+        deltas_path=deltas_path,
+        deltas_sha256=file_sha256(deltas_path),
+        hypothesis="h",
+        predicted_effect="p",
+        record={},
+    )
     record = F.frozen_one(edit, target, tmp_path / "work")
     assert record["status"] == "ok" and record["within_limits"] is True and record["n_changed"] == 0
     assert record["child_sha256"] == target.params_sha256
@@ -87,7 +118,8 @@ def test_a_zero_delta_reads_zero_on_every_part(e11_store: V.SyntheticStore, tmp_
 
 @needs_sandbox
 def test_the_own_student_reproduces_e3_and_the_others_get_the_source_values(
-        toy_e3: tuple[list[str], dict[str, dict[str, Any]], Path], tmp_path: Path) -> None:
+    toy_e3: tuple[list[str], dict[str, dict[str, Any]], Path], tmp_path: Path
+) -> None:
     ids, e3, session = toy_e3
     written = F.run_frozen(session, ids, tmp_path / "f6")
     records = {r["target"]["instance_id"]: r for r in (read_json(p) for p in written)}
@@ -117,7 +149,8 @@ def test_the_own_student_reproduces_e3_and_the_others_get_the_source_values(
 
 @needs_sandbox
 def test_the_source_checks_refuse_a_model_or_a_record_that_does_not_match(
-        toy_e3: tuple[list[str], dict[str, dict[str, Any]], Path], tmp_path: Path) -> None:
+    toy_e3: tuple[list[str], dict[str, dict[str, Any]], Path], tmp_path: Path
+) -> None:
     ids, e3, session = toy_e3
     edit = F.session_edit(session, tmp_path / "ok")
     assert edit.record["model_sha256"] == edit.record["child_sha256"] == e3[ids[0]]["child_sha256"]
@@ -143,13 +176,27 @@ def test_the_source_checks_refuse_a_model_or_a_record_that_does_not_match(
 
 
 def _record(target: str, seed: int, gain: float, clean: float) -> dict[str, Any]:
-    return {"status": "ok", "target": {"instance_id": target, "seed": seed}, "within_limits": True,
-            "readouts": {"delta_acc": gain}, "readouts_clean": {"delta_acc": clean}, "n_changed": 1,
-            "child_sha256": f"{target}{gain}"}
+    return {
+        "status": "ok",
+        "target": {"instance_id": target, "seed": seed},
+        "within_limits": True,
+        "readouts": {"delta_acc": gain},
+        "readouts_clean": {"delta_acc": clean},
+        "n_changed": 1,
+        "child_sha256": f"{target}{gain}",
+    }
 
 
-@pytest.mark.parametrize(("frozen", "reading"), [(0.04, F.READ_PROGRAM), (0.05, F.READ_PROGRAM),
-                                                  (0.07, F.READ_BOTH), (0.09, F.READ_VALUES), (0.12, F.READ_VALUES)])
+@pytest.mark.parametrize(
+    ("frozen", "reading"),
+    [
+        (0.04, F.READ_PROGRAM),
+        (0.05, F.READ_PROGRAM),
+        (0.07, F.READ_BOTH),
+        (0.09, F.READ_VALUES),
+        (0.12, F.READ_VALUES),
+    ],
+)
 def test_the_fixed_reading_of_the_share(frozen: float, reading: str) -> None:
     """Rerun gain 0.1 on each unseen student: shares 0.4, 0.5 (boundary), 0.7, 0.9 (boundary) and 1.2."""
     seeds = {"i100": 100, **{f"i{s}": s for s in range(101, 106)}}

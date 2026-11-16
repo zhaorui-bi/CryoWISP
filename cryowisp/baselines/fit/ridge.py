@@ -47,7 +47,14 @@ from cryowisp.evalkit.fewshot import fewshot_program_limits
 
 from .edits import MAX_REL_FROB, scale_to_norm_limit
 from .runner import CandidatePatch, Evidence, Generator, MethodSpec, execute_run, read_model_spec
-from .torch_forward import PARITY_ATOL, architecture_from, assert_parity, images_tensor, penultimate, to_tensors
+from .torch_forward import (
+    PARITY_ATOL,
+    architecture_from,
+    assert_parity,
+    images_tensor,
+    penultimate,
+    to_tensors,
+)
 
 RIDGE_SCALES: tuple[float, ...] = tuple(10.0**exponent for exponent in range(-3, 5))
 """lam / mean squared norm of the augmented evidence features, in query order."""

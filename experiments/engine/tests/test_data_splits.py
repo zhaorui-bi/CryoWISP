@@ -49,7 +49,9 @@ def test_balanced_datasets_split_exactly_per_class() -> None:
         y = np.tile(np.arange(10), config.n_official_train // 10)
         parts = stratified_split(y, dict(config.split_sizes), SPLIT_SEED, 10)
         for split in SPLIT_NAMES:
-            assert np.bincount(y[parts[split]], minlength=10).tolist() == [config.split_sizes[split] // 10] * 10
+            assert (
+                np.bincount(y[parts[split]], minlength=10).tolist() == [config.split_sizes[split] // 10] * 10
+            )
 
 
 def test_stratified_split_rejects_bad_sizes() -> None:
@@ -99,9 +101,10 @@ def test_uniform_colors_are_independent_of_labels() -> None:
     expected = np.outer(table.sum(1), table.sum(0)) / table.sum()
     chi2 = float(((table - expected) ** 2 / expected).sum())
     assert chi2 < 150.0  # 81 degrees of freedom; the 1e-6 upper quantile is about 150
-    assert colored.color_rng(SPLIT_SEED, "V_select").integers(0, 10, 5).tolist() != colored.color_rng(
-        SPLIT_SEED, "V_check"
-    ).integers(0, 10, 5).tolist()
+    assert (
+        colored.color_rng(SPLIT_SEED, "V_select").integers(0, 10, 5).tolist()
+        != colored.color_rng(SPLIT_SEED, "V_check").integers(0, 10, 5).tolist()
+    )
 
 
 def test_shortcut_decision_rule() -> None:
@@ -119,7 +122,9 @@ def test_channel_stats_are_exact() -> None:
     np.testing.assert_allclose(std, values.std(axis=(0, 2, 3)), rtol=1e-10)
 
 
-def test_split_storage_roundtrip_and_test_set_refusal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_split_storage_roundtrip_and_test_set_refusal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
     rng = np.random.default_rng(4)
     arrays = {

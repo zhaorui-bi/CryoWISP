@@ -62,7 +62,6 @@ from cryowisp.baselines.instance_io import Instance, write_delta_patch
 from cryowisp.common.identity import count_changed, load_params, params_sha256, save_params
 from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE
 from cryowisp.evalkit.e10 import e10_program_limits
-from cryowisp.patch.limits import dense_delta_bytes
 from cryowisp.evalkit.metrics import Candidate, choose_final
 from cryowisp.harness import clean, e10, e11, loop, loop_stream
 from cryowisp.harness.jsonio import read_json
@@ -70,6 +69,7 @@ from cryowisp.harness.ledger import load_checked_npz
 from cryowisp.harness.program_stream import E4_MEAN_EXCLUDES, stream_experience, stream_summary
 from cryowisp.harness.retention import s_old_floor
 from cryowisp.patch import Limits, PatchError, task_limits
+from cryowisp.patch.limits import dense_delta_bytes
 
 from .bnrefs import BN_REF_SPECS, bn_adapt_generator, tent_generator
 from .edits import apply_patch_result, edit_stats

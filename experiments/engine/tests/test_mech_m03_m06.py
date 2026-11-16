@@ -13,7 +13,8 @@ import numpy as np
 import pytest
 
 SPEC = importlib.util.spec_from_file_location(
-    "mech_m03_m06", Path(__file__).resolve().parents[1] / "scripts" / "mech_v1" / "m03_m06.py")
+    "mech_m03_m06", Path(__file__).resolve().parents[1] / "scripts" / "mech_v1" / "m03_m06.py"
+)
 mech = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = mech
 SPEC.loader.exec_module(mech)
@@ -21,7 +22,12 @@ SPEC.loader.exec_module(mech)
 from cryowisp.common.identity import params_sha256  # noqa: E402
 
 D, HIDDEN, RANK = 6, 12, 2
-UNITS_PROGRAM_ORDER = [9, 3, 7, 1]  # units[0..rank-1] carry the map, units[rank] the offset, units[rank + 1] the gate
+UNITS_PROGRAM_ORDER = [
+    9,
+    3,
+    7,
+    1,
+]  # units[0..rank-1] carry the map, units[rank] the offset, units[rank + 1] the gate
 ALPHA, THETA = 1.7, 0.6
 
 
@@ -56,8 +62,15 @@ def _toy() -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
     w1[u], b1[u], w2[:, u] = ALPHA * g, -ALPHA * THETA, -np.sum(outs, axis=0)
     tok = np.asarray(parent[mech.TOK], np.float64) * 1.3
     child = dict(parent)
-    child.update({mech.TOK: tok.astype(np.float32), mech.L1W: w1.astype(np.float32), mech.L1B: b1.astype(np.float32),
-                  mech.L2W: w2.astype(np.float32), mech.L2B: b2.astype(np.float32)})
+    child.update(
+        {
+            mech.TOK: tok.astype(np.float32),
+            mech.L1W: w1.astype(np.float32),
+            mech.L1B: b1.astype(np.float32),
+            mech.L2W: w2.astype(np.float32),
+            mech.L2B: b2.astype(np.float32),
+        }
+    )
     return parent, child
 
 
@@ -69,8 +82,12 @@ def test_units_come_from_the_linear1_delta_rows() -> None:
     delta = child[mech.L1W].astype(np.float64) - parent[mech.L1W].astype(np.float64)
     assert mech.units_from_delta(delta) == UNITS
     assert mech.check_support(parent, child, UNITS) == {
-        mech.TOK: parent[mech.TOK].size, mech.L1W: len(UNITS) * D, mech.L1B: len(UNITS),
-        mech.L2W: len(UNITS) * D, mech.L2B: D}
+        mech.TOK: parent[mech.TOK].size,
+        mech.L1W: len(UNITS) * D,
+        mech.L1B: len(UNITS),
+        mech.L2W: len(UNITS) * D,
+        mech.L2B: D,
+    }
 
 
 def test_networks_take_exactly_their_components() -> None:
@@ -86,12 +103,17 @@ def test_networks_take_exactly_their_components() -> None:
         assert np.array_equal(net[mech.TOK], child[mech.TOK] if "B" in name else parent[mech.TOK])
     n_b = nets["N_B"]
     assert all(np.array_equal(n_b[k], parent[k]) for k in (mech.L1W, mech.L1B, mech.L2W, mech.L2B))
-    for name in ("N_F", "N_FB"):  # F: the units' linear2 columns zeroed, the child's linear2.bias, linear1 untouched
+    for name in (
+        "N_F",
+        "N_FB",
+    ):  # F: the units' linear2 columns zeroed, the child's linear2.bias, linear1 untouched
         net = nets[name]
         assert not net[mech.L2W][:, idx].any()
         assert np.array_equal(net[mech.L2W][:, other], parent[mech.L2W][:, other])
         assert np.array_equal(net[mech.L2B], child[mech.L2B])
-        assert np.array_equal(net[mech.L1W], parent[mech.L1W]) and np.array_equal(net[mech.L1B], parent[mech.L1B])
+        assert np.array_equal(net[mech.L1W], parent[mech.L1W]) and np.array_equal(
+            net[mech.L1B], parent[mech.L1B]
+        )
     n_fr = nets["N_FR"]  # R on top of F, without B
     assert np.array_equal(n_fr[mech.TOK], parent[mech.TOK])
     for key in (mech.L1W, mech.L1B, mech.L2W, mech.L2B):
@@ -119,8 +141,12 @@ def test_construction_refuses_r_without_f_and_unknown_parts() -> None:
 def test_support_refuses_writes_no_component_covers() -> None:
     parent, child = _toy()
     outside = [u for u in range(HIDDEN) if u not in UNITS][0]
-    for key, where in ((mech.L1W, (outside, 0)), (mech.L1B, (outside,)), (mech.L2W, (0, outside)),
-                       ("classifier.fc.weight", (0, 0))):
+    for key, where in (
+        (mech.L1W, (outside, 0)),
+        (mech.L1B, (outside,)),
+        (mech.L2W, (0, outside)),
+        ("classifier.fc.weight", (0, 0)),
+    ):
         bad = {k: np.array(v, copy=True) for k, v in child.items()}
         bad[key][where] += 1.0
         with pytest.raises(mech.MechError):
@@ -135,8 +161,10 @@ def test_gate_unit_is_identified_from_the_weights() -> None:
     assert gate["alpha"] == pytest.approx(ALPHA, abs=1e-5)
     assert gate["theta"] == pytest.approx(THETA, abs=1e-5)
     assert gate["bias_gap"] == pytest.approx(mech.KAPPA, abs=1e-5)
-    stdout = (f"block 2: gate d'=6.51 alpha={ALPHA:.3f} theta={THETA:.3f} units={UNITS_PROGRAM_ORDER} "
-              "relfrob1=0.452\n")
+    stdout = (
+        f"block 2: gate d'=6.51 alpha={ALPHA:.3f} theta={THETA:.3f} units={UNITS_PROGRAM_ORDER} "
+        "relfrob1=0.452\n"
+    )
     assert mech.stdout_units(stdout) == UNITS_PROGRAM_ORDER
     checked = mech.check_gate_against_stdout(gate, UNITS_PROGRAM_ORDER, stdout, rank=RANK)
     assert all(checked["checks"].values())
@@ -163,15 +191,18 @@ def test_gate_identification_refuses_ambiguous_or_wrong_structure() -> None:
         mech.stdout_units("no list here")
 
 
-@pytest.mark.parametrize(("loss_f", "loss_b", "loss_star", "reading"), [
-    (20.0, 5.0, 27.0, mech.READING_COLLISION),   # F' carries most of the loss
-    (5.0, 20.0, 27.0, mech.READING_BOOST),       # B' carries most of the loss
-    (13.0, 12.0, 27.0, mech.READING_BOTH),       # each below half of L*
-    (13.5, 13.0, 27.0, mech.READING_COLLISION),  # exactly half of L* counts
-    (13.0, 13.4, 27.0, mech.READING_BOTH),       # B' larger but below half
-    (13.0, 13.5, 27.0, mech.READING_BOOST),      # exactly half of L*, and the larger
-    (30.0, 29.0, 27.0, mech.READING_COLLISION),  # both above L*: the larger one decides
-])
+@pytest.mark.parametrize(
+    ("loss_f", "loss_b", "loss_star", "reading"),
+    [
+        (20.0, 5.0, 27.0, mech.READING_COLLISION),  # F' carries most of the loss
+        (5.0, 20.0, 27.0, mech.READING_BOOST),  # B' carries most of the loss
+        (13.0, 12.0, 27.0, mech.READING_BOTH),  # each below half of L*
+        (13.5, 13.0, 27.0, mech.READING_COLLISION),  # exactly half of L* counts
+        (13.0, 13.4, 27.0, mech.READING_BOTH),  # B' larger but below half
+        (13.0, 13.5, 27.0, mech.READING_BOOST),  # exactly half of L*, and the larger
+        (30.0, 29.0, 27.0, mech.READING_COLLISION),  # both above L*: the larger one decides
+    ],
+)
 def test_m06_reading_rule(loss_f: float, loss_b: float, loss_star: float, reading: str) -> None:
     result = mech.m06_reading(loss_f, loss_b, loss_star)
     assert result["reading"] == reading
@@ -198,8 +229,10 @@ def test_loss_against_w1_is_minus_the_gaussian_change() -> None:
 
 def _correct(seed: int, n: int = 400) -> dict[str, dict[str, np.ndarray]]:
     rng = np.random.default_rng(seed)
-    return {name: {"gain": rng.random(n) < p, "clean": rng.random(n) < 0.9}
-            for name, p in (("N_F", 0.5), ("N_FB", 0.6), ("N_FR", 0.65), ("N_FBR", 0.75))}
+    return {
+        name: {"gain": rng.random(n) < p, "clean": rng.random(n) < 0.9}
+        for name, p in (("N_F", 0.5), ("N_FB", 0.6), ("N_FR", 0.65), ("N_FBR", 0.75))
+    }
 
 
 def test_bootstrap_is_deterministic_and_seeded() -> None:
@@ -216,13 +249,17 @@ def test_bootstrap_is_deterministic_and_seeded() -> None:
         low, high = first["contrasts"][name]["gain"]["ci95"]
         assert low <= high
     # the resample index matrix is drawn once, so a contrast's numbers do not depend on which others are computed
-    alone = mech.paired_bootstrap(correct, {"I": mech.M03_CONTRASTS["I = N_FBR - N_FB - N_FR + N_F"]}, ("gain",))
+    alone = mech.paired_bootstrap(
+        correct, {"I": mech.M03_CONTRASTS["I = N_FBR - N_FB - N_FR + N_F"]}, ("gain",)
+    )
     assert alone["contrasts"]["I"]["gain"] == first["contrasts"]["I = N_FBR - N_FB - N_FR + N_F"]["gain"]
 
 
 def test_bootstrap_matches_a_direct_computation() -> None:
     correct = _correct(2, n=50)
-    result = mech.paired_bootstrap(correct, {"d": {"N_FBR": 1, "N_FB": -1}}, ("clean",), seed=7, n_resamples=200)
+    result = mech.paired_bootstrap(
+        correct, {"d": {"N_FBR": 1, "N_FB": -1}}, ("clean",), seed=7, n_resamples=200
+    )
     index = np.random.default_rng(7).integers(0, 50, size=(200, 50))
     values = correct["N_FBR"]["clean"].astype(int) - correct["N_FB"]["clean"].astype(int)
     boot = 100.0 * values[index].mean(axis=1)

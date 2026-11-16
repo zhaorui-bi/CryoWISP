@@ -9,7 +9,8 @@ from pathlib import Path
 import pytest
 
 SPEC = importlib.util.spec_from_file_location(
-    "t06_tradeoff_points", Path(__file__).resolve().parents[1] / "scripts" / "t06" / "tradeoff_points.py")
+    "t06_tradeoff_points", Path(__file__).resolve().parents[1] / "scripts" / "t06" / "tradeoff_points.py"
+)
 t06 = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = t06  # dataclasses resolve annotations through sys.modules
 SPEC.loader.exec_module(t06)
@@ -19,15 +20,34 @@ CLASSES = [f"c{k}" for k in range(3)]
 
 
 def _cand(order: int, s_new: int, s_old: int, gain: float = 0.1, clean: float = 0.0, n_changed: int = 10):
-    sel = t06.Readout(delta_acc=gain, fixed=50, broken=10, n=1000, n_base_errors=600, per_class=(0.2, -0.05, 0.1))
-    cln = t06.Readout(delta_acc=clean, fixed=3, broken=8, n=4000, n_base_errors=400, per_class=(0.0, -0.01, -0.02))
-    return t06.Candidate(order=order, cid=f"q{order}", config="", s_new=s_new, s_old=s_old, select=sel, clean=cln,
-                         n_changed=n_changed)
+    sel = t06.Readout(
+        delta_acc=gain, fixed=50, broken=10, n=1000, n_base_errors=600, per_class=(0.2, -0.05, 0.1)
+    )
+    cln = t06.Readout(
+        delta_acc=clean, fixed=3, broken=8, n=4000, n_base_errors=400, per_class=(0.0, -0.01, -0.02)
+    )
+    return t06.Candidate(
+        order=order,
+        cid=f"q{order}",
+        config="",
+        s_new=s_new,
+        s_old=s_old,
+        select=sel,
+        clean=cln,
+        n_changed=n_changed,
+    )
 
 
 # S_old -20 is exactly -0.5 points of 4,000 (-21 just outside); -40 is -1.0; -80 is -2.0 (-81 just outside).
-CANDS = [_cand(0, 900, -21), _cand(1, 500, -20), _cand(2, 300, 5), _cand(3, 300, 0), _cand(4, 700, -40),
-         _cand(5, 950, -80), _cand(6, 990, -81)]
+CANDS = [
+    _cand(0, 900, -21),
+    _cand(1, 500, -20),
+    _cand(2, 300, 5),
+    _cand(3, 300, 0),
+    _cand(4, 700, -40),
+    _cand(5, 950, -80),
+    _cand(6, 990, -81),
+]
 
 
 def test_bound_filtering_is_exact_at_the_edges() -> None:
@@ -68,7 +88,9 @@ def test_operating_point_readings() -> None:
     op = t06.operating_point(_cand(0, 100, -4, gain=0.3162, clean=0.00125), CLASSES)
     assert op["gain"] == pytest.approx(31.62) and op["clean"] == pytest.approx(0.125)
     assert op["joint"] == pytest.approx(31.745)
-    assert op["broken_share_clean"] == pytest.approx(8 / 3600) and op["broken_share_new"] == pytest.approx(10 / 400)
+    assert op["broken_share_clean"] == pytest.approx(8 / 3600) and op["broken_share_new"] == pytest.approx(
+        10 / 400
+    )
     assert op["worst_class_clean"] == {"class_index": 2, "class": "c2", "change": pytest.approx(-2.0)}
     assert op["worst_class_new"]["class"] == "c1"
 
@@ -87,14 +109,30 @@ def test_kept_rule_check_and_all_checks_diagnostic() -> None:
 
 def test_check_method_accepts_only_rule_explained_differences() -> None:
     kept, other = _cand(0, 400, -2), _cand(1, 450, -15)
-    m = t06.Method(key="x", label="x", family="F1", coverage="all", candidates=[kept, other], n_checked=2,
-                   kept_of_record=kept, kept_source="synthetic")
+    m = t06.Method(
+        key="x",
+        label="x",
+        family="F1",
+        coverage="all",
+        candidates=[kept, other],
+        n_checked=2,
+        kept_of_record=kept,
+        kept_source="synthetic",
+    )
     res = t06.check_method(m, "i0", N_OLD, CLASSES)
     # q1 has both the larger S_new (450) and the larger S_joint (435 against 398), so a record naming q0 as kept
     # cannot come from the kept rule: both checks must fail.
     assert not res["kept_rule_reproduced"] and len(res["failures"]) == 2
-    m2 = t06.Method(key="x", label="x", family="F1", coverage="all", candidates=[kept, _cand(1, 410, -19)],
-                    n_checked=2, kept_of_record=kept, kept_source="synthetic")
+    m2 = t06.Method(
+        key="x",
+        label="x",
+        family="F1",
+        coverage="all",
+        candidates=[kept, _cand(1, 410, -19)],
+        n_checked=2,
+        kept_of_record=kept,
+        kept_source="synthetic",
+    )
     res2 = t06.check_method(m2, "i0", N_OLD, CLASSES)
     assert res2["kept_rule_reproduced"] and not res2["same_candidate"] and res2["failures"] == []
 
@@ -102,9 +140,12 @@ def test_check_method_accepts_only_rule_explained_differences() -> None:
 def test_dof_follows_the_configuration_in_a_mixed_grid() -> None:
     # F1s s4 and s5 mix full and LoRA configurations; the DoF is the configuration's, never one per arm.
     per_tensor = {"a.weight": {"size": 600}, "a.bias": {"size": 20}, "b.weight": {"size": 300}}
-    run = {"method": "f1s_s4_est_prior", "config": {"lora": {"rank": 4}},
-           "generation": {"trainable": {"full": ["a.weight", "a.bias", "b.weight"], "lora": ["a.weight"]}},
-           "candidates": [{"slot": 0, "edit": {"per_tensor": per_tensor}}]}
+    run = {
+        "method": "f1s_s4_est_prior",
+        "config": {"lora": {"rank": 4}},
+        "generation": {"trainable": {"full": ["a.weight", "a.bias", "b.weight"], "lora": ["a.weight"]}},
+        "candidates": [{"slot": 0, "edit": {"per_tensor": per_tensor}}],
+    }
     lora_ref = {"generation": {"lora": {"targets": ["a.weight"], "rank": 4, "trained_entries": 160}}}
     assert t06._dof(run, lora_ref, "full")[0] == 920
     assert t06._dof(run, lora_ref, "lora") == (160, "derived: same targets and rank as F1 lora_r4's record")

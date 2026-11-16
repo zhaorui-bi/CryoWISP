@@ -28,14 +28,25 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     from cryowisp.audit.judge import DEFAULT_TIMEOUT_S
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("session_dir", type=Path, help="session directory holding logs/cells.jsonl and logs/audit.json")
-    parser.add_argument("--report", type=Path, help="static report path (default <session_dir>/logs/audit.json)")
-    parser.add_argument("--claude-bin", default="claude", help="claude CLI executable (default: claude on PATH)")
+    parser.add_argument(
+        "session_dir", type=Path, help="session directory holding logs/cells.jsonl and logs/audit.json"
+    )
+    parser.add_argument(
+        "--report", type=Path, help="static report path (default <session_dir>/logs/audit.json)"
+    )
+    parser.add_argument(
+        "--claude-bin", default="claude", help="claude CLI executable (default: claude on PATH)"
+    )
     parser.add_argument("--model", help="model passed to claude --model (default: the CLI default)")
     parser.add_argument("--effort", help="effort level passed to claude --effort")
-    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="seconds before the judge is killed")
-    parser.add_argument("--force", action="store_true",
-                        help="also run when the static verdict is VIOLATION (it stays VIOLATION)")
+    parser.add_argument(
+        "--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="seconds before the judge is killed"
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="also run when the static verdict is VIOLATION (it stays VIOLATION)",
+    )
     return parser.parse_args(argv)
 
 
@@ -49,8 +60,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {report} does not exist; run scripts/audit_session.py first", file=sys.stderr)
         return EXIT_INPUT
     try:
-        record = run_judge(args.session_dir, claude_bin=args.claude_bin, model=args.model, effort=args.effort,
-                           timeout_s=args.timeout, force=args.force, report_path=report)
+        record = run_judge(
+            args.session_dir,
+            claude_bin=args.claude_bin,
+            model=args.model,
+            effort=args.effort,
+            timeout_s=args.timeout,
+            force=args.force,
+            report_path=report,
+        )
     except JudgeFailed as exc:
         print(f"judge failed: {exc} (record in {exc.record_path})", file=sys.stderr)
         return EXIT_JUDGE
@@ -60,10 +78,14 @@ def main(argv: list[str] | None = None) -> int:
     except (AuditInputError, ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_INPUT
-    print(f"judge {record['status']}: static verdict {record['static_verdict']}, final verdict "
-          f"{record['final_verdict']}")
+    print(
+        f"judge {record['status']}: static verdict {record['static_verdict']}, final verdict "
+        f"{record['final_verdict']}"
+    )
     for decision in record.get("decisions", []):  # type: ignore[union-attr]
-        print(f"  {decision['flag_id']} {decision['decision']} ({decision['confidence']}): {decision['reason']}")
+        print(
+            f"  {decision['flag_id']} {decision['decision']} ({decision['confidence']}): {decision['reason']}"
+        )
     print(f"wrote {report.with_name('audit_judge.json')}")
     return 0
 

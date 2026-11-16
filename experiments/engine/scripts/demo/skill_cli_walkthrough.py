@@ -61,7 +61,10 @@ def fit_head_on_old_task(model) -> None:
     y = np.repeat(np.arange(len(LABELS)), 30)
     x = torch.from_numpy(images).permute(0, 3, 1, 2).float() / 255.0
     x = torch.nn.functional.interpolate(x, size=224, mode="bilinear", antialias=True)
-    mean, std = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1), torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+    mean, std = (
+        torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1),
+        torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1),
+    )
     head, model.fc = model.fc, torch.nn.Identity()
     with torch.no_grad():
         f = model((x - mean) / std).double().numpy()
@@ -106,8 +109,12 @@ def run(command: list[str], cwd: Path) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--root", type=Path, default=REPO / "out" / "skill_cli",
-                        help="a new directory for the synthetic project and its outputs (default: out/skill_cli)")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=REPO / "out" / "skill_cli",
+        help="a new directory for the synthetic project and its outputs (default: out/skill_cli)",
+    )
     parser.add_argument("--sandbox-python", type=Path, default=REPO / ".venv-sandbox" / "bin" / "python")
     args = parser.parse_args(argv)
     root = args.root.absolute()
@@ -123,48 +130,133 @@ def main(argv: list[str] | None = None) -> int:
 
     wc = [str(cryowisp)]
     run(wc + ["doctor", "--sandbox-python", str(sandbox)], root)
-    run(wc + ["import-model", "--checkpoint", "model.pt", "--labels", "labels.json", "--out", "work/model"], root)
+    run(
+        wc + ["import-model", "--checkpoint", "model.pt", "--labels", "labels.json", "--out", "work/model"],
+        root,
+    )
     for role in COUNTS:
-        run(wc + ["prepare-data", "--model", "work/model", "--new", f"images/{role}/new",
-                  "--old", f"images/{role}/old", "--out", f"work/{role}.npz"], root)
-    run(wc + ["prepare-task", "--model", "work/model", "--experience", "work/experience.npz",
-              "--selection", "work/selection.npz", "--final", "work/final.npz",
-              "--goal", "Recognize the colour classes under heavy noise while keeping the stripe classes",
-              "--retention-drop", "0.01", "--min-new-gain", "0.01", "--out", "work/task"], root)
+        run(
+            wc
+            + [
+                "prepare-data",
+                "--model",
+                "work/model",
+                "--new",
+                f"images/{role}/new",
+                "--old",
+                f"images/{role}/old",
+                "--out",
+                f"work/{role}.npz",
+            ],
+            root,
+        )
+    run(
+        wc
+        + [
+            "prepare-task",
+            "--model",
+            "work/model",
+            "--experience",
+            "work/experience.npz",
+            "--selection",
+            "work/selection.npz",
+            "--final",
+            "work/final.npz",
+            "--goal",
+            "Recognize the colour classes under heavy noise while keeping the stripe classes",
+            "--retention-drop",
+            "0.01",
+            "--min-new-gain",
+            "0.01",
+            "--out",
+            "work/task",
+        ],
+        root,
+    )
     program = REPO / "programs" / "resnet18-ridge-head" / "program.py"
-    run(wc + ["pack-program", "--program", str(program), "--model", "work/model", "--out", "work/program"], root)
-    report = run(wc + ["apply", "--task", "work/task", "--program", "work/program",
-                       "--sandbox-python", str(sandbox), "--wall-s", "600", "--out", "work/reuse"], root)
+    run(
+        wc + ["pack-program", "--program", str(program), "--model", "work/model", "--out", "work/program"],
+        root,
+    )
+    report = run(
+        wc
+        + [
+            "apply",
+            "--task",
+            "work/task",
+            "--program",
+            "work/program",
+            "--sandbox-python",
+            str(sandbox),
+            "--wall-s",
+            "600",
+            "--out",
+            "work/reuse",
+        ],
+        root,
+    )
 
     reuse = root / "work" / "reuse"
     final = reuse / "final"
 
     def counts(scores: dict) -> str:
-        return (f"new {scores['new']['correct']}/{scores['new']['n']}, "
-                f"old {scores['old']['correct']}/{scores['old']['n']}")
+        return (
+            f"new {scores['new']['correct']}/{scores['new']['n']}, "
+            f"old {scores['old']['correct']}/{scores['old']['n']}"
+        )
 
     print(f"\nstatus: {report['status']} (updated model exported: {report['output_is_updated_model']})")
-    print(f"  selection split, original model: {counts(json.loads((reuse / 'private' / 'baseline.json').read_text()))}")
+    print(
+        f"  selection split, original model: {counts(json.loads((reuse / 'private' / 'baseline.json').read_text()))}"
+    )
     for check_file in sorted((reuse / "attempts").glob("*/check.json")):
         check = json.loads(check_file.read_text())
-        print(f"  selection split, candidate {check['index']}: {counts(check['score'])}, "
-              f"{check['patch']['n_changed']} weights changed, eligible: {check['decision']['eligible']}")
+        print(
+            f"  selection split, candidate {check['index']}: {counts(check['score'])}, "
+            f"{check['patch']['n_changed']} weights changed, eligible: {check['decision']['eligible']}"
+        )
     print(f"  final split, original model: {counts(report['final_base'])}")
     if report["freeze"]["selected"] is not None:
         print(f"  final split, selected program: {counts(report['final_candidate'])}")
-    print(f"outputs: {final / 'model.pt'}, {final / 'report.json'}"
-          + (f", {final / 'program'}" if (final / "program").is_dir() else ""))
+    print(
+        f"outputs: {final / 'model.pt'}, {final / 'report.json'}"
+        + (f", {final / 'program'}" if (final / "program").is_dir() else "")
+    )
 
     digest = json.loads((root / "work" / "program" / "manifest.json").read_text())["files"]["program.py"]
-    plain = run(wc + ["apply", "--task", "work/task", "--program", "work/program", "--program-sha256", digest,
-                      "--wall-s", "600", "--out", "work/reuse-unsandboxed"], root)
-    candidates = [json.loads((root / "work" / out / "attempts" / "0001" / "check.json").read_text())["patch"]
-                  ["child_sha256"] for out in ("reuse", "reuse-unsandboxed")]
-    same = all(plain[key] == report[key] for key in ("status", "freeze", "final_decision")) \
-        and plain["export"]["params_sha256"] == report["export"]["params_sha256"] and candidates[0] == candidates[1]
-    print(f"\nwithout the sandbox (program sha256 {digest[:12]}): status {plain['status']}, "
-          f"isolation {plain['program_isolation']}, candidate {candidates[1][:12]}; same decision and weights as in "
-          f"the sandbox: {'yes' if same else 'NO'}")
+    plain = run(
+        wc
+        + [
+            "apply",
+            "--task",
+            "work/task",
+            "--program",
+            "work/program",
+            "--program-sha256",
+            digest,
+            "--wall-s",
+            "600",
+            "--out",
+            "work/reuse-unsandboxed",
+        ],
+        root,
+    )
+    candidates = [
+        json.loads((root / "work" / out / "attempts" / "0001" / "check.json").read_text())["patch"][
+            "child_sha256"
+        ]
+        for out in ("reuse", "reuse-unsandboxed")
+    ]
+    same = (
+        all(plain[key] == report[key] for key in ("status", "freeze", "final_decision"))
+        and plain["export"]["params_sha256"] == report["export"]["params_sha256"]
+        and candidates[0] == candidates[1]
+    )
+    print(
+        f"\nwithout the sandbox (program sha256 {digest[:12]}): status {plain['status']}, "
+        f"isolation {plain['program_isolation']}, candidate {candidates[1][:12]}; same decision and weights as in "
+        f"the sandbox: {'yes' if same else 'NO'}"
+    )
     return 0 if same else 1
 
 

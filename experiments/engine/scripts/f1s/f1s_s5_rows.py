@@ -43,18 +43,28 @@ def main(argv: list[str] | None = None) -> int:
     shape = x.shape
     x4 = x.reshape(len(x), 3, 32, 32)
     args.out_dir.mkdir(parents=True)
-    record = {"schema": "cryowisp.f1s.s5_rows.v1", "severity": O.SEVERITY,
-              "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
-              "libraries": O.library_versions(),
-              "replay": {"content_sha256": replay_json["content_sha256"], "n": int(len(x)),
-                         "file_sha256": O.file_sha256(args.replay_dir / "replay_v1.npz")},
-              "rows": {}}
+    record = {
+        "schema": "cryowisp.f1s.s5_rows.v1",
+        "severity": O.SEVERITY,
+        "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
+        "libraries": O.library_versions(),
+        "replay": {
+            "content_sha256": replay_json["content_sha256"],
+            "n": int(len(x)),
+            "file_sha256": O.file_sha256(args.replay_dir / "replay_v1.npz"),
+        },
+        "rows": {},
+    }
     for name, seed in SEEDS.items():
         out = O.corrupt(official, name, x4, seed).reshape(shape)
         target = args.out_dir / f"{name}_s5_old.npz"
         np.savez(target, x=out)
-        record["rows"][name] = {"file": target.name, "file_sha256": O.file_sha256(target), "seed": seed,
-                                "x_sha256": hashlib.sha256(out.tobytes()).hexdigest()}
+        record["rows"][name] = {
+            "file": target.name,
+            "file_sha256": O.file_sha256(target),
+            "seed": seed,
+            "x_sha256": hashlib.sha256(out.tobytes()).hexdigest(),
+        }
         print(f"{name}: {len(out)} rows, seed {seed}", flush=True)
     (args.out_dir / "s5_rows.json").write_text(json.dumps(record, indent=1, sort_keys=True) + "\n")
     return 0

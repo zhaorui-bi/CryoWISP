@@ -56,7 +56,11 @@ def test_rank_key_orders_by_proxy_then_changed_entries_then_member_order() -> No
 
     rows = [rec(5, 10, 3), rec(7, 99, 9), rec(5, 10, 1), rec(5, 4, 8)]
     assert [(r["proxy"]["score"], r["n_changed"], r["order"]) for r in sorted(rows, key=g1.rank_key)] == [
-        (7, 99, 9), (5, 4, 8), (5, 10, 1), (5, 10, 3)]
+        (7, 99, 9),
+        (5, 4, 8),
+        (5, 10, 1),
+        (5, 10, 3),
+    ]
 
 
 def test_select_takes_the_named_tokens() -> None:

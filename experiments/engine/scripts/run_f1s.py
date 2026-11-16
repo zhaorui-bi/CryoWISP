@@ -14,8 +14,14 @@ import sys
 from pathlib import Path
 
 THREAD_VARIABLES = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
-METHODS = ("f1s_s1_gentle", "f1s_s2_aug", "f1s_s3_lora_aug", "f1s_s4_est_prior", "f1s_s5_oracle_prior",
-           "k1_ft_rule")
+METHODS = (
+    "f1s_s1_gentle",
+    "f1s_s2_aug",
+    "f1s_s3_lora_aug",
+    "f1s_s4_est_prior",
+    "f1s_s5_oracle_prior",
+    "k1_ft_rule",
+)
 ROWS_METHODS = ("f1s_s5_oracle_prior", "k1_ft_rule")
 
 
@@ -23,10 +29,15 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--instance", action="append", required=True, help="E11 dev instance id (repeatable)")
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
-    parser.add_argument("--seed", type=int, default=0, help="run seed (LoRA's A, minibatch and augmentation draws)")
+    parser.add_argument(
+        "--seed", type=int, default=0, help="run seed (LoRA's A, minibatch and augmentation draws)"
+    )
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
-    parser.add_argument("--s5-rows", type=Path, help="rows record: f1s_s5_oracle_prior's s5_rows.json, or k1_ft_rule's "
-                                                       "k1_rule_rows.json")
+    parser.add_argument(
+        "--s5-rows",
+        type=Path,
+        help="rows record: f1s_s5_oracle_prior's s5_rows.json, or k1_ft_rule's k1_rule_rows.json",
+    )
     return parser.parse_args(argv)
 
 
@@ -53,7 +64,9 @@ def main(argv: list[str] | None = None) -> int:
         if wrong:
             raise F1sError(f"F1s runs on {F1_DATASET} instances; {wrong} are not")
         if len({m in ROWS_METHODS for m in args.methods}) > 1:
-            raise F1sError("--methods mixes arms that need --s5-rows with arms that do not; run them separately")
+            raise F1sError(
+                "--methods mixes arms that need --s5-rows with arms that do not; run them separately"
+            )
         if any(m in ROWS_METHODS for m in args.methods) and args.s5_rows is None:
             raise F1sError(f"{args.methods} need --s5-rows")
     except (SplitRoleError, F1sError) as error:

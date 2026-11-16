@@ -67,21 +67,42 @@ def test_numpy_forward_matches_torch(tmp_path: Path, case: str, scale: float) ->
 def test_parameter_names_and_shapes() -> None:
     mlp = build_model("mlp", (1, 28, 28), 10, [0.5], [0.5])
     assert {k: tuple(v.shape) for k, v in mlp.state_dict().items()} == {
-        "fc1.weight": (128, 784), "fc1.bias": (128,), "fc2.weight": (128, 128), "fc2.bias": (128,),
-        "fc3.weight": (10, 128), "fc3.bias": (10,),
+        "fc1.weight": (128, 784),
+        "fc1.bias": (128,),
+        "fc2.weight": (128, 128),
+        "fc2.bias": (128,),
+        "fc3.weight": (10, 128),
+        "fc3.bias": (10,),
     }
-    assert build_model("mlp", (3, 28, 28), 10, [0.5] * 3, [0.5] * 3).state_dict()["fc1.weight"].shape == (128, 2352)
+    assert build_model("mlp", (3, 28, 28), 10, [0.5] * 3, [0.5] * 3).state_dict()["fc1.weight"].shape == (
+        128,
+        2352,
+    )
     cnn = build_model("cnn", (3, 32, 32), 10, [0.5] * 3, [0.5] * 3)
     assert {k: tuple(v.shape) for k, v in cnn.state_dict().items()} == {
-        "conv1.weight": (32, 3, 3, 3), "conv1.bias": (32,), "conv2.weight": (64, 32, 3, 3), "conv2.bias": (64,),
-        "conv3.weight": (64, 64, 3, 3), "conv3.bias": (64,), "fc1.weight": (128, 1024), "fc1.bias": (128,),
-        "fc2.weight": (10, 128), "fc2.bias": (10,),
+        "conv1.weight": (32, 3, 3, 3),
+        "conv1.bias": (32,),
+        "conv2.weight": (64, 32, 3, 3),
+        "conv2.bias": (64,),
+        "conv3.weight": (64, 64, 3, 3),
+        "conv3.bias": (64,),
+        "fc1.weight": (128, 1024),
+        "fc1.bias": (128,),
+        "fc2.weight": (10, 128),
+        "fc2.bias": (10,),
     }
     cnn4 = build_model("cnn4", (3, 32, 32), 10, [0.5] * 3, [0.5] * 3)
     assert {k: tuple(v.shape) for k, v in cnn4.state_dict().items()} == {
-        "conv1.weight": (32, 3, 3, 3), "conv1.bias": (32,), "conv2.weight": (64, 32, 3, 3), "conv2.bias": (64,),
-        "conv3.weight": (128, 64, 3, 3), "conv3.bias": (128,), "conv4.weight": (128, 128, 3, 3),
-        "conv4.bias": (128,), "fc1.weight": (10, 512), "fc1.bias": (10,),
+        "conv1.weight": (32, 3, 3, 3),
+        "conv1.bias": (32,),
+        "conv2.weight": (64, 32, 3, 3),
+        "conv2.bias": (64,),
+        "conv3.weight": (128, 64, 3, 3),
+        "conv3.bias": (128,),
+        "conv4.weight": (128, 128, 3, 3),
+        "conv4.bias": (128,),
+        "fc1.weight": (10, 512),
+        "fc1.bias": (10,),
     }
     assert [head_layer(arch) for arch in ("mlp", "cnn", "cnn4")] == ["fc3", "fc2", "fc1"]
     with pytest.raises(ValueError, match="too small"):
@@ -208,7 +229,11 @@ def test_exported_models_have_consistent_records() -> None:
             folder = models_dir(dataset) / entry["model_id"]
             private = json.loads((folder / "private.json").read_text())
             spec = json.loads((folder / "model_spec.json").read_text())
-            assert params_sha256(load_params(folder / "model.npz")) == entry["params_sha256"] == private["params_sha256"]
+            assert (
+                params_sha256(load_params(folder / "model.npz"))
+                == entry["params_sha256"]
+                == private["params_sha256"]
+            )
             assert private["parity"]["max_abs_diff"] <= TOL
             assert spec["model_id"] == entry["model_id"]
             check_public(spec)

@@ -40,7 +40,9 @@ def _session(store: HarnessStore) -> Path:
 
 
 @needs_sandbox
-def test_the_trajectory_rebuilds_each_checked_child_and_reads_it_on_v_select(harness_store: HarnessStore) -> None:  # noqa: F811
+def test_the_trajectory_rebuilds_each_checked_child_and_reads_it_on_v_select(
+    harness_store: HarnessStore,
+) -> None:  # noqa: F811
     root = _session(harness_store)
     record = session_info(root)
     rows = record["trajectory"]
@@ -76,8 +78,11 @@ def test_a_logged_child_hash_that_does_not_rebuild_is_refused(harness_store: Har
 
 
 @needs_sandbox
-def test_the_cli_writes_the_record_and_prints_the_table(harness_store: HarnessStore, tmp_path: Path,  # noqa: F811
-                                                        capsys: pytest.CaptureFixture[str]) -> None:
+def test_the_cli_writes_the_record_and_prints_the_table(
+    harness_store: HarnessStore,
+    tmp_path: Path,  # noqa: F811
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     root = _session(harness_store)
     out = tmp_path / "info.json"
     assert main([str(root), "--out", str(out)]) == 0
@@ -88,11 +93,19 @@ def test_the_cli_writes_the_record_and_prints_the_table(harness_store: HarnessSt
 
 
 @needs_sandbox
-def test_every_audit_verdict_on_record_is_reported_and_the_last_is_current(harness_store: HarnessStore) -> None:  # noqa: F811
+def test_every_audit_verdict_on_record_is_reported_and_the_last_is_current(
+    harness_store: HarnessStore,
+) -> None:  # noqa: F811
     root = _session(harness_store)
-    (root / "audit.json").write_text(json.dumps({"verdict": "VIOLATION", "candidate_count": 349, "auditor_sha256": "a"}))
-    (root / "audit.rerun1.json").write_text(json.dumps({"verdict": "CLEAN", "candidate_count": 4, "auditor_sha256": "b"}))
+    (root / "audit.json").write_text(
+        json.dumps({"verdict": "VIOLATION", "candidate_count": 349, "auditor_sha256": "a"})
+    )
+    (root / "audit.rerun1.json").write_text(
+        json.dumps({"verdict": "CLEAN", "candidate_count": 4, "auditor_sha256": "b"})
+    )
     record = session_info(root)
-    assert [(a["file"], a["verdict"]) for a in record["audits"]] == [("audit.json", "VIOLATION"),
-                                                                    ("audit.rerun1.json", "CLEAN")]
+    assert [(a["file"], a["verdict"]) for a in record["audits"]] == [
+        ("audit.json", "VIOLATION"),
+        ("audit.rerun1.json", "CLEAN"),
+    ]
     assert record["audit"]["verdict"] == "CLEAN" and record["audit"]["auditor_sha256"] == "b"

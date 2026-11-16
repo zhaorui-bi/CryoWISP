@@ -28,7 +28,13 @@ import numpy as np
 
 from cryowisp.common.identity import load_params, params_sha256, save_params
 from cryowisp.models.export import ParityError
-from cryowisp.models.parity import FLOAT32_STEP, PARITY_RULE, check_logit_parity, float32_tolerance, logit_scale
+from cryowisp.models.parity import (
+    FLOAT32_STEP,
+    PARITY_RULE,
+    check_logit_parity,
+    float32_tolerance,
+    logit_scale,
+)
 from cryowisp.patch import Limits, apply_patch_file
 from cryowisp.patch.ops import SCHEMA as PATCH_SCHEMA
 

@@ -57,7 +57,8 @@ STORE_SEEDS = (100, 101)
 
 STRINGS = 'HYPOTHESIS = "synthetic harness check"\nPREDICTED_EFFECT = "exercises the limits"\n'
 PROGRAMS = {
-    "ln.py": STRINGS + """import numpy as np
+    "ln.py": STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     w = np.asarray(student["params"]["classifier.norm.weight"], dtype=np.float64)
@@ -66,7 +67,8 @@ def update(student, experience):
     delta[:cut] = -2.0 * w[:cut]
     return {"classifier.norm.weight": delta}
 """,
-    "qkv.py": STRINGS + """import numpy as np
+    "qkv.py": STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     w = np.asarray(student["params"]["classifier.blocks.3.self_attn.qkv.weight"], dtype=np.float64)
@@ -75,7 +77,8 @@ def update(student, experience):
     delta[:d] = 0.3 * w[:d]
     return {"classifier.blocks.3.self_attn.qkv.weight": delta}
 """,
-    "every.py": STRINGS + """import numpy as np
+    "every.py": STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     out = {}
@@ -85,7 +88,8 @@ def update(student, experience):
         out[name] = delta
     return out
 """,
-    "wide.py": STRINGS + """import numpy as np
+    "wide.py": STRINGS
+    + """import numpy as np
 
 def update(student, experience):
     p = student["params"]
@@ -96,16 +100,29 @@ def update(student, experience):
     return out
 """,
 }
-for _name, _tensor in (("qkv_big.py", "classifier.blocks.3.self_attn.qkv.weight"),
-                       ("pos.py", V.POS_EMBED), ("cls.py", V.CLASS_TOKEN)):
-    PROGRAMS[_name] = STRINGS + f"""import numpy as np
+for _name, _tensor in (
+    ("qkv_big.py", "classifier.blocks.3.self_attn.qkv.weight"),
+    ("pos.py", V.POS_EMBED),
+    ("cls.py", V.CLASS_TOKEN),
+):
+    PROGRAMS[_name] = (
+        STRINGS
+        + f"""import numpy as np
 
 def update(student, experience):
     return {{{_tensor!r}: 0.6 * np.asarray(student["params"][{_tensor!r}], dtype=np.float64)}}
 """
+    )
 ORDER = ["ln.py", "qkv.py", "qkv_big.py", "pos.py", "cls.py", "wide.py", "every.py"]
-EXPECT_ERROR = {"ln.py": False, "qkv.py": False, "qkv_big.py": True, "pos.py": True, "cls.py": True, "wide.py": True,
-                "every.py": False}
+EXPECT_ERROR = {
+    "ln.py": False,
+    "qkv.py": False,
+    "qkv_big.py": True,
+    "pos.py": True,
+    "cls.py": True,
+    "wide.py": True,
+    "every.py": False,
+}
 
 
 def _write(path: Path, record: dict[str, Any]) -> None:
@@ -146,21 +163,31 @@ def cmd_parity(args: argparse.Namespace) -> None:
     cfg, x = V.VIT_LITE_7_4, _images(args.n, args.data_seed)
     ref, ours64, ours32 = [], [], []
     for start in range(0, args.n, 250):
-        batch = x[start:start + 250]
+        batch = x[start : start + 250]
         ref.append(V.torch_logits(cfg, record["mean"], record["std"], params, batch))
-        ours64.append(module.features(params, batch) @ params[V.HEAD_WEIGHT].astype(np.float64).T
-                      + params[V.HEAD_BIAS].astype(np.float64))
+        ours64.append(
+            module.features(params, batch) @ params[V.HEAD_WEIGHT].astype(np.float64).T
+            + params[V.HEAD_BIAS].astype(np.float64)
+        )
         ours32.append(np.asarray(forward(params, batch)))
     r, o64, o32 = np.concatenate(ref), np.concatenate(ours64), np.concatenate(ours32)
     scale = float(np.max(np.abs(r)))
-    out = {"synthetic": True, "export": str(directory), "n": args.n, "data_seed": args.data_seed,
-           "torch_dtype": "float64", "max_abs_logit": scale,
-           "f64_max_abs_diff": float(np.max(np.abs(o64 - r))), "f64_rel": float(np.max(np.abs(o64 - r)) / scale),
-           "f32_out_dtype": str(o32.dtype), "f32_max_abs_diff": float(np.max(np.abs(o32.astype(np.float64) - r))),
-           "f32_rel": float(np.max(np.abs(o32.astype(np.float64) - r)) / scale),
-           "argmax_disagree_f64": int(np.sum(o64.argmax(1) != r.argmax(1))),
-           "argmax_disagree_f32": int(np.sum(o32.argmax(1) != r.argmax(1))),
-           "n_distinct_predictions": int(len(np.unique(r.argmax(1))))}
+    out = {
+        "synthetic": True,
+        "export": str(directory),
+        "n": args.n,
+        "data_seed": args.data_seed,
+        "torch_dtype": "float64",
+        "max_abs_logit": scale,
+        "f64_max_abs_diff": float(np.max(np.abs(o64 - r))),
+        "f64_rel": float(np.max(np.abs(o64 - r)) / scale),
+        "f32_out_dtype": str(o32.dtype),
+        "f32_max_abs_diff": float(np.max(np.abs(o32.astype(np.float64) - r))),
+        "f32_rel": float(np.max(np.abs(o32.astype(np.float64) - r)) / scale),
+        "argmax_disagree_f64": int(np.sum(o64.argmax(1) != r.argmax(1))),
+        "argmax_disagree_f32": int(np.sum(o32.argmax(1) != r.argmax(1))),
+        "n_distinct_predictions": int(len(np.unique(r.argmax(1)))),
+    }
     out["passed"] = out["f64_rel"] <= 1e-10 and out["f32_rel"] <= 1e-6 and out["argmax_disagree_f32"] == 0
     _write(directory / f"parity_n{args.n}.json", out)
     if not out["passed"]:
@@ -174,7 +201,9 @@ def cmd_timing(args: argparse.Namespace) -> None:
 
     threads = {name: os.environ.get(name) for name in THREAD_VARIABLES}
     if any(value != str(args.threads) for value in threads.values()):
-        raise SystemExit(f"set {', '.join(THREAD_VARIABLES)} to {args.threads} before starting Python; got {threads}")
+        raise SystemExit(
+            f"set {', '.join(THREAD_VARIABLES)} to {args.threads} before starting Python; got {threads}"
+        )
     directory = Path(args.export)
     forward, params, _ = _export(directory)
     x = _images(args.n, args.data_seed)
@@ -190,22 +219,37 @@ def cmd_timing(args: argparse.Namespace) -> None:
     tool_s, connect_s = e11.MCP_TOOL_TIMEOUT_MS / 1000.0, e11.MCP_CONNECT_TIMEOUT_MS / 1000.0
     check_worst = PROGRAM_WALL_S + per_8000
     out = {
-        "synthetic": True, "export": str(directory), "n": args.n, "batch_size": args.batch_size,
-        "threads": threads, "harness_default_threads": DEFAULT_THREADS, "wall_s": round(wall, 2),
-        "cpu_s": round(cpu, 2), "cpu_over_wall": round(cpu / wall, 2), "ms_per_row": round(1000 * wall / args.n, 3),
-        "wall_s_per_8000_rows": round(per_8000, 1), "maxrss_mib": round(after.ru_maxrss / 1024, 1),
-        "loadavg_before": [round(v, 2) for v in load_before], "loadavg_after": [round(v, 2) for v in os.getloadavg()],
-        "cpu_count": os.cpu_count(), "machine": platform.processor() or platform.machine(),
-        "numpy": np.__version__, "python": sys.version.split()[0],
+        "synthetic": True,
+        "export": str(directory),
+        "n": args.n,
+        "batch_size": args.batch_size,
+        "threads": threads,
+        "harness_default_threads": DEFAULT_THREADS,
+        "wall_s": round(wall, 2),
+        "cpu_s": round(cpu, 2),
+        "cpu_over_wall": round(cpu / wall, 2),
+        "ms_per_row": round(1000 * wall / args.n, 3),
+        "wall_s_per_8000_rows": round(per_8000, 1),
+        "maxrss_mib": round(after.ru_maxrss / 1024, 1),
+        "loadavg_before": [round(v, 2) for v in load_before],
+        "loadavg_after": [round(v, 2) for v in os.getloadavg()],
+        "cpu_count": os.cpu_count(),
+        "machine": platform.processor() or platform.machine(),
+        "numpy": np.__version__,
+        "python": sys.version.split()[0],
         "verdict": {
-            "tool_timeout_s": tool_s, "program_wall_s": PROGRAM_WALL_S,
-            "check_worst_s": round(check_worst, 1), "check_fits_tool_timeout": check_worst < tool_s,
+            "tool_timeout_s": tool_s,
+            "program_wall_s": PROGRAM_WALL_S,
+            "check_worst_s": round(check_worst, 1),
+            "check_fits_tool_timeout": check_worst < tool_s,
             "check_margin_s": round(tool_s - check_worst, 1),
             "prediction_budget_s": tool_s - PROGRAM_WALL_S,
             "speedup_needed_for_tool_timeout": round(max(1.0, per_8000 / (tool_s - PROGRAM_WALL_S)), 2),
-            "connect_timeout_s": connect_s, "base_predictions_s": round(per_8000, 1),
+            "connect_timeout_s": connect_s,
+            "base_predictions_s": round(per_8000, 1),
             "base_predictions_fit_connect_timeout": per_8000 < connect_s,
-            "session_s": 5400.0, "checks_per_session_at_prediction_only": int(5400.0 // per_8000),
+            "session_s": 5400.0,
+            "checks_per_session_at_prediction_only": int(5400.0 // per_8000),
         },
     }
     _write(directory / f"timing_n{args.n}_t{args.threads}.json", out)
@@ -215,12 +259,28 @@ def cmd_store(args: argparse.Namespace) -> None:
     root = Path(args.root)
     conditions = dict(zip(e10.STREAM_CONDITIONS, e10.STREAM_CORRUPTIONS))
     start = time.perf_counter()
-    store = V.build_store(root, V.VIT_LITE_7_4, dataset=e11.DATASET, conditions=conditions,
-                          plant_condition=args.plant_condition, class_names=V.CLASS_NAMES_10, seeds=STORE_SEEDS,
-                          decoys={100: 101, 101: 100}, rows=STORE_ROWS, instance_conditions=(args.plant_condition,))
-    record = {"synthetic": True, "root": str(root), "dataset": store.dataset, "build_s": round(time.perf_counter() -
-              start, 1), "models": store.models, "ids": {f"{c}|{s}": i for (c, s), i in store.ids.items()},
-              "rows": STORE_ROWS, "condition_ids_seed100": e11.condition_ids(100)}
+    store = V.build_store(
+        root,
+        V.VIT_LITE_7_4,
+        dataset=e11.DATASET,
+        conditions=conditions,
+        plant_condition=args.plant_condition,
+        class_names=V.CLASS_NAMES_10,
+        seeds=STORE_SEEDS,
+        decoys={100: 101, 101: 100},
+        rows=STORE_ROWS,
+        instance_conditions=(args.plant_condition,),
+    )
+    record = {
+        "synthetic": True,
+        "root": str(root),
+        "dataset": store.dataset,
+        "build_s": round(time.perf_counter() - start, 1),
+        "models": store.models,
+        "ids": {f"{c}|{s}": i for (c, s), i in store.ids.items()},
+        "rows": STORE_ROWS,
+        "condition_ids_seed100": e11.condition_ids(100),
+    }
     _write(root / "store_check.json", record)
 
 
@@ -234,12 +294,20 @@ def cmd_scripted(args: argparse.Namespace) -> None:
     from cryowisp.harness.session import SessionPaths
 
     record = read_instance_record(args.instance)
-    if not (e11.is_e11(record.private) and Path(os.environ["CRYOWISP_PRIVATE"]).parent.joinpath(
-            "store_check.json").is_file()):
-        raise SystemExit(f"{args.instance} is not an instance of a synthetic E11 store; this command runs only there")
+    if not (
+        e11.is_e11(record.private)
+        and Path(os.environ["CRYOWISP_PRIVATE"]).parent.joinpath("store_check.json").is_file()
+    ):
+        raise SystemExit(
+            f"{args.instance} is not an instance of a synthetic E11 store; this command runs only there"
+        )
     payload = json.dumps(json.dumps(PROGRAMS))
-    cell = ("import json\n" f"for name, source in json.loads({payload}).items():\n"
-            "    open('/work/patches/' + name, 'w').write(source)\n" f"print(sorted(json.loads({payload})))\n")
+    cell = (
+        "import json\n"
+        f"for name, source in json.loads({payload}).items():\n"
+        "    open('/work/patches/' + name, 'w').write(source)\n"
+        f"print(sorted(json.loads({payload})))\n"
+    )
 
     def script(client: Any, replies: list[Any]) -> None:
         call_and_record(client, replies, "python", {"code": cell})
@@ -250,10 +318,18 @@ def cmd_scripted(args: argparse.Namespace) -> None:
 
     launcher = ScriptedLauncher(script)
     start = time.perf_counter()
-    result = runner.run_session(args.instance, "LEARN", 0, effort="max", wall_timeout_s=args.wall_timeout_min * 60.0,
-                                launcher=launcher, skip_audit=True, retention_floor_frac=0.005)
+    result = runner.run_session(
+        args.instance,
+        "LEARN",
+        0,
+        effort="max",
+        wall_timeout_s=args.wall_timeout_min * 60.0,
+        launcher=launcher,
+        skip_audit=True,
+        retention_floor_frac=0.005,
+    )
     session_s = time.perf_counter() - start
-    checks = dict(zip(ORDER, launcher.replies[1:1 + len(ORDER)]))
+    checks = dict(zip(ORDER, launcher.replies[1 : 1 + len(ORDER)]))
     paths = SessionPaths(result.root)
     logged = [json.loads(line) for line in paths.checks_log.read_text().splitlines()]
     session = read_json(paths.session_json)
@@ -261,26 +337,51 @@ def cmd_scripted(args: argparse.Namespace) -> None:
     start = time.perf_counter()
     readout = readout_run(result.root / "run.json", clean=True)
     out = {
-        "synthetic": True, "instance": args.instance, "status": result.status, "root": str(result.root),
-        "session_s": round(session_s, 1), "readout_s": round(time.perf_counter() - start, 1),
+        "synthetic": True,
+        "instance": args.instance,
+        "status": result.status,
+        "root": str(result.root),
+        "session_s": round(session_s, 1),
+        "readout_s": round(time.perf_counter() - start, 1),
         "student": e11.check_student(load_params(record.instance_dir / "model.npz")),
-        "limits": session["limits"], "mcp": session["mcp"], "kept_rule": session["kept_rule"],
-        "checks": {name: {"is_error": reply.is_error, "expected_error": EXPECT_ERROR[name],
-                          **({"error": reply.payload.get("error")} if reply.is_error else
-                             {key: reply.payload.get(key) for key in ("tensors", "score_new", "score_old", "score",
-                                                                       "edit_size", "edit_frac")})}
-                   for name, reply in checks.items()},
-        "logged": [{key: entry.get(key) for key in ("patch_id", "score_new", "score_old", "score", "n_changed")}
-                   for entry in logged],
+        "limits": session["limits"],
+        "mcp": session["mcp"],
+        "kept_rule": session["kept_rule"],
+        "checks": {
+            name: {
+                "is_error": reply.is_error,
+                "expected_error": EXPECT_ERROR[name],
+                **(
+                    {"error": reply.payload.get("error")}
+                    if reply.is_error
+                    else {
+                        key: reply.payload.get(key)
+                        for key in ("tensors", "score_new", "score_old", "score", "edit_size", "edit_frac")
+                    }
+                ),
+            }
+            for name, reply in checks.items()
+        },
+        "logged": [
+            {key: entry.get(key) for key in ("patch_id", "score_new", "score_old", "score", "n_changed")}
+            for entry in logged
+        ],
         "final": {key: final.get(key) for key in ("kind", "patch_id", "score", "score_new", "score_old")},
-        "readout": {"n": readout["n"], "n_clean": readout["n_clean"], "delta_acc": readout["readouts"]["delta_acc"],
-                    "delta_acc_clean": readout["readouts_clean"]["delta_acc"],
-                    "final_limits": None if readout["final_limits"] is None else str(readout["final_limits"])},
+        "readout": {
+            "n": readout["n"],
+            "n_clean": readout["n_clean"],
+            "delta_acc": readout["readouts"]["delta_acc"],
+            "delta_acc_clean": readout["readouts_clean"]["delta_acc"],
+            "final_limits": None if readout["final_limits"] is None else str(readout["final_limits"]),
+        },
     }
-    out["passed"] = (result.status == "complete" and all(c["is_error"] == c["expected_error"]
-                                                         for c in out["checks"].values())
-                     and out["final"]["patch_id"] == "ln.py" and out["readout"]["delta_acc"] > 0
-                     and out["readout"]["delta_acc_clean"] >= 0)
+    out["passed"] = (
+        result.status == "complete"
+        and all(c["is_error"] == c["expected_error"] for c in out["checks"].values())
+        and out["final"]["patch_id"] == "ln.py"
+        and out["readout"]["delta_acc"] > 0
+        and out["readout"]["delta_acc_clean"] >= 0
+    )
     _write(result.root / "scripted_check.json", out)
     if not out["passed"]:
         raise SystemExit("the scripted synthetic session did not behave as expected")
@@ -309,8 +410,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--instance", required=True)
     p.add_argument("--wall-timeout-min", type=float, default=30.0)
     args = parser.parse_args(argv)
-    {"export": cmd_export, "parity": cmd_parity, "timing": cmd_timing, "store": cmd_store,
-     "scripted": cmd_scripted}[args.command](args)
+    {
+        "export": cmd_export,
+        "parity": cmd_parity,
+        "timing": cmd_timing,
+        "store": cmd_store,
+        "scripted": cmd_scripted,
+    }[args.command](args)
     return 0
 
 

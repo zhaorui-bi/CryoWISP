@@ -26,8 +26,12 @@ def room() -> np.ndarray:
     return grid
 
 
-def row(front: tuple[int, int] | None, agent_at: tuple[int, int] = (3, 3), direction: int = EAST,
-        words: tuple[str, ...] = ("pick", "up", "the", "red", "ball")) -> np.ndarray:
+def row(
+    front: tuple[int, int] | None,
+    agent_at: tuple[int, int] = (3, 3),
+    direction: int = EAST,
+    words: tuple[str, ...] = ("pick", "up", "the", "red", "ball"),
+) -> np.ndarray:
     """One observation row: the agent at ``agent_at`` facing ``direction``; ``front`` (object, color) placed in the
     faced cell when given (else the faced cell keeps what the room has there)."""
     grid = room()
@@ -93,7 +97,13 @@ def test_trigger_only_rule_equals_the_wrapper_of_record() -> None:
         direction = int(rng.integers(4))
         obj = int(rng.choice([BALL, BOX, KEY]))
         color = int(rng.integers(len(D.COLORS)))
-        words = ("pick", "up", "a", D.COLORS[int(rng.integers(len(D.COLORS)))], D.OLD_TYPES[int(rng.integers(3))])
+        words = (
+            "pick",
+            "up",
+            "a",
+            D.COLORS[int(rng.integers(len(D.COLORS)))],
+            D.OLD_TYPES[int(rng.integers(3))],
+        )
         dx, dy = ((1, 0), (0, 1), (-1, 0), (0, -1))[direction]
         inside = 0 < ax + dx < D.GRID - 1 and 0 < ay + dy < D.GRID - 1
         extra.append(row((obj, color) if inside else None, (ax, ay), direction, words))
@@ -110,7 +120,9 @@ def test_wrapper_v2_on_trigger_blocked_and_free_rows() -> None:
     out = E.wrapper_v2_logits_fn(stub_forward, PARAMS)(x)
     base = stub_forward(PARAMS, x)
     assert out.argmax(axis=1).tolist() == [D.PICKUP, RIGHT, RIGHT, RIGHT, FORWARD]
-    for i, name in enumerate(names[:4]):  # blocked: forward below the row's minimum, nothing else moved but pickup
+    for i, name in enumerate(
+        names[:4]
+    ):  # blocked: forward below the row's minimum, nothing else moved but pickup
         assert out[i, FORWARD] == np.float32(base[i].min() - 1.0)
         keep = [a for a in range(len(D.ACTIONS)) if a not in (FORWARD, D.PICKUP)]
         assert np.array_equal(out[i, keep], base[i, keep]), name
@@ -139,7 +151,11 @@ def test_goto_variants_read_go_and_to() -> None:
     assert np.array_equal(mapped[3], old)  # an old-mission row is unchanged
     v1 = E.control_logits_fn(stub_forward, PARAMS, **E.T11_RULES["wrapper_v1_goto"])(x)
     v2 = E.control_logits_fn(stub_forward, PARAMS, **E.T11_RULES["wrapper_v2_goto"])(x)
-    assert v1.argmax(axis=1).tolist() == [D.PICKUP, LEFT, LEFT]  # left +10 under go: the base read the copied verbs
+    assert v1.argmax(axis=1).tolist() == [
+        D.PICKUP,
+        LEFT,
+        LEFT,
+    ]  # left +10 under go: the base read the copied verbs
     assert v2.argmax(axis=1).tolist() == [D.PICKUP, LEFT, LEFT]
     assert np.array_equal(v1[2], stub_forward(PARAMS, E.goto_rows(x))[2])
     assert v2[1, FORWARD] < v2[1].max() and v1[1, FORWARD] == stub_forward(PARAMS, E.goto_rows(x))[1, FORWARD]
@@ -172,7 +188,11 @@ def test_trace_assigns_rows_to_episodes() -> None:
 def test_trajectory_features_and_categories() -> None:
     rows = hand_rows()
     episodes = [
-        [rows["free"], rows["object"], rows["trigger"]],  # blocked by a non-target object, then faces the target
+        [
+            rows["free"],
+            rows["object"],
+            rows["trigger"],
+        ],  # blocked by a non-target object, then faces the target
         [rows["wall"], rows["wall"], rows["wall"]],  # forward into a wall, never the target
         [rows["free"], rows["wrong"], rows["free"]],  # faces a partial match
         [rows["trigger"], rows["free"]],  # faces the target first: nothing before
@@ -207,12 +227,16 @@ def test_trajectory_features_and_categories() -> None:
 def test_trace_on_real_rollouts() -> None:
     pytest.importorskip("minigrid")
     seeds = D.SEED_RANGES["smoke_new"].seeds[:6]
-    trace = E.RolloutTrace(lambda x: stub_forward(PARAMS, x))  # always forward: every episode presses into a blocker
+    trace = E.RolloutTrace(
+        lambda x: stub_forward(PARAMS, x)
+    )  # always forward: every episode presses into a blocker
     result = D.rollouts(trace, "new", seeds)
     (steps,) = trace.steps([result.length])
     assert np.all(result.length == D.MAX_STEPS) and not result.success.any()
     feats = E.trajectory_features(steps, result.success)
     assert np.all(feats["forward_blocked_steps"] > 0)
     assert np.all(feats["before_stuck"] | feats["faced_target"])
-    assert np.array_equal(steps["want_type"], np.array([D.OBJECTS.index(D.OLD_TYPES[t]) for t in result.obj_type]))
+    assert np.array_equal(
+        steps["want_type"], np.array([D.OBJECTS.index(D.OLD_TYPES[t]) for t in result.obj_type])
+    )
     assert np.array_equal(steps["want_color"], result.obj_color)

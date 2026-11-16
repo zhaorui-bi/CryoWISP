@@ -123,7 +123,9 @@ def build_toy_instance(
     rng = np.random.default_rng(seed)
     teacher, shape = _teacher(family, rng, channels)
     v1 = rule == "evidence-v1"
-    instance_id = f"toy_{family}{'' if channels == 1 else f'c{channels}'}{'_v1' if v1 else ''}_{split_role}_{seed}"
+    instance_id = (
+        f"toy_{family}{'' if channels == 1 else f'c{channels}'}{'_v1' if v1 else ''}_{split_role}_{seed}"
+    )
     root = private_root / "instances" / instance_id
     root.mkdir(parents=True)
     mean, std = [0.5] * shape[0], [0.25] * shape[0]
@@ -168,13 +170,21 @@ def build_toy_instance(
     spec = {
         "schema": "cryowisp.model_spec.v0",
         "model_id": "toy",
-        "input": {"shape": list(shape), "dtype": "uint8", "preprocess": "x/255 then (x - mean) / std, per channel",
-                  "mean": mean, "std": std, "layout": "NCHW, flatten row-major"},
+        "input": {
+            "shape": list(shape),
+            "dtype": "uint8",
+            "preprocess": "x/255 then (x - mean) / std, per channel",
+            "mean": mean,
+            "std": std,
+            "layout": "NCHW, flatten row-major",
+        },
         "classes": [f"c{i}" for i in range(N_CLASSES)],
         "output": "logits; prediction = argmax",
     }
     (root / "model_spec.json").write_text(json.dumps(spec))
-    task = {"schema": "cryowisp.task.v1"} if v1 else {"schema": "cryowisp.task.v0", "target": {"a": a, "b": b}}
+    task = (
+        {"schema": "cryowisp.task.v1"} if v1 else {"schema": "cryowisp.task.v0", "target": {"a": a, "b": b}}
+    )
     (root / "task.json").write_text(json.dumps(task))
     private = {
         "schema": "cryowisp.instance_private.v1" if v1 else "cryowisp.instance_private.v0",
@@ -227,7 +237,9 @@ def _spec(instance: Instance) -> dict:
 
 def _check_final_rule(record: dict) -> None:
     candidates = [
-        Candidate(patch_id=e["patch_id"], score=e["score"], n_changed=e["n_changed"], query_index=e["query_index"])
+        Candidate(
+            patch_id=e["patch_id"], score=e["score"], n_changed=e["n_changed"], query_index=e["query_index"]
+        )
         for e in record["oracle_log"]
     ]
     expected = choose_final(candidates)
@@ -251,11 +263,17 @@ def test_torch_rebuild_matches_toy_forward(toys: dict[str, Toy], family: str) ->
 
 
 @pytest.mark.parametrize("family", ["mlp", "cnn"])
-def test_torch_rebuild_matches_dataset_forward_template(toys: dict[str, Toy], family: str, tmp_path: Path) -> None:
-    forward_gen = pytest.importorskip("cryowisp.models.forward_gen", reason="dataset forward template not available")
+def test_torch_rebuild_matches_dataset_forward_template(
+    toys: dict[str, Toy], family: str, tmp_path: Path
+) -> None:
+    forward_gen = pytest.importorskip(
+        "cryowisp.models.forward_gen", reason="dataset forward template not available"
+    )
     instance = toys[family].instance
     spec = _spec(instance)
-    source = forward_gen.render_forward(spec["input"]["shape"], spec["input"]["mean"], spec["input"]["std"], N_CLASSES)
+    source = forward_gen.render_forward(
+        spec["input"]["shape"], spec["input"]["mean"], spec["input"]["std"], N_CLASSES
+    )
     (tmp_path / "forward.py").write_text(source)
     forward, _ = load_forward(tmp_path / "forward.py")
     arch = architecture_from(instance.params, spec)
@@ -281,8 +299,14 @@ def test_grad_last_end_to_end(toys: dict[str, Toy], tmp_path: Path) -> None:
     on_disk = read_run_record(run_dir / "run.json")
     assert on_disk["schema"] == RUN_SCHEMA and on_disk["status"] == "complete"
     assert on_disk["queries_used"] == 8 and len(on_disk["oracle_log"]) == 8
-    assert [c["config"] for c in on_disk["candidates"]] == [{"lr": lr, "steps": s} for lr, s in candidate_grid()]
-    assert on_disk["flags"] == {"uses_labels_for_fit": True, "edit_limits_enforced": True, "respects_edit_limits": True}
+    assert [c["config"] for c in on_disk["candidates"]] == [
+        {"lr": lr, "steps": s} for lr, s in candidate_grid()
+    ]
+    assert on_disk["flags"] == {
+        "uses_labels_for_fit": True,
+        "edit_limits_enforced": True,
+        "respects_edit_limits": True,
+    }
     assert on_disk["generation"]["parity_max_abs_logit_diff"] <= 1e-4
     for entry in on_disk["candidates"]:
         assert entry["roundtrip_exact"]
@@ -324,7 +348,9 @@ def test_grad_full_is_an_unconstrained_reference_on_a_cnn(toys: dict[str, Toy], 
 
 
 def test_ridge_variants_end_to_end(toys: dict[str, Toy], tmp_path: Path) -> None:
-    instance = toys["v1_mlp"].instance  # its two smallest-lam ridge solutions exceed the per-tensor norm limit
+    instance = toys[
+        "v1_mlp"
+    ].instance  # its two smallest-lam ridge solutions exceed the per-tensor norm limit
     records = {}
     for method in ("ridge_last", "ridge_last_free"):
         record = run_ridge(instance, tmp_path / method / "0", method=method)
@@ -339,18 +365,25 @@ def test_ridge_variants_end_to_end(toys: dict[str, Toy], tmp_path: Path) -> None
         assert residuals[0] < 0.5 < residuals[-1]
         assert record["generation"]["float64_feature_parity"] <= 1e-4
         for entry in record["candidates"]:
-            assert {op["tensor"] for op in _ops(tmp_path / method / "0", entry["slot"])} <= {"fc3.weight", "fc3.bias"}
+            assert {op["tensor"] for op in _ops(tmp_path / method / "0", entry["slot"])} <= {
+                "fc3.weight",
+                "fc3.bias",
+            }
         _check_final_rule(record)
     bounded, free = records["ridge_last"], records["ridge_last_free"]
     assert bounded["flags"]["respects_edit_limits"] is True
-    assert free["flags"]["respects_edit_limits"] is False, "the toy's small-lam solutions exceed the norm limit"
+    assert free["flags"]["respects_edit_limits"] is False, (
+        "the toy's small-lam solutions exceed the norm limit"
+    )
     assert bounded["generation"]["n_candidates_norm_scaled"] == 2
     for scaled, unscaled in zip(bounded["candidates"], free["candidates"], strict=True):
         assert scaled["edit"]["per_tensor"]["fc3.weight"]["rel_frob"] <= MAX_REL_FROB
         if scaled["notes"]["norm_scaled_tensors"]:
             assert scaled["notes"]["norm_scaled_tensors"] == ["fc3.weight"]
             assert unscaled["edit"]["per_tensor"]["fc3.weight"]["rel_frob"] > MAX_REL_FROB
-            assert scaled["edit"]["per_tensor"]["fc3.weight"]["rel_frob"] == pytest.approx(MAX_REL_FROB * (1 - 1e-4))
+            assert scaled["edit"]["per_tensor"]["fc3.weight"]["rel_frob"] == pytest.approx(
+                MAX_REL_FROB * (1 - 1e-4)
+            )
         else:
             assert scaled["check"]["child_sha256"] == unscaled["check"]["child_sha256"]
         assert scaled["edit"]["per_tensor"]["fc3.bias"] == unscaled["edit"]["per_tensor"]["fc3.bias"]
@@ -361,18 +394,28 @@ def test_controls_match_the_grad_last_reference(toys: dict[str, Toy], tmp_path: 
     reference_dir = tmp_path / "grad_last" / "0"
     reference = run_grad(instance, "grad_last", reference_dir)
     assert not reference["final"]["is_base_noop"]
-    ref_edit = next(c["edit"] for c in reference["candidates"] if c["patch_id"] == reference["final"]["patch_id"])
-    ref_child = apply_patch_path(instance.params, reference_dir / reference["final"]["dir"] / "patch.json",
-                                 instance.params_sha256, enforce_limits=True)
+    ref_edit = next(
+        c["edit"] for c in reference["candidates"] if c["patch_id"] == reference["final"]["patch_id"]
+    )
+    ref_child = apply_patch_path(
+        instance.params,
+        reference_dir / reference["final"]["dir"] / "patch.json",
+        instance.params_sha256,
+        enforce_limits=True,
+    )
     session = baseline_session_id(instance.instance_id, "grad_last", 0)
     for kind in ("permuted", "gaussian"):
         run_dir = tmp_path / kind / "grad_last" / "r1"
-        record = run_control(instance, kind, reference_dir, session_id=session, arm="grad_last", run_index=1,
-                             run_dir=run_dir)
+        record = run_control(
+            instance, kind, reference_dir, session_id=session, arm="grad_last", run_index=1, run_dir=run_dir
+        )
         assert record["status"] == "complete" and record["queries_used"] == N_DRAWS
         assert record["run_seed"] == control_run_seed(session, kind, 1)
         assert record["config"]["b1"]["session_id"] == session and record["config"]["b1"]["run_index"] == 1
-        assert record["flags"]["uses_labels_for_fit"] is False and record["flags"]["edit_limits_enforced"] is False
+        assert (
+            record["flags"]["uses_labels_for_fit"] is False
+            and record["flags"]["edit_limits_enforced"] is False
+        )
         assert record["generation"]["reference"]["kind"] == "run_record"
         assert record["generation"]["reference"]["child_sha256"] == reference["final"]["child_sha256"]
         assert [entry["config"]["rng"] for entry in record["candidates"]] == [
@@ -385,8 +428,12 @@ def test_controls_match_the_grad_last_reference(toys: dict[str, Toy], tmp_path: 
                 got = entry["edit"]["per_tensor"][key]
                 assert got["changed"] == ref["changed"]
                 assert got["rel_frob"] == pytest.approx(ref["rel_frob"], rel=1e-5)
-            child = apply_patch_path(instance.params, run_dir / entry["patch_id"] / "patch.json",
-                                     instance.params_sha256, enforce_limits=False)
+            child = apply_patch_path(
+                instance.params,
+                run_dir / entry["patch_id"] / "patch.json",
+                instance.params_sha256,
+                enforce_limits=False,
+            )
             same_positions = all(
                 np.array_equal(child[key] != instance.params[key], ref_child[key] != instance.params[key])
                 for key in instance.params
@@ -403,14 +450,27 @@ def test_control_of_a_noop_reference_writes_no_control(toys: dict[str, Toy], tmp
     write_delta_patch(empty, instance.params_sha256, instance.params, instance.params, "no-op", "none")
     fake_run = tmp_path / "fake_run"
     fake_run.mkdir()
-    (fake_run / "run.json").write_text(json.dumps({
-        "schema": RUN_SCHEMA, "status": "complete", "instance": {"instance_id": instance.instance_id},
-        "final": {"is_base_noop": True, "dir": None},
-    }))
+    (fake_run / "run.json").write_text(
+        json.dumps(
+            {
+                "schema": RUN_SCHEMA,
+                "status": "complete",
+                "instance": {"instance_id": instance.instance_id},
+                "final": {"is_base_noop": True, "dir": None},
+            }
+        )
+    )
     for label, reference in (("empty", empty), ("noop_run", fake_run)):
         run_dir = tmp_path / "permuted" / label / "r0"
-        record = run_control(instance, "permuted", reference, session_id=f"{label}-session", arm=label, run_index=0,
-                             run_dir=run_dir)
+        record = run_control(
+            instance,
+            "permuted",
+            reference,
+            session_id=f"{label}-session",
+            arm=label,
+            run_index=0,
+            run_dir=run_dir,
+        )
         assert record["generation"]["reference_is_noop"] is True
         assert record["queries_used"] == 0 and record["final"]["is_base_noop"]
         assert "oracle_log" not in record
@@ -441,7 +501,9 @@ def test_written_patch_roundtrips_through_the_executor(toys: dict[str, Toy], tmp
     assert record["patch_applier"] == PATCH_APPLIER
     slot = record["final"]["patch_id"] or "q0"
     patch_path = tmp_path / "grad_sparse" / "0" / slot / "patch.json"
-    result = apply_patch(instance.params, load_patch(patch_path), patch_path.parent, Limits(), instance.params_sha256)
+    result = apply_patch(
+        instance.params, load_patch(patch_path), patch_path.parent, Limits(), instance.params_sha256
+    )
     expected = next(c["check"]["child_sha256"] for c in record["candidates"] if c["patch_id"] == slot)
     assert result.child_sha256 == expected == params_sha256(result.child)
     via_helper = apply_patch_path(instance.params, patch_path, instance.params_sha256, enforce_limits=True)
@@ -454,12 +516,19 @@ def _cli_env(toys: dict[str, Toy], tmp_path: Path) -> tuple[dict[str, str], Path
     sealed = tmp_path / "sealed"
     runs.mkdir()
     sealed.mkdir()
-    return dict(os.environ, CRYOWISP_PRIVATE=str(private_root), CRYOWISP_RUNS=str(runs), CRYOWISP_SEALED=str(sealed)), runs
+    return dict(
+        os.environ, CRYOWISP_PRIVATE=str(private_root), CRYOWISP_RUNS=str(runs), CRYOWISP_SEALED=str(sealed)
+    ), runs
 
 
 def _run_script(env: dict[str, str], *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, *args, "--threads", "2"], cwd=REPO, env=env, capture_output=True, text=True, timeout=600
+        [sys.executable, *args, "--threads", "2"],
+        cwd=REPO,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=600,
     )
 
 
@@ -467,7 +536,9 @@ def test_cli_selects_dev_instances_from_the_index_by_default(toys: dict[str, Toy
     env, runs = _cli_env(toys, tmp_path)
     dev_ids = [toys["mlp"].instance.instance_id, toys["cnn"].instance.instance_id]
     main_id = toys["main"].instance.instance_id
-    fit = _run_script(env, "scripts/run_fit_baselines.py", "--dataset", "toy", "--methods", "grad_last", "ridge_last")
+    fit = _run_script(
+        env, "scripts/run_fit_baselines.py", "--dataset", "toy", "--methods", "grad_last", "ridge_last"
+    )
     assert fit.returncode == 0, fit.stderr
     for instance_id in dev_ids:
         for method in ("grad_last", "ridge_last"):
@@ -476,8 +547,14 @@ def test_cli_selects_dev_instances_from_the_index_by_default(toys: dict[str, Toy
     assert not (runs / "baselines" / main_id).exists()
     template = str(runs / "baselines" / "{instance_id}" / "grad_last" / "0")
     controls = _run_script(
-        env, "scripts/run_random_controls.py", "--dataset", "toy", "--reference-patch", template,
-        "--ref-label", "grad_last",
+        env,
+        "scripts/run_random_controls.py",
+        "--dataset",
+        "toy",
+        "--reference-patch",
+        template,
+        "--ref-label",
+        "grad_last",
     )
     assert controls.returncode == 0, controls.stderr
     for instance_id in dev_ids:
@@ -492,7 +569,9 @@ def test_cli_selects_dev_instances_from_the_index_by_default(toys: dict[str, Toy
                 assert record["run_seed"] == control_run_seed(session, kind, run_index)
             assert f"B1 {instance_id} {kind}[grad_last] session {session}: final S per run" in controls.stdout
     assert not (runs / "baselines" / main_id).exists()
-    again = _run_script(env, "scripts/run_random_controls.py", "--dataset", "toy", "--reference-patch", template)
+    again = _run_script(
+        env, "scripts/run_random_controls.py", "--dataset", "toy", "--reference-patch", template
+    )
     assert again.returncode == 2 and "already exist" in again.stderr
 
 
@@ -502,23 +581,52 @@ def test_cli_refuses_main_instances_without_allow_main(toys: dict[str, Toy], tmp
     dev_id = toys["mlp"].instance.instance_id
     attempts = [
         ("scripts/run_fit_baselines.py", "--instance", main_id, "--methods", "ridge_last"),
-        ("scripts/run_fit_baselines.py", "--instance", dev_id, "--instance", main_id, "--methods", "ridge_last"),
+        (
+            "scripts/run_fit_baselines.py",
+            "--instance",
+            dev_id,
+            "--instance",
+            main_id,
+            "--methods",
+            "ridge_last",
+        ),
         ("scripts/run_fit_baselines.py", "--split-role", "main", "--methods", "ridge_last"),
-        ("scripts/run_random_controls.py", "--instance", main_id, "--reference-patch", str(tmp_path),
-         "--ref-label", "x"),
-        ("scripts/run_random_controls.py", "--split-role", "main", "--reference-patch", "{instance_id}",
-         "--ref-label", "x"),
+        (
+            "scripts/run_random_controls.py",
+            "--instance",
+            main_id,
+            "--reference-patch",
+            str(tmp_path),
+            "--ref-label",
+            "x",
+        ),
+        (
+            "scripts/run_random_controls.py",
+            "--split-role",
+            "main",
+            "--reference-patch",
+            "{instance_id}",
+            "--ref-label",
+            "x",
+        ),
     ]
     for args in attempts:
         refused = _run_script(env, *args)
         assert refused.returncode == 2, (args, refused.stderr)
-        assert "refused:" in refused.stderr and "main instance" in refused.stderr and "--allow-main" in refused.stderr
+        assert (
+            "refused:" in refused.stderr
+            and "main instance" in refused.stderr
+            and "--allow-main" in refused.stderr
+        )
         assert "Traceback" not in refused.stderr
     assert not (runs / "baselines").exists(), "a refused selection must not write anything"
-    several = _run_script(env, "scripts/run_random_controls.py", "--reference-patch", str(tmp_path), "--ref-label", "x")
+    several = _run_script(
+        env, "scripts/run_random_controls.py", "--reference-patch", str(tmp_path), "--ref-label", "x"
+    )
     assert several.returncode == 2 and "{instance_id}" in several.stderr
-    allowed = _run_script(env, "scripts/run_fit_baselines.py", "--instance", main_id, "--methods", "ridge_last",
-                          "--allow-main")
+    allowed = _run_script(
+        env, "scripts/run_fit_baselines.py", "--instance", main_id, "--methods", "ridge_last", "--allow-main"
+    )
     assert allowed.returncode == 0, allowed.stderr
     record = read_run_record(runs / "baselines" / main_id / "ridge_last" / "0" / "run.json")
     assert record["instance"]["split_role"] == "main" and record["instance"]["allow_main"] is True
@@ -568,7 +676,9 @@ def test_v1_evidence_checks_reject_inconsistent_instances(toys: dict[str, Toy]) 
         load_evidence(replace(instance, private={**instance.private, "evidence_rule": "evidence-v9"}))
 
 
-def test_prior_shift_moves_the_last_bias_along_the_label_shift_direction(toys: dict[str, Toy], tmp_path: Path) -> None:
+def test_prior_shift_moves_the_last_bias_along_the_label_shift_direction(
+    toys: dict[str, Toy], tmp_path: Path
+) -> None:
     from cryowisp.baselines.fit.rules import PRIOR_SHIFT_FRACTIONS, label_shift_direction
 
     instance = toys["v1_mlp"].instance
@@ -586,9 +696,16 @@ def test_prior_shift_moves_the_last_bias_along_the_label_shift_direction(toys: d
         assert entry["config"]["fraction"] == fraction and entry["roundtrip_exact"]
         assert {op["tensor"] for op in _ops(run_dir, entry["slot"])} == {"fc3.bias"}
         assert entry["edit"]["edit_size"] <= N_CLASSES
-        assert sum(stats["changed"] for stats in entry["edit"]["per_tensor"].values()) == entry["edit"]["n_changed"]
-        child = apply_patch_path(instance.params, run_dir / entry["patch_id"] / "patch.json", instance.params_sha256,
-                                 enforce_limits=True)
+        assert (
+            sum(stats["changed"] for stats in entry["edit"]["per_tensor"].values())
+            == entry["edit"]["n_changed"]
+        )
+        child = apply_patch_path(
+            instance.params,
+            run_dir / entry["patch_id"] / "patch.json",
+            instance.params_sha256,
+            enforce_limits=True,
+        )
         np.testing.assert_allclose(child["fc3.bias"] - base_bias, fraction * direction, atol=1e-6)
     gaps = [entry["notes"]["marginal_gap_l1_after"] for entry in record["candidates"]]
     assert gaps[0] < record["generation"]["marginal_gap_l1_base"]
@@ -597,10 +714,13 @@ def test_prior_shift_moves_the_last_bias_along_the_label_shift_direction(toys: d
     assert record["final"]["score"] > 0
 
 
-@pytest.mark.parametrize(("key", "tensor", "n_positions", "group_period"), [
-    ("v1_mlp", "fc1.weight", 3 * 64, 64),
-    ("v1_cnn", "conv1.weight", 3 * 9, 9),
-])
+@pytest.mark.parametrize(
+    ("key", "tensor", "n_positions", "group_period"),
+    [
+        ("v1_mlp", "fc1.weight", 3 * 64, 64),
+        ("v1_cnn", "conv1.weight", 3 * 9, 9),
+    ],
+)
 def test_tie_inputs_writes_one_tie_op_at_admissible_strengths(
     toys: dict[str, Toy], tmp_path: Path, key: str, tensor: str, n_positions: int, group_period: int
 ) -> None:
@@ -619,8 +739,13 @@ def test_tie_inputs_writes_one_tie_op_at_admissible_strengths(
     assert record["queries_used"] == len(strengths)
     for entry, strength in zip(record["candidates"], strengths, strict=True):
         (op,) = _ops(run_dir, entry["slot"])
-        assert op == {"op": "tie", "tensor": tensor, "axis": 1,
-                      "groups": (np.arange(n_positions) % group_period).tolist(), "strength": strength}
+        assert op == {
+            "op": "tie",
+            "tensor": tensor,
+            "axis": 1,
+            "groups": (np.arange(n_positions) % group_period).tolist(),
+            "strength": strength,
+        }
         assert entry["patch_form"] == "ops" and entry["roundtrip_exact"]
         assert entry["edit"]["edit_size"] == n_positions and entry["edit"]["edit_size_source"] == "executor"
         assert entry["edit"]["per_tensor"][tensor]["rel_frob"] <= MAX_REL_FROB
@@ -637,14 +762,25 @@ def test_full_tie_makes_the_first_layer_blind_to_channel_order(toys: dict[str, T
     instance = toys[key].instance
     spec = _spec(instance)
     plan = tie_plan(architecture_from(instance.params, spec), instance.params, spec)
-    patch = {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, "hypothesis": "h",
-             "predicted_effect": "p",
-             "ops": [{"op": "tie", "tensor": plan.tensor, "axis": 1, "groups": plan.groups.tolist(), "strength": 1.0}]}
-    tied = apply_patch(instance.params, patch, None, Limits().without_size_limits(), instance.params_sha256).child
+    patch = {
+        "schema": "cryowisp.patch.v0",
+        "parent_sha256": instance.params_sha256,
+        "hypothesis": "h",
+        "predicted_effect": "p",
+        "ops": [
+            {"op": "tie", "tensor": plan.tensor, "axis": 1, "groups": plan.groups.tolist(), "strength": 1.0}
+        ],
+    }
+    tied = apply_patch(
+        instance.params, patch, None, Limits().without_size_limits(), instance.params_sha256
+    ).child
     x = instance.evidence["x_rand"]
     permuted = x[:, [2, 0, 1]]
+
     def channel_order_gap(params) -> float:
-        return float(np.abs(instance.forward(dict(params), x) - instance.forward(dict(params), permuted)).max())
+        return float(
+            np.abs(instance.forward(dict(params), x) - instance.forward(dict(params), permuted)).max()
+        )
 
     tied_gap, base_gap = channel_order_gap(tied), channel_order_gap(instance.params)
     assert tied_gap < 1e-4 < base_gap
@@ -670,11 +806,19 @@ def test_executor_rejection_is_recorded_as_an_invalid_patch(toys: dict[str, Toy]
     spec = MethodSpec(method="probe", label="test", uses_labels_for_fit=False, edit_limits_enforced=True)
 
     def generate(evidence):
-        return [CandidatePatch(slot=0, child=over, config={}, hypothesis="h", predicted_effect="p"),
-                CandidatePatch(slot=1, child=fine, config={}, hypothesis="h", predicted_effect="p")], {}
+        return [
+            CandidatePatch(slot=0, child=over, config={}, hypothesis="h", predicted_effect="p"),
+            CandidatePatch(slot=1, child=fine, config={}, hypothesis="h", predicted_effect="p"),
+        ], {}
 
-    record = execute_run(instance=instance, spec=spec, run_dir=tmp_path / "probe" / "0", run_seed=0, config={},
-                         generate=generate)
+    record = execute_run(
+        instance=instance,
+        spec=spec,
+        run_dir=tmp_path / "probe" / "0",
+        run_seed=0,
+        config={},
+        generate=generate,
+    )
     rejected, accepted = record["candidates"]
     assert rejected["invalid_stage"] == "executor" and "above the limit" in rejected["invalid"]
     assert rejected["invalid"] == "\n".join(rejected["executor_messages"]) and "check" not in rejected
@@ -684,8 +828,9 @@ def test_executor_rejection_is_recorded_as_an_invalid_patch(toys: dict[str, Toy]
 
 def test_cli_runs_the_fixed_rule_arms_on_v1_instances(toys: dict[str, Toy], tmp_path: Path) -> None:
     env, runs = _cli_env(toys, tmp_path)
-    result = _run_script(env, "scripts/run_fit_baselines.py", "--dataset", "toy_v1", "--methods", "prior_shift",
-                         "tie_inputs")
+    result = _run_script(
+        env, "scripts/run_fit_baselines.py", "--dataset", "toy_v1", "--methods", "prior_shift", "tie_inputs"
+    )
     assert result.returncode == 0, result.stderr
     for key in ("v1_mlp", "v1_cnn"):
         instance_id = toys[key].instance.instance_id
@@ -721,23 +866,48 @@ def _harness_session(
     if not noop and parent == "instance":
         write_delta_patch(final_dir, instance.params_sha256, instance.params, chosen, "h", "p")
     final = {
-        "is_base_noop": noop, "dir": None if noop else "final", "parent": parent, "model": "final/model.npz",
-        "child_sha256": model_sha, "score": 0 if noop else 3, "fixed": 0 if noop else 5, "broken": 0 if noop else 2,
-        "edit_size": 0, "edit_frac": 0.0, "n_changed": 0, "patch_id": None if noop else "p3", "query_index": None,
-        "kind": "base" if noop else "checked", "editor_patch": None, "reason": "test",
+        "is_base_noop": noop,
+        "dir": None if noop else "final",
+        "parent": parent,
+        "model": "final/model.npz",
+        "child_sha256": model_sha,
+        "score": 0 if noop else 3,
+        "fixed": 0 if noop else 5,
+        "broken": 0 if noop else 2,
+        "edit_size": 0,
+        "edit_frac": 0.0,
+        "n_changed": 0,
+        "patch_id": None if noop else "p3",
+        "query_index": None,
+        "kind": "base" if noop else "checked",
+        "editor_patch": None,
+        "reason": "test",
     }
     run = {
-        "schema": "cryowisp.editor_run.v0", "method": "M2", "status": "complete", "session_id": session_id, "repeat": 0,
+        "schema": "cryowisp.editor_run.v0",
+        "method": "M2",
+        "status": "complete",
+        "session_id": session_id,
+        "repeat": 0,
         "instance": {"instance_id": instance.instance_id},
-        "flags": {"edit_limits_enforced": True, "infra": False, "audit_verdict": None, "audit_status": "skipped"},
-        "final": final, "queries_used": 4, "budget": 8,
+        "flags": {
+            "edit_limits_enforced": True,
+            "infra": False,
+            "audit_verdict": None,
+            "audit_status": "skipped",
+        },
+        "final": final,
+        "queries_used": 4,
+        "budget": 8,
     }
     (session / "run.json").write_text(json.dumps(run))
     return session
 
 
 @pytest.mark.parametrize("parent", ["instance", "decoy_readdressed"])
-def test_controls_take_a_harness_session_run_record(toys: dict[str, Toy], tmp_path: Path, parent: str) -> None:
+def test_controls_take_a_harness_session_run_record(
+    toys: dict[str, Toy], tmp_path: Path, parent: str
+) -> None:
     from cryowisp.baselines.fit.controls import FINAL_CHILD_REBUILDER, load_reference, resolve_reference
 
     instance = toys["mlp"].instance
@@ -755,15 +925,24 @@ def test_controls_take_a_harness_session_run_record(toys: dict[str, Toy], tmp_pa
             reference.delta[key], child[key].astype(np.float64) - instance.params[key].astype(np.float64)
         )
     run_dir = tmp_path / "gaussian" / resolved.output_label() / "r2"
-    record = run_control(instance, "gaussian", session, session_id=session_id, arm="M2", run_index=2, run_dir=run_dir)
+    record = run_control(
+        instance, "gaussian", session, session_id=session_id, arm="M2", run_index=2, run_dir=run_dir
+    )
     assert record["status"] == "complete" and record["queries_used"] == N_DRAWS
     assert record["run_seed"] == control_run_seed(session_id, "gaussian", 2)
     described = record["generation"]["reference"]
     assert described["kind"] == "run_record" and described["child_sha256"] == params_sha256(child)
-    assert described["run_record"]["schema"] == "cryowisp.editor_run.v0" and described["run_record"]["method"] == "M2"
+    assert (
+        described["run_record"]["schema"] == "cryowisp.editor_run.v0"
+        and described["run_record"]["method"] == "M2"
+    )
     for entry in record["candidates"]:
-        drawn = apply_patch_path(instance.params, run_dir / entry["patch_id"] / "patch.json", instance.params_sha256,
-                                 enforce_limits=False)
+        drawn = apply_patch_path(
+            instance.params,
+            run_dir / entry["patch_id"] / "patch.json",
+            instance.params_sha256,
+            enforce_limits=False,
+        )
         for key in instance.params:
             assert np.array_equal(drawn[key] != instance.params[key], child[key] != instance.params[key])
     _check_final_rule(record)
@@ -777,14 +956,16 @@ def test_harness_references_are_checked(toys: dict[str, Toy], tmp_path: Path) ->
     other = toys["cnn"].instance
     noop = _harness_session(tmp_path, instance, None, parent="instance", session_id="s00000000000000aa")
     run_dir = tmp_path / "permuted" / "noop" / "r0"
-    record = run_control(instance, "permuted", noop, session_id="s00000000000000aa", arm="M2", run_index=0,
-                         run_dir=run_dir)
+    record = run_control(
+        instance, "permuted", noop, session_id="s00000000000000aa", arm="M2", run_index=0, run_dir=run_dir
+    )
     assert record["generation"]["reference_is_noop"] is True and record["queries_used"] == 0
     assert sorted(path.name for path in run_dir.iterdir()) == ["run.json"]
     with pytest.raises(ValueError, match="belongs to instance"):
         load_reference(other, noop)
-    tampered = _harness_session(tmp_path, instance, _small_edit(instance), parent="instance",
-                                session_id="s00000000000000bb")
+    tampered = _harness_session(
+        tmp_path, instance, _small_edit(instance), parent="instance", session_id="s00000000000000bb"
+    )
     run = json.loads((tampered / "run.json").read_text())
     run["final"]["child_sha256"] = instance.params_sha256
     (tampered / "run.json").write_text(json.dumps(run))
@@ -792,8 +973,9 @@ def test_harness_references_are_checked(toys: dict[str, Toy], tmp_path: Path) ->
         load_reference(instance, tampered)
     unfinished = tmp_path / "unfinished"
     unfinished.mkdir()
-    (unfinished / "run.json").write_text(json.dumps({"instance": {"instance_id": instance.instance_id},
-                                                     "status": "failed"}))
+    (unfinished / "run.json").write_text(
+        json.dumps({"instance": {"instance_id": instance.instance_id}, "status": "failed"})
+    )
     with pytest.raises(ValueError, match="no final pick"):
         load_reference(instance, unfinished)
 
@@ -802,20 +984,40 @@ def test_cli_controls_of_a_harness_session(toys: dict[str, Toy], tmp_path: Path)
     env, runs = _cli_env(toys, tmp_path)
     instance = toys["mlp"].instance
     session_id = "s00000000000000cc"
-    session = _harness_session(tmp_path / "sessions", instance, _small_edit(instance), parent="instance",
-                               session_id=session_id)
-    result = _run_script(env, "scripts/run_random_controls.py", "--instance", instance.instance_id,
-                         "--reference-patch", str(session), "--kinds", "gaussian", "--runs", "2")
+    session = _harness_session(
+        tmp_path / "sessions", instance, _small_edit(instance), parent="instance", session_id=session_id
+    )
+    result = _run_script(
+        env,
+        "scripts/run_random_controls.py",
+        "--instance",
+        instance.instance_id,
+        "--reference-patch",
+        str(session),
+        "--kinds",
+        "gaussian",
+        "--runs",
+        "2",
+    )
     assert result.returncode == 0, result.stderr
     label = f"M2_{session_id}"
     for run_index in range(2):
-        record = read_run_record(runs / "baselines" / instance.instance_id / "gaussian" / label / f"r{run_index}"
-                                 / "run.json")
+        record = read_run_record(
+            runs / "baselines" / instance.instance_id / "gaussian" / label / f"r{run_index}" / "run.json"
+        )
         assert record["config"]["b1"]["arm"] == "M2" and record["config"]["b1"]["session_id"] == session_id
         assert record["run_seed"] == control_run_seed(session_id, "gaussian", run_index)
     assert f"B1 {instance.instance_id} gaussian[{label}] session {session_id}" in result.stdout
-    mislabeled = _run_script(env, "scripts/run_random_controls.py", "--instance", instance.instance_id,
-                             "--reference-patch", str(session), "--ref-label", "M2")
+    mislabeled = _run_script(
+        env,
+        "scripts/run_random_controls.py",
+        "--instance",
+        instance.instance_id,
+        "--reference-patch",
+        str(session),
+        "--ref-label",
+        "M2",
+    )
     assert mislabeled.returncode == 2 and "differs" in mislabeled.stderr
 
 
@@ -828,8 +1030,8 @@ def _conv_same_padded(x: np.ndarray, w: np.ndarray, b: np.ndarray, pad: np.ndarr
     n, _, h, wd = x.shape
     xp = np.empty((n, in_c, h + 2 * p, wd + 2 * p))
     xp[:] = pad[None, :, None, None]
-    xp[:, :, p:p + h, p:p + wd] = x
-    cols = np.stack([xp[:, :, i:i + h, j:j + wd] for i in range(k) for j in range(k)], axis=2)
+    xp[:, :, p : p + h, p : p + wd] = x
+    cols = np.stack([xp[:, :, i : i + h, j : j + wd] for i in range(k) for j in range(k)], axis=2)
     return np.einsum("nckhw,ock->nohw", cols, w.reshape(out_c, in_c, k * k)) + b[None, :, None, None]
 
 
@@ -848,7 +1050,13 @@ def _preprocessed(instance: Instance, x_uint8: np.ndarray) -> np.ndarray:
 
 
 def _k_form_logits(
-    instance: Instance, x_uint8: np.ndarray, mean: np.ndarray, std: np.ndarray, t: float, *, shifted_padding: bool
+    instance: Instance,
+    x_uint8: np.ndarray,
+    mean: np.ndarray,
+    std: np.ndarray,
+    t: float,
+    *,
+    shifted_padding: bool,
 ) -> np.ndarray:
     """float64 toy forward of the base model on x'' = k (x' - t m), k = 1 + t (1/s - 1): the unfolded transform.
 
@@ -890,9 +1098,16 @@ def test_input_stats_fold_equals_the_direct_k_form(toys: dict[str, Toy], key: st
         np.testing.assert_allclose(fold.k, k, rtol=1e-15)
         assert fold.g == pytest.approx(float(np.prod(k) ** (1.0 / channels)), rel=1e-12)
         np.testing.assert_allclose(fold.r, k / fold.g, rtol=1e-15)
-        patch = {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, "hypothesis": "h",
-                 "predicted_effect": "p", "ops": fold.ops}
-        result = apply_patch(instance.params, patch, None, Limits().without_size_limits(), instance.params_sha256)
+        patch = {
+            "schema": "cryowisp.patch.v0",
+            "parent_sha256": instance.params_sha256,
+            "hypothesis": "h",
+            "predicted_effect": "p",
+            "ops": fold.ops,
+        }
+        result = apply_patch(
+            instance.params, patch, None, Limits().without_size_limits(), instance.params_sha256
+        )
         assert result.child_sha256 == params_sha256(fold.child), "the expected child must match the executor"
         folded = fold.g * instance.forward(dict(result.child), x).astype(np.float64)
         direct = _k_form_logits(instance, x, mean, std, t, shifted_padding=True)
@@ -901,13 +1116,21 @@ def test_input_stats_fold_equals_the_direct_k_form(toys: dict[str, Toy], key: st
         assert np.array_equal(np.argmax(folded, axis=1), np.argmax(direct, axis=1))
         unshifted = _k_form_logits(instance, x, mean, std, t, shifted_padding=False)
         if arch.family == "cnn":
-            assert float(np.abs(unshifted - direct).max()) > 1e-3 * scale, "the padding deviation must be visible"
+            assert float(np.abs(unshifted - direct).max()) > 1e-3 * scale, (
+                "the padding deviation must be visible"
+            )
         else:
             np.testing.assert_array_equal(unshifted, direct)
         assert fold.rel_frob_admissible == pytest.approx(
-            float(np.linalg.norm(fold.child[fold.first_weight].astype(np.float64)
-                                 - instance.params[fold.first_weight].astype(np.float64))
-                  / np.linalg.norm(instance.params[fold.first_weight].astype(np.float64))), rel=1e-5)
+            float(
+                np.linalg.norm(
+                    fold.child[fold.first_weight].astype(np.float64)
+                    - instance.params[fold.first_weight].astype(np.float64)
+                )
+                / np.linalg.norm(instance.params[fold.first_weight].astype(np.float64))
+            ),
+            rel=1e-5,
+        )
         if channels == 1:
             assert fold.r.tolist() == [1.0] and fold.rel_frob_admissible == 0.0
             assert all(op["op"] != "scale_cols" for op in fold.ops)
@@ -923,7 +1146,11 @@ def test_input_stats_end_to_end(toys: dict[str, Toy], tmp_path: Path, key: str) 
     run_dir = tmp_path / "input_stats" / "0"
     record = run_input_stats(instance, run_dir)
     assert record["status"] == "complete" and record["n_invalid"] == 0 and record["queries_used"] == 2
-    assert record["flags"] == {"uses_labels_for_fit": False, "edit_limits_enforced": True, "respects_edit_limits": True}
+    assert record["flags"] == {
+        "uses_labels_for_fit": False,
+        "edit_limits_enforced": True,
+        "respects_edit_limits": True,
+    }
     generation = record["generation"]
     pre = _preprocessed(instance, instance.evidence["x_rand"])
     np.testing.assert_allclose(generation["channel_mean"], pre.mean(axis=(0, 2, 3)), rtol=1e-12, atol=1e-12)
@@ -955,10 +1182,15 @@ def test_input_stats_end_to_end(toys: dict[str, Toy], tmp_path: Path, key: str) 
         assert bias_op["tensor"] == f"{first}.bias"
         rows = [op for op in ops if op["op"] == "scale_rows"]
         assert [op["tensor"] for op in rows] == later and all(op["factor"] == 1.0 / notes["g"] for op in rows)
-        size = sum(len(op["cols"]) for op in scale_cols) + len(bias_op["index"]) + sum(len(op["rows"]) for op in rows)
+        size = (
+            sum(len(op["cols"]) for op in scale_cols)
+            + len(bias_op["index"])
+            + sum(len(op["rows"]) for op in rows)
+        )
         assert entry["edit"]["edit_size"] == size and entry["roundtrip_exact"]
         assert entry["edit"]["per_tensor"][f"{first}.weight"]["rel_frob"] == pytest.approx(
-            notes["rel_frob_first_weight_admissible"], rel=1e-5, abs=1e-12)
+            notes["rel_frob_first_weight_admissible"], rel=1e-5, abs=1e-12
+        )
         assert notes["rel_frob_first_weight_k_form"] >= notes["rel_frob_first_weight_admissible"] - 1e-12
     _check_final_rule(record)
 
@@ -972,8 +1204,13 @@ def test_a_control_run_whose_draws_are_all_rejected_fails(
     from cryowisp.patch import PatchError
 
     instance = toys["mlp"].instance
-    session = _harness_session(tmp_path / "sessions", instance, _small_edit(instance), parent="instance",
-                               session_id="s00000000000000dd")
+    session = _harness_session(
+        tmp_path / "sessions",
+        instance,
+        _small_edit(instance),
+        parent="instance",
+        session_id="s00000000000000dd",
+    )
 
     def reject(*args, **kwargs):
         raise PatchError(["patch.json is 2232320 bytes, above the 2097152-byte limit"])
@@ -981,8 +1218,15 @@ def test_a_control_run_whose_draws_are_all_rejected_fails(
     monkeypatch.setattr(runner, "apply_patch_result", reject)
     run_dir = tmp_path / "permuted" / "M2" / "r0"
     with pytest.raises(NoValidCandidate, match="2097152-byte limit"):
-        run_control(instance, "permuted", session, session_id="s00000000000000dd", arm="M2", run_index=0,
-                    run_dir=run_dir)
+        run_control(
+            instance,
+            "permuted",
+            session,
+            session_id="s00000000000000dd",
+            arm="M2",
+            run_index=0,
+            run_dir=run_dir,
+        )
     record = read_run_record(run_dir / "run.json")
     assert record["status"] == "failed" and "all 8 candidates were invalid" in record["error"]
     assert "2097152-byte limit" in record["error"] and "final" not in record

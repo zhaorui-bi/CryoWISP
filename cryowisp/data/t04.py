@@ -43,7 +43,6 @@ import hashlib
 import io
 from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 

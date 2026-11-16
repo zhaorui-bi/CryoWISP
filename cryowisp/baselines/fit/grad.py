@@ -32,11 +32,10 @@ train classes, the same rows every E2 reference and the teacher get; the grid an
 
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import Collection, Mapping
 from pathlib import Path
 from typing import Any
-
-import dataclasses
 
 import numpy as np
 import torch

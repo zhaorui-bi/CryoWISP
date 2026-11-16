@@ -22,11 +22,14 @@ def _images(n: int, seed: int) -> np.ndarray:
 
 def test_grids_are_the_prereg_grids() -> None:
     assert [(c["lr"], c["steps"]) for c in S.f1s_configs("f1s_s1_gentle")] == [
-        (lr, s) for lr in (3e-6, 1e-5) for s in (30, 100, 300, 1000)]
+        (lr, s) for lr in (3e-6, 1e-5) for s in (30, 100, 300, 1000)
+    ]
     assert [(c["lr"], c["steps"]) for c in S.f1s_configs("f1s_s2_aug")] == [
-        (lr, s) for lr in (1e-5, 3e-5) for s in (100, 300, 1000, 3000)]
+        (lr, s) for lr in (1e-5, 3e-5) for s in (100, 300, 1000, 3000)
+    ]
     assert [(c["lr"], c["steps"]) for c in S.f1s_configs("f1s_s3_lora_aug")] == [
-        (lr, s) for lr in (3e-4, 1e-3) for s in (30, 100, 300, 1000)]
+        (lr, s) for lr in (3e-4, 1e-3) for s in (30, 100, 300, 1000)
+    ]
     for m in ("f1s_s4_est_prior", "f1s_s5_oracle_prior"):
         cfg = S.f1s_configs(m)
         assert [c["mode"] for c in cfg] == ["full"] * 4 + ["lora"] * 4
@@ -62,6 +65,7 @@ def test_estimate_picks_the_true_family_label_free() -> None:
 
 def test_estimate_has_no_label_input() -> None:
     import inspect
+
     assert list(inspect.signature(S.estimate_corruption).parameters) == ["x_new", "x_old", "shape", "seed"]
 
 
@@ -76,22 +80,29 @@ def test_generator_candidates(tmp_path, monkeypatch: pytest.MonkeyPatch, method:
     assert all(np.all(np.isfinite(v)) for c in candidates for v in c.child.values())
     assert any(not np.array_equal(c.child[k], params[k]) for c in candidates for k in params)
     if method == "f1s_s3_lora_aug":
-        assert all(np.array_equal(c.child[k], params[k]) for c in candidates for k in params
-                   if "linear" not in k and "qkv" not in k and "proj.weight" not in k)
+        assert all(
+            np.array_equal(c.child[k], params[k])
+            for c in candidates
+            for k in params
+            if "linear" not in k and "qkv" not in k and "proj.weight" not in k
+        )
     if method == "f1s_s4_est_prior":
         assert info["estimate"]["chosen"] in S.FAMILIES and "192 rows" in info["fit_rows"]
 
 
 def test_warmup_scales_first_steps(tmp_path) -> None:
-    from cryowisp.baselines.fit.torch_forward import architecture_from, images_tensor
     from cryowisp.baselines.fit.runner import read_model_spec
+    from cryowisp.baselines.fit.torch_forward import architecture_from, images_tensor
+
     params = _student(7)
     instance = _instance(tmp_path, params)
     arch = architecture_from(params, read_model_spec(instance))
     ev = _joint_evidence(7)
     x, y = images_tensor(ev.x), torch.from_numpy(ev.y)
     full = S.train_checkpoints(arch, params, x, y, mode="full", lr=1e-4, checkpoints=(1,), seed=0)[0][1]
-    warm = S.train_checkpoints(arch, params, x, y, mode="full", lr=1e-4, checkpoints=(1,), seed=0, warmup=10)[0][1]
+    warm = S.train_checkpoints(arch, params, x, y, mode="full", lr=1e-4, checkpoints=(1,), seed=0, warmup=10)[
+        0
+    ][1]
     k = "classifier.fc.weight"
     d_full, d_warm = np.abs(full[k] - params[k]).max(), np.abs(warm[k] - params[k]).max()
     assert d_warm == pytest.approx(d_full / 10, rel=1e-3)
@@ -112,10 +123,19 @@ def _k1_record(tmp_path, evidence, seed_offsets=None, corrupt_hash: bool = False
     np.savez(file, x=draws)
     digest = hashlib.sha256(file.read_bytes()).hexdigest()
     seeds = [S.K1_SEED0 + i for i in range(S.K1_DRAWS)] if seed_offsets is None else seed_offsets
-    record = {"schema": S.K1_ROWS_SCHEMA, "severity": 5, "official": {"sha256": "f" * 64},
-              "replay": {"content_sha256": evidence.replay_sha256},
-              "rows": {"gaussian_noise": {"file": file.name, "file_sha256": "0" * 64 if corrupt_hash else digest,
-                                          "seeds": seeds}}}
+    record = {
+        "schema": S.K1_ROWS_SCHEMA,
+        "severity": 5,
+        "official": {"sha256": "f" * 64},
+        "replay": {"content_sha256": evidence.replay_sha256},
+        "rows": {
+            "gaussian_noise": {
+                "file": file.name,
+                "file_sha256": "0" * 64 if corrupt_hash else digest,
+                "seeds": seeds,
+            }
+        },
+    }
     path = tmp_path / "k1_rule_rows.json"
     path.write_text(json.dumps(record))
     return path, draws
@@ -131,7 +151,8 @@ def test_k1_registered_and_grid(monkeypatch: pytest.MonkeyPatch) -> None:
     assert S.K1_METHOD in S.F1S_SPECS and S.K1_METHOD in S.F1S_METHODS
     cfg = S.f1s_configs("k1_ft_rule")
     assert [(c["mode"], c["lr"], c["steps"]) for c in cfg] == [
-        (m, lr, s) for m, lr in (("full", 1e-5), ("lora", 1e-3)) for s in (30, 100, 300, 1000)]
+        (m, lr, s) for m, lr in (("full", 1e-5), ("lora", 1e-3)) for s in (30, 100, 300, 1000)
+    ]
     with pytest.raises(S.F1sError, match="rows record"):
         S.f1s_generator(None, "k1_ft_rule", 0, None)  # type: ignore[arg-type]
 
@@ -160,14 +181,26 @@ def test_k1_fit_rows_and_no_x_new_row(tmp_path, monkeypatch: pytest.MonkeyPatch)
     ev = _joint_evidence(7)
     path, draws = _k1_record(tmp_path, ev)
     c1, info1 = S.f1s_generator(inst, "k1_ft_rule", 0, path)(ev)
-    assert info1["x_new_rows_used"] == 0 and "576 rows" in info1["fit_rows"] and "no condition row" in info1["fit_rows"]
+    assert (
+        info1["x_new_rows_used"] == 0
+        and "576 rows" in info1["fit_rows"]
+        and "no condition row" in info1["fit_rows"]
+    )
     assert [c.config for c in c1] == S.f1s_configs("k1_ft_rule")
     # the same replay rows with different condition rows (x_new and its labels) give bit-identical candidates
     other = _joint_evidence(8)
     k = ev.n_deployment
-    ev2 = type(ev)(x=np.concatenate([other.x[:k], ev.x[k:]]), y=np.concatenate([other.y[:k], ev.y[k:]]), n_fail=ev.n_fail,
-                   n_rand=ev.n_rand, sha256="2" * 64, base_pred=ev.base_pred, rule=ev.rule, n_replay=ev.n_replay,
-                   replay_sha256=ev.replay_sha256)
+    ev2 = type(ev)(
+        x=np.concatenate([other.x[:k], ev.x[k:]]),
+        y=np.concatenate([other.y[:k], ev.y[k:]]),
+        n_fail=ev.n_fail,
+        n_rand=ev.n_rand,
+        sha256="2" * 64,
+        base_pred=ev.base_pred,
+        rule=ev.rule,
+        n_replay=ev.n_replay,
+        replay_sha256=ev.replay_sha256,
+    )
     c2, info2 = S.f1s_generator(inst, "k1_ft_rule", 0, path)(ev2)
     assert info1["rows_sha256"] == info2["rows_sha256"]
     for a, b in zip(c1, c2, strict=True):

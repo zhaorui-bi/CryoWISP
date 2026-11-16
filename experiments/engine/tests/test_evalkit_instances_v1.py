@@ -100,7 +100,10 @@ def test_v0_and_v1_draw_the_same_way_from_the_same_pool() -> None:
 def test_v1_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa: F811
     outcomes = build_v1(toy_store)
     assert [(o.split_role, o.seed, o.status) for o in outcomes] == [
-        ("dev", 100, "created"), ("dev", 101, "created"), ("main", 0, "created"), ("main", 1, "created")
+        ("dev", 100, "created"),
+        ("dev", 101, "created"),
+        ("main", 0, "created"),
+        ("main", 1, "created"),
     ]
     ids = {**toy_store.ids("base"), **toy_store.ids("dev")}
     root = toy_store.private / "instances"
@@ -115,20 +118,27 @@ def test_v1_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa: F811
         task_text = (folder / "task.json").read_text()
         assert not [token for token in forbidden if token in task_text.lower()]
         task = json.loads(task_text)
-        assert task["schema"] == "cryowisp.task.v1" and "target" not in task and "selection_counts" not in task
+        assert (
+            task["schema"] == "cryowisp.task.v1" and "target" not in task and "selection_counts" not in task
+        )
         assert "gets wrong" in task["statement"] and "random examples" in task["statement"]
         assert task["evidence"]["fail"]["count"] == K_FAIL and task["evidence"]["random"]["count"] == K_RAND
         assert "S = fixed - broken" in task["patch_check"]["readout"]
         assert task["limits"] == task_limits()
         assert task["limit_definitions"] == limit_definitions(task["limits"])
         private = json.loads((folder / "private.json").read_text())
-        assert private["schema"] == "cryowisp.instance_private.v1" and private["evidence_rule"] == "evidence-v1"
+        assert (
+            private["schema"] == "cryowisp.instance_private.v1" and private["evidence_rule"] == "evidence-v1"
+        )
         assert private["condition"] == "deploy" and private["split_role"] == outcome.split_role
         assert not [key for key in private if key.startswith("target")]
         decoy_seed = DEFAULT_DECOYS[outcome.seed]
         assert private["decoy_seed"] == decoy_seed and private["decoy_model_id"] == ids[decoy_seed]
         assert private["decoy_model_path"].endswith(f"{ids[decoy_seed]}/model.npz")
-        assert (private["n_vevidence"], private["n_base_errors_vevidence"]) == (n_ev, BASE_ERRORS["V_evidence"])
+        assert (private["n_vevidence"], private["n_base_errors_vevidence"]) == (
+            n_ev,
+            BASE_ERRORS["V_evidence"],
+        )
         assert (private["n_vcheck"], private["n_base_errors_vcheck"]) == (n_check, BASE_ERRORS["V_check"])
         meta = json.loads((toy_store.private / toy_store.dataset / "dataset.json").read_text())
         assert private["vcheck_content_sha256"] == meta["splits"]["V_check"]["sha256"]
@@ -166,11 +176,19 @@ def test_v1_rebuild_reuses_and_refuses_changes(toy_store: ToyStore) -> None:  # 
 
 
 def test_a_changed_decoy_map_is_refused_not_rewritten(toy_store: ToyStore) -> None:  # noqa: F811
-    build_v1(toy_store, roles=("main",), selection=SeedSelection(main=(0, 1, 2), dev=(100, 101)),
-             decoys={0: 1, 1: 2, 2: 0, 100: 101, 101: 100})
+    build_v1(
+        toy_store,
+        roles=("main",),
+        selection=SeedSelection(main=(0, 1, 2), dev=(100, 101)),
+        decoys={0: 1, 1: 2, 2: 0, 100: 101, 101: 100},
+    )
     with pytest.raises(InstanceConflict, match="decoy"):
-        build_v1(toy_store, roles=("main",), selection=SeedSelection(main=(0, 1, 2), dev=(100, 101)),
-                 decoys={0: 1, 1: 0, 2: 0, 100: 101, 101: 100})
+        build_v1(
+            toy_store,
+            roles=("main",),
+            selection=SeedSelection(main=(0, 1, 2), dev=(100, 101)),
+            decoys={0: 1, 1: 0, 2: 0, 100: 101, 101: 100},
+        )
 
 
 def test_stray_instances_are_refused_until_superseded(toy_store: ToyStore) -> None:  # noqa: F811
@@ -215,8 +233,12 @@ def test_five_seed_extension_keeps_first_pass_instances(toy_store: ToyStore) -> 
 def test_superseding_v0_leaves_v1_active(toy_store: ToyStore) -> None:  # noqa: F811
     v0 = build_v0(toy_store)
     v1 = build_v1(toy_store)
-    assert active_instance_ids(dataset=toy_store.dataset, evidence_rule="evidence-v0") == [o.instance_id for o in v0]
-    supersede_instances(active_instance_ids(dataset=toy_store.dataset, evidence_rule="evidence-v0"), "v1 replaces v0")
+    assert active_instance_ids(dataset=toy_store.dataset, evidence_rule="evidence-v0") == [
+        o.instance_id for o in v0
+    ]
+    supersede_instances(
+        active_instance_ids(dataset=toy_store.dataset, evidence_rule="evidence-v0"), "v1 replaces v0"
+    )
     index = read_index()
     assert [row["instance_id"] for row in index["instances"]] == [o.instance_id for o in v1]
     assert sorted(row["instance_id"] for row in index["superseded"]) == sorted(o.instance_id for o in v0)
@@ -260,9 +282,16 @@ def test_limit_definitions_follow_the_limits(monkeypatch: pytest.MonkeyPatch) ->
     assert limit_definitions(switched)["max_edit_frac"] == LIMIT_DEFINITIONS["max_edit_frac"]
     assert limit_definitions(dict(switched, rel_frob_min_ndim=2))["max_rel_frob"] == rank_2
     assert "rank >= 3" in limit_definitions(dict(switched, rel_frob_min_ndim=3))["max_rel_frob"]
-    assert set(limit_definitions(dict(switched, rel_frob_min_ndim=2))) == set(switched) | {"rel_frob_min_ndim"}
-    exempt = limit_definitions(dict(switched, rel_frob_min_ndim=2, rel_frob_exempt=["fc2.weight", "fc2.bias"]))
-    assert exempt["max_rel_frob"] == rank_2 + "; the tensors named in rel_frob_exempt are exempt whatever their rank"
+    assert set(limit_definitions(dict(switched, rel_frob_min_ndim=2))) == set(switched) | {
+        "rel_frob_min_ndim"
+    }
+    exempt = limit_definitions(
+        dict(switched, rel_frob_min_ndim=2, rel_frob_exempt=["fc2.weight", "fc2.bias"])
+    )
+    assert (
+        exempt["max_rel_frob"]
+        == rank_2 + "; the tensors named in rel_frob_exempt are exempt whatever their rank"
+    )
     assert exempt["rel_frob_exempt"] == LIMIT_DEFINITIONS["rel_frob_exempt"]
     assert limit_definitions(dict(switched, rel_frob_exempt=[]))["max_rel_frob"] == rank_2
 
@@ -295,7 +324,9 @@ def test_limit_definitions_follow_the_limits(monkeypatch: pytest.MonkeyPatch) ->
 
     monkeypatch.setattr(instances, "task_limits", lambda: dataclasses.asdict(FlippedLimits()))
     task = instances.build_task_v1(["a", "b"])
-    assert task["limits"] == dataclasses.asdict(FlippedLimits()) and task["limits"]["max_changed_frac"] is None
+    assert (
+        task["limits"] == dataclasses.asdict(FlippedLimits()) and task["limits"]["max_changed_frac"] is None
+    )
     definitions = task["limit_definitions"]
     assert set(definitions) == set(task["limits"])
     assert definitions["max_changed_frac"].endswith("; null: this limit is not applied")
@@ -313,11 +344,17 @@ def test_limit_definitions_follow_the_limits(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_unknown_condition_is_refused(toy_store: ToyStore) -> None:  # noqa: F811
-    with pytest.raises(LookupError, match=r"'gaussian_noise_3' is not in the data store; known: \['deploy'\]"):
-        build_deployment_instances(toy_store.dataset, "gaussian_noise_3", selection=DEV_PLAN, decoys=DEFAULT_DECOYS)
+    with pytest.raises(
+        LookupError, match=r"'gaussian_noise_3' is not in the data store; known: \['deploy'\]"
+    ):
+        build_deployment_instances(
+            toy_store.dataset, "gaussian_noise_3", selection=DEV_PLAN, decoys=DEFAULT_DECOYS
+        )
 
 
-def test_check_task_current_refuses_stale_superseded_and_v0(toy_store: ToyStore, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
+def test_check_task_current_refuses_stale_superseded_and_v0(
+    toy_store: ToyStore, monkeypatch: pytest.MonkeyPatch
+) -> None:  # noqa: F811
     outcomes = build_v1(toy_store)
     root = toy_store.private / "instances"
     first = root / outcomes[0].instance_id
@@ -327,7 +364,9 @@ def test_check_task_current_refuses_stale_superseded_and_v0(toy_store: ToyStore,
     fields = task_limits()
     fields["max_rel_frob"] = 0.25
     tighter = dataclasses.make_dataclass(
-        "TighterLimits", [(name, object, dataclasses.field(default=value)) for name, value in fields.items()], frozen=True
+        "TighterLimits",
+        [(name, object, dataclasses.field(default=value)) for name, value in fields.items()],
+        frozen=True,
     )
     with monkeypatch.context() as patched:
         patched.setattr(instances, "task_limits", lambda: dataclasses.asdict(tighter()))
