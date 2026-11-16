@@ -13,20 +13,20 @@ set -euo pipefail
 export OMP_NUM_THREADS=16
 export MKL_NUM_THREADS=16
 REPO=${CRYOWISP_REPO:-/g/data/jz31/zhaorui/weight_program}
-PY=$REPO/cryowisp/.venv/bin/python
-RES=$REPO/cryoexp/results
+PY=$REPO/.venv/bin/python
+RES=$REPO/experiments/results
 mkdir -p $RES
 
 run () {  # mode seed [extra args]
   local MODE=$1 SEED=$2
   local EXTRA=${3:-}
   echo "=== baseline $MODE seed$SEED $(date +%H:%M:%S) ==="
-  $PY -I $REPO/cryoexp/baselines.py --mode $MODE \
-    --base-model $REPO/cryoexp/models/model_seed$SEED.pt \
-    --experience $REPO/cryoexp/engine/seed$SEED/experience.npz \
-    --selection $REPO/cryoexp/engine/seed$SEED/selection.npz \
-    --final $REPO/cryoexp/engine/seed$SEED/final.npz \
-    --engine-model-dir $REPO/cryoexp/engine/seed$SEED/task/model \
+  $PY -I $REPO/experiments/baselines.py --mode $MODE \
+    --base-model $REPO/experiments/models/model_seed$SEED.pt \
+    --experience $REPO/experiments/runs/seed$SEED/experience.npz \
+    --selection $REPO/experiments/runs/seed$SEED/selection.npz \
+    --final $REPO/experiments/runs/seed$SEED/final.npz \
+    --engine-model-dir $REPO/experiments/runs/seed$SEED/task/model \
     --out $RES/baseline_${MODE}_seed$SEED.json --seed $SEED $EXTRA || echo "FAILED $MODE seed$SEED"
 }
 

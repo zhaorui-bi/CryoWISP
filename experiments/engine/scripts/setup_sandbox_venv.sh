@@ -15,7 +15,7 @@
 # <repo>/.venv-sandbox. Needs uv on PATH.
 set -euo pipefail
 
-REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 BASE=
 TARGET=$REPO/.venv-sandbox
 LOCK=$REPO/scripts/sandbox_requirements.lock

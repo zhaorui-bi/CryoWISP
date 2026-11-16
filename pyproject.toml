@@ -28,7 +28,7 @@ build-backend = "hatchling.build"
 packages = ["cryowisp"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/cryowisp", "/skills", "/programs", "/scripts", "/tests", "/assets", "/README.md", "/LICENSE", "/pyproject.toml", "/uv.lock", "/.python-version", "/.gitignore"]
+include = ["/cryowisp", "/README.md", "/LICENSE", "/pyproject.toml", "/uv.lock", "/.python-version"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["experiments/engine/tests"]

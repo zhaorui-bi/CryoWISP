@@ -13,15 +13,15 @@ set -euo pipefail
 export OMP_NUM_THREADS=48
 export MKL_NUM_THREADS=48
 REPO=${CRYOWISP_REPO:-/g/data/jz31/zhaorui/weight_program}
-PY=$REPO/cryowisp/.venv/bin/python
-CROPS=$REPO/cryoexp/data/crops
+PY=$REPO/.venv/bin/python
+CROPS=$REPO/experiments/data/crops
 
-cd $REPO
+cd "$REPO"
 echo "=== make_crops $(date) ==="
 if [ -f $CROPS/summary.json ]; then
   echo "crops already present, skipping make_crops"
 else
-  $PY -I cryoexp/make_crops.py \
+  $PY -I $REPO/experiments/make_crops.py \
       --lite-root /g/data/jz31/zhaorui/cryoppp_data/lite \
       --out $CROPS \
       --old-ids 10005 10291 10081 --new-id 10947 --seed 7 \
@@ -33,7 +33,7 @@ echo "=== crop counts ==="
 for d in $CROPS/*/; do echo "$d particle=$(ls $d/particle 2>/dev/null | wc -l) background=$(ls $d/background 2>/dev/null | wc -l)"; done
 
 echo "=== train seed 1 $(date) ==="
-$PY -I cryoexp/train_base.py --crops-dir $CROPS --out-dir $REPO/cryoexp/models --seed 1 --epochs 6
+$PY -I $REPO/experiments/train_base.py --crops-dir $CROPS --out-dir $REPO/experiments/models --seed 1 --epochs 6
 echo "=== train seed 2 $(date) ==="
-$PY -I cryoexp/train_base.py --crops-dir $CROPS --out-dir $REPO/cryoexp/models --seed 2 --epochs 6
+$PY -I $REPO/experiments/train_base.py --crops-dir $CROPS --out-dir $REPO/experiments/models --seed 2 --epochs 6
 echo "=== ALL DONE $(date) ==="

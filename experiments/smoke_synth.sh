@@ -2,7 +2,7 @@
 # Mini editor-session smoke test on the synthetic task (validates LocalKernel + GLM endpoint + MCP loop).
 set -euo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-cd "$REPO/cryowisp"
+cd "$REPO"
 export PATH="$HOME/.local/bin:$PATH"
 rm -rf /tmp/synth_work/synth
 .venv/bin/cryowisp --threads 2 synthesize \

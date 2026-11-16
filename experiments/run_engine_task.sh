@@ -6,7 +6,7 @@ REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 SEED=${1:?seed}
 CROPS=${2:-$REPO/experiments/data/crops}
 SUFFIX=${3:-}
-ENG=$REPO/experiments/engine
+ENG=$REPO/experiments/runs
 CROPDIR=$CROPS
 
 cd $REPO/CryoWISP

@@ -5,10 +5,10 @@ set -euo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd $REPO/CryoWISP
 export PATH="$HOME/.local/bin:$PATH"
-OUT=$REPO/experiments/engine/seed1_v2/synth
+OUT=$REPO/experiments/runs/seed1_v2/synth
 rm -rf "$OUT"
 .venv/bin/cryowisp --threads 2 synthesize \
-  --task $REPO/experiments/engine/seed1_v2/task --out "$OUT" \
+  --task $REPO/experiments/runs/seed1_v2/task --out "$OUT" \
   --sandbox-python .venv-sandbox/bin/python \
   --editor-isolation local \
   --editor-model 'glm-5.3[1m]' \
@@ -22,7 +22,7 @@ if [ ! -f "$OUT/final/report.json" ] && [ -f "$OUT/freeze.json" ]; then
 from pathlib import Path
 import json
 from cryowisp.application.runtime import Application
-app = Application(Path("$REPO/experiments/engine/seed1_v2/synth"))
+app = Application(Path("$REPO/experiments/runs/seed1_v2/synth"))
 report = app.finalize()
 print(json.dumps({"status": report["status"],
                   "final_base": report["final_base"], "final_candidate": report["final_candidate"]}, indent=2))

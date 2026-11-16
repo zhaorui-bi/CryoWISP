@@ -51,21 +51,21 @@ Full logs and protocol disclosures: `experiments/RESULTS.md`, design: `experimen
 ## Repository layout
 
 ```
-cryowisp/        the engine (weight-space programming core, adapted from WeightCode; MIT):
-                 --editor-isolation local   LocalKernel for hosts without user namespaces (HPC):
-                                             NumPy-only -I kernel, memory rlimits, cell budgets,
-                                             path guard; runs record program_isolation: none
-                 --base-url-file /           Anthropic-compatible endpoints (GLM/Kimi/DeepSeek)
-                 --auth-token-file           credential files for the editor CLI
-               in scripts/run_editor_session.py, cryowisp/{application,sandbox,harness}
-experiments/   the CryoWISP pipeline on CryoPPP_Lite:
-                 make_crops.py              micrograph-level splits -> 224x224 crops
-                 train_base.py              frozen base pickers (2 seeds)
-                 run_engine_task.sh         import-model + prepare-data x3 + prepare-task
-                 run_synth_seed1.sh         editor session (login node, GLM endpoint)
-                 baselines.py               linear probe / knob / full FT / copied delta / random
-                 run_baselines.pbs          baseline suite (PBS)
-                 DESIGN.md RESULTS.md METHOD.md
+cryowisp/        the core library — everything `import cryowisp` gives you:
+                   application/   import-model, prepare-data/task, apply, synthesize (the CLI)
+                   sandbox/       bubblewrap kernel + LocalKernel (HPC hosts without user
+                                  namespaces; runs record program_isolation: none)
+                   harness/       editor sessions + launcher (Anthropic-compatible endpoints:
+                                  --base-url-file / --auth-token-file for GLM/Kimi/DeepSeek)
+                   patch/         weight-edit budgets, patch ops, validation
+                   models/ evalkit/ analysis/ ...
+experiments/     everything around the core:
+                 (top level)     the CryoWISP-on-CryoPPP pipeline: make_crops.py, train_base.py,
+                                 run_engine_task.sh, run_synth_seed1.sh, baselines.py,
+                                 run_baselines.pbs + DESIGN.md / METHOD.md / RESULTS.md
+                 engine/         framework extras: research drivers (scripts/), the operator
+                                 skill (skills/), the example weight program (programs/),
+                                 the test suite (tests/) and ENGINE.md
 ```
 
 ## Quickstart
@@ -73,18 +73,19 @@ experiments/   the CryoWISP pipeline on CryoPPP_Lite:
 ```bash
 # data: CryoPPP_Lite per-dataset tarballs (JPG micrographs + expert coordinates)
 aria2c -x16 https://calla.rnet.missouri.edu/cryoppp_lite/10947.tar.gz
+uv sync --locked --extra train --extra dev        # engine + training deps
 # crops -> base models -> engine task -> editor session -> re-weld
 python experiments/make_crops.py --lite-root <lite> --out crops --old-ids 10005 10291 10081 --new-id 10947
 python experiments/train_base.py --crops-dir crops --out-dir models --seed 1
 bash  experiments/run_engine_task.sh 1
 bash  experiments/run_synth_seed1.sh 1
-cryowisp/.venv/bin/cryowisp apply --task runs/seed2/task --program runs/seed1/synth/final/program \
-       --program-sha256 <sha256> --wall-s 900 --program-wall-s 480 --out runs/seed2/reuse
+.venv/bin/cryowisp apply --task experiments/runs/seed2/task --program experiments/runs/seed1/synth/final/program \
+       --program-sha256 <sha256> --wall-s 900 --program-wall-s 480 --out experiments/runs/seed2/reuse
 ```
 
 ## Attribution & license
 
 Engine code is a fork of [Gen-Verse/WeightCode](https://github.com/Gen-Verse/WeightCode)
-(MIT, see `cryowisp/LICENSE`); CryoWISP additions under the same MIT license. Data:
+(MIT, see `LICENSE`); CryoWISP additions under the same MIT license. Data:
 CryoPPP (CC BY 4.0, Dhakal et al., Sci Data 2023). This repository is research code for a
 submission in preparation; numbers in `experiments/RESULTS.md` are the authoritative record.
