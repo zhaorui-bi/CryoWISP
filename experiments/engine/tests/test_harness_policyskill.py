@@ -21,24 +21,24 @@ pytest.importorskip("minigrid")
 from test_e14_refs import N_EPISODES, instance_id, store  # noqa: E402,F401
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session  # noqa: E402
 
-from cryowisp.analysis.session_info import format_table, session_info  # noqa: E402
-from cryowisp.baselines.instance_io import load_instance  # noqa: E402
-from cryowisp.common.identity import params_sha256  # noqa: E402
-from cryowisp.data import e14 as D  # noqa: E402
-from cryowisp.harness import e10, policyskill  # noqa: E402
-from cryowisp.harness.applying import ArmApplier  # noqa: E402
-from cryowisp.harness.arms import arm_spec  # noqa: E402
-from cryowisp.harness.experience import EXPERIENCE_FILE  # noqa: E402
-from cryowisp.harness.instance import InstanceRefused, read_instance_record  # noqa: E402
-from cryowisp.harness.jsonio import read_json  # noqa: E402
-from cryowisp.harness.leaks import HINT_WORDS  # noqa: E402
-from cryowisp.harness.ledger import CheckLedger  # noqa: E402
-from cryowisp.harness.prompts import Budgets, render_system, render_task  # noqa: E402
-from cryowisp.harness.retention import kept_rule_record_rows  # noqa: E402
-from cryowisp.harness.runner import run_session, session_forbidden_strings  # noqa: E402
-from cryowisp.harness.session import SessionPaths  # noqa: E402
-from cryowisp.harness.tools import POLICYSKILL_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs  # noqa: E402
-from cryowisp.harness.trial import TrialError, assemble  # noqa: E402
+from cryowsp.analysis.session_info import format_table, session_info  # noqa: E402
+from cryowsp.baselines.instance_io import load_instance  # noqa: E402
+from cryowsp.common.identity import params_sha256  # noqa: E402
+from cryowsp.data import e14 as D  # noqa: E402
+from cryowsp.harness import e10, policyskill  # noqa: E402
+from cryowsp.harness.applying import ArmApplier  # noqa: E402
+from cryowsp.harness.arms import arm_spec  # noqa: E402
+from cryowsp.harness.experience import EXPERIENCE_FILE  # noqa: E402
+from cryowsp.harness.instance import InstanceRefused, read_instance_record  # noqa: E402
+from cryowsp.harness.jsonio import read_json  # noqa: E402
+from cryowsp.harness.leaks import HINT_WORDS  # noqa: E402
+from cryowsp.harness.ledger import CheckLedger  # noqa: E402
+from cryowsp.harness.prompts import Budgets, render_system, render_task  # noqa: E402
+from cryowsp.harness.retention import kept_rule_record_rows  # noqa: E402
+from cryowsp.harness.runner import run_session, session_forbidden_strings  # noqa: E402
+from cryowsp.harness.session import SessionPaths  # noqa: E402
+from cryowsp.harness.tools import POLICYSKILL_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs  # noqa: E402
+from cryowsp.harness.trial import TrialError, assemble  # noqa: E402
 
 # Gives the two untrained instruction words the embedding rows of the trained verbs, found by name in the layout: an
 # architecture-agnostic edit of one tensor.
@@ -72,11 +72,11 @@ def _program_cell(programs: dict[str, str]) -> str:
 
 
 def _runs() -> Path:
-    return Path(os.environ["CRYOWISP_RUNS"])
+    return Path(os.environ["CRYOWSP_RUNS"])
 
 
 def test_the_harness_names_agree_with_the_evalkit_rule(store) -> None:  # noqa: F811
-    from cryowisp.evalkit import e14 as E
+    from cryowsp.evalkit import e14 as E
 
     assert policyskill.POLICYSKILL_RULE == E.POLICYSKILL_RULE
     assert policyskill.INSTANCE_ID_RE.pattern == E.INSTANCE_ID_RE.pattern
@@ -175,7 +175,7 @@ def test_the_learn_view_is_the_evidence_with_the_actions_and_the_missions(
     assert "classifier" not in json.dumps(
         task["program"]
     ) and "other independently trained policies" in json.dumps(task["program"])
-    from cryowisp.evalkit import e14 as E
+    from cryowsp.evalkit import e14 as E
 
     assert view.limits["max_rel_frob"] is None and view.limits["max_changed_frac"] == E.E14_MAX_CHANGED_FRAC
     assert view.limits["max_ops"] >= len(instance.params)
@@ -251,7 +251,7 @@ def test_the_policyskill_prompts_change_only_what_is_false_for_a_policy() -> Non
 
 @needs_sandbox
 def test_a_policyskill_learn_session_scores_programs_by_rollouts(store, instance_id: str) -> None:  # noqa: F811
-    from cryowisp.evalkit import e14 as E
+    from cryowsp.evalkit import e14 as E
 
     steps = [
         ("python", {"code": _program_cell({"copy.py": COPY})}),

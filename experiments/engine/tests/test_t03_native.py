@@ -15,14 +15,14 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.data import imagenet_val as I
-from cryowisp.evalkit import t03_native as T
-from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.models import resnet18native as N
-from cryowisp.models import resnet18up as M
-from cryowisp.models.forward_gen import write_forward
-from cryowisp.models.parity import check_logit_parity
+from cryowsp.common.identity import params_sha256
+from cryowsp.data import imagenet_val as I
+from cryowsp.evalkit import t03_native as T
+from cryowsp.evalkit.patch_check import load_forward
+from cryowsp.models import resnet18native as N
+from cryowsp.models import resnet18up as M
+from cryowsp.models.forward_gen import write_forward
+from cryowsp.models.parity import check_logit_parity
 
 HF_ROW_COUNTS = [3572] * 6 + [3571] * 8
 

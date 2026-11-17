@@ -1,4 +1,4 @@
-"""PREREG T08 (``cryowisp.harness.reuse_matrix``) and the F6 copy from a source that is not on seed 100.
+"""PREREG T08 (``cryowsp.harness.reuse_matrix``) and the F6 copy from a source that is not on seed 100.
 
 Unit tests on synthetic records: the cell status rules, the diagonal gate, the fixed readings (reuse share, C in E3's
 form and per target, program minus copy, per-target means) and the rule that a failed gate leaves a row unread. On
@@ -21,13 +21,13 @@ from test_harness_e11 import QKV_Q, _sandbox
 from test_harness_fixtures import needs_sandbox
 from test_harness_frozen_edit import _fake_session
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.harness import fewshot
-from cryowisp.harness import frozen_edit as F
-from cryowisp.harness import reuse_matrix as R
-from cryowisp.harness.jsonio import file_sha256, read_json, write_json
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.models import vit_synth as V
+from cryowsp.common.identity import params_sha256
+from cryowsp.harness import fewshot
+from cryowsp.harness import frozen_edit as F
+from cryowsp.harness import reuse_matrix as R
+from cryowsp.harness.jsonio import file_sha256, read_json, write_json
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.models import vit_synth as V
 
 COND = "toy_condition"
 IDS = tuple(f"i{seed}" for seed in R.TARGET_SEEDS)

@@ -18,11 +18,11 @@ import pytest
 torch = pytest.importorskip("torch")
 pytest.importorskip("minigrid")
 
-from cryowisp.common.identity import params_sha256, save_params  # noqa: E402
-from cryowisp.data import e14 as D  # noqa: E402
-from cryowisp.data.store import write_json  # noqa: E402
-from cryowisp.models import e14_export as X  # noqa: E402
-from cryowisp.models import e14_policy as P  # noqa: E402
+from cryowsp.common.identity import params_sha256, save_params  # noqa: E402
+from cryowsp.data import e14 as D  # noqa: E402
+from cryowsp.data.store import write_json  # noqa: E402
+from cryowsp.models import e14_export as X  # noqa: E402
+from cryowsp.models import e14_policy as P  # noqa: E402
 
 N_EPISODES = 6
 SMALL_RANGES = ("V_check_old", "V_check_new", "V_select_old", "V_select_new")
@@ -33,9 +33,9 @@ def store(tmp_path_factory: pytest.TempPathFactory):
     root = tmp_path_factory.mktemp("pstore")  # no leak token in the session mounts
     patch = pytest.MonkeyPatch()
     for name, sub in (
-        ("CRYOWISP_PRIVATE", "private"),
-        ("CRYOWISP_SEALED", "sealed"),
-        ("CRYOWISP_RUNS", "runs"),
+        ("CRYOWSP_PRIVATE", "private"),
+        ("CRYOWSP_SEALED", "sealed"),
+        ("CRYOWSP_RUNS", "runs"),
     ):
         (root / sub).mkdir()
         patch.setenv(name, str(root / sub))
@@ -83,7 +83,7 @@ def store(tmp_path_factory: pytest.TempPathFactory):
 
 @pytest.fixture(scope="module")
 def instance_id(store) -> str:
-    from cryowisp.evalkit import e14 as E
+    from cryowsp.evalkit import e14 as E
 
     monkey = pytest.MonkeyPatch()
     monkey.setattr(D, "TRAIN_SIZES", (*D.TRAIN_SIZES, 2_000))
@@ -96,7 +96,7 @@ def instance_id(store) -> str:
 
 
 def test_instance_files(store, instance_id: str) -> None:
-    from cryowisp.evalkit import e14 as E
+    from cryowsp.evalkit import e14 as E
 
     instance = E.load_e14_instance(instance_id)
     E.check_e14_current(instance.instance_dir)
@@ -125,10 +125,10 @@ def test_instance_files(store, instance_id: str) -> None:
     ],
 )
 def test_reference_run_and_readout(store, instance_id: str, method: str) -> None:
-    from cryowisp.baselines.fit.e14refs import E14_REF_LABEL, method_configs, run_e14_ref
-    from cryowisp.baselines.fit.runner import baseline_run_dir
-    from cryowisp.evalkit import e14 as E
-    from cryowisp.evalkit.e14read import read_run
+    from cryowsp.baselines.fit.e14refs import E14_REF_LABEL, method_configs, run_e14_ref
+    from cryowsp.baselines.fit.runner import baseline_run_dir
+    from cryowsp.evalkit import e14 as E
+    from cryowsp.evalkit.e14read import read_run
 
     torch.set_num_threads(1)
     instance = E.load_e14_instance(instance_id)
@@ -152,10 +152,10 @@ def test_reference_run_and_readout(store, instance_id: str, method: str) -> None
 
 
 def test_bar_and_wrapper(store, instance_id: str) -> None:
-    from cryowisp.baselines.fit.e14refs import E14_REF_LABEL, run_e14_ref
-    from cryowisp.baselines.fit.runner import baseline_run_dir
-    from cryowisp.evalkit import e14 as E
-    from cryowisp.evalkit.e14read import e14_bar, read_run
+    from cryowsp.baselines.fit.e14refs import E14_REF_LABEL, run_e14_ref
+    from cryowsp.baselines.fit.runner import baseline_run_dir
+    from cryowsp.evalkit import e14 as E
+    from cryowsp.evalkit.e14read import e14_bar, read_run
 
     instance = E.load_e14_instance(instance_id)
     records = {}
@@ -185,7 +185,7 @@ def test_bar_and_wrapper(store, instance_id: str) -> None:
 def test_fn_readout_equals_the_readouts_of_record(store, instance_id: str) -> None:
     """PREREG E14 T11: ``e14_fn_readout`` gives ``e14_wrapper_readout`` on the wrapper and ``e14_readout`` (without its
     descriptor list) on plain weights, and a trace of it splits into the two parts' episodes."""
-    from cryowisp.evalkit import e14 as E
+    from cryowsp.evalkit import e14 as E
 
     instance = E.load_e14_instance(instance_id)
     wrapper, _ = E.e14_fn_readout(instance_id, E.wrapper_logits_fn(instance.forward, instance.params))

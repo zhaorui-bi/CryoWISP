@@ -3,7 +3,7 @@
 Each toy instance has the real layout (model.npz, model_spec.json, forward.py, evidence.npz, task.json, private.json
 with correct hashes, a fake V_check). Labels come from a random teacher network; the base model is the teacher with
 the final bias of class b raised, so images of class a near the a/b boundary become (a -> b) failures. The defect sits
-in the final layer, so a working final-layer fit must repair part of it on V_check. Nothing is written to $CRYOWISP_*
+in the final layer, so a working final-layer fit must repair part of it on V_check. Nothing is written to $CRYOWSP_*
 locations except through the CLI test, which points the variables at a temporary directory.
 """
 
@@ -19,17 +19,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.baselines.fit.controls import N_DRAWS, baseline_session_id, control_run_seed, run_control
-from cryowisp.baselines.fit.edits import MAX_REL_FROB, PATCH_APPLIER, REL_FROB_MIN_NDIM, apply_patch_path
-from cryowisp.baselines.fit.grad import candidate_grid, run_grad
-from cryowisp.baselines.fit.ridge import RIDGE_SCALES, RIDGE_SPECS, run_ridge
-from cryowisp.baselines.fit.rules import run_prior_shift, run_tie
-from cryowisp.baselines.fit.runner import RUN_SCHEMA, SplitRoleError, check_split_role, read_run_record
-from cryowisp.baselines.fit.torch_forward import architecture_from, assert_parity, max_logit_diff
-from cryowisp.baselines.instance_io import Instance, load_instance, write_delta_patch
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.evalkit.metrics import Candidate, choose_final
-from cryowisp.evalkit.patch_check import load_forward
+from cryowsp.baselines.fit.controls import N_DRAWS, baseline_session_id, control_run_seed, run_control
+from cryowsp.baselines.fit.edits import MAX_REL_FROB, PATCH_APPLIER, REL_FROB_MIN_NDIM, apply_patch_path
+from cryowsp.baselines.fit.grad import candidate_grid, run_grad
+from cryowsp.baselines.fit.ridge import RIDGE_SCALES, RIDGE_SPECS, run_ridge
+from cryowsp.baselines.fit.rules import run_prior_shift, run_tie
+from cryowsp.baselines.fit.runner import RUN_SCHEMA, SplitRoleError, check_split_role, read_run_record
+from cryowsp.baselines.fit.torch_forward import architecture_from, assert_parity, max_logit_diff
+from cryowsp.baselines.instance_io import Instance, load_instance, write_delta_patch
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.evalkit.metrics import Candidate, choose_final
+from cryowsp.evalkit.patch_check import load_forward
 
 REPO = Path(__file__).resolve().parents[1]
 N_CLASSES = 4
@@ -168,7 +168,7 @@ def build_toy_instance(
     np.savez(vcheck, x=images[1000:], y=y[1000:], idx=np.arange(1000, 3000, dtype=np.int64))
     model_sha = save_params(root / "model.npz", base)
     spec = {
-        "schema": "cryowisp.model_spec.v0",
+        "schema": "cryowsp.model_spec.v0",
         "model_id": "toy",
         "input": {
             "shape": list(shape),
@@ -183,11 +183,11 @@ def build_toy_instance(
     }
     (root / "model_spec.json").write_text(json.dumps(spec))
     task = (
-        {"schema": "cryowisp.task.v1"} if v1 else {"schema": "cryowisp.task.v0", "target": {"a": a, "b": b}}
+        {"schema": "cryowsp.task.v1"} if v1 else {"schema": "cryowsp.task.v0", "target": {"a": a, "b": b}}
     )
     (root / "task.json").write_text(json.dumps(task))
     private = {
-        "schema": "cryowisp.instance_private.v1" if v1 else "cryowisp.instance_private.v0",
+        "schema": "cryowsp.instance_private.v1" if v1 else "cryowsp.instance_private.v0",
         "dataset": "toy_v1" if v1 else "toy",
         "split_role": split_role,
         "seed": seed,
@@ -226,7 +226,7 @@ def toys(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Toy]:
         for toy in built.values()
     ]
     (private_root / "instances" / "index.json").write_text(
-        json.dumps({"schema": "cryowisp.instances_index.v0", "instances": rows})
+        json.dumps({"schema": "cryowsp.instances_index.v0", "instances": rows})
     )
     return built
 
@@ -267,7 +267,7 @@ def test_torch_rebuild_matches_dataset_forward_template(
     toys: dict[str, Toy], family: str, tmp_path: Path
 ) -> None:
     forward_gen = pytest.importorskip(
-        "cryowisp.models.forward_gen", reason="dataset forward template not available"
+        "cryowsp.models.forward_gen", reason="dataset forward template not available"
     )
     instance = toys[family].instance
     spec = _spec(instance)
@@ -494,7 +494,7 @@ def test_split_role_guard_and_no_overwrite(toys: dict[str, Toy], tmp_path: Path)
 
 
 def test_written_patch_roundtrips_through_the_executor(toys: dict[str, Toy], tmp_path: Path) -> None:
-    from cryowisp.patch import Limits, apply_patch, load_patch
+    from cryowsp.patch import Limits, apply_patch, load_patch
 
     instance = toys["mlp"].instance
     record = run_grad(instance, "grad_sparse", tmp_path / "grad_sparse" / "0")
@@ -517,7 +517,7 @@ def _cli_env(toys: dict[str, Toy], tmp_path: Path) -> tuple[dict[str, str], Path
     runs.mkdir()
     sealed.mkdir()
     return dict(
-        os.environ, CRYOWISP_PRIVATE=str(private_root), CRYOWISP_RUNS=str(runs), CRYOWISP_SEALED=str(sealed)
+        os.environ, CRYOWSP_PRIVATE=str(private_root), CRYOWSP_RUNS=str(runs), CRYOWSP_SEALED=str(sealed)
     ), runs
 
 
@@ -633,7 +633,7 @@ def test_cli_refuses_main_instances_without_allow_main(toys: dict[str, Toy], tmp
 
 
 def test_v1_runs_record_fixed_and_broken_without_a_target(toys: dict[str, Toy], tmp_path: Path) -> None:
-    from cryowisp.baselines.fit.cli import summary_line
+    from cryowsp.baselines.fit.cli import summary_line
 
     instance = toys["v1_mlp"].instance
     assert instance.target is None
@@ -653,7 +653,7 @@ def test_v1_runs_record_fixed_and_broken_without_a_target(toys: dict[str, Toy], 
 
 
 def test_v1_evidence_checks_reject_inconsistent_instances(toys: dict[str, Toy]) -> None:
-    from cryowisp.baselines.fit.runner import load_evidence
+    from cryowsp.baselines.fit.runner import load_evidence
 
     instance = toys["v1_mlp"].instance
     evidence = load_evidence(instance)
@@ -679,7 +679,7 @@ def test_v1_evidence_checks_reject_inconsistent_instances(toys: dict[str, Toy]) 
 def test_prior_shift_moves_the_last_bias_along_the_label_shift_direction(
     toys: dict[str, Toy], tmp_path: Path
 ) -> None:
-    from cryowisp.baselines.fit.rules import PRIOR_SHIFT_FRACTIONS, label_shift_direction
+    from cryowsp.baselines.fit.rules import PRIOR_SHIFT_FRACTIONS, label_shift_direction
 
     instance = toys["v1_mlp"].instance
     run_dir = tmp_path / "prior_shift" / "0"
@@ -756,14 +756,14 @@ def test_tie_inputs_writes_one_tie_op_at_admissible_strengths(
 
 @pytest.mark.parametrize("key", ["v1_mlp", "v1_cnn"])
 def test_full_tie_makes_the_first_layer_blind_to_channel_order(toys: dict[str, Toy], key: str) -> None:
-    from cryowisp.baselines.fit.rules import tie_plan
-    from cryowisp.patch import Limits, apply_patch
+    from cryowsp.baselines.fit.rules import tie_plan
+    from cryowsp.patch import Limits, apply_patch
 
     instance = toys[key].instance
     spec = _spec(instance)
     plan = tie_plan(architecture_from(instance.params, spec), instance.params, spec)
     patch = {
-        "schema": "cryowisp.patch.v0",
+        "schema": "cryowsp.patch.v0",
         "parent_sha256": instance.params_sha256,
         "hypothesis": "h",
         "predicted_effect": "p",
@@ -796,7 +796,7 @@ def test_tie_inputs_is_not_applicable_to_one_input_channel(toys: dict[str, Toy],
 
 
 def test_executor_rejection_is_recorded_as_an_invalid_patch(toys: dict[str, Toy], tmp_path: Path) -> None:
-    from cryowisp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
+    from cryowsp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
 
     instance = toys["v1_mlp"].instance
     over = dict(instance.params)
@@ -856,7 +856,7 @@ def _small_edit(instance: Instance) -> dict[str, np.ndarray]:
 def _harness_session(
     root: Path, instance: Instance, child: dict[str, np.ndarray] | None, *, parent: str, session_id: str
 ) -> Path:
-    """A synthetic editor-session root holding run.json in the shared format, as cryowisp.harness.finalize writes it."""
+    """A synthetic editor-session root holding run.json in the shared format, as cryowsp.harness.finalize writes it."""
     session = root / session_id
     final_dir = session / "final"
     final_dir.mkdir(parents=True)
@@ -884,7 +884,7 @@ def _harness_session(
         "reason": "test",
     }
     run = {
-        "schema": "cryowisp.editor_run.v0",
+        "schema": "cryowsp.editor_run.v0",
         "method": "M2",
         "status": "complete",
         "session_id": session_id,
@@ -908,7 +908,7 @@ def _harness_session(
 def test_controls_take_a_harness_session_run_record(
     toys: dict[str, Toy], tmp_path: Path, parent: str
 ) -> None:
-    from cryowisp.baselines.fit.controls import FINAL_CHILD_REBUILDER, load_reference, resolve_reference
+    from cryowsp.baselines.fit.controls import FINAL_CHILD_REBUILDER, load_reference, resolve_reference
 
     instance = toys["mlp"].instance
     child = _small_edit(instance)
@@ -933,7 +933,7 @@ def test_controls_take_a_harness_session_run_record(
     described = record["generation"]["reference"]
     assert described["kind"] == "run_record" and described["child_sha256"] == params_sha256(child)
     assert (
-        described["run_record"]["schema"] == "cryowisp.editor_run.v0"
+        described["run_record"]["schema"] == "cryowsp.editor_run.v0"
         and described["run_record"]["method"] == "M2"
     )
     for entry in record["candidates"]:
@@ -949,8 +949,8 @@ def test_controls_take_a_harness_session_run_record(
 
 
 def test_harness_references_are_checked(toys: dict[str, Toy], tmp_path: Path) -> None:
-    from cryowisp.baselines.fit.controls import load_reference
-    from cryowisp.evalkit.devreadout import DevReadoutError
+    from cryowsp.baselines.fit.controls import load_reference
+    from cryowsp.evalkit.devreadout import DevReadoutError
 
     instance = toys["mlp"].instance
     other = toys["cnn"].instance
@@ -1082,8 +1082,8 @@ def _k_form_logits(
 
 @pytest.mark.parametrize("key", ["v1_mlp", "v1_cnn", "mlp"])
 def test_input_stats_fold_equals_the_direct_k_form(toys: dict[str, Toy], key: str) -> None:
-    from cryowisp.baselines.fit.rules import input_stats_fold
-    from cryowisp.patch import Limits, apply_patch
+    from cryowsp.baselines.fit.rules import input_stats_fold
+    from cryowsp.patch import Limits, apply_patch
 
     instance = toys[key].instance
     arch = architecture_from(instance.params, _spec(instance))
@@ -1099,7 +1099,7 @@ def test_input_stats_fold_equals_the_direct_k_form(toys: dict[str, Toy], key: st
         assert fold.g == pytest.approx(float(np.prod(k) ** (1.0 / channels)), rel=1e-12)
         np.testing.assert_allclose(fold.r, k / fold.g, rtol=1e-15)
         patch = {
-            "schema": "cryowisp.patch.v0",
+            "schema": "cryowsp.patch.v0",
             "parent_sha256": instance.params_sha256,
             "hypothesis": "h",
             "predicted_effect": "p",
@@ -1138,7 +1138,7 @@ def test_input_stats_fold_equals_the_direct_k_form(toys: dict[str, Toy], key: st
 
 @pytest.mark.parametrize("key", ["v1_mlp", "v1_cnn", "mlp"])
 def test_input_stats_end_to_end(toys: dict[str, Toy], tmp_path: Path, key: str) -> None:
-    from cryowisp.baselines.fit.rules import CONV_PADDING_DEVIATION, INPUT_STATS_STRENGTHS, run_input_stats
+    from cryowsp.baselines.fit.rules import CONV_PADDING_DEVIATION, INPUT_STATS_STRENGTHS, run_input_stats
 
     instance = toys[key].instance
     arch = architecture_from(instance.params, _spec(instance))
@@ -1198,10 +1198,10 @@ def test_input_stats_end_to_end(toys: dict[str, Toy], tmp_path: Path, key: str) 
 def test_a_control_run_whose_draws_are_all_rejected_fails(
     toys: dict[str, Toy], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import cryowisp.baselines.fit.runner as runner
-    from cryowisp.baselines.fit.controls import b1_value
-    from cryowisp.baselines.fit.runner import NoValidCandidate
-    from cryowisp.patch import PatchError
+    import cryowsp.baselines.fit.runner as runner
+    from cryowsp.baselines.fit.controls import b1_value
+    from cryowsp.baselines.fit.runner import NoValidCandidate
+    from cryowsp.patch import PatchError
 
     instance = toys["mlp"].instance
     session = _harness_session(

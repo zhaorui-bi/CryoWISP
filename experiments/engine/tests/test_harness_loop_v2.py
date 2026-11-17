@@ -28,23 +28,23 @@ from test_harness_learn import WORSE, LearnStore, _program_cell, learn_store  # 
 from test_harness_loop import SESSION_KWARGS, _round_one, _round_two, _sandbox, _write, loop_store  # noqa: F401
 from test_harness_program_stream import StreamStore, stream_store  # noqa: F401
 
-from cryowisp.baselines.fit import checked_reference_stream as C
-from cryowisp.baselines.fit.reference_stream import load_stream_instances
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import load_params
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.harness import e10, loop, loop_stream, runner, tools
-from cryowisp.harness.finalize import (
+from cryowsp.baselines.fit import checked_reference_stream as C
+from cryowsp.baselines.fit.reference_stream import load_stream_instances
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import load_params
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.harness import e10, loop, loop_stream, runner, tools
+from cryowsp.harness.finalize import (
     FINAL_RULE_LOOP,
     FINAL_RULE_LOOP_V2,
     KIND_CHECKED,
     STATUS_DRY_RUN,
     select_final,
 )
-from cryowisp.harness.instance import read_instance_record
-from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.leaks import HINT_WORDS
-from cryowisp.harness.loop import (
+from cryowsp.harness.instance import read_instance_record
+from cryowsp.harness.jsonio import file_sha256, read_json
+from cryowsp.harness.leaks import HINT_WORDS
+from cryowsp.harness.loop import (
     KEPT_HEADING,
     KEPT_RULE_LOOP,
     KEPT_RULE_LOOP_V2,
@@ -61,15 +61,15 @@ from cryowisp.harness.loop import (
     loop_kept_section,
     session_loop_rule,
 )
-from cryowisp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
-from cryowisp.harness.prompts import render_system
-from cryowisp.harness.retention import s_old_floor
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-from cryowisp.harness.session import SessionPaths
+from cryowsp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
+from cryowsp.harness.prompts import render_system
+from cryowsp.harness.retention import s_old_floor
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.harness.session import SessionPaths
 
 V1_TEXT_SHA256 = {
     # sha256 of the v1 texts and rule for 4000 clean rows and 4000 rows per earlier round, one and three earlier
-    # rounds, computed with origin/main c89c684's cryowisp.harness.loop before loop-retain-v2 existed.
+    # rounds, computed with origin/main c89c684's cryowsp.harness.loop before loop-retain-v2 existed.
     "1:final_selection": "01f476f86680d34188af6cc57f8da9b54e8ea0f27496f8a175ca3d548a0a15e7",
     "1:kept_section": "1d861f1ee99cf89d2b30834f165da42632b574b1c90c19c5879b1119224bef5d",
     "1:rule": "faeb5659b99f3a2bd1efe3811c66459b77c978ae000d54015164073e9243d053",

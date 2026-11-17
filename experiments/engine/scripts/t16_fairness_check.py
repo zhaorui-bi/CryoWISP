@@ -6,7 +6,7 @@ kept rule, budget, limits, MCP timeouts, editor model and effort, experience and
 earlier-round checks). Arm N must equal the record; arm L must equal arm N except edit_log.json and the one PREREG
 sentence. Writes a JSON report and exits 1 if a requirement fails. Reads no API key and nothing under sealed/::
 
-    .venv/bin/python scripts/t16_fairness_check.py --record $CRYOWISP_RUNS/sessions/sa651245fee587200 \\
+    .venv/bin/python scripts/t16_fairness_check.py --record $CRYOWSP_RUNS/sessions/sa651245fee587200 \\
         --off <arm N round-2 session or dry run> [--on <arm L round-2 session or dry run>] --out report.json
 
 T16 follow-up M (the protected-entry limit): ``--protect <arm M round-2 session or dry run>`` (with ``--on``) also
@@ -25,7 +25,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from cryowisp.harness.loop import (
+from cryowsp.harness.loop import (
     EDIT_LOG_FILE,
     EDIT_LOG_SENTENCE,
     PROTECT_SENTENCE,

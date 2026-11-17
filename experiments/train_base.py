@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Train a binary particle/background ResNet-18 on CryoPPP crops (CryoWISP base network).
+"""Train a binary particle/background ResNet-18 on CryoPPP crops (CryoWSP base network).
 
 Saves a plain FP32 torchvision state_dict (num_classes=2) plus labels.json and a metrics
 json. Class order is ImageFolder's alphabetical order: background=0, particle=1.

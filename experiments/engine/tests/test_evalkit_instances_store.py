@@ -5,7 +5,7 @@ pixel among pixels 0..3. The true class sits in pixel 4 + y, which the base mode
 look like class b plants confusions with exact counts per split, so the target rule, the evidence draw and the sealed
 readouts can be checked by hand. A child that reads pixel 4 fixes every (0 -> 1) error and breaks nothing.
 
-Everything is written under pytest tmp dirs with monkeypatched CRYOWISP_* variables; nothing touches real locations.
+Everything is written under pytest tmp dirs with monkeypatched CRYOWSP_* variables; nothing touches real locations.
 Other test modules import ``build_toy_store`` and the ``toy_store`` fixture from here.
 """
 
@@ -19,15 +19,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.evalkit.instances import (
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.evalkit.instances import (
     DEFAULT_DECOYS,
     BuildOutcome,
     build_dataset_instances,
     build_deployment_instances,
 )
-from cryowisp.evalkit.patch_check import load_forward, predict
-from cryowisp.evalkit.targets import (
+from cryowsp.evalkit.patch_check import load_forward, predict
+from cryowsp.evalkit.targets import (
     DEFAULT_DEV_SEEDS,
     DEFAULT_MAIN_SEEDS,
     SeedSelection,
@@ -142,7 +142,7 @@ def breaking_child(params: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
 
 def _model_spec(model_id: str) -> dict[str, object]:
     return {
-        "schema": "cryowisp.model_spec.v0",
+        "schema": "cryowsp.model_spec.v0",
         "model_id": model_id,
         "input": {
             "shape": [1, 4, 4],
@@ -185,10 +185,10 @@ class ToyStore:
         return {int(row["seed"]): str(row["model_id"]) for row in self.models if row["role"] == role}
 
     def activate(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Point CRYOWISP_PRIVATE, CRYOWISP_SEALED and CRYOWISP_RUNS at this store."""
-        monkeypatch.setenv("CRYOWISP_PRIVATE", str(self.private))
-        monkeypatch.setenv("CRYOWISP_SEALED", str(self.sealed))
-        monkeypatch.setenv("CRYOWISP_RUNS", str(self.runs))
+        """Point CRYOWSP_PRIVATE, CRYOWSP_SEALED and CRYOWSP_RUNS at this store."""
+        monkeypatch.setenv("CRYOWSP_PRIVATE", str(self.private))
+        monkeypatch.setenv("CRYOWSP_SEALED", str(self.sealed))
+        monkeypatch.setenv("CRYOWSP_RUNS", str(self.runs))
 
 
 def build_toy_store(
@@ -235,7 +235,7 @@ def build_toy_store(
             for split, arrays in splits.items()
             if split != "test"
         },
-        "test": {"location": f"$CRYOWISP_SEALED/{dataset}/test.npz", "sha256": params_sha256(splits["test"])},
+        "test": {"location": f"$CRYOWSP_SEALED/{dataset}/test.npz", "sha256": params_sha256(splits["test"])},
     }
     (data / "dataset.json").write_text(json.dumps(meta, indent=2))
     rows: list[dict[str, object]] = []
@@ -298,12 +298,12 @@ def corrupt_split(arrays: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
 
 
 def condition_dir(store: ToyStore, name: str = CONDITION) -> Path:
-    """``$CRYOWISP_PRIVATE/<dataset>/conditions/<name>``."""
+    """``$CRYOWSP_PRIVATE/<dataset>/conditions/<name>``."""
     return store.private / store.dataset / "conditions" / name
 
 
 def condition_test_path(store: ToyStore, name: str = CONDITION) -> Path:
-    """``$CRYOWISP_SEALED/<dataset>/conditions/<name>/test.npz``."""
+    """``$CRYOWSP_SEALED/<dataset>/conditions/<name>/test.npz``."""
     return store.sealed / store.dataset / "conditions" / name / "test.npz"
 
 
@@ -335,7 +335,7 @@ def add_condition(
     test = corrupt_split(load_npz(store.sealed / store.dataset / "test.npz"))
     np.savez(condition_test_path(store, name), **test)
     meta = {
-        "schema": "cryowisp.dataset.v0",
+        "schema": "cryowsp.dataset.v0",
         "dataset": store.dataset,
         "condition": {
             "name": name,
@@ -351,7 +351,7 @@ def add_condition(
         "forward_sha256": clean["forward_sha256"],
         "splits": splits,
         "test": {
-            "location": f"$CRYOWISP_SEALED/{store.dataset}/conditions/{name}/test.npz",
+            "location": f"$CRYOWSP_SEALED/{store.dataset}/conditions/{name}/test.npz",
             "sha256": params_sha256(test),
             "clean_sha256": clean["test"]["sha256"],
         },

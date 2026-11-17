@@ -1,8 +1,8 @@
-"""Tests for the vision_range readout (cryowisp.evalkit.sealed_range) and the range source of cryowisp.evalkit.sealed_finals.
+"""Tests for the vision_range readout (cryowsp.evalkit.sealed_range) and the range source of cryowsp.evalkit.sealed_finals.
 
 Toy store: the toy of test_evalkit_sealed_finals (a session final on a toyblur_s2 dev instance) plus one range set
-``toyrange_s3`` of the toy dataset: a range index file (dev x under $CRYOWISP_PRIVATE, the official-style CIFAR-10-C file
-under $CRYOWISP_SEALED) and a T07-layout record (t07_table.json, preds/<arch>/{base,llm}/<set>.npy) written from the
+``toyrange_s3`` of the toy dataset: a range index file (dev x under $CRYOWSP_PRIVATE, the official-style CIFAR-10-C file
+under $CRYOWSP_SEALED) and a T07-layout record (t07_table.json, preds/<arch>/{base,llm}/<set>.npy) written from the
 session child's predictions, so that a dev record must equal it field for field.
 """
 
@@ -17,13 +17,13 @@ import pytest
 from test_evalkit_instances_store import CONDITION, condition_dir, load_npz, toy_store, write_condition_meta  # noqa: F401
 from test_evalkit_sealed_finals import SESSION, Toy, _approved, _final, _git_state, _write_list, toy  # noqa: F401
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.data import t07_range_index as RI
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit import sealed_range as SR
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.evalkit.sealed import read_registry
-from cryowisp.evalkit.targets import file_sha256
+from cryowsp.common.identity import params_sha256
+from cryowsp.data import t07_range_index as RI
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit import sealed_range as SR
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.evalkit.sealed import read_registry
+from cryowsp.evalkit.targets import file_sha256
 
 SET = "toyrange_s3"
 RECORD = "t07/toyrun/t07_table.json"
@@ -363,7 +363,7 @@ def test_build_index_writes_one_checked_file_per_set(toy: Toy, monkeypatch: pyte
     new, stored = manifests
     n = made["n_test"]
     assert new["test"] == {
-        "location": "$CRYOWISP_SEALED/cifar10c/CIFAR-10-C/toyrange.npy",
+        "location": "$CRYOWSP_SEALED/cifar10c/CIFAR-10-C/toyrange.npy",
         "rows": f"{2 * n} .. {3 * n - 1} (severity 3)",
         "format": RI.CIFAR10C_FORMAT_TEXT,
         "n": n,

@@ -1,17 +1,17 @@
 """PREREG F2 (the label-equivalent amount) outside the training job: data, import, checks and the summary.
 
-Subcommands (``cryowisp.baselines.fit.labeleq``):
+Subcommands (``cryowsp.baselines.fit.labeleq``):
 
 * ``data --corrupt-dir DIR``: subsets.npz and f2_data.json from the corrupted train arrays (workstation).
 * ``import --run-dir DIR``: hash and device checks of a fetched training run; writes ``DIR/f2_import.json``.
 * ``check --instance I --run-dir DIR [--groups G ...]``: one baseline run per check group (``n<N>``, ``ceiling``) on
   the E11 instance I, the references' joint oracle and executor without size limits, written to
-  ``$CRYOWISP_RUNS/baselines/<I>/ft_labeleq/f2_<group>/<seed>/`` (4090 CPU, inside the store-copy bwrap).
+  ``$CRYOWSP_RUNS/baselines/<I>/ft_labeleq/f2_<group>/<seed>/`` (4090 CPU, inside the store-copy bwrap).
 * ``summary --instance I --kept FILE --frontier FILE [--teacher-joint J] --out FILE``: the table per N (kept pick,
   the run's own no-floor pick and every configuration), the ceiling and N* from the devreadout records. The kept
   pick's readout must equal its frontier record (two readouts of one child); the own pick is read from the frontier.
 
-Readouts are the project's (``python -m cryowisp.evalkit.devreadout RUN ... --retention-floor -20`` for the kept picks,
+Readouts are the project's (``python -m cryowsp.evalkit.devreadout RUN ... --retention-floor -20`` for the kept picks,
 ``--all-candidates`` for the frontier).
 """
 
@@ -29,8 +29,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def cmd_data(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.fit import labeleq as F
-    from cryowisp.models.runinfo import run_info
+    from cryowsp.baselines.fit import labeleq as F
+    from cryowsp.models.runinfo import run_info
 
     payload = F.build_f2_data(args.corrupt_dir, run_info(REPO_ROOT))
     print(json.dumps({k: payload[k] for k in ("pool", "subsets")}, indent=1))
@@ -39,7 +39,7 @@ def cmd_data(args: argparse.Namespace) -> int:
 
 
 def cmd_import(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.fit import labeleq as F
+    from cryowsp.baselines.fit import labeleq as F
 
     payload = F.import_f2_run(args.run_dir, args.models_subdir)
     print(json.dumps({k: payload[k] for k in ("n_checkpoints", "device_max_abs_diff", "index_sha256")}))
@@ -51,9 +51,9 @@ def cmd_check(args: argparse.Namespace) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit import labeleq as F
-    from cryowisp.baselines.fit.cli import load_checked_instances, summary_line
-    from cryowisp.baselines.fit.runner import baseline_run_dir
+    from cryowsp.baselines.fit import labeleq as F
+    from cryowsp.baselines.fit.cli import load_checked_instances, summary_line
+    from cryowsp.baselines.fit.runner import baseline_run_dir
 
     (instance,) = load_checked_instances([args.instance], allow_main=False)
     F.condition_of(instance)
@@ -114,7 +114,7 @@ def _check_kept_matches_frontier(group: str, pick: dict[str, Any], rows: list[di
 
 
 def cmd_summary(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.fit import labeleq as F
+    from cryowsp.baselines.fit import labeleq as F
 
     def read(path: Path | None) -> list[dict[str, Any]]:
         return (
@@ -177,7 +177,7 @@ def cmd_summary(args: argparse.Namespace) -> int:
         if g != F.CEILING
     ]
     payload = {
-        "schema": "cryowisp.f2.summary.v1",
+        "schema": "cryowsp.f2.summary.v1",
         "prereg": F.PREREG_F2,
         "instance_id": args.instance,
         "condition": condition,

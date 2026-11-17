@@ -24,12 +24,12 @@ from test_evalkit_instances_store import (  # noqa: F401
     write_condition_meta,
 )
 
-import cryowisp.evalkit.instances as instances
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit.evidence import EVIDENCE_RULE_V1, K_FAIL, evidence_seed_v1
-from cryowisp.evalkit.instances import (
+import cryowsp.evalkit.instances as instances
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit.evidence import EVIDENCE_RULE_V1, K_FAIL, evidence_seed_v1
+from cryowsp.evalkit.instances import (
     CONDITION_LEAK_WORDS,
     StaleInstanceError,
     active_instance_ids,
@@ -39,9 +39,9 @@ from cryowisp.evalkit.instances import (
     scan_for_tokens,
     supersede_instances,
 )
-from cryowisp.evalkit.metrics import sealed_readout
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.evalkit.targets import ConditionMismatch, deployment_splits, store_condition
+from cryowsp.evalkit.metrics import sealed_readout
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.evalkit.targets import ConditionMismatch, deployment_splits, store_condition
 
 
 @pytest.fixture
@@ -272,7 +272,7 @@ def test_drawn_conditions_are_dev_only(toy_store: ToyStore) -> None:  # noqa: F8
     """A main (or default, all-role) build of a drawn condition is refused before any file is read."""
     from test_evalkit_instances_store import DEV_PLAN
 
-    from cryowisp.evalkit.instances import build_deployment_instances
+    from cryowsp.evalkit.instances import build_deployment_instances
 
     for roles in (("main",), ("dev", "main")):
         with pytest.raises(ValueError, match="dev-only"):

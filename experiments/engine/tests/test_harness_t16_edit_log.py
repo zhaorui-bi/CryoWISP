@@ -24,12 +24,12 @@ from test_harness_learn import LearnStore, learn_store  # noqa: F401
 from test_harness_loop import SESSION_KWARGS, _round_one, _round_two, _sandbox, loop_store  # noqa: F401
 from test_harness_loop_v2 import _e11_session
 
-from cryowisp.common.identity import count_changed, load_params
-from cryowisp.harness import loop_stream, runner
-from cryowisp.harness.finalize import STATUS_DRY_RUN
-from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.leaks import scan_hint_words
-from cryowisp.harness.loop import (
+from cryowsp.common.identity import count_changed, load_params
+from cryowsp.harness import loop_stream, runner
+from cryowsp.harness.finalize import STATUS_DRY_RUN
+from cryowsp.harness.jsonio import file_sha256, read_json
+from cryowsp.harness.leaks import scan_hint_words
+from cryowsp.harness.loop import (
     EDIT_LOG_FILE,
     EDIT_LOG_SENTENCE,
     KEPT_RULE_LOOP_V2,
@@ -42,9 +42,9 @@ from cryowisp.harness.loop import (
     loop_kept_rule_v2,
     loop_kept_section,
 )
-from cryowisp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
-from cryowisp.harness.prompts import render_system
-from cryowisp.harness.scripted import ScriptedLauncher
+from cryowsp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
+from cryowsp.harness.prompts import render_system
+from cryowsp.harness.scripted import ScriptedLauncher
 
 PREREG_SENTENCE = (
     "edit_log.json lists every parameter entry that earlier rounds changed; those entries hold the "

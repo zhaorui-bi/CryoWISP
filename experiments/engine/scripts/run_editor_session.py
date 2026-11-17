@@ -17,22 +17,22 @@ Examples::
         --retention-floor-source floor.json --dry-run
     .venv/bin/python scripts/run_editor_session.py --instance <E10 id> --arm LEARN --repeat 0 --effort max \\
         --wall-timeout-min 90 --retention-floor-frac 0.005 --dry-run
-    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowisp.harness.e11 ids \\
+    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowsp.harness.e11 ids \\
         --condition <condition>) --arm LEARN --repeat 0 --effort max --wall-timeout-min 90 \\
         --retention-floor-frac 0.005 --dry-run
-    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowisp.harness.e11 ids \\
+    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowsp.harness.e11 ids \\
         --condition <condition>) --arm LEARN_BLIND --repeat 0 --effort max --wall-timeout-min 120 \\
         --retention-floor-frac 0.005 --dry-run
-    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowisp.harness.e11 ids \\
+    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowsp.harness.e11 ids \\
         --condition <condition>) --arm LEARN --repeat 0 --effort max --wall-timeout-min 120 \\
         --retention-floor-frac 0.005 --max-checks 2 --dry-run
-    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowisp.harness.e11 ids \\
+    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowsp.harness.e11 ids \\
         --condition gaussian_noise_s5) --arm LEARN --repeat 0 --effort max --wall-timeout-min 120 \\
         --retention-floor-frac 0.005 --e11-variant rule --dry-run
-    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowisp.harness.e11 ids \\
+    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowsp.harness.e11 ids \\
         --condition gaussian_noise_s5) --arm LEARN --repeat 0 --effort max --wall-timeout-min 120 \\
         --retention-floor-frac 0.005 --e11-variant unlabelled --dry-run
-    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowisp.evalkit.scanskill ids \\
+    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowsp.evalkit.scanskill ids \\
         --condition <condition>) --arm LEARN --repeat 0 --effort max --wall-timeout-min 120 \\
         --retention-floor-frac 0.005 --seqskill-variant scan_rule --lift-rel-frob --dry-run
 
@@ -44,7 +44,7 @@ information ladder's U (E11 without y_new); ``--e11-variant named`` (K0b: no dat
 ``named_nocheck`` (K0a: K0b without patch_check, one check after the session) run the same way on the same instance.
 
 A dry run assembles the trial, renders and leak-scans the prompts and runs the isolation self-test, without starting
-Claude Code; it writes under ``$CRYOWISP_RUNS/dry_runs``. Instances are found by dataset, seed and split role
+Claude Code; it writes under ``$CRYOWSP_RUNS/dry_runs``. Instances are found by dataset, seed and split role
 (``--list``), never by a remembered id. Main instances are refused unless ``--allow-main`` is given, which stays
 unused until the PREREG is frozen.
 """
@@ -56,10 +56,10 @@ import json
 import sys
 from pathlib import Path
 
-from cryowisp.harness.arms import ARMS
-from cryowisp.harness.e11 import VARIANTS as E11_VARIANTS
-from cryowisp.harness.instance import list_instances
-from cryowisp.harness.runner import (
+from cryowsp.harness.arms import ARMS
+from cryowsp.harness.e11 import VARIANTS as E11_VARIANTS
+from cryowsp.harness.instance import list_instances
+from cryowsp.harness.runner import (
     DEFAULT_CELL_TIMEOUT_S,
     DEFAULT_MAX_CELLS,
     DEFAULT_MODEL,
@@ -68,7 +68,7 @@ from cryowisp.harness.runner import (
     SYSTEM_PROMPT_MODES,
     run_session,
 )
-from cryowisp.harness.seqskill import VARIANTS as SEQSKILL_VARIANTS
+from cryowsp.harness.seqskill import VARIANTS as SEQSKILL_VARIANTS
 
 LIST_FIELDS = (
     "instance_id",
@@ -158,7 +158,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         type=float,
         default=None,
         help="program arm, dev only: keep only checked programs with score_old >= -round(frac x the "
-        "rows behind score_old) (kept rule joint-retain-v1, cryowisp.harness.retention); "
+        "rows behind score_old) (kept rule joint-retain-v1, cryowsp.harness.retention); "
         "default: the v1 rule",
     )
     parser.add_argument(
@@ -168,7 +168,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         metavar="SESSION_ID",
         help="program arm on an evidence-v1 instance, dev only (LEARN v3): put the kept programs "
         "of these earlier sessions and their check scores into the trial "
-        "(cryowisp.harness.library); default: no library",
+        "(cryowsp.harness.library); default: no library",
     )
     parser.add_argument(
         "--retention-floor-rows",
@@ -178,7 +178,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="program arm (required on a graphnew-v1 instance, PREREG E7, and on a policyskill-v1 "
         "instance, PREREG E14, in episodes): keep only checked "
         "programs with score_old >= S_OLD, an int <= 0 in rows of the check set behind "
-        "score_old (kept rule joint-retain-v1, floor_kind rows, cryowisp.harness.retention); "
+        "score_old (kept rule joint-retain-v1, floor_kind rows, cryowsp.harness.retention); "
         "excludes --retention-floor-frac",
     )
     parser.add_argument(
@@ -196,7 +196,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=None,
         help="seqskill-v1 instance only: 'standard' is the PREREG E5 view; 'rule_only' (PREREG E8) "
         "states the new operator's rule in model_spec.json and shows no row of it in the "
-        "experience (cryowisp.harness.seqskill); 'scan_rule' (PREREG E13) is the view of a "
+        "experience (cryowsp.harness.seqskill); 'scan_rule' (PREREG E13) is the view of a "
         "scanskill-v1 instance (an n id) and of no other, and needs --lift-rel-frob; default: "
         "standard",
     )
@@ -232,7 +232,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "condition, only the clean replay rows; the information ladder on its one instance: "
         "'unlabelled' (U) withholds y_new, 'named' (K0b) gives no data and names the capability, "
         "'named_nocheck' (K0a) is K0b without patch_check, checked once after the session "
-        "(cryowisp.harness.e11); default: standard",
+        "(cryowsp.harness.e11); default: standard",
     )
     args = parser.parse_args(argv)
     if not args.list:

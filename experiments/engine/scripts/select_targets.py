@@ -1,7 +1,7 @@
-"""Apply the pre-registered target rule (targets-v0, see cryowisp.evalkit.targets) to one dataset's selected models.
+"""Apply the pre-registered target rule (targets-v0, see cryowsp.evalkit.targets) to one dataset's selected models.
 
 Target pairs feed only evidence-v0 instances, which evidence-v1 superseded (user decision 2026-11-03). Writes
-$CRYOWISP_PRIVATE/<dataset>/models/<model_id>/targets.json for every selected dev and/or main model. An identical
+$CRYOWSP_PRIVATE/<dataset>/models/<model_id>/targets.json for every selected dev and/or main model. An identical
 existing file is kept; a different one is refused. The seed defaults are the development plan (main 0 and 1, dev
 100 and 101). Run after `source scripts/env.sh`.
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 
-from cryowisp.evalkit.targets import (
+from cryowsp.evalkit.targets import (
     DEFAULT_DEV_SEEDS,
     DEFAULT_MAIN_SEEDS,
     SPLIT_ROLES,
@@ -35,7 +35,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--dataset", required=True, help="dataset directory name under $CRYOWISP_PRIVATE")
+    parser.add_argument("--dataset", required=True, help="dataset directory name under $CRYOWSP_PRIVATE")
     parser.add_argument("--split-role", choices=("dev", "main", "all"), default="all")
     parser.add_argument("--main-seeds", type=_seeds, default=",".join(map(str, DEFAULT_MAIN_SEEDS)))
     parser.add_argument("--dev-seeds", type=_seeds, default=",".join(map(str, DEFAULT_DEV_SEEDS)))

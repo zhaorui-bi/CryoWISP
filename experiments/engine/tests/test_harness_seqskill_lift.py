@@ -17,23 +17,23 @@ import pytest
 from test_evalkit_seqskill import CONDITION, store  # noqa: F401
 from test_harness_fixtures import HarnessStore, harness_store, needs_sandbox, read_jsonl, scripted_session  # noqa: F401
 
-from cryowisp.analysis.session_info import session_info
-from cryowisp.evalkit import seqskill as Q
-from cryowisp.evalkit.devreadout import run_limits
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.harness import seqskill
-from cryowisp.harness.applying import ArmApplier
-from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC
-from cryowisp.harness.experience import REL_FROB_NOT_APPLIED
-from cryowisp.harness.finalize import KIND_CHECKED, write_final
-from cryowisp.harness.instance import InstanceRefused
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.prompts import Budgets, render_system, render_task
-from cryowisp.harness.runner import run_session
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.trial import TrialError, assemble
-from cryowisp.patch import PatchError, load_patch
+from cryowsp.analysis.session_info import session_info
+from cryowsp.evalkit import seqskill as Q
+from cryowsp.evalkit.devreadout import run_limits
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.harness import seqskill
+from cryowsp.harness.applying import ArmApplier
+from cryowsp.harness.arms import PROGRAM_MAX_CHANGED_FRAC
+from cryowsp.harness.experience import REL_FROB_NOT_APPLIED
+from cryowsp.harness.finalize import KIND_CHECKED, write_final
+from cryowsp.harness.instance import InstanceRefused
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.prompts import Budgets, render_system, render_task
+from cryowsp.harness.runner import run_session
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.trial import TrialError, assemble
+from cryowsp.patch import PatchError, load_patch
 
 RULE_ONLY = seqskill.RULE_ONLY
 STRINGS = 'HYPOTHESIS = "one large entry"\nPREDICTED_EFFECT = "changes the head only"\nimport numpy as np\n'
@@ -61,7 +61,7 @@ def seq_id(store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """The toy seqskill instance built, with a runs root for sessions."""
     runs = tmp_path / "runs"
     runs.mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(runs))
     (row,) = Q.build_seqskill_instances(CONDITION)
     return str(row["instance_id"])
 
@@ -139,7 +139,7 @@ def test_the_lift_is_refused_outside_a_seqskill_learn_session(seq_id: str, tmp_p
     (tmp_path / "m2" / "private").mkdir(parents=True)
     with pytest.raises(TrialError, match="LEARN arm only"):
         assemble(root, "M2", tmp_path / "m2", lift_rel_frob=True)
-    assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
+    assert not list(Path(os.environ["CRYOWSP_RUNS"]).rglob("session.json"))  # refused before any write
 
 
 def test_the_lift_is_refused_for_an_evidence_v1_instance(

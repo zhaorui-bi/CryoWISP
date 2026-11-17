@@ -19,11 +19,11 @@ from test_harness_fixtures import (  # noqa: F401
     scripted_session,
 )
 
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import load_params
-from cryowisp.evalkit.evidence import evidence_content_sha256, load_evidence
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.evalkit.patch_check import load_forward, predict
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import load_params
+from cryowsp.evalkit.evidence import evidence_content_sha256, load_evidence
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.evalkit.patch_check import load_forward, predict
 
 pytestmark = needs_sandbox
 

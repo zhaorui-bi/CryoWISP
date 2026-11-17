@@ -19,7 +19,7 @@ mech = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = mech
 SPEC.loader.exec_module(mech)
 
-from cryowisp.common.identity import params_sha256  # noqa: E402
+from cryowsp.common.identity import params_sha256  # noqa: E402
 
 D, HIDDEN, RANK = 6, 12, 2
 UNITS_PROGRAM_ORDER = [
@@ -292,9 +292,9 @@ def test_token_spread() -> None:
 
 
 def test_m06b_change_is_one_line_of_the_program() -> None:
-    runs = os.environ.get("CRYOWISP_RUNS")
+    runs = os.environ.get("CRYOWSP_RUNS")
     if not runs:
-        pytest.skip("CRYOWISP_RUNS is not set: the contrast final is read from the run store")
+        pytest.skip("CRYOWSP_RUNS is not set: the contrast final is read from the run store")
     program = Path(runs) / "sessions" / mech.SESSION_ID / "final" / mech.PROGRAM_FILE
     if not program.exists():
         pytest.skip("the contrast final is not in this store")

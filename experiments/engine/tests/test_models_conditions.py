@@ -17,12 +17,12 @@ from types import ModuleType
 import numpy as np
 import pytest
 
-from cryowisp.data import conditions as C
-from cryowisp.data import store
-from cryowisp.data.registry import CIFAR10_CLASSES, SPLIT_SEED
-from cryowisp.models.export import read_index
-from cryowisp.models.forward_gen import render_forward, write_forward
-from cryowisp.models.importer import evaluate_on_condition, import_models
+from cryowsp.data import conditions as C
+from cryowsp.data import store
+from cryowsp.data.registry import CIFAR10_CLASSES, SPLIT_SEED
+from cryowsp.models.export import read_index
+from cryowsp.models.forward_gen import render_forward, write_forward
+from cryowsp.models.importer import evaluate_on_condition, import_models
 
 REPO = Path(__file__).resolve().parents[1]
 SIZES = {"train": 64, "V_select": 32, "V_evidence": 16, "V_check": 16}
@@ -41,8 +41,8 @@ def _train_base_module() -> ModuleType:
 def _make_store(root: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.ndarray]:
     for name in ("private", "sealed"):
         (root / name).mkdir(parents=True)
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(root / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(root / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(root / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(root / "sealed"))
     rng = np.random.default_rng(5)
     splits_meta = {}
     for offset, (split, n) in enumerate(SIZES.items()):
@@ -60,7 +60,7 @@ def _make_store(root: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.nda
     mean, std = store.channel_stats(store.load_split("cifar10", "train")["x"])
     forward_sha = write_forward(store.forward_path("cifar10"), render_forward((3, 32, 32), mean, std, 10))
     manifest = {
-        "schema": "cryowisp.dataset.v0",
+        "schema": "cryowsp.dataset.v0",
         "dataset": "cifar10",
         "source": "CIFAR10",
         "class_names": list(CIFAR10_CLASSES),
@@ -69,7 +69,7 @@ def _make_store(root: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.nda
         "split_seed": SPLIT_SEED,
         "splits": splits_meta,
         "test": {
-            "location": "$CRYOWISP_SEALED/cifar10/test.npz",
+            "location": "$CRYOWSP_SEALED/cifar10/test.npz",
             "n": 20,
             "sha256": store.split_sha256(test),
         },
@@ -144,8 +144,8 @@ def test_ceiling_export_base_eval_and_import(tmp_path: Path, monkeypatch: pytest
     local_root = tmp_path / "local"
     shutil.copytree(tmp_path / "remote", local_root)
     shutil.rmtree(local_root / "private" / "cifar10" / "conditions" / CONDITION / "models")
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(local_root / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(local_root / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(local_root / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(local_root / "sealed"))
     checks = import_models("cifar10", CONDITION, run_dir, note="test import")
     assert [c["model_id"] for c in checks] == [ceiling["model_id"]]
     assert checks[0]["local_vselect_acc"] == ceiling["vselect_acc"]

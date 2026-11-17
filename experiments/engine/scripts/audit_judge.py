@@ -1,4 +1,4 @@
-"""Resolve the SOFT flags of a session's static audit with the frozen LLM judge (``cryowisp/audit/judge_prompt.md``).
+"""Resolve the SOFT flags of a session's static audit with the frozen LLM judge (``cryowsp/audit/judge_prompt.md``).
 
 Reads ``<session_dir>/logs/audit.json`` (written by ``scripts/audit_session.py``, or ``--report``) and the cell log,
 and writes ``logs/audit_judge.json`` next to the report. The judge is ``claude -p`` with no tools, no settings, no MCP
@@ -11,7 +11,7 @@ badly (a record with status failed is written), 2 when the static report is miss
 
 Example::
 
-    .venv/bin/python scripts/audit_judge.py "$CRYOWISP_RUNS/sessions/<session_id>" --model claude-opus-5-5
+    .venv/bin/python scripts/audit_judge.py "$CRYOWSP_RUNS/sessions/<session_id>" --model claude-opus-5-5
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ EXIT_INPUT = 2
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
-    from cryowisp.audit.judge import DEFAULT_TIMEOUT_S
+    from cryowsp.audit.judge import DEFAULT_TIMEOUT_S
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -52,8 +52,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    from cryowisp.audit.judge import JudgeError, JudgeFailed, run_judge
-    from cryowisp.audit.session import AuditInputError
+    from cryowsp.audit.judge import JudgeError, JudgeFailed, run_judge
+    from cryowsp.audit.session import AuditInputError
 
     report = args.report if args.report is not None else args.session_dir / "logs" / "audit.json"
     if not report.is_file():

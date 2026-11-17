@@ -1,4 +1,4 @@
-"""Train, import and report the E9 ResNet-20 students (``cryowisp.models.resnet20``, ``cryowisp.models.fscil_export``).
+"""Train, import and report the E9 ResNet-20 students (``cryowsp.models.resnet20``, ``cryowsp.models.fscil_export``).
 
 Groups:
 
@@ -16,7 +16,7 @@ marks every student smoke (the importer refuses them) and never writes the pendi
 Usage:
     source scripts/env.sh
     .venv/bin/python scripts/train_fscil.py --group train --role fscil_base --seeds 100 --device cuda
-    .venv/bin/python scripts/train_fscil.py --group import --run-dir $CRYOWISP_PRIVATE/nscc_runs/RUN --note "..."
+    .venv/bin/python scripts/train_fscil.py --group import --run-dir $CRYOWSP_PRIVATE/nscc_runs/RUN --note "..."
     .venv/bin/python scripts/train_fscil.py --group report
 """
 
@@ -31,11 +31,11 @@ from typing import Any
 
 import torch
 
-from cryowisp.data import cifar100_fscil as C
-from cryowisp.data.store import read_dataset_json, read_json, write_json
-from cryowisp.models import resnet20 as R
-from cryowisp.models.export import fewshot_models_dir, read_fewshot_index
-from cryowisp.models.fscil_export import (
+from cryowsp.data import cifar100_fscil as C
+from cryowsp.data.store import read_dataset_json, read_json, write_json
+from cryowsp.models import resnet20 as R
+from cryowsp.models.export import fewshot_models_dir, read_fewshot_index
+from cryowsp.models.fscil_export import (
     FSCIL_ROLES,
     export_fscil_model,
     import_fscil_models,
@@ -43,8 +43,8 @@ from cryowisp.models.fscil_export import (
     pending_models_dir,
     training_rows,
 )
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.train import configure_determinism
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.train import configure_determinism
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_EVERY = 10

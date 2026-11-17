@@ -1,4 +1,4 @@
-"""E9 v2: check score fscil-cb-v1 and kept rule fscil-retain-v2 (cryowisp.evalkit.fscil)."""
+"""E9 v2: check score fscil-cb-v1 and kept rule fscil-retain-v2 (cryowsp.evalkit.fscil)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import math
 import numpy as np
 import pytest
 
-from cryowisp.evalkit import fscil as FS
+from cryowsp.evalkit import fscil as FS
 
 
 def _check_labels(session: int, per_base: int = 30, per_inc: int = 100) -> tuple[np.ndarray, np.ndarray]:

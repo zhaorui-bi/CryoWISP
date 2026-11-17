@@ -1,5 +1,5 @@
 {
- "schema": "cryowisp.t04_v6_roles.v1",
+ "schema": "cryowsp.t04_v6_roles.v1",
  "list": "finals_v6.json",
  "list_sha256": "7240eb42e7874851c9e3d8ea299f963d19711b32dca3cff95fbec8712b860802",
  "required_only": false,

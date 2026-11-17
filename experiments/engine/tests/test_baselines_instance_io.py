@@ -1,4 +1,4 @@
-"""Tests for the shared delta-patch writer and oracle factory (cryowisp.baselines.instance_io)."""
+"""Tests for the shared delta-patch writer and oracle factory (cryowsp.baselines.instance_io)."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.baselines.instance_io import INDEX_FORM_MAX_ENTRIES, write_delta_patch
-from cryowisp.common.identity import params_sha256
-from cryowisp.patch import MAX_PATCH_JSON_BYTES, Limits, apply_patch_file
+from cryowsp.baselines.instance_io import INDEX_FORM_MAX_ENTRIES, write_delta_patch
+from cryowsp.common.identity import params_sha256
+from cryowsp.patch import MAX_PATCH_JSON_BYTES, Limits, apply_patch_file
 
 
 def _base(rng: np.random.Generator) -> dict[str, np.ndarray]:

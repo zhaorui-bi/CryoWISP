@@ -1,11 +1,11 @@
-"""The E7 Correct-and-Smooth instrument (``cryowisp.analysis.graphnew_cs``) on a small path graph."""
+"""The E7 Correct-and-Smooth instrument (``cryowsp.analysis.graphnew_cs``) on a small path graph."""
 
 from __future__ import annotations
 
 import numpy as np
 import torch
 
-from cryowisp.analysis import graphnew_cs as C
+from cryowsp.analysis import graphnew_cs as C
 
 
 def _path(n: int) -> tuple[np.ndarray, np.ndarray]:

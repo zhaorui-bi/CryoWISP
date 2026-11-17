@@ -1,4 +1,4 @@
-"""Train PREREG F2's fine-tuning trajectories on the GPU (``cryowisp.baselines.fit.labeleq``; NSCC request R9).
+"""Train PREREG F2's fine-tuning trajectories on the GPU (``cryowsp.baselines.fit.labeleq``; NSCC request R9).
 
 ``--plan main``: every trajectory of the given conditions (``f2_trajectories``: 6 N x 4 lr per condition, to 1000
 steps with a checkpoint at 100, and to 5000 steps at N = 40,000), longest first. ``--plan smoke``: the timing smoke
@@ -7,7 +7,7 @@ longer trajectory equals a 100-step trajectory, bit for bit.
 
 The parent runs ``--concurrent`` child processes at a time on the one device, each one trajectory with
 ``--num-workers`` loader workers, and starts the next when one exits. Each child writes its checkpoints under
-``--out-root`` (model.npz and record.json per checkpoint, ``cryowisp.baselines.fit.labeleq.checkpoint_dir``) and its
+``--out-root`` (model.npz and record.json per checkpoint, ``cryowsp.baselines.fit.labeleq.checkpoint_dir``) and its
 index rows to a row file; the parent writes ``<out-root>/index.json`` once every child exited 0, and otherwise
 ``failures.json`` and exit status 1 (the finished checkpoints stay). The job reads cifar10_vl7's dataset.json, its
 train split, the student's model.npz and the F2 files (f2_data.json, subsets.npz, the corrupted train arrays); no
@@ -33,7 +33,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _plan(name: str, conditions: list[str]) -> list[Any]:
-    from cryowisp.baselines.fit import labeleq as F
+    from cryowsp.baselines.fit import labeleq as F
 
     if name == "smoke":
         return F.smoke_trajectories()
@@ -43,9 +43,9 @@ def _plan(name: str, conditions: list[str]) -> list[Any]:
 def run_child(args: argparse.Namespace) -> int:
     import torch
 
-    from cryowisp.baselines.fit import labeleq as F
-    from cryowisp.models.runinfo import run_info
-    from cryowisp.models.train import configure_determinism
+    from cryowsp.baselines.fit import labeleq as F
+    from cryowsp.models.runinfo import run_info
+    from cryowsp.models.train import configure_determinism
 
     (trajectory,) = [t for t in _plan(args.plan, args.conditions) if t.name == args.child]
     device = torch.device(args.device)
@@ -108,7 +108,7 @@ def _command(args: argparse.Namespace, name: str, row_file: Path) -> list[str]:
 
 
 def run_parent(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.fit import labeleq as F
+    from cryowsp.baselines.fit import labeleq as F
 
     trajectories = _plan(args.plan, args.conditions)
     root = Path(args.out_root)
@@ -177,7 +177,7 @@ def run_parent(args: argparse.Namespace) -> int:
         return 1
     rows = [row for t in trajectories for row in json.loads((rows_dir / f"{t.name}.json").read_text())]
     index = {
-        "schema": "cryowisp.f2.index.v1",
+        "schema": "cryowsp.f2.index.v1",
         "plan": args.plan,
         "conditions": args.conditions,
         "seed": args.seed,

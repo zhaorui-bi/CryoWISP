@@ -1,4 +1,4 @@
-"""Tests for the pre-registered target rule targets-v0 (cryowisp.evalkit.targets)."""
+"""Tests for the pre-registered target rule targets-v0 (cryowsp.evalkit.targets)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from test_evalkit_instances_store import (  # noqa: F401
     toy_store,
 )
 
-from cryowisp.evalkit.targets import (
+from cryowsp.evalkit.targets import (
     K_FAIL,
     MIN_VCHECK,
     RULE_TEXT,

@@ -12,8 +12,8 @@ set (for example list v4's E11_stream_W1_contrast, the ViT gaussian final's chil
 one ``vision_range`` entry (source kind ``range``) whose network is the v2 entry's source copied verbatim.
 
 Outputs: the list (status draft, approval null) and the reuse map, one row per cell of T07's table saying where its
-test cell comes from. Reads $CRYOWISP_RUNS (the T07 record) and the instances' private.json; opens nothing under
-$CRYOWISP_SEALED.
+test cell comes from. Reads $CRYOWSP_RUNS (the T07 record) and the instances' private.json; opens nothing under
+$CRYOWSP_SEALED.
 
     .venv/bin/python scripts/sealed/make_finals_v5.py --out scripts/sealed/finals_v5.json \
         --reuse-out scripts/sealed/finals_v5_reused.json --network-list scripts/sealed/finals_v2.json \
@@ -29,8 +29,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from cryowisp.common.paths import runs_dir
-from cryowisp.evalkit import sealed_finals as SF
+from cryowsp.common.paths import runs_dir
+from cryowsp.evalkit import sealed_finals as SF
 
 T07_RECORD = "t07/r38_20261107_124729_t07_r38_main_e4e638836a15/t07_table.json"
 T07_RECORD_SHA256 = "55982f0da04b35140b494022768e64e4f0aa2115f7aff4084fbd2453265fa556"
@@ -187,11 +187,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     note = (
         'List v5 of the sealed read (PREREG "T07 sealed read (list v5)"; user 2026-11-07 about 13:40 Beijing via '
-        'CRYOWISP-main, "2、要"), built by scripts/sealed/make_finals_v5.py from T07\'s table of record '
+        'CRYOWSP-main, "2、要"), built by scripts/sealed/make_finals_v5.py from T07\'s table of record '
         f"({T07_RECORD}, sha256 {T07_RECORD_SHA256[:16]}...). T07's eight networks (B finals of record and F1's kept "
         "picks at floor -20, sources copied from list v2) on T07's 25 corruption sets, each read on the official "
         "CIFAR-10-C test rows of its corruption and severity (10,000 per set) through the range index "
-        "($CRYOWISP_PRIVATE/<dataset>/t07_range/<set>/dataset.json). "
+        "($CRYOWSP_PRIVATE/<dataset>/t07_range/<set>/dataset.json). "
         f"{len(entries)} vision_range entries ({', '.join(f'{k} {v}' for k, v in counts.items())}). "
         f"{len(reused)} of T07's {len(cells)} cells are not read again; their test cells are the earlier reads: "
         f"{reuse_text}. Each entry is dev-checked equal to its T07 row and predictions on NSCC before the read. Read "
@@ -208,7 +208,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     SF.load_list(args.out)  # the list validates as the pipeline reads it
     reuse = {
-        "schema": "cryowisp.t07_v5_cells.v1",
+        "schema": "cryowsp.t07_v5_cells.v1",
         "t07_record": T07_RECORD,
         "t07_record_sha256": T07_RECORD_SHA256,
         "list": args.out.name,

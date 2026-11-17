@@ -10,7 +10,7 @@ Run each mode in its own process, inside a capped scope and under ``/usr/bin/tim
     systemd-run --user --scope -p MemoryMax=6G -p MemorySwapMax=0 /usr/bin/time -v \\
         .venv/bin/python scripts/dev/e7_memory_peaks.py --instance g06de3fa0 --what forward
 
-The sandboxed program run of a LEARN session is the harness's to measure (cryowisp.harness), not this script's.
+The sandboxed program run of a LEARN session is the harness's to measure (cryowsp.harness), not this script's.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     sys.dont_write_bytecode = True
     import numpy as np
 
-    from cryowisp.evalkit import graphnew as GN
+    from cryowsp.evalkit import graphnew as GN
 
     phases: dict[str, dict[str, float]] = {}
     started = time.perf_counter()

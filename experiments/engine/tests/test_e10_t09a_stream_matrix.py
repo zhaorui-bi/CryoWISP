@@ -33,7 +33,7 @@ def _record() -> dict:
                 "readouts": readouts,
             }
         )
-    return {"schema": "cryowisp.harness.loop_stream.v0", "instances": IDS, "rounds": rounds}
+    return {"schema": "cryowsp.harness.loop_stream.v0", "instances": IDS, "rounds": rounds}
 
 
 def test_readings_match_hand_computation() -> None:

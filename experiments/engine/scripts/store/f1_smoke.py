@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     opened: set[str] = set()
     store_roots = tuple(
         os.path.realpath(os.environ[name]) + os.sep
-        for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS")
+        for name in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS")
     )
 
     def hook(event: str, hook_args: tuple) -> None:
@@ -47,13 +47,13 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import load_checked_instances
-    from cryowisp.baselines.fit.grad import adam_checkpoints
-    from cryowisp.baselines.fit.runner import load_joint_evidence, read_model_spec
-    from cryowisp.baselines.fit.torch_forward import architecture_from, images_tensor, trainable_tensors
-    from cryowisp.evalkit import devreadout
-    from cryowisp.evalkit.companions import clean_companion, make_joint_oracle
-    from cryowisp.evalkit.patch_check import predict
+    from cryowsp.baselines.fit.cli import load_checked_instances
+    from cryowsp.baselines.fit.grad import adam_checkpoints
+    from cryowsp.baselines.fit.runner import load_joint_evidence, read_model_spec
+    from cryowsp.baselines.fit.torch_forward import architecture_from, images_tensor, trainable_tensors
+    from cryowsp.evalkit import devreadout
+    from cryowsp.evalkit.companions import clean_companion, make_joint_oracle
+    from cryowsp.evalkit.patch_check import predict
 
     def emit(**record: object) -> None:
         print(json.dumps(record), flush=True)
@@ -66,9 +66,9 @@ def main(argv: list[str] | None = None) -> int:
         torch=torch.__version__,
         torch_threads=torch.get_num_threads(),
         nproc=os.cpu_count(),
-        cryowisp_private=os.environ.get("CRYOWISP_PRIVATE"),
-        cryowisp_runs=os.environ.get("CRYOWISP_RUNS"),
-        sealed_entries=len(os.listdir(os.environ["CRYOWISP_SEALED"])),
+        cryowsp_private=os.environ.get("CRYOWSP_PRIVATE"),
+        cryowsp_runs=os.environ.get("CRYOWSP_RUNS"),
+        sealed_entries=len(os.listdir(os.environ["CRYOWSP_SEALED"])),
     )
     for instance_id in args.instances:
         t0 = time.perf_counter()

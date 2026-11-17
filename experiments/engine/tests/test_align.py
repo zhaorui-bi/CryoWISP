@@ -1,4 +1,4 @@
-"""PREREG F6b's alignment (``cryowisp.analysis.align``) on a ViT-Lite-7/4 student: a randomly permuted copy is recovered
+"""PREREG F6b's alignment (``cryowsp.analysis.align``) on a ViT-Lite-7/4 student: a randomly permuted copy is recovered
 exactly, an edit mapped through the alignment does the same thing in both coordinate systems, and the validity gate
 passes for the symmetry and fails when a tensor is left unpermuted."""
 
@@ -11,10 +11,10 @@ import numpy as np
 import pytest
 from test_e11_refs import MEAN, STD, _images, _student
 
-from cryowisp.analysis import align as A
-from cryowisp.analysis import nullspace as N
-from cryowisp.models import vitlite as V
-from cryowisp.models.forward_gen import render_vitlite_forward
+from cryowsp.analysis import align as A
+from cryowsp.analysis import nullspace as N
+from cryowsp.models import vitlite as V
+from cryowsp.models.forward_gen import render_vitlite_forward
 
 HIDDEN_BLOCKS = (2, 4)
 

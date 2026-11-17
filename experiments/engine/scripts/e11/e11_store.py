@@ -1,9 +1,9 @@
-"""PREREG E11 store steps in the project environment (``cryowisp.data.e11``, ``cryowisp.models.e11_export``).
+"""PREREG E11 store steps in the project environment (``cryowsp.data.e11``, ``cryowsp.models.e11_export``).
 
     source scripts/env.sh
     python scripts/e11/e11_store.py clean
     python scripts/e11/e11_store.py condition gaussian_noise_s5 defocus_blur_s5 snow_s5 contrast_s5
-    python scripts/e11/e11_store.py import --run-dir $CRYOWISP_PRIVATE/nscc_runs/RUN --note "..."
+    python scripts/e11/e11_store.py import --run-dir $CRYOWSP_PRIVATE/nscc_runs/RUN --note "..."
     python scripts/e11/e11_store.py headroom --seed 100 --out FILE
     OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4 python scripts/e11/e11_store.py timing --seed 100
 
@@ -26,10 +26,10 @@ from pathlib import Path
 
 import numpy as np
 
-from cryowisp.data import e11 as D
-from cryowisp.data.store import list_conditions, load_split, read_dataset_json, split_sha256
-from cryowisp.models import e11_export as E
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import e11 as D
+from cryowsp.data.store import list_conditions, load_split, read_dataset_json, split_sha256
+from cryowsp.models import e11_export as E
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HEADROOM_POINTS = 15.0
@@ -39,9 +39,9 @@ THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
 def _student(seed: int) -> tuple[dict, object, str, dict]:
-    from cryowisp.common.identity import load_params, params_sha256
-    from cryowisp.data.store import models_dir
-    from cryowisp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
+    from cryowsp.common.identity import load_params, params_sha256
+    from cryowsp.data.store import models_dir
+    from cryowsp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
 
     meta = read_dataset_meta(D.DATASET)
     forward, forward_sha, _ = load_dataset_forward(D.DATASET, meta)
@@ -85,7 +85,7 @@ def _headroom(seed: int, out: Path) -> dict:
             "runs": gap >= HEADROOM_POINTS,
         }
     record = {
-        "schema": "cryowisp.e11.headroom.v1",
+        "schema": "cryowsp.e11.headroom.v1",
         "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
         "V_select (PREREG E11 on E10's rule, before any instance)",
         **student,
@@ -113,7 +113,7 @@ def _timing(seed: int, out: Path | None) -> dict:
         forward(params, x)
         times.append(time.perf_counter() - started)
     record = {
-        "schema": "cryowisp.e11.forward_timing.v1",
+        "schema": "cryowsp.e11.forward_timing.v1",
         **student,
         "seed": seed,
         "forward_sha256": forward_sha,

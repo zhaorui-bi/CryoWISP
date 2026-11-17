@@ -42,7 +42,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "cryowisp.t06.tradeoff_points.v0"
+SCHEMA = "cryowsp.t06.tradeoff_points.v0"
 POINTS = 100.0
 BOUNDS: tuple[str, ...] = ("0", "-0.5", "-1.0", "-2.0")  # V_check clean change, points (PREREG T06)
 KEPT_FLOOR = -20  # joint-retain-v1, the frozen kept rule, used only to check the picks of record
@@ -1345,13 +1345,13 @@ def build(store: Store, repo: Path) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    runs_default = os.environ.get("CRYOWISP_RUNS")
+    runs_default = os.environ.get("CRYOWSP_RUNS")
     ap.add_argument(
         "--runs-root",
         type=Path,
         default=Path(runs_default) if runs_default else None,
         required=not runs_default,
-        help="the store's runs/ (read only); defaults to CRYOWISP_RUNS",
+        help="the store's runs/ (read only); defaults to CRYOWSP_RUNS",
     )
     ap.add_argument(
         "--instances-root",

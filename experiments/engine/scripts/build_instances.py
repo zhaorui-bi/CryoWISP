@@ -1,9 +1,9 @@
-"""Build the repair instances of one dataset (see cryowisp.evalkit.instances).
+"""Build the repair instances of one dataset (see cryowsp.evalkit.instances).
 
 Rule evidence-v1 (default): one instance per selected model for a deployment condition (default "deploy").
 Rule evidence-v0: one instance per chosen target pair from the models' targets.json (run select_targets.py first).
 
-Writes $CRYOWISP_PRIVATE/instances/<instance_id>/ and $CRYOWISP_PRIVATE/instances/index.json. Existing active instances with
+Writes $CRYOWSP_PRIVATE/instances/<instance_id>/ and $CRYOWSP_PRIVATE/instances/index.json. Existing active instances with
 the same key are verified and reused; a difference is refused. --supersede-rule first retires every active instance
 of the dataset built under that rule, for evidence-v1 only those of the --condition being built (rows move to
 "superseded" in index.json, directories stay in place, reason logged to changes.jsonl). Dev models are built before
@@ -24,8 +24,8 @@ import argparse
 from collections.abc import Callable, Sequence
 from typing import TypeVar
 
-from cryowisp.evalkit.evidence import EVIDENCE_RULE, EVIDENCE_RULE_V1
-from cryowisp.evalkit.instances import (
+from cryowsp.evalkit.evidence import EVIDENCE_RULE, EVIDENCE_RULE_V1
+from cryowsp.evalkit.instances import (
     DEFAULT_DECOYS,
     active_instance_ids,
     build_dataset_instances,
@@ -34,7 +34,7 @@ from cryowisp.evalkit.instances import (
     parse_decoys,
     supersede_instances,
 )
-from cryowisp.evalkit.targets import (
+from cryowsp.evalkit.targets import (
     DEFAULT_DEV_SEEDS,
     DEFAULT_MAIN_SEEDS,
     DEPLOY_CONDITION,
@@ -61,7 +61,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--dataset", required=True, help="dataset directory name under $CRYOWISP_PRIVATE")
+    parser.add_argument("--dataset", required=True, help="dataset directory name under $CRYOWSP_PRIVATE")
     parser.add_argument(
         "--evidence-rule", choices=(EVIDENCE_RULE_V1, EVIDENCE_RULE), default=EVIDENCE_RULE_V1
     )

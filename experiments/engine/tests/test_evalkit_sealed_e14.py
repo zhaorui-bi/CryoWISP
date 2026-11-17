@@ -1,4 +1,4 @@
-"""Tests for the policy_success family of the sealed read (cryowisp.evalkit.sealed_e14, PREREG E14) on a scratch store.
+"""Tests for the policy_success family of the sealed read (cryowsp.evalkit.sealed_e14, PREREG E14) on a scratch store.
 
 The store and instance are test_e14_refs's (an untrained film_policy recorded as a gated base, V_check and V_select
 cut to 6 episodes each). This module adds a sealed record of 3 old and 3 new seeds (``write_sealed_record`` with the
@@ -22,24 +22,24 @@ import pytest
 
 pytest.importorskip("torch")
 pytest.importorskip("minigrid")
-pytest.importorskip("cryowisp.evalkit.e14")
+pytest.importorskip("cryowsp.evalkit.e14")
 
 from test_e14_refs import instance_id, store  # noqa: E402, F401
 
-from cryowisp.baselines.fit.e14refs import E14_REF_LABEL  # noqa: E402
-from cryowisp.baselines.fit.runner import baseline_run_dir  # noqa: E402
-from cryowisp.baselines.instance_io import write_delta_patch  # noqa: E402
-from cryowisp.common.identity import params_sha256  # noqa: E402
-from cryowisp.common.paths import runs_dir, sealed_dir  # noqa: E402
-from cryowisp.data import e14 as D  # noqa: E402
-from cryowisp.evalkit import devreadout  # noqa: E402
-from cryowisp.evalkit import e14 as E  # noqa: E402
-from cryowisp.evalkit import e14read as ER  # noqa: E402
-from cryowisp.evalkit import sealed_e14 as SE  # noqa: E402
-from cryowisp.evalkit import sealed_finals as SF  # noqa: E402
-from cryowisp.evalkit.e14read import read_run  # noqa: E402
-from cryowisp.evalkit.sealed import read_registry  # noqa: E402
-from cryowisp.patch import Limits, task_limits  # noqa: E402
+from cryowsp.baselines.fit.e14refs import E14_REF_LABEL  # noqa: E402
+from cryowsp.baselines.fit.runner import baseline_run_dir  # noqa: E402
+from cryowsp.baselines.instance_io import write_delta_patch  # noqa: E402
+from cryowsp.common.identity import params_sha256  # noqa: E402
+from cryowsp.common.paths import runs_dir, sealed_dir  # noqa: E402
+from cryowsp.data import e14 as D  # noqa: E402
+from cryowsp.evalkit import devreadout  # noqa: E402
+from cryowsp.evalkit import e14 as E  # noqa: E402
+from cryowsp.evalkit import e14read as ER  # noqa: E402
+from cryowsp.evalkit import sealed_e14 as SE  # noqa: E402
+from cryowsp.evalkit import sealed_finals as SF  # noqa: E402
+from cryowsp.evalkit.e14read import read_run  # noqa: E402
+from cryowsp.evalkit.sealed import read_registry  # noqa: E402
+from cryowsp.patch import Limits, task_limits  # noqa: E402
 
 SESSION = "s0e14000000000001"
 METHOD = "bc_emb_head"
@@ -285,7 +285,7 @@ def _approved(toy: PolicyToy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 def _sealed_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     copy = tmp_path / "sealed_copy"
     shutil.copytree(sealed_dir(), copy)
-    monkeypatch.setenv("CRYOWISP_SEALED", str(copy))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(copy))
     return copy
 
 

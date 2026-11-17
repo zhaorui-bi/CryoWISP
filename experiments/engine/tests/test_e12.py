@@ -16,23 +16,23 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.baselines.fit import bnrefs as B
-from cryowisp.baselines.fit import cli as C
-from cryowisp.baselines.fit import ftcompare as FT
-from cryowisp.baselines.fit import rules as RU
-from cryowisp.baselines.fit import torch_forward as TF
-from cryowisp.baselines.fit.runner import Evidence
-from cryowisp.baselines.instance_io import write_delta_patch
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit.e10 import e10_program_limits
-from cryowisp.evalkit.instances import condition_leak_tokens, leak_tokens, scan_for_tokens
-from cryowisp.harness import e12 as H
-from cryowisp.harness.arms import applied_limits
-from cryowisp.models import resnet18up as M
-from cryowisp.models.forward_gen import render_resnet18up_forward
-from cryowisp.patch import Limits, apply_patch, load_patch, task_limits
-from cryowisp.patch.errors import PatchError
-from cryowisp.patch.limits import dense_delta_bytes
+from cryowsp.baselines.fit import bnrefs as B
+from cryowsp.baselines.fit import cli as C
+from cryowsp.baselines.fit import ftcompare as FT
+from cryowsp.baselines.fit import rules as RU
+from cryowsp.baselines.fit import torch_forward as TF
+from cryowsp.baselines.fit.runner import Evidence
+from cryowsp.baselines.instance_io import write_delta_patch
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit.e10 import e10_program_limits
+from cryowsp.evalkit.instances import condition_leak_tokens, leak_tokens, scan_for_tokens
+from cryowsp.harness import e12 as H
+from cryowsp.harness.arms import applied_limits
+from cryowsp.models import resnet18up as M
+from cryowsp.models.forward_gen import render_resnet18up_forward
+from cryowsp.patch import Limits, apply_patch, load_patch, task_limits
+from cryowsp.patch.errors import PatchError
+from cryowsp.patch.limits import dense_delta_bytes
 
 R = 64
 CLASSES = [f"c{i}" for i in range(10)]
@@ -194,7 +194,7 @@ def test_input_stats_fold_scales_bn1_weight_and_matches_forward_py_on_the_transf
         assert changed == {"conv1.weight", "bn1.running_mean", "bn1.weight"}
         np.testing.assert_array_equal(fold.child["bn1.running_var"], params["bn1.running_var"])
         patch = {
-            "schema": "cryowisp.patch.v0",
+            "schema": "cryowsp.patch.v0",
             "parent_sha256": sha,
             "hypothesis": "h",
             "predicted_effect": "p",

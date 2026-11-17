@@ -11,7 +11,7 @@ holds for it (refused unless the record's text contains that sha256). ImageNetV2
 Data: the archive whose sha256 the download record holds (scripts/t05/download_imagenetv2.pbs). Each member
 ``<folder>/<file>.jpeg`` is one image whose label is the folder number (0 .. 999, the standard ImageNet class index,
 the order of in1k_t04's class names); the archive must hold 10,000 images, 10 per class. Each image goes through
-T04's clean pipeline (``cryowisp.data.t04.center_crop_u8``: RGB, resize the shorter side to 256 bilinear with antialias,
+T04's clean pipeline (``cryowsp.data.t04.center_crop_u8``: RGB, resize the shorter side to 256 bilinear with antialias,
 center crop 224) and in1k_t04's forward.py (sha256 checked against its dataset.json).
 
 Per network: top-1 accuracy, and against the base: fixed (base wrong, network right), broken (base right, network
@@ -32,9 +32,9 @@ from pathlib import Path
 
 import numpy as np
 
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.data import t04 as T
-from cryowisp.evalkit.targets import load_dataset_forward, read_dataset_meta
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.data import t04 as T
+from cryowsp.evalkit.targets import load_dataset_forward, read_dataset_meta
 
 N_IMAGES = 10_000
 PER_CLASS = 10
@@ -163,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
     members_path = args.out.with_suffix(".members.jsonl")
     members_path.write_text(members_text, encoding="utf-8")
     record = {
-        "schema": "cryowisp.t05.readout.v1",
+        "schema": "cryowsp.t05.readout.v1",
         "archive": {
             "path": str(args.archive),
             "sha256": archive_sha,
@@ -176,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
             "sha256": hashlib.sha256(members_text.encode()).hexdigest(),
             "n": len(records),
         },
-        "pipeline": "cryowisp.data.t04.center_crop_u8, then in1k_t04 forward.py",
+        "pipeline": "cryowsp.data.t04.center_crop_u8, then in1k_t04 forward.py",
         "forward_sha256": forward_sha,
         "libraries": T.image_libraries(),
         "networks": table,

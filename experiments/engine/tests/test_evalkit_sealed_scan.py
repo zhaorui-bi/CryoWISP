@@ -1,4 +1,4 @@
-"""Tests for the scan_em family of the sealed read (cryowisp.evalkit.sealed_scan, PREREG E13) on the SCAN toy store.
+"""Tests for the scan_em family of the sealed read (cryowsp.evalkit.sealed_scan, PREREG E13) on the SCAN toy store.
 
 The store is ``scan_toy.store_with_students`` (written from the grammar, tiny students, gate 0) with its addprim_jump
 scanskill-v1 instance and its sealed test.npz in the test's tmp sealed directory. A final is a hand-written session
@@ -20,24 +20,24 @@ from typing import Any
 import numpy as np
 import pytest
 
-pytest.importorskip("cryowisp.evalkit.scanskill")
+pytest.importorskip("cryowsp.evalkit.scanskill")
 pytest.importorskip("torch")
 
 import scan_toy  # noqa: E402
 
-from cryowisp.baselines.fit import scanrefs as R  # noqa: E402
-from cryowisp.baselines.fit.runner import baseline_run_dir  # noqa: E402
-from cryowisp.baselines.instance_io import load_instance, write_delta_patch  # noqa: E402
-from cryowisp.common.identity import params_sha256  # noqa: E402
-from cryowisp.common.paths import runs_dir, sealed_dir  # noqa: E402
-from cryowisp.data import scan as S  # noqa: E402
-from cryowisp.data.store import dataset_json_path  # noqa: E402
-from cryowisp.evalkit import devreadout as D  # noqa: E402
-from cryowisp.evalkit import scanskill as K  # noqa: E402
-from cryowisp.evalkit import sealed_finals as SF  # noqa: E402
-from cryowisp.evalkit import sealed_scan as SS  # noqa: E402
-from cryowisp.evalkit.sealed import read_registry  # noqa: E402
-from cryowisp.patch import Limits  # noqa: E402
+from cryowsp.baselines.fit import scanrefs as R  # noqa: E402
+from cryowsp.baselines.fit.runner import baseline_run_dir  # noqa: E402
+from cryowsp.baselines.instance_io import load_instance, write_delta_patch  # noqa: E402
+from cryowsp.common.identity import params_sha256  # noqa: E402
+from cryowsp.common.paths import runs_dir, sealed_dir  # noqa: E402
+from cryowsp.data import scan as S  # noqa: E402
+from cryowsp.data.store import dataset_json_path  # noqa: E402
+from cryowsp.evalkit import devreadout as D  # noqa: E402
+from cryowsp.evalkit import scanskill as K  # noqa: E402
+from cryowsp.evalkit import sealed_finals as SF  # noqa: E402
+from cryowsp.evalkit import sealed_scan as SS  # noqa: E402
+from cryowsp.evalkit.sealed import read_registry  # noqa: E402
+from cryowsp.patch import Limits  # noqa: E402
 
 CONDITION = "addprim_jump"
 SESSION = "s5ca0000000000001"
@@ -248,7 +248,7 @@ def _sealed_parts() -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
 
 
 def test_sealed_read_of_the_scan_test(toy: ScanToy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CRYOWISP_SEALED", str(_copy_sealed(tmp_path)))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(_copy_sealed(tmp_path)))
     results, count = SF.run_sealed(_approved(toy, tmp_path, monkeypatch))
     assert count == 2
     records = [json.loads(line) for line in results.read_text().splitlines()]
@@ -285,7 +285,7 @@ def test_a_sealed_file_out_of_order_is_refused_and_spent(
     toy: ScanToy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     copy = _copy_sealed(tmp_path)
-    monkeypatch.setenv("CRYOWISP_SEALED", str(copy))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(copy))
     path = copy / "scan" / "conditions" / CONDITION / "test.npz"
     with np.load(path, allow_pickle=False) as archive:
         arrays = {key: archive[key][::-1].copy() for key in archive.files}

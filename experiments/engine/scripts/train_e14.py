@@ -1,22 +1,22 @@
-"""PREREG E14: the store record, the bot demonstrations, the student chain and its import (``cryowisp.data.e14``,
-``cryowisp.models.e14_policy``, ``cryowisp.models.e14_export``).
+"""PREREG E14: the store record, the bot demonstrations, the student chain and its import (``cryowsp.data.e14``,
+``cryowsp.models.e14_policy``, ``cryowsp.models.e14_export``).
 
 Subcommands:
 
 * ``init`` (workstation, once): the store's forward.py, the sealed seed record (written once to
-  ``$CRYOWISP_SEALED/e14_gotolocal/test.npz``; only its hash is printed) and dataset.json.
+  ``$CRYOWSP_SEALED/e14_gotolocal/test.npz``; only its hash is printed) and dataset.json.
 * ``demos`` (NSCC): the full-map bot's demonstrations of the 100,000 train seeds (old mission) and of the 512 new
-  V_evidence seeds, in ``--workers`` processes, to ``$CRYOWISP_PRIVATE/e14_gotolocal/demos/`` with demos.json (counts,
+  V_evidence seeds, in ``--workers`` processes, to ``$CRYOWSP_PRIVATE/e14_gotolocal/demos/`` with demos.json (counts,
   canonical sha256, the installed versions and the initial-state fingerprints of every dev episode set, so the
   workstation can confirm the same episodes).
-* ``chain`` (NSCC): PREREG E14's order (``cryowisp.models.e14_export.CHAIN``): train seed ``--seed`` at "base" on 50,000
+* ``chain`` (NSCC): PREREG E14's order (``cryowsp.models.e14_export.CHAIN``): train seed ``--seed`` at "base" on 50,000
   episodes, read the gate with forward.py, and stop at the first student that passes; otherwise 100,000 episodes, then
   the "next" size. Each student goes to the pending directory with its gate and headroom readings. ``--device cuda``
   trains on the GPU (PREREG E14 device amendment, main 1f1cbf7) and records the device, CUDA and cuDNN versions in
   each student's determinism block; data and the forward.py rollouts stay on the CPU.
-* ``import-demos`` (workstation, once): the fetched run's demonstrations into ``$CRYOWISP_PRIVATE/e14_gotolocal/demos/``
+* ``import-demos`` (workstation, once): the fetched run's demonstrations into ``$CRYOWSP_PRIVATE/e14_gotolocal/demos/``
   after the hash, bot-regeneration and fingerprint checks (``cmd_import_demos``).
-* ``import`` (workstation, after import-demos): ``cryowisp.models.e14_export.import_e14_models`` on a fetched run
+* ``import`` (workstation, after import-demos): ``cryowsp.models.e14_export.import_e14_models`` on a fetched run
   directory.
 
 ``--smoke`` (demos and chain): 2,000 train episodes and 64 V_evidence episodes, one epoch, rollouts timed on the smoke
@@ -48,9 +48,9 @@ def set_threads(threads: int) -> None:
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    from cryowisp.data import e14 as D
-    from cryowisp.data.store import write_json
-    from cryowisp.models import e14_export as X
+    from cryowsp.data import e14 as D
+    from cryowsp.data.store import write_json
+    from cryowsp.models import e14_export as X
 
     record_path = D.store_dir() / "dataset.json"
     if record_path.exists():
@@ -83,8 +83,8 @@ def cmd_demos(args: argparse.Namespace) -> int:
 
     import numpy as np
 
-    from cryowisp.data import e14 as D
-    from cryowisp.data.store import write_json
+    from cryowsp.data import e14 as D
+    from cryowsp.data.store import write_json
 
     started = time.perf_counter()
     n_train = SMOKE_TRAIN if args.smoke else D.SEED_RANGES["train"].n
@@ -138,8 +138,8 @@ def cmd_demos(args: argparse.Namespace) -> int:
 
 
 def _job_forward() -> Any:
-    from cryowisp.evalkit.patch_check import load_forward
-    from cryowisp.models import e14_policy as P
+    from cryowsp.evalkit.patch_check import load_forward
+    from cryowsp.models import e14_policy as P
 
     sys.dont_write_bytecode = True
     path = Path(tempfile.mkdtemp()) / "forward.py"
@@ -148,8 +148,8 @@ def _job_forward() -> Any:
 
 
 def _smoke_readout(forward: Any, params: Any) -> dict[str, Any]:
-    from cryowisp.data import e14 as D
-    from cryowisp.models import e14_policy as P
+    from cryowsp.data import e14 as D
+    from cryowsp.models import e14_policy as P
 
     out: dict[str, Any] = {}
     for mission in D.MISSIONS:
@@ -184,12 +184,12 @@ def cmd_chain(args: argparse.Namespace) -> int:
 
     torch.set_num_threads(args.threads)
     torch.backends.mkldnn.enabled = args.mkldnn == "on"
-    from cryowisp.data import e14 as D
-    from cryowisp.data.store import write_json
-    from cryowisp.models import e14_export as X
-    from cryowisp.models import e14_policy as P
-    from cryowisp.models.runinfo import run_info
-    from cryowisp.models.train import configure_determinism
+    from cryowsp.data import e14 as D
+    from cryowsp.data.store import write_json
+    from cryowsp.models import e14_export as X
+    from cryowsp.models import e14_policy as P
+    from cryowsp.models.runinfo import run_info
+    from cryowsp.models.train import configure_determinism
 
     manifest = json.loads((D.demos_dir() / D.DEMOS_MANIFEST).read_text(encoding="utf-8"))
     if bool(manifest["smoke"]) != bool(args.smoke):
@@ -275,8 +275,8 @@ def cmd_import_demos(args: argparse.Namespace) -> int:
 
     import numpy as np
 
-    from cryowisp.data import e14 as D
-    from cryowisp.data.store import write_json
+    from cryowsp.data import e14 as D
+    from cryowsp.data.store import write_json
 
     source = Path(args.run_dir) / "private" / D.DATASET / "demos"
     manifest = json.loads((source / D.DEMOS_MANIFEST).read_text(encoding="utf-8"))
@@ -339,9 +339,9 @@ def cmd_probe(args: argparse.Namespace) -> int:
 
     torch.set_num_threads(args.threads)
     torch.backends.mkldnn.enabled = args.mkldnn == "on"
-    from cryowisp.data import e14 as D
-    from cryowisp.models import e14_policy as P
-    from cryowisp.models.train import configure_determinism
+    from cryowsp.data import e14 as D
+    from cryowsp.models import e14_policy as P
+    from cryowsp.models.train import configure_determinism
 
     if args.deterministic == "on":
         configure_determinism(args.seed)
@@ -384,7 +384,7 @@ def cmd_probe(args: argparse.Namespace) -> int:
 
 
 def cmd_import(args: argparse.Namespace) -> int:
-    from cryowisp.models import e14_export as X
+    from cryowsp.models import e14_export as X
 
     for row in X.import_e14_models(Path(args.run_dir), args.note):
         print(json.dumps(row, indent=1))

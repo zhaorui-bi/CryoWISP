@@ -1,7 +1,7 @@
 """CIFAR-10-C style deployment conditions on synthetic images and a temporary store.
 
 Checks the transcription of the source formulas, the per-split noise streams, row preservation, and the
-build, write and verify cycle. Nothing here reads the real stores: CRYOWISP_PRIVATE and CRYOWISP_SEALED point to tmp dirs.
+build, write and verify cycle. Nothing here reads the real stores: CRYOWSP_PRIVATE and CRYOWSP_SEALED point to tmp dirs.
 """
 
 from __future__ import annotations
@@ -12,10 +12,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.data import conditions as C
-from cryowisp.data import store
-from cryowisp.data.registry import CIFAR10_CLASSES, SPLIT_NAMES, SPLIT_SEED
-from cryowisp.data.store import split_sha256
+from cryowsp.data import conditions as C
+from cryowsp.data import store
+from cryowsp.data.registry import CIFAR10_CLASSES, SPLIT_NAMES, SPLIT_SEED
+from cryowsp.data.store import split_sha256
 
 
 def _images(n: int, seed: int) -> np.ndarray:
@@ -119,8 +119,8 @@ def clean_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np
     """A small clean cifar10 store (splits and dataset.json) and the raw test arrays that match it."""
     for name in ("private", "sealed"):
         (tmp_path / name).mkdir()
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(tmp_path / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(tmp_path / "sealed"))
     splits_meta = {}
     for offset, (split, n) in enumerate(SIZES.items()):
         arrays = {
@@ -136,7 +136,7 @@ def clean_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np
         "idx": np.arange(30, dtype=np.int64),
     }
     manifest = {
-        "schema": "cryowisp.dataset.v0",
+        "schema": "cryowsp.dataset.v0",
         "dataset": "cifar10",
         "source": "CIFAR10",
         "class_names": list(CIFAR10_CLASSES),
@@ -144,7 +144,7 @@ def clean_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np
         "norm": {"mean": [0.5, 0.5, 0.5], "std": [0.25, 0.25, 0.25], "computed_on": "train"},
         "split_seed": SPLIT_SEED,
         "splits": splits_meta,
-        "test": {"location": "$CRYOWISP_SEALED/cifar10/test.npz", "n": 30, "sha256": split_sha256(test)},
+        "test": {"location": "$CRYOWSP_SEALED/cifar10/test.npz", "n": 30, "sha256": split_sha256(test)},
         "forward_sha256": "f" * 64,
     }
     store.write_json(store.dataset_json_path("cifar10"), manifest)

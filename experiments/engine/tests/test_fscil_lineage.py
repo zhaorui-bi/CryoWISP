@@ -1,4 +1,4 @@
-"""The E9 lineage driver (``cryowisp.harness.fscil_lineage``) on the toy store: the floors and their refusals, the summary,
+"""The E9 lineage driver (``cryowsp.harness.fscil_lineage``) on the toy store: the floors and their refusals, the summary,
 and lineages T, F and C over sessions 2 to 9 with a scripted editor (an injected launcher), stops and resumes.
 
 The scripted editor writes ``imprint_program`` (``test_harness_fscil``) with its spoiling step at session 6, so that a
@@ -21,14 +21,14 @@ from fscil_toy import ToyFscil, build_toy_fscil_store
 from test_harness_fixtures import needs_sandbox
 from test_harness_fscil import imprint_program, learn_steps, needs_neutral_repo, toy_floor
 
-from cryowisp.baselines.fit.fscilrefs import STREAMS_SCHEMA
-from cryowisp.common.identity import load_params
-from cryowisp.evalkit import fscil as FS
-from cryowisp.harness import fscil_lineage as L
-from cryowisp.harness.jsonio import read_json, utc_now, write_json
-from cryowisp.harness.runner import SANDBOX_PYTHON
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.baselines.fit.fscilrefs import STREAMS_SCHEMA
+from cryowsp.common.identity import load_params
+from cryowsp.evalkit import fscil as FS
+from cryowsp.harness import fscil_lineage as L
+from cryowsp.harness.jsonio import read_json, utc_now, write_json
+from cryowsp.harness.runner import SANDBOX_PYTHON
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.sandbox.program import ProgramSandbox
 
 R_TOY, D_TOY = -10.0, 0.0
 SPOIL = 80  # the first class of session 6
@@ -166,7 +166,7 @@ def test_the_lineages_run_stop_resume_and_summarise(toy: ToyFscil, tmp_path: Pat
         "sandbox": sandbox,
         "session_kwargs": {"launcher": launcher, "skip_audit": True},
     }
-    sessions_dir = Path(os.environ["CRYOWISP_RUNS"]) / "sessions"
+    sessions_dir = Path(os.environ["CRYOWSP_RUNS"]) / "sessions"
 
     def driver(lineage: str, table: Any = floors, busy: Any = lambda: []) -> L.LineageDriver:
         return L.LineageDriver(lineage, floors=table, busy=busy, **options)

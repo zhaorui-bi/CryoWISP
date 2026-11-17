@@ -1,8 +1,8 @@
 """PREREG "T07 sealed read (list v5)": write the range index of the two T07 student datasets.
 
-One dataset.json per (dataset, set) under ``$CRYOWISP_PRIVATE/<dataset>/t07_range/<set>/`` (``cryowisp.data.t07_range_index``):
-the 21 sets T07 made and the four stored severity-5 sets, 25 per dataset. The only file read under $CRYOWISP_SEALED is the
-install record ``$CRYOWISP_SEALED/cifar10c/install.json`` (its ``files`` entries: sha256 per official file). ``--check``
+One dataset.json per (dataset, set) under ``$CRYOWSP_PRIVATE/<dataset>/t07_range/<set>/`` (``cryowsp.data.t07_range_index``):
+the 21 sets T07 made and the four stored severity-5 sets, 25 per dataset. The only file read under $CRYOWSP_SEALED is the
+install record ``$CRYOWSP_SEALED/cifar10c/install.json`` (its ``files`` entries: sha256 per official file). ``--check``
 builds and checks every record and writes nothing. Nothing existing is overwritten.
 
     python scripts/t07/build_range_index.py --spec <PREREG commit> [--check]
@@ -17,9 +17,9 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from cryowisp.common.paths import sealed_dir
-from cryowisp.data import t07_range_index as RI
-from cryowisp.evalkit.targets import file_sha256
+from cryowsp.common.paths import sealed_dir
+from cryowsp.data import t07_range_index as RI
+from cryowsp.evalkit.targets import file_sha256
 
 REPO = Path(__file__).resolve().parents[2]
 

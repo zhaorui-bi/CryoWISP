@@ -155,7 +155,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--runner", type=Path, default=RUNNER, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    sessions = Path(os.environ["CRYOWISP_RUNS"]) / ("dry_runs" if args.dry_run else "sessions")
+    sessions = Path(os.environ["CRYOWSP_RUNS"]) / ("dry_runs" if args.dry_run else "sessions")
     args.log.parent.mkdir(parents=True, exist_ok=True)
     for index, spec in enumerate(args.specs):
         record = run_one(spec, args, sessions)

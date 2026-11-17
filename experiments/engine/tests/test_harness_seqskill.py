@@ -17,27 +17,27 @@ import pytest
 from test_evalkit_seqskill import CONDITION, store  # noqa: F401
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import params_sha256
-from cryowisp.data import seqops as S
-from cryowisp.evalkit import seqskill as Q
-from cryowisp.harness import seqskill
-from cryowisp.harness.applying import ArmApplier
-from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, arm_spec
-from cryowisp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.leaks import HINT_WORDS
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.prompts import Budgets, render_system, render_task
-from cryowisp.harness.retention import kept_rule_record
-from cryowisp.harness.runner import SANDBOX_PYTHON, run_session
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import PROGRAM_CHECK_SETS, SEQSKILL_CHECK_SETS, tool_specs
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.harness.trial import CLEAN_VCHECK_FILE, TrialError, assemble
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import params_sha256
+from cryowsp.data import seqops as S
+from cryowsp.evalkit import seqskill as Q
+from cryowsp.harness import seqskill
+from cryowsp.harness.applying import ArmApplier
+from cryowsp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, arm_spec
+from cryowsp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.leaks import HINT_WORDS
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.prompts import Budgets, render_system, render_task
+from cryowsp.harness.retention import kept_rule_record
+from cryowsp.harness.runner import SANDBOX_PYTHON, run_session
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import PROGRAM_CHECK_SETS, SEQSKILL_CHECK_SETS, tool_specs
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.harness.trial import CLEAN_VCHECK_FILE, TrialError, assemble
+from cryowsp.sandbox.program import ProgramSandbox
 
 # Gives the new operator token the embedding row of an old symbol map, found by name in the layout: an
 # architecture-agnostic edit that changes one row of one tensor.
@@ -61,7 +61,7 @@ def seq_id(store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """The toy seqskill instance built, with a runs root for sessions."""
     runs = tmp_path / "runs"
     runs.mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(runs))
     (row,) = Q.build_seqskill_instances(CONDITION)
     return str(row["instance_id"])
 
@@ -83,7 +83,7 @@ def _program_cell(programs: dict[str, str]) -> str:
 def test_the_harness_names_agree_with_the_evalkit_rule(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path))
     assert seqskill.SEQSKILL_RULE == Q.SEQSKILL_RULE
     assert seqskill.INSTANCE_ID_RE.pattern == Q.INSTANCE_ID_RE.pattern
     assert seqskill.EXPERIENCE_KEYS == Q.EVIDENCE_KEYS == EXPERIENCE_KEYS
@@ -114,7 +114,7 @@ def test_a_seqskill_id_resolves_in_its_own_store_and_is_refused_when_not_current
             dry_run=True,
             library_sessions=["s0123456789abcdef"],
         )
-    assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
+    assert not list(Path(os.environ["CRYOWSP_RUNS"]).rglob("session.json"))  # refused before any write
     task_path = Q.seqskill_instance_dir(seq_id) / "task.json"
     task_path.write_text(
         task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8"

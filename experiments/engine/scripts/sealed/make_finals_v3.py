@@ -4,7 +4,7 @@ The composition (user, 2026-11-06 about 22:20 Beijing, AskUserQuestion "全部�
 
 1. the eight T01 and T02 finals, met or missed alike (source kind ``session``);
 2. the T08 program-arm children of these eight sources on their five non-own students, 40 entries, every cell whatever
-   its dev reading (kind ``transfer``; records $CRYOWISP_RUNS/t08/program/<sid>/transfer_<program sha12>_<iid>.json, each
+   its dev reading (kind ``transfer``; records $CRYOWSP_RUNS/t08/program/<sid>/transfer_<program sha12>_<iid>.json, each
    with its work directory of the same stem). The copy arm is not read; the two B finals of record (sc918e11dceef637a,
    s760cb52ce82fb937) are not sources here, since their children are list v2's E11 C entries;
 3. for seeds 101 and 102 and each condition, the reference that sets the B bar and the best kept F1 pick (DEV_RESULTS
@@ -19,7 +19,7 @@ readouts; the table's bar names the first grid, as e11rep_tables.py ``refs`` kee
 read before e11g2, strict >), and the build checks that both grids give that child and those readouts. No entry may
 repeat an (instance, child) of list v1 or v2 (a sealed read refuses a pair the registry has seen).
 
-Usage (reads $CRYOWISP_RUNS only; opens nothing under $CRYOWISP_SEALED)::
+Usage (reads $CRYOWSP_RUNS only; opens nothing under $CRYOWSP_SEALED)::
 
     .venv/bin/python scripts/sealed/make_finals_v3.py --out scripts/sealed/finals_v3.json \
         --earlier scripts/sealed/finals_v1.json scripts/sealed/finals_v2.json
@@ -33,9 +33,9 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from cryowisp.common.paths import runs_dir
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit import sealed_finals as SF
+from cryowsp.common.paths import runs_dir
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit import sealed_finals as SF
 
 READOUT = SF.READOUT_VISION_JOINT
 FLOOR = -20
@@ -359,7 +359,7 @@ def main() -> int:
     note = (
         'List v3 of the sealed read (PREREG Sealed read, "List v3", main 0119883: user 2026-11-06 about 17:45 Beijing, '
         '"单独预注册 v3，读一次"; composition about 22:20 Beijing, "全部，约 56 条", written after T01, T02 and T08 '
-        "ended and before this list was built), drafted by the list-v3 subagent of CRYOWISP-main from the store's run "
+        "ended and before this list was built), drafted by the list-v3 subagent of CRYOWSP-main from the store's run "
         "records (scripts/sealed/make_finals_v3.py). (1) The eight T01 and T02 finals, met or missed alike: T02 repeats "
         "1 and 2 on the seed-100 students (gaussian s4253319a365b126a, scb92c3eb5d5226cc; contrast s7ae7d105d7655ed5, "
         "sfeb1cbc77d6a6042) and T01 on seeds 101 and 102 (gaussian scf16f7fb35855c03, sf45990dee41ac233; contrast "

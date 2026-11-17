@@ -1,4 +1,4 @@
-"""The host CPU field of session provenance (``cryowisp.harness.provenance.cpu_info``, CODE_AUDIT section 9): parsed from
+"""The host CPU field of session provenance (``cryowsp.harness.provenance.cpu_info``, CODE_AUDIT section 9): parsed from
 ``/proc/cpuinfo`` text, ``None`` where the file is absent, and added to ``collect`` without changing any other field."""
 
 from __future__ import annotations
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.harness import provenance as P
+from cryowsp.harness import provenance as P
 
 X86 = """processor\t: 0
 vendor_id\t: GenuineIntel

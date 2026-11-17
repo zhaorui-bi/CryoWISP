@@ -1,11 +1,11 @@
-"""Install the SCAN raw copy and build the stored E13 data (PREREG E13; ``cryowisp.data.scan_build``).
+"""Install the SCAN raw copy and build the stored E13 data (PREREG E13; ``cryowsp.data.scan_build``).
 
 Steps, each refusing to overwrite:
 
 * ``--install-raw CHECKOUT``: copy the recorded files of a SCAN git checkout at the recorded commit to
-  $CRYOWISP_PRIVATE/scan/raw (read-only, with provenance.json);
-* ``--base``: forward.py and $CRYOWISP_PRIVATE/scan/dataset.json;
-* ``--condition NAME``: the private splits, the sealed part ($CRYOWISP_SEALED, written once) and dataset.json of one
+  $CRYOWSP_PRIVATE/scan/raw (read-only, with provenance.json);
+* ``--base``: forward.py and $CRYOWSP_PRIVATE/scan/dataset.json;
+* ``--condition NAME``: the private splits, the sealed part ($CRYOWSP_SEALED, written once) and dataset.json of one
   condition (addprim_jump or around_right);
 * ``--verify --condition NAME``: re-derive every split from the raw files and compare hashes (the sealed file is not
   read).
@@ -26,9 +26,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from cryowisp.data import scan as S
-from cryowisp.data import scan_build as B
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import scan as S
+from cryowsp.data import scan_build as B
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

@@ -1,4 +1,4 @@
-"""Synthetic tests of the local sealed read of in1k_t04 (``cryowisp.evalkit.sealed_t04``): 14 tiny parquet shards of 70
+"""Synthetic tests of the local sealed read of in1k_t04 (``cryowsp.evalkit.sealed_t04``): 14 tiny parquet shards of 70
 validation rows, a linear forward on mean colours, children that differ from the base, a stand-in official file with
 the official function bodies. Nothing real is read; every expectation is recomputed here row by row."""
 
@@ -16,14 +16,14 @@ import pytest
 pa = pytest.importorskip("pyarrow")
 pq = pytest.importorskip("pyarrow.parquet")
 
-from cryowisp.common.identity import params_sha256, save_params  # noqa: E402
-from cryowisp.data import imagenet_val as V  # noqa: E402
-from cryowisp.data import store  # noqa: E402
-from cryowisp.data import t04 as T  # noqa: E402
-from cryowisp.evalkit import sealed_finals as SF  # noqa: E402
-from cryowisp.evalkit import sealed_t04 as ST  # noqa: E402
-from cryowisp.evalkit.sealed import manifest_sha256, read_registry  # noqa: E402
-from cryowisp.evalkit.sealed_range import encode_bits  # noqa: E402
+from cryowsp.common.identity import params_sha256, save_params  # noqa: E402
+from cryowsp.data import imagenet_val as V  # noqa: E402
+from cryowsp.data import store  # noqa: E402
+from cryowsp.data import t04 as T  # noqa: E402
+from cryowsp.evalkit import sealed_finals as SF  # noqa: E402
+from cryowsp.evalkit import sealed_t04 as ST  # noqa: E402
+from cryowsp.evalkit.sealed import manifest_sha256, read_registry  # noqa: E402
+from cryowsp.evalkit.sealed_range import encode_bits  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 N_ROWS = 70  # 5 rows in each of the 14 shards
@@ -83,7 +83,7 @@ def _predict(params: dict[str, np.ndarray], x: np.ndarray) -> np.ndarray:
 def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     for name in ("private", "sealed", "runs"):
         (tmp_path / name).mkdir()
-        monkeypatch.setenv(f"CRYOWISP_{name.upper()}", str(tmp_path / name))
+        monkeypatch.setenv(f"CRYOWSP_{name.upper()}", str(tmp_path / name))
     monkeypatch.setattr(V, "N_VAL_ROWS", N_ROWS)
     rows = np.arange(N_ROWS)
     dev = rows[np.isin(rows % T.ROW_MODULUS, T.DEV_RESIDUES)]
@@ -238,7 +238,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     (kit / "frozen" / "export_test.json").write_text(
         json.dumps(
             {
-                "schema": "cryowisp.t04.frozen_export.v1",
+                "schema": "cryowsp.t04.frozen_export.v1",
                 "list_sha256": manifest_sha256(parsed),
                 "code": {"commit": "c" * 40},
                 "entries": export_rows,

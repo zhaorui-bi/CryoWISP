@@ -1,4 +1,4 @@
-"""PREREG E11 store (cryowisp.data.e11) and the student import (cryowisp.models.e11_export.import_e11_models) on a fake store."""
+"""PREREG E11 store (cryowsp.data.e11) and the student import (cryowsp.models.e11_export.import_e11_models) on a fake store."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.common.identity import load_params
-from cryowisp.data import e11 as D
-from cryowisp.data.store import (
+from cryowsp.common.identity import load_params
+from cryowsp.data import e11 as D
+from cryowsp.data.store import (
     dataset_dir,
     dataset_json_path,
     forward_path,
@@ -21,9 +21,9 @@ from cryowisp.data.store import (
     split_path,
     write_json,
 )
-from cryowisp.evalkit.targets import file_sha256
-from cryowisp.models import e11_export as E
-from cryowisp.models import vitlite as V
+from cryowsp.evalkit.targets import file_sha256
+from cryowsp.models import e11_export as E
+from cryowsp.models import vitlite as V
 
 CLASSES = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 MEAN, STD = [0.49, 0.48, 0.45], [0.25, 0.24, 0.26]
@@ -43,7 +43,7 @@ def _arrays(n: int, seed: int) -> dict[str, np.ndarray]:
 
 def _manifest(dataset: str, splits: dict, **extra) -> dict:
     return {
-        "schema": "cryowisp.dataset.v0",
+        "schema": "cryowsp.dataset.v0",
         "dataset": dataset,
         "source": "CIFAR10",
         "class_names": CLASSES,
@@ -62,7 +62,7 @@ def _manifest(dataset: str, splits: dict, **extra) -> dict:
 
 @pytest.fixture()
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    for var in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    for var in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (tmp_path / var).mkdir()
         monkeypatch.setenv(var, str(tmp_path / var))
     clean = {}
@@ -131,7 +131,7 @@ def test_a_tampered_condition_split_is_refused(store: Path) -> None:
 
 
 def _pending(store: Path, seed: int, *, smoke: bool = False) -> Path:
-    from cryowisp.models.e10_export import training_rows
+    from cryowsp.models.e10_export import training_rows
 
     run_dir = store / "run"
     root = run_dir / "private" / "cifar10" / E.PENDING_DIR

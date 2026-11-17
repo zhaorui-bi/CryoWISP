@@ -1,6 +1,6 @@
-"""PREREG E7 validity gate (``cryowisp.analysis.graphnew_validity``), dev seed 100.
+"""PREREG E7 validity gate (``cryowsp.analysis.graphnew_validity``), dev seed 100.
 
-Writes $CRYOWISP_RUNS/devreadouts/e7_validity_s<seed>_dev_<date>.json (refuses an existing file) and prints V1 to V3, R
+Writes $CRYOWSP_RUNS/devreadouts/e7_validity_s<seed>_dev_<date>.json (refuses an existing file) and prints V1 to V3, R
 and the file's sha256.
 
 Usage:
@@ -15,8 +15,8 @@ import hashlib
 import json
 import sys
 
-from cryowisp.analysis.graphnew_validity import validity_report
-from cryowisp.common.paths import runs_dir
+from cryowsp.analysis.graphnew_validity import validity_report
+from cryowsp.common.paths import runs_dir
 
 
 def main() -> int:

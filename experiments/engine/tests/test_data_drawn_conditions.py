@@ -16,11 +16,11 @@ from types import MappingProxyType, ModuleType
 import numpy as np
 import pytest
 
-from cryowisp.data import colored, store
-from cryowisp.data import conditions as C
-from cryowisp.data.registry import CIFAR10_CLASSES, SPLIT_NAMES, SPLIT_SEED
-from cryowisp.models import calibration as K
-from cryowisp.models.forward_gen import render_forward, write_forward
+from cryowsp.data import colored, store
+from cryowsp.data import conditions as C
+from cryowsp.data.registry import CIFAR10_CLASSES, SPLIT_NAMES, SPLIT_SEED
+from cryowsp.models import calibration as K
+from cryowsp.models.forward_gen import render_forward, write_forward
 
 REPO = Path(__file__).resolve().parents[1]
 DRAWN = ("colormix_d1", "blur5_d1", "gamma_d1")
@@ -154,17 +154,17 @@ def test_parameters_are_determined_by_the_stream() -> None:
     used = set(colored.COLOR_STREAMS.values()) | set(
         C.CORRUPTION_CONDITIONS["gaussian_noise_s3"].streams.values()
     )
-    used.add(700)  # the ogbn-arxiv node permutation stream (cryowisp.data.arxiv.PERMUTATION_STREAM)
-    used.add(701)  # the ogbn-arxiv old holdouts (cryowisp.data.arxiv.OLD_HOLDOUT_STREAM)
-    used.add(702)  # the ogbn-arxiv class-id permutation (cryowisp.data.arxiv.CLASS_PERMUTATION_STREAM)
-    used.add(703)  # the ogbn-arxiv inductive node ids (cryowisp.data.arxiv.INDUCTIVE_PERMUTATION_STREAM)
-    used.add(704)  # the E6 separability draw (cryowisp.analysis.arxiv_headroom.SEPARABILITY_STREAM)
-    used.add(705)  # the E7 new-class draw (cryowisp.data.arxiv_classes.CLASS_STREAM)
-    used.add(706)  # the E7 replay draw (cryowisp.evalkit.graphnew.REPLAY_STREAM)
-    used.add(707)  # the E9 base-class holdouts (cryowisp.data.cifar100_fscil.BASE_HOLDOUT_STREAM)
-    used.add(708)  # the E9 new-class split (cryowisp.data.cifar100_fscil.NEW_CLASS_STREAM)
-    used.add(709)  # the E9 replay draw (cryowisp.evalkit.fscil.REPLAY_STREAM)
-    from cryowisp.data import cifar100_fscil
+    used.add(700)  # the ogbn-arxiv node permutation stream (cryowsp.data.arxiv.PERMUTATION_STREAM)
+    used.add(701)  # the ogbn-arxiv old holdouts (cryowsp.data.arxiv.OLD_HOLDOUT_STREAM)
+    used.add(702)  # the ogbn-arxiv class-id permutation (cryowsp.data.arxiv.CLASS_PERMUTATION_STREAM)
+    used.add(703)  # the ogbn-arxiv inductive node ids (cryowsp.data.arxiv.INDUCTIVE_PERMUTATION_STREAM)
+    used.add(704)  # the E6 separability draw (cryowsp.analysis.arxiv_headroom.SEPARABILITY_STREAM)
+    used.add(705)  # the E7 new-class draw (cryowsp.data.arxiv_classes.CLASS_STREAM)
+    used.add(706)  # the E7 replay draw (cryowsp.evalkit.graphnew.REPLAY_STREAM)
+    used.add(707)  # the E9 base-class holdouts (cryowsp.data.cifar100_fscil.BASE_HOLDOUT_STREAM)
+    used.add(708)  # the E9 new-class split (cryowsp.data.cifar100_fscil.NEW_CLASS_STREAM)
+    used.add(709)  # the E9 replay draw (cryowsp.evalkit.fscil.REPLAY_STREAM)
+    from cryowsp.data import cifar100_fscil
 
     assert (cifar100_fscil.BASE_HOLDOUT_STREAM, cifar100_fscil.NEW_CLASS_STREAM) == (707, 708)
     assert not set(streams) & used
@@ -243,8 +243,8 @@ def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.
     """A clean cifar10 store with contrast_s3 and gaussian_noise_s3 and dev models 100 and 101; returns raw test."""
     for name in ("private", "sealed"):
         (tmp_path / name).mkdir()
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(tmp_path / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(tmp_path / "sealed"))
     rng = np.random.default_rng(5)
     splits_meta = {}
     for offset, (split, n) in enumerate(SIZES.items()):
@@ -267,7 +267,7 @@ def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.
     store.write_json(
         store.dataset_json_path("cifar10"),
         {
-            "schema": "cryowisp.dataset.v0",
+            "schema": "cryowsp.dataset.v0",
             "dataset": "cifar10",
             "source": "CIFAR10",
             "class_names": list(CIFAR10_CLASSES),
@@ -276,7 +276,7 @@ def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, np.
             "split_seed": SPLIT_SEED,
             "splits": splits_meta,
             "test": {
-                "location": "$CRYOWISP_SEALED/cifar10/test.npz",
+                "location": "$CRYOWSP_SEALED/cifar10/test.npz",
                 "n": 20,
                 "sha256": store.split_sha256(test),
             },

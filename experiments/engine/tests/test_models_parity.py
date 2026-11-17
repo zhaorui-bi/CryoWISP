@@ -10,11 +10,11 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.models.arch import build_model, export_params, head_layer, load_params_into
-from cryowisp.models.forward_gen import render_forward, write_forward
-from cryowisp.models.spec import FORBIDDEN_TERMS, build_model_spec, check_public
-from cryowisp.models.train import augment_crop_flip
+from cryowsp.evalkit.patch_check import load_forward
+from cryowsp.models.arch import build_model, export_params, head_layer, load_params_into
+from cryowsp.models.forward_gen import render_forward, write_forward
+from cryowsp.models.spec import FORBIDDEN_TERMS, build_model_spec, check_public
+from cryowsp.models.train import augment_crop_flip
 
 TOL = 1e-4
 REL_TOL = 1e-5
@@ -173,7 +173,7 @@ def test_model_spec_is_public_and_consistent(case: str) -> None:
     arch, shape, mean, std = CASES[case]
     params = export_params(_model(arch, shape, mean, std, seed=0, scale=1.0))
     spec = build_model_spec("m0123abcd", arch, shape, mean, std, [str(i) for i in range(10)], params)
-    assert spec["schema"] == "cryowisp.model_spec.v0"
+    assert spec["schema"] == "cryowsp.model_spec.v0"
     named = [layer for layer in spec["layers"] if "name" in layer]
     assert {layer["weight"] for layer in named} | {layer["bias"] for layer in named} == set(params)
     for layer in named:
@@ -211,15 +211,15 @@ def test_augmentation_crop_and_flip_geometry() -> None:
     assert torch.equal(padded, again)
 
 
-@pytest.mark.skipif(not os.environ.get("CRYOWISP_PRIVATE"), reason="exported models need $CRYOWISP_PRIVATE")
+@pytest.mark.skipif(not os.environ.get("CRYOWSP_PRIVATE"), reason="exported models need $CRYOWSP_PRIVATE")
 def test_exported_models_have_consistent_records() -> None:
     """If models were exported, their files, hashes and index entries agree (no data is read)."""
     import json
 
-    from cryowisp.common.identity import load_params, params_sha256
-    from cryowisp.data.registry import DATASETS
-    from cryowisp.data.store import models_dir
-    from cryowisp.models.export import read_index
+    from cryowsp.common.identity import load_params, params_sha256
+    from cryowsp.data.registry import DATASETS
+    from cryowsp.data.store import models_dir
+    from cryowsp.models.export import read_index
 
     checked = 0
     for dataset in DATASETS:

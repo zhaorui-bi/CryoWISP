@@ -1,10 +1,10 @@
 """Run the E4 sequential label-fit references on one stream of dev instances (PREREG E4).
 
-Each (method, variant) pair is one reference stream (``cryowisp.baselines.fit.reference_stream``). The round's
+Each (method, variant) pair is one reference stream (``cryowsp.baselines.fit.reference_stream``). The round's
 configuration is frozen from the method's E1 joint run: on that round's own instance, or with ``--frozen-from`` on the
 instance of the same condition among those ids (seeds 101 to 105 take seed 100's choices). The rounds, experience,
 readouts and summary are those of the program stream. Records go to ``--out`` (default
-``$CRYOWISP_RUNS/reference_streams``) and are never overwritten.
+``$CRYOWSP_RUNS/reference_streams``) and are never overwritten.
 
 Examples (the E4 stream order: noise, contrast, blur, gamma, colormix)::
 
@@ -41,7 +41,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--methods", nargs="+", default=["grad_last", "ridge_last", "grad_full"])
     parser.add_argument("--variants", nargs="+", default=["replay", "cumulative"])
     parser.add_argument(
-        "--out", type=Path, help="directory for the records (default $CRYOWISP_RUNS/reference_streams)"
+        "--out", type=Path, help="directory for the records (default $CRYOWSP_RUNS/reference_streams)"
     )
     parser.add_argument("--seed", type=int, default=0, help="run seed of the E1 joint runs and of the fits")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
@@ -59,13 +59,13 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.reference_stream import METHODS, VARIANTS, run_reference_stream
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.baselines.fit.reference_stream import METHODS, VARIANTS, run_reference_stream
+    from cryowsp.common.paths import runs_dir
 
     unknown = sorted(set(args.methods) - set(METHODS)) + sorted(set(args.variants) - set(VARIANTS))
     if unknown:

@@ -1,6 +1,6 @@
 """PREREG E5 gradient references: the seqskill branch of execute_run, the three references, limits and dev readouts.
 
-Nothing here reads the real stores: CRYOWISP_PRIVATE, CRYOWISP_SEALED and CRYOWISP_RUNS point to tmp dirs. The student is a
+Nothing here reads the real stores: CRYOWSP_PRIVATE, CRYOWSP_SEALED and CRYOWSP_RUNS point to tmp dirs. The student is a
 tiny tfm trained for a few steps; it answers nothing, which is all the rule needs from a base.
 """
 
@@ -13,18 +13,18 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.baselines.fit import seqgrad as G
-from cryowisp.baselines.fit.runner import baseline_run_dir, load_seqskill_evidence
-from cryowisp.data import seqops as S
-from cryowisp.data import seqops_build as B
-from cryowisp.data.store import forward_path, load_split
-from cryowisp.evalkit import devreadout as D
-from cryowisp.evalkit import seqskill as Q
-from cryowisp.models import train_seq as TS
-from cryowisp.models.export import write_index
-from cryowisp.models.forward_gen import render_seq_forward, write_forward
-from cryowisp.models.seq_export import export_seq_model
-from cryowisp.patch import Limits, task_limits
+from cryowsp.baselines.fit import seqgrad as G
+from cryowsp.baselines.fit.runner import baseline_run_dir, load_seqskill_evidence
+from cryowsp.data import seqops as S
+from cryowsp.data import seqops_build as B
+from cryowsp.data.store import forward_path, load_split
+from cryowsp.evalkit import devreadout as D
+from cryowsp.evalkit import seqskill as Q
+from cryowsp.models import train_seq as TS
+from cryowsp.models.export import write_index
+from cryowsp.models.forward_gen import render_seq_forward, write_forward
+from cryowsp.models.seq_export import export_seq_model
+from cryowsp.patch import Limits, task_limits
 
 CONDITION = "new0_substitution"
 TINY = TS.SeqTrainConfig(d_model=16, n_layers=2, d_mlp=64, steps=3, warmup_steps=1, log_every=3)
@@ -38,7 +38,7 @@ def instance(tmp_path_factory: pytest.TempPathFactory):
     with pytest.MonkeyPatch.context() as monkeypatch:
         for name in ("private", "sealed", "runs"):
             (root / name).mkdir()
-            monkeypatch.setenv(f"CRYOWISP_{name.upper()}", str(root / name))
+            monkeypatch.setenv(f"CRYOWSP_{name.upper()}", str(root / name))
         sha = write_forward(forward_path(S.DATASET), render_seq_forward(**B.forward_constants()))
         base_manifest = B.write_built(B.build_base(), {"forward_path": "forward.py", "forward_sha256": sha})
         torch.manual_seed(0)
@@ -61,10 +61,10 @@ def instance(tmp_path_factory: pytest.TempPathFactory):
 
 
 def test_unconstrained_limits_make_room_for_one_op_per_tensor(tmp_path: Path) -> None:
-    from cryowisp.baselines.fit.edits import apply_patch_result
-    from cryowisp.baselines.instance_io import write_delta_patch
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.patch import PatchError
+    from cryowsp.baselines.fit.edits import apply_patch_result
+    from cryowsp.baselines.instance_io import write_delta_patch
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.patch import PatchError
 
     limits = Q.seqskill_program_limits(task_limits(Limits()))
     assert limits.without_edit_limits(30) == limits.without_size_limits()
@@ -94,7 +94,7 @@ def test_unconstrained_limits_make_room_for_one_op_per_tensor(tmp_path: Path) ->
 def test_program_limits_equal_the_learn_limits() -> None:
     import inspect
 
-    from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, applied_limits
+    from cryowsp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, applied_limits
 
     stated = task_limits(Limits())
     assert Q.seqskill_program_limits(stated) == applied_limits(stated, "LEARN")
@@ -198,8 +198,8 @@ def test_a_run_recording_other_limits_is_refused_at_readout(instance) -> None:
 
 def test_supersede_and_retire(instance) -> None:
     """Last in the module: it supersedes the shared instance and retires its student."""
-    from cryowisp.models.export import read_index
-    from cryowisp.models.seq_export import RETIRED_LOG, retire_seq_model
+    from cryowsp.models.export import read_index
+    from cryowsp.models.seq_export import RETIRED_LOG, retire_seq_model
 
     root = Q.seqskill_instance_dir(instance.instance_id).parents[1]
     with pytest.raises(Q.SeqskillError, match="reason"):

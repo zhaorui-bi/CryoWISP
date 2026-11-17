@@ -17,13 +17,13 @@ import pytest
 from test_evalkit_instances_store import CONDITION, ToyStore, add_condition, build_condition, build_toy_store
 from test_harness_fixtures import needs_sandbox
 
-from cryowisp.baselines.instance_io import Instance, load_instance
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.evalkit.companions import build_replay
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.harness import runner
-from cryowisp.harness.experience import EXPERIENCE_KEYS, build_experience
-from cryowisp.harness.program_stream import (
+from cryowsp.baselines.instance_io import Instance, load_instance
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.evalkit.companions import build_replay
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.harness import runner
+from cryowsp.harness.experience import EXPERIENCE_KEYS, build_experience
+from cryowsp.harness.program_stream import (
     STATUS_OK,
     STATUS_PATCH_REFUSED,
     StreamError,
@@ -31,7 +31,7 @@ from cryowisp.harness.program_stream import (
     stream_experience,
     stream_summary,
 )
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.sandbox.program import ProgramSandbox
 
 SECOND = "toyblur2_s2"
 STRINGS = (
@@ -122,7 +122,7 @@ def test_the_experience_follows_the_student(stream_store: StreamStore) -> None:
 
 
 def _predict(instance: Instance, params: dict[str, np.ndarray], x: np.ndarray) -> np.ndarray:
-    from cryowisp.evalkit.patch_check import predict
+    from cryowsp.evalkit.patch_check import predict
 
     return predict(instance.forward, params, x, 1024)
 

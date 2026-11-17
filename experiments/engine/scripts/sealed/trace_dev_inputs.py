@@ -1,6 +1,6 @@
 """List the store files a --dev run of a sealed list opens, for a store job's --inputs file (no forward pass).
 
-The dev path of ``cryowisp.evalkit.sealed_finals`` runs for every entry of the list (or the ``--only`` names) with the
+The dev path of ``cryowsp.evalkit.sealed_finals`` runs for every entry of the list (or the ``--only`` names) with the
 forward pass replaced by a stub (``devreadout.predict`` returns class 0 for every row), under an audit hook that
 records every file opened under the store root. Everything else of the readout of record runs, its instance checks
 included (``check_task_current`` reads the instance index), so each child is recovered and hash-checked, the dev rows
@@ -13,7 +13,7 @@ is opened or listed.
     .venv/bin/python scripts/sealed/trace_dev_inputs.py --list LIST.json --scratch OUT.jsonl \
         [--only NAME ...] > paths.txt
 
-Paths are printed relative to the store root ($CRYOWISP_PRIVATE/..), sorted, one per line.
+Paths are printed relative to the store root ($CRYOWSP_PRIVATE/..), sorted, one per line.
 """
 
 from __future__ import annotations
@@ -26,9 +26,9 @@ from typing import Any
 
 import numpy as np
 
-from cryowisp.common.paths import private_dir, sealed_dir
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit import sealed_finals as SF
+from cryowsp.common.paths import private_dir, sealed_dir
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit import sealed_finals as SF
 
 PATCH_FILES = ("patch.json", "derived_patch.json")
 

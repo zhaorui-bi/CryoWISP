@@ -1,4 +1,4 @@
-"""Tests for the sealed evaluation CLI (cryowisp.evalkit.sealed) on synthetic stores only."""
+"""Tests for the sealed evaluation CLI (cryowsp.evalkit.sealed) on synthetic stores only."""
 
 from __future__ import annotations
 
@@ -18,17 +18,17 @@ from test_evalkit_instances_store import (  # noqa: F401
     toy_store,
 )
 
-import cryowisp.evalkit.sealed as sealed
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import load_params, params_sha256, save_params
-from cryowisp.evalkit.instances import supersede_instances
-from cryowisp.evalkit.metrics import (
+import cryowsp.evalkit.sealed as sealed
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import load_params, params_sha256, save_params
+from cryowsp.evalkit.instances import supersede_instances
+from cryowsp.evalkit.metrics import (
     color_following_rate,
     color_split_fixes,
     color_split_target_fixes,
     sealed_readout,
 )
-from cryowisp.evalkit.patch_check import predict
+from cryowsp.evalkit.patch_check import predict
 
 
 def _instances(store: ToyStore) -> dict[tuple[int, int], str]:
@@ -50,7 +50,7 @@ def _child(folder: Path, name: str, params: dict[str, np.ndarray]) -> tuple[str,
 
 def _manifest(path: Path, entries: list[dict[str, object]], note: str = "test") -> Path:
     payload = {
-        "schema": "cryowisp.sealed_manifest.v0",
+        "schema": "cryowsp.sealed_manifest.v0",
         "created_at": "2026-11-03T12:00:00+00:00",
         "note": note,
         "entries": entries,
@@ -247,29 +247,29 @@ def test_manifest_schema_is_strict(tmp_path: Path) -> None:
     }
     bad_cases = [
         {
-            "schema": "cryowisp.sealed_manifest.v0",
+            "schema": "cryowsp.sealed_manifest.v0",
             "created_at": "2026-11-03",
             "note": "",
             "entries": [good],
             "x": 1,
         },
-        {"schema": "cryowisp.sealed_manifest.v1", "created_at": "2026-11-03", "note": "", "entries": [good]},
-        {"schema": "cryowisp.sealed_manifest.v0", "created_at": "yesterday", "note": "", "entries": [good]},
-        {"schema": "cryowisp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "", "entries": []},
+        {"schema": "cryowsp.sealed_manifest.v1", "created_at": "2026-11-03", "note": "", "entries": [good]},
+        {"schema": "cryowsp.sealed_manifest.v0", "created_at": "yesterday", "note": "", "entries": [good]},
+        {"schema": "cryowsp.sealed_manifest.v0", "created_at": "2026-11-03", "note": "", "entries": []},
         {
-            "schema": "cryowisp.sealed_manifest.v0",
+            "schema": "cryowsp.sealed_manifest.v0",
             "created_at": "2026-11-03",
             "note": "",
             "entries": [good, good],
         },
         {
-            "schema": "cryowisp.sealed_manifest.v0",
+            "schema": "cryowsp.sealed_manifest.v0",
             "created_at": "2026-11-03",
             "note": "",
             "entries": [dict(good, repeat=True)],
         },
         {
-            "schema": "cryowisp.sealed_manifest.v0",
+            "schema": "cryowsp.sealed_manifest.v0",
             "created_at": "2026-11-03",
             "note": "",
             "entries": [dict(good, child_params_sha256="A" * 64)],
@@ -284,7 +284,7 @@ def test_manifest_schema_is_strict(tmp_path: Path) -> None:
     ok.write_text(
         json.dumps(
             {
-                "schema": "cryowisp.sealed_manifest.v0",
+                "schema": "cryowsp.sealed_manifest.v0",
                 "created_at": "2026-11-03",
                 "note": "",
                 "entries": [good],

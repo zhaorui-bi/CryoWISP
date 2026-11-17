@@ -21,11 +21,11 @@ from test_harness_fixtures import needs_sandbox
 from test_harness_learn import WORSE, LearnStore, learn_store  # noqa: F401
 from test_harness_loop import SESSION_KWARGS, _round_one, _sandbox, _write, loop_store  # noqa: F401
 
-from cryowisp.common.identity import load_params, params_sha256, save_params
-from cryowisp.harness import loop_stream, runner
-from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.loop import KEPT_RULE_LOOP_V2, ROUND1_SESSION_CHECK
-from cryowisp.harness.loop_stream import (
+from cryowsp.common.identity import load_params, params_sha256, save_params
+from cryowsp.harness import loop_stream, runner
+from cryowsp.harness.jsonio import file_sha256, read_json
+from cryowsp.harness.loop import KEPT_RULE_LOOP_V2, ROUND1_SESSION_CHECK
+from cryowsp.harness.loop_stream import (
     MODE_SELECT,
     ROUND1_FROM_BASE,
     ROUND1_FROM_FINAL,
@@ -35,7 +35,7 @@ from cryowisp.harness.loop_stream import (
     LoopStreamError,
     run_loop_stream,
 )
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
 
 
 def _no_program_run(*args: Any, **kwargs: Any) -> Any:

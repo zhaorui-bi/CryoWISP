@@ -1,11 +1,11 @@
-"""Install, split and store CIFAR-100 for few-shot class-incremental learning (``cryowisp.data.cifar100_fscil``, PREREG
+"""Install, split and store CIFAR-100 for few-shot class-incremental learning (``cryowsp.data.cifar100_fscil``, PREREG
 E9), with the ResNet-20 students' numpy forward.py.
 
 Steps: ``install`` copies the official archive and the nine TOPIC/CEC session lists into
-$CRYOWISP_PRIVATE/raw/cifar100/ (read-only; every file must hash to its constant) and records their provenance.
+$CRYOWSP_PRIVATE/raw/cifar100/ (read-only; every file must hash to its constant) and records their provenance.
 ``build`` parses the archive and writes dataset ``cifar100_fscil``: the splits (train, old_select, old_check,
 old_replay, V_evidence, V_check, V_select, ref_pool), forward.py (``templates/forward_resnet20.py.tmpl``) and
-dataset.json; the official test set goes to $CRYOWISP_SEALED/cifar100_fscil/test.npz only. ``verify`` re-derives every
+dataset.json; the official test set goes to $CRYOWSP_SEALED/cifar100_fscil/test.npz only. ``verify`` re-derives every
 split from the raw files and compares hashes (the sealed file is not read).
 
 Usage:
@@ -22,11 +22,11 @@ import json
 import sys
 from pathlib import Path
 
-from cryowisp.data import cifar100_fscil as C
-from cryowisp.data.sources import provenance_path
-from cryowisp.data.store import forward_path, read_json
-from cryowisp.models.forward_gen import render_resnet20_forward, write_forward
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import cifar100_fscil as C
+from cryowsp.data.sources import provenance_path
+from cryowsp.data.store import forward_path, read_json
+from cryowsp.models.forward_gen import render_resnet20_forward, write_forward
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

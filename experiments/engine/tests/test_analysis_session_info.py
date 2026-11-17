@@ -1,4 +1,4 @@
-"""Tests of the information-use readout (cryowisp.analysis.session_info) on scripted sessions over the toy store."""
+"""Tests of the information-use readout (cryowsp.analysis.session_info) on scripted sessions over the toy store."""
 
 from __future__ import annotations
 
@@ -18,11 +18,11 @@ from test_harness_fixtures import (  # noqa: F401
     scripted_session,
 )
 
-from cryowisp.analysis.session_info import SessionInfoError, main, session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.evalkit.devreadout import dev_readout
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.patch import Limits, apply_patch_file
+from cryowsp.analysis.session_info import SessionInfoError, main, session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.evalkit.devreadout import dev_readout
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.patch import Limits, apply_patch_file
 
 EVIDENCE_CELL = "import numpy as np\nev = np.load('/work/trial/evidence.npz')\nprint(ev['y_fail'][:3], ev['pred_fail'][:3])\n"
 
@@ -87,7 +87,7 @@ def test_the_cli_writes_the_record_and_prints_the_table(
     out = tmp_path / "info.json"
     assert main([str(root), "--out", str(out)]) == 0
     record = json.loads(out.read_text())
-    assert record["schema"] == "cryowisp.analysis.session_info.v0" and len(record["trajectory"]) == 2
+    assert record["schema"] == "cryowsp.analysis.session_info.v0" and len(record["trajectory"]) == 2
     table = capsys.readouterr().out
     assert "fix.json" in table and "final: query 1" in table and "y_fail" in table
 

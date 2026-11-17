@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from cryowisp.common.identity import params_sha256
+from cryowsp.common.identity import params_sha256
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "t05" / "t05_readout.py"
 

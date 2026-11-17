@@ -1,6 +1,6 @@
 """The (method, condition) pairs that PREREG T04's edge-extension amendment extends, computed from the kept readouts.
 
-PREREG T04, "Amendment, edge extension of the reference grids" (CRYOWISP-main, main 9f0baa9, 2026-11-07 about 16:00
+PREREG T04, "Amendment, edge extension of the reference grids" (CRYOWSP-main, main 9f0baa9, 2026-11-07 about 16:00
 Beijing). A grid-based reference of arms 3, 4 or 5 is extended on a condition when its primary pick (``choose_final``
 over its whole V_check log, E1's original rule; ``selection.primary_patch_id``) or its kept pick
 (``selection.patch_id``) lies on the conservative edge of its grid: the smallest learning rate, the smallest interp
@@ -27,7 +27,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from cryowisp.common.paths import relocate_run_path
+from cryowsp.common.paths import relocate_run_path
 
 NO_EDGE = ("prior_shift", "ridge_last", "tie_inputs", "input_stats")
 """References without a conservative edge (the amendment's list)."""

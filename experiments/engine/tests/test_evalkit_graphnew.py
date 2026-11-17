@@ -2,7 +2,7 @@
 stale check, the oracle parts, the readout, hop distances and the leak scan.
 
 A small random RawGraph stands in for the official zip (split sizes shrunk with monkeypatch); the store is a tmp
-directory (CRYOWISP_PRIVATE and CRYOWISP_SEALED point there), never the real one.
+directory (CRYOWSP_PRIVATE and CRYOWSP_SEALED point there), never the real one.
 """
 
 from __future__ import annotations
@@ -15,24 +15,24 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.data import arxiv as A
-from cryowisp.data import arxiv_classes as K
-from cryowisp.data.store import forward_path, read_dataset_json
-from cryowisp.evalkit import fewshot as F
-from cryowisp.evalkit import graphnew as GN
-from cryowisp.models import gcn as G
-from cryowisp.models import gcn_export as E
-from cryowisp.models.export import write_fewshot_index
-from cryowisp.models.forward_gen import render_gcn_forward, write_forward
-from cryowisp.patch import Limits
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.data import arxiv as A
+from cryowsp.data import arxiv_classes as K
+from cryowsp.data.store import forward_path, read_dataset_json
+from cryowsp.evalkit import fewshot as F
+from cryowsp.evalkit import graphnew as GN
+from cryowsp.models import gcn as G
+from cryowsp.models import gcn_export as E
+from cryowsp.models.export import write_fewshot_index
+from cryowsp.models.forward_gen import render_gcn_forward, write_forward
+from cryowsp.patch import Limits
 
 N_TRAIN, N_VALID, N_TEST, N_FEAT = 240, 150, 20, 6
 
 
 def build_toy_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, hidden: int = 8) -> dict:
     """The toy inductive store with one newclass student of width ``hidden`` (the ``store`` fixture uses 8)."""
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED"):
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED"):
         (tmp_path / variable).mkdir()
         monkeypatch.setenv(variable, str(tmp_path / variable))
     monkeypatch.setattr(A, "OLD_SIZES", {"old_select": 30, "old_check": 30, "old_replay": 30})
@@ -192,8 +192,8 @@ def test_head_and_program_limits() -> None:
 def test_category_codes_match_the_raw_zip() -> None:
     import os
 
-    if not os.environ.get("CRYOWISP_PRIVATE"):
-        pytest.skip("CRYOWISP_PRIVATE is not set, so the raw ogbn-arxiv zip cannot be located")
+    if not os.environ.get("CRYOWSP_PRIVATE"):
+        pytest.skip("CRYOWSP_PRIVATE is not set, so the raw ogbn-arxiv zip cannot be located")
     path = A.raw_zip_path()
     if not path.exists():
         pytest.skip("the raw ogbn-arxiv zip is not installed here")

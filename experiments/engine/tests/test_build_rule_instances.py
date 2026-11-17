@@ -11,8 +11,8 @@ from typing import Any
 
 import pytest
 
-from cryowisp.evalkit import e14 as E
-from cryowisp.evalkit import scanskill as K
+from cryowsp.evalkit import e14 as E
+from cryowsp.evalkit import scanskill as K
 
 SPEC = importlib.util.spec_from_file_location(
     "build_rule_instances", Path(__file__).resolve().parents[1] / "scripts" / "build_rule_instances.py"

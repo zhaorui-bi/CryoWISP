@@ -1,8 +1,8 @@
-"""Run one PREREG F4 arm (``cryowisp.baselines.fit.f4``): sequential fine-tuning over a stream, no LLM call.
+"""Run one PREREG F4 arm (``cryowsp.baselines.fit.f4``): sequential fine-tuning over a stream, no LLM call.
 
 The arm runs round after round on its own current student through the control (b) stream
-(``cryowisp.baselines.fit.checked_reference_stream``): the rows, the multi-part check, the kept rule and the readouts are
-control (b)'s. Records go to ``--out`` (default ``$CRYOWISP_RUNS/f4``) and are never overwritten.
+(``cryowsp.baselines.fit.checked_reference_stream``): the rows, the multi-part check, the kept rule and the readouts are
+control (b)'s. Records go to ``--out`` (default ``$CRYOWSP_RUNS/f4``) and are never overwritten.
 
 Example (E11 stream, both conditions in order)::
 
@@ -28,7 +28,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--instances", nargs="+", required=True, help="the stream's instance ids, in round order"
     )
-    parser.add_argument("--out", type=Path, help="directory for the record (default $CRYOWISP_RUNS/f4)")
+    parser.add_argument("--out", type=Path, help="directory for the record (default $CRYOWSP_RUNS/f4)")
     parser.add_argument("--seed", type=int, default=0, help="run seed (LoRA's A draw)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
     parser.add_argument("--kept-rule", default="loop-retain-v2", choices=("loop-retain-v1", "loop-retain-v2"))
@@ -50,12 +50,12 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit import f4
-    from cryowisp.baselines.fit.checked_reference_stream import (
+    from cryowsp.baselines.fit import f4
+    from cryowsp.baselines.fit.checked_reference_stream import (
         CheckedReferenceError,
         run_checked_reference_stream,
     )
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     started = time.perf_counter()
     out = args.out if args.out is not None else runs_dir() / "f4"

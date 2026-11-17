@@ -58,7 +58,7 @@ for (
     else:
         os.environ[_name] = _value
 
-SCHEMA = "cryowisp.t07.u.v1"
+SCHEMA = "cryowsp.t07.u.v1"
 SPEC = (
     "docs/PREREG_v0_DRAFT.md section 0.1, 'T07-U, the always-on part of the two contrast finals (M05 phase 2)'; "
     "NSCC R41-t07u"
@@ -68,7 +68,7 @@ FINAL = "llm_contrast"
 ARMS = ("base_plus_U", "final_minus_U", "carrier_F")
 
 R38_RUN_REL = "t07/r38_20261107_124729_t07_r38_main_e4e638836a15"
-"""T07's run of record under $CRYOWISP_RUNS: its base and final predictions are read, not recomputed."""
+"""T07's run of record under $CRYOWSP_RUNS: its base and final predictions are read, not recomputed."""
 R38_TABLE_SHA256 = "55982f0da04b35140b494022768e64e4f0aa2115f7aff4084fbd2453265fa556"
 R38_OUTPUTS_SHA256 = "d6d3bbb5cf4fad612e80ad2bfc2f30e1602b19c4e5b22a454cbbe6f78856c9e6"
 """private/nscc_runs/20261107_124729_t07_r38_main_e4e638836a15/outputs.sha256 (sha256sum lines, paths relative to the
@@ -510,7 +510,7 @@ def build_arms(
     arch: str, only: str | None = None
 ) -> tuple[Any, dict[str, dict[str, np.ndarray]], dict[str, Any]]:
     """(the contrast instance, {arm: params}, build record); every check of ``build`` runs on every call."""
-    from cryowisp.common.identity import count_changed, params_sha256
+    from cryowsp.common.identity import count_changed, params_sha256
 
     spec = DESIGN[arch]
     arms = spec["arms"] if only is None else (only,)
@@ -616,7 +616,7 @@ def build_record(out_dir: Path, arch: str) -> tuple[dict[str, Any], str]:
 
 
 def cmd_predict(args: argparse.Namespace) -> int:
-    from cryowisp.evalkit.devreadout import predict
+    from cryowsp.evalkit.devreadout import predict
 
     started = time.time()
     out_dir = Path(args.out)
@@ -700,7 +700,7 @@ def r38_inputs() -> tuple[
 
 def cell(y: np.ndarray, base_pred: np.ndarray, pred: np.ndarray, index: np.ndarray) -> dict[str, Any]:
     """T07's cell: the change against the base in points with its paired interval, the label and the readout."""
-    from cryowisp.evalkit.sealed import split_readouts
+    from cryowsp.evalkit.sealed import split_readouts
 
     ro = split_readouts({"y": y}, base_pred, pred, None, R.N_CLASSES)
     diff = (pred == y).astype(np.int64) - (base_pred == y).astype(np.int64)

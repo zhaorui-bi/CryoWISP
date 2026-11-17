@@ -16,7 +16,7 @@ optionally writes JSON with:
 
 Reads the stream record, its saved students and the round-2 session's records; no V_select is read again::
 
-    .venv/bin/python scripts/t16_read_stream.py $CRYOWISP_RUNS/loop_streams/<stem>.json [--out reading.json]
+    .venv/bin/python scripts/t16_read_stream.py $CRYOWSP_RUNS/loop_streams/<stem>.json [--out reading.json]
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ from typing import Any
 
 import numpy as np
 
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.harness.loop import edit_log_document
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.harness.loop import edit_log_document
 
 GAUSSIAN, CONTRAST = "gaussian_noise_s5", "contrast_s5"
 SHORT = {GAUSSIAN: "gaussian", CONTRAST: "contrast"}

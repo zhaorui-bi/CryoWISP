@@ -1,6 +1,6 @@
-"""PREREG E10 step 1: install CIFAR-10-C (Zenodo record 2535967) under $CRYOWISP_SEALED and record every file's sha256.
+"""PREREG E10 step 1: install CIFAR-10-C (Zenodo record 2535967) under $CRYOWSP_SEALED and record every file's sha256.
 
-    python scripts/e10/cifar10c_install.py --tar DOWNLOADED_TAR --dest $CRYOWISP_SEALED/cifar10c
+    python scripts/e10/cifar10c_install.py --tar DOWNLOADED_TAR --dest $CRYOWSP_SEALED/cifar10c
 
 Checks the tar against the md5 Zenodo publishes for it (``ZENODO_MD5``), records its sha256, refuses any member that
 is not a regular file or directory under ``CIFAR-10-C/``, extracts with tarfile's "data" filter, and writes
@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
                 "sha256": _digests(path)[1],
             }
     record = {
-        "schema": "cryowisp.e10.cifar10c_install.v1",
+        "schema": "cryowsp.e10.cifar10c_install.v1",
         "source": {
             "zenodo_record": ZENODO_RECORD,
             "doi": ZENODO_DOI,

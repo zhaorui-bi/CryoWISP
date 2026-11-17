@@ -17,27 +17,27 @@ import pytest
 from test_evalkit_seqskill import CONDITION, store  # noqa: F401
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session
 
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import params_sha256
-from cryowisp.data import seqops as S
-from cryowisp.data.store import dataset_json_path, read_dataset_json
-from cryowisp.evalkit import seqskill as Q
-from cryowisp.harness import seqskill
-from cryowisp.harness.experience import (
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import params_sha256
+from cryowsp.data import seqops as S
+from cryowsp.data.store import dataset_json_path, read_dataset_json
+from cryowsp.evalkit import seqskill as Q
+from cryowsp.harness import seqskill
+from cryowsp.harness.experience import (
     EXPERIENCE_FILE,
     ExperienceError,
     learn_task_seqskill,
     seqskill_statement,
 )
-from cryowisp.harness.instance import read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.leaks import HINT_WORDS, scan_trial
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.prompts import PROMPT_DIR, Budgets, render_system, render_task
-from cryowisp.harness.retention import kept_rule_record
-from cryowisp.harness.runner import run_session, session_forbidden_strings
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.trial import TrialError, assemble
+from cryowsp.harness.instance import read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.leaks import HINT_WORDS, scan_trial
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.prompts import PROMPT_DIR, Budgets, render_system, render_task
+from cryowsp.harness.retention import kept_rule_record
+from cryowsp.harness.runner import run_session, session_forbidden_strings
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.trial import TrialError, assemble
 
 RULE_ONLY = seqskill.RULE_ONLY
 KIND_WORDS = ("substitution", "permutation")
@@ -84,7 +84,7 @@ def seq_id(store: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """The toy seqskill instance built, with a runs root for sessions."""
     runs = tmp_path / "runs"
     runs.mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(runs))
     (row,) = Q.build_seqskill_instances(CONDITION)
     return str(row["instance_id"])
 
@@ -353,7 +353,7 @@ def test_the_rule_only_view_refuses_what_it_cannot_derive(seq_id: str, tmp_path:
         run_session(
             seq_id, "LEARN", 0, effort="low", wall_timeout_s=60.0, dry_run=True, seqskill_variant="rules"
         )
-    assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
+    assert not list(Path(os.environ["CRYOWSP_RUNS"]).rglob("session.json"))  # refused before any write
 
 
 @needs_sandbox

@@ -11,7 +11,7 @@ A job with a non-zero exit code is refused unless ``--accept-failed-exit REASON`
 the exit code and the reason go into ``import.json``.
 
     source scripts/env.sh
-    python -I scripts/store/import_store_outputs.py $CRYOWISP_PRIVATE/nscc_runs/RUN_NAME [--dry-run]
+    python -I scripts/store/import_store_outputs.py $CRYOWSP_PRIVATE/nscc_runs/RUN_NAME [--dry-run]
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ def read_outputs(run_dir: Path) -> list[tuple[str, str]]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("run_dir", type=Path, help="$CRYOWISP_PRIVATE/nscc_runs/RUN_NAME")
+    parser.add_argument("run_dir", type=Path, help="$CRYOWSP_PRIVATE/nscc_runs/RUN_NAME")
     parser.add_argument("--dry-run", action="store_true", help="check and list, copy nothing")
     parser.add_argument(
         "--accept-failed-exit",
@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
         help="import the complete runs of a job whose exit code is not 0, recording this reason",
     )
     args = parser.parse_args(argv)
-    runs_root = Path(os.environ["CRYOWISP_RUNS"]).resolve()
+    runs_root = Path(os.environ["CRYOWSP_RUNS"]).resolve()
     run_dir = args.run_dir.resolve()
     if (run_dir / "import.json").exists():
         print(f"{run_dir} was imported already (import.json)", file=sys.stderr)

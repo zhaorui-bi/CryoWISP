@@ -10,8 +10,8 @@ import numpy as np
 import pytest
 from test_evalkit_instances_store import toy_params
 
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.harness.applying import (
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.harness.applying import (
     GENERIC_TEXT,
     REDACTION_LIMITS,
     REDACTION_NON_FINITE,
@@ -19,8 +19,8 @@ from cryowisp.harness.applying import (
     ArmApplier,
     EditorRejection,
 )
-from cryowisp.harness.arms import APPLY_BY_INDEX_TO_REAL, APPLY_REAL, limits_dict
-from cryowisp.harness.finalize import (
+from cryowsp.harness.arms import APPLY_BY_INDEX_TO_REAL, APPLY_REAL, limits_dict
+from cryowsp.harness.finalize import (
     KIND_BASE,
     KIND_CHECKED,
     KIND_DECLARED,
@@ -28,7 +28,7 @@ from cryowisp.harness.finalize import (
     run_record,
     select_final,
 )
-from cryowisp.patch import Limits
+from cryowsp.patch import Limits
 
 # ---------------------------------------------------------------------------------------------------------------
 # Final-patch rule (contract 5.2)
@@ -199,7 +199,7 @@ def _applier(
 
 def _patch(parent: str, ops: list[dict[str, Any]]) -> dict[str, Any]:
     return {
-        "schema": "cryowisp.patch.v0",
+        "schema": "cryowsp.patch.v0",
         "parent_sha256": parent,
         "hypothesis": "unit 0 reads the class-0 pixel",
         "predicted_effect": "fixes some errors",

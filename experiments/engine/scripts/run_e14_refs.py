@@ -5,10 +5,10 @@ Torch runs at ``--torch-threads`` (default 1: PREREG E14 "Reference fits", main 
 enters the OpenMP parallel region where every R23 crash sat) with torch.backends.mkldnn.enabled False (main b4d7654).
 
     fit --instance ID --methods M [M ...]
-        one run per method (``cryowisp.baselines.fit.e14refs.run_e14_ref``): 8 candidates, one rollout check each on the
-        500 new and 500 old V_check episodes, written to $CRYOWISP_RUNS/baselines/<ID>/<M>/e14/0/ (never overwritten).
+        one run per method (``cryowsp.baselines.fit.e14refs.run_e14_ref``): 8 candidates, one rollout check each on the
+        500 new and 500 old V_check episodes, written to $CRYOWSP_RUNS/baselines/<ID>/<M>/e14/0/ (never overwritten).
     read --instance ID --methods M [M ...] --out FILE
-        ``cryowisp.evalkit.e14read.read_run`` of each method's run.json: every candidate on V_select, the run's own final
+        ``cryowsp.evalkit.e14read.read_run`` of each method's run.json: every candidate on V_select, the run's own final
         and the kept pick at S_old >= -3; one JSON line per method.
     bar --reads FILE [FILE ...] --out FILE [--wrapper FILE]
         ``e14_bar`` over the read records: best kept joint of the 13 references at equal information + 1, the
@@ -36,7 +36,7 @@ def _threads(n: int) -> None:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(n)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
 
 
@@ -57,10 +57,10 @@ def _torch(n: int) -> None:
 
 
 def cmd_fit(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.fit.cli import summary_line
-    from cryowisp.baselines.fit.e14refs import E14_METHODS, E14_REF_LABEL, run_e14_ref
-    from cryowisp.baselines.fit.runner import baseline_run_dir, check_split_role
-    from cryowisp.evalkit.e14 import load_e14_instance
+    from cryowsp.baselines.fit.cli import summary_line
+    from cryowsp.baselines.fit.e14refs import E14_METHODS, E14_REF_LABEL, run_e14_ref
+    from cryowsp.baselines.fit.runner import baseline_run_dir, check_split_role
+    from cryowsp.evalkit.e14 import load_e14_instance
 
     unknown = [m for m in args.methods if m not in E14_METHODS]
     if unknown:
@@ -77,9 +77,9 @@ def cmd_fit(args: argparse.Namespace) -> int:
 
 
 def cmd_read(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.fit.e14refs import E14_REF_LABEL
-    from cryowisp.baselines.fit.runner import baseline_run_dir
-    from cryowisp.evalkit.e14read import read_run
+    from cryowsp.baselines.fit.e14refs import E14_REF_LABEL
+    from cryowsp.baselines.fit.runner import baseline_run_dir
+    from cryowsp.evalkit.e14read import read_run
 
     records = []
     for method in args.methods:
@@ -100,8 +100,8 @@ def cmd_read(args: argparse.Namespace) -> int:
 
 
 def cmd_bar(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.fit.e14refs import BC_METHODS, F1_METHODS, LABELEQ_METHODS
-    from cryowisp.evalkit.e14read import e14_bar
+    from cryowsp.baselines.fit.e14refs import BC_METHODS, F1_METHODS, LABELEQ_METHODS
+    from cryowsp.evalkit.e14read import e14_bar
 
     records = {}
     for path in args.reads:
@@ -123,7 +123,7 @@ def cmd_bar(args: argparse.Namespace) -> int:
 
 
 def cmd_wrapper(args: argparse.Namespace) -> int:
-    from cryowisp.evalkit.e14 import e14_wrapper_readout
+    from cryowsp.evalkit.e14 import e14_wrapper_readout
 
     record = {
         "instance_id": args.instance,

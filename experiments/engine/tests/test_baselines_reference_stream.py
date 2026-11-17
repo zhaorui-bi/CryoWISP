@@ -1,5 +1,5 @@
 """E4 sequential label-fit references: the program stream's rounds, experience, readouts and summary, with each
-round's configuration frozen from the method's E1 joint run (cryowisp.baselines.fit.reference_stream).
+round's configuration frozen from the method's E1 joint run (cryowsp.baselines.fit.reference_stream).
 
 The store is the program stream's toy store (two named conditions sharing one base model per seed). Its MLP has no
 mean/std block, so the torch rebuild of grad_* and ridge_* does not apply to it, and the streams here run a fixed
@@ -18,12 +18,12 @@ import pytest
 from test_evalkit_instances_store import CONDITION
 from test_harness_program_stream import SECOND, StreamStore, stream_store  # noqa: F401
 
-import cryowisp.harness.program_stream as program_stream
-from cryowisp.baselines.fit import reference_stream as R
-from cryowisp.baselines.fit.cli import JOINT_REF_LABEL
-from cryowisp.baselines.fit.runner import RUN_SCHEMA, CandidatePatch, Evidence, baseline_run_dir
-from cryowisp.baselines.instance_io import Instance
-from cryowisp.common.identity import load_params, params_sha256
+import cryowsp.harness.program_stream as program_stream
+from cryowsp.baselines.fit import reference_stream as R
+from cryowsp.baselines.fit.cli import JOINT_REF_LABEL
+from cryowsp.baselines.fit.runner import RUN_SCHEMA, CandidatePatch, Evidence, baseline_run_dir
+from cryowsp.baselines.instance_io import Instance
+from cryowsp.common.identity import load_params, params_sha256
 
 REPO = Path(__file__).resolve().parents[1]
 OVERSIZED = {"lr": 1.0, "steps": 1}

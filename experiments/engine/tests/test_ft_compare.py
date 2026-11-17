@@ -1,4 +1,4 @@
-"""PREREG F1's fine-tuning methods (``cryowisp.baselines.fit.ftcompare``) on a ViT-Lite-7/4 student, and the dev readout's
+"""PREREG F1's fine-tuning methods (``cryowsp.baselines.fit.ftcompare``) on a ViT-Lite-7/4 student, and the dev readout's
 descriptive frontier (``devreadout.readout_candidates``) on the toy joint store."""
 
 from __future__ import annotations
@@ -15,12 +15,12 @@ from test_baselines_fit_joint import CHILDREN, _run, joint_instance  # noqa: F40
 from test_e11_refs import _arch, _images, _instance, _student
 from test_evalkit_instances_store import toy_store  # noqa: F401
 
-from cryowisp.baselines.fit import ftcompare as FT
-from cryowisp.baselines.fit import lnrefs as L
-from cryowisp.baselines.fit.runner import Evidence
-from cryowisp.baselines.fit.torch_forward import logits, to_tensors
-from cryowisp.baselines.instance_io import Instance
-from cryowisp.evalkit import devreadout
+from cryowsp.baselines.fit import ftcompare as FT
+from cryowsp.baselines.fit import lnrefs as L
+from cryowsp.baselines.fit.runner import Evidence
+from cryowsp.baselines.fit.torch_forward import logits, to_tensors
+from cryowsp.baselines.instance_io import Instance
+from cryowsp.evalkit import devreadout
 
 
 def _joint_evidence(seed: int, n_replay: int = 64) -> Evidence:

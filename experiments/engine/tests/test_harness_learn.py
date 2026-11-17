@@ -3,7 +3,7 @@ check and its final rule, scripted sessions over the real MCP server, session_in
 
 The store is the evalkit toy store plus its named condition ``toyblur_s2`` (``test_evalkit_instances_store``), so
 the clean companions, the joint oracle, the joint dev readout and the replay draw are evalkit's own
-(``cryowisp.harness.clean`` with its default source). A test double is installed only to plant a replay that shares an
+(``cryowsp.harness.clean`` with its default source). A test double is installed only to plant a replay that shares an
 idx with the evidence. No test touches the real store or starts Claude Code.
 """
 
@@ -22,14 +22,14 @@ import pytest
 from test_evalkit_instances_store import ToyStore, add_condition, build_condition, build_toy_store
 from test_harness_fixtures import harness_store, needs_sandbox, read_jsonl, scripted_session  # noqa: F401
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.baselines.instance_io import Instance, load_instance
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.evalkit.companions import build_replay, load_clean_rows, load_replay
-from cryowisp.evalkit.instances import build_task_v1, instances_root
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.harness import clean, runner
-from cryowisp.harness.arms import (
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.baselines.instance_io import Instance, load_instance
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.evalkit.companions import build_replay, load_clean_rows, load_replay
+from cryowsp.evalkit.instances import build_task_v1, instances_root
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.harness import clean, runner
+from cryowsp.harness.arms import (
     ARMS,
     BASE_TOOLS,
     PROGRAM_MAX_CHANGED_FRAC,
@@ -37,7 +37,7 @@ from cryowisp.harness.arms import (
     arm_spec,
     limits_dict,
 )
-from cryowisp.harness.experience import (
+from cryowsp.harness.experience import (
     EXPERIENCE_KEYS,
     LEARN_FINAL_SELECTION,
     LEARN_PROGRAM_RULE,
@@ -46,20 +46,20 @@ from cryowisp.harness.experience import (
     evidence_idx,
     learn_task,
 )
-from cryowisp.harness.finalize import FINAL_RULE_JOINT, KIND_BASE, KIND_CHECKED, select_final
-from cryowisp.harness.instance import InstanceRefused
-from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.leaks import HINT_WORDS, scan_texts, scan_trial
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.program import ProgramProblem, Student, run_update, write_derived_patch
-from cryowisp.harness.prompts import Budgets, render_system, render_task
-from cryowisp.harness.scripted import ScriptedLauncher
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import PROGRAM_DESCRIPTIONS, TOOL_DESCRIPTIONS, tool_specs
-from cryowisp.harness.transfer import TransferError, run_transfer
-from cryowisp.harness.trial import CLEAN_VCHECK_FILE, assemble
-from cryowisp.patch import Limits, PatchError, apply_patch
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.harness.finalize import FINAL_RULE_JOINT, KIND_BASE, KIND_CHECKED, select_final
+from cryowsp.harness.instance import InstanceRefused
+from cryowsp.harness.jsonio import file_sha256, read_json
+from cryowsp.harness.leaks import HINT_WORDS, scan_texts, scan_trial
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.program import ProgramProblem, Student, run_update, write_derived_patch
+from cryowsp.harness.prompts import Budgets, render_system, render_task
+from cryowsp.harness.scripted import ScriptedLauncher
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import PROGRAM_DESCRIPTIONS, TOOL_DESCRIPTIONS, tool_specs
+from cryowsp.harness.transfer import TransferError, run_transfer
+from cryowsp.harness.trial import CLEAN_VCHECK_FILE, assemble
+from cryowsp.patch import Limits, PatchError, apply_patch
+from cryowsp.sandbox.program import ProgramSandbox
 
 CLASSES = ["c0", "c1", "c2", "c3"]
 BUDGETS = Budgets(patch_checks=8, python_cells=150, cell_timeout_s=120.0, wall_timeout_s=3600.0)

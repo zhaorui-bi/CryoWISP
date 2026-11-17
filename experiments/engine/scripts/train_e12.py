@@ -1,4 +1,4 @@
-"""Train the PREREG E12 ResNet-18 students (``cryowisp.models.resnet18up``, ``cryowisp.models.e12_export``).
+"""Train the PREREG E12 ResNet-18 students (``cryowsp.models.resnet18up``, ``cryowsp.models.e12_export``).
 
 Group ``train``: for each seed, PREREG E12's fine-tuning recipe (``E12TrainConfig``) from torchvision's IMAGENET1K_V1
 ResNet-18 (fc replaced, seeded) on E1's 40,000 cifar10 train rows at the upsampled size ``--resize``; each student
@@ -32,11 +32,11 @@ from typing import Any
 
 import torch
 
-from cryowisp.data.store import read_json, write_json
-from cryowisp.models import e12_export as E
-from cryowisp.models import resnet18up as M
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.train import configure_determinism
+from cryowsp.data.store import read_json, write_json
+from cryowsp.models import e12_export as E
+from cryowsp.models import resnet18up as M
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.train import configure_determinism
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_EVERY = 1

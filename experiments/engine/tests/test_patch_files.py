@@ -1,4 +1,4 @@
-"""File safety of cryowisp.patch: patch JSON loading and referenced .npy files (contract 5.0, HARNESS_SPEC section 2)."""
+"""File safety of cryowsp.patch: patch JSON loading and referenced .npy files (contract 5.0, HARNESS_SPEC section 2)."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ import pickle
 import numpy as np
 import pytest
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.patch import (
+from cryowsp.common.identity import params_sha256
+from cryowsp.patch import (
     MAX_PATCH_JSON_BYTES,
     SCHEMA,
     Limits,
@@ -27,9 +27,9 @@ OPEN = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)
 
 @pytest.fixture(autouse=True)
 def _isolated_store(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Point the CRYOWISP data locations at temporary directories so no test can touch the real store."""
-    root = tmp_path_factory.mktemp("cryowisp_store")
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    """Point the CRYOWSP data locations at temporary directories so no test can touch the real store."""
+    root = tmp_path_factory.mktemp("cryowsp_store")
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (root / variable).mkdir()
         monkeypatch.setenv(variable, str(root / variable))
 

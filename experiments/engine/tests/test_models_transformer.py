@@ -1,4 +1,4 @@
-"""Tests of the Transformer student (cryowisp.models.transformer) and its numpy reference forward."""
+"""Tests of the Transformer student (cryowsp.models.transformer) and its numpy reference forward."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.data import seqops as S
-from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.models import transformer as T
-from cryowisp.models.forward_gen import render_seq_forward, write_forward
+from cryowsp.data import seqops as S
+from cryowsp.evalkit.patch_check import load_forward
+from cryowsp.models import transformer as T
+from cryowsp.models.forward_gen import render_seq_forward, write_forward
 
 
 def _config(**overrides: int) -> T.TfmConfig:

@@ -29,16 +29,16 @@ from e11_toy import PLANT_CONDITION, build_e11_store
 from test_harness_fixtures import needs_sandbox
 from test_harness_learn import STRINGS, _program_cell
 
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.data import conditions as C
-from cryowisp.data.store import dataset_json_path
-from cryowisp.evalkit.devreadout import readout_run
-from cryowisp.evalkit.evidence import EVIDENCE_RULE_V1
-from cryowisp.evalkit.instances import scan_for_tokens
-from cryowisp.evalkit.targets import deployment_splits, load_checked_split
-from cryowisp.harness import e11, runner
-from cryowisp.harness.arms import arm_spec
-from cryowisp.harness.experience import (
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.data import conditions as C
+from cryowsp.data.store import dataset_json_path
+from cryowsp.evalkit.devreadout import readout_run
+from cryowsp.evalkit.evidence import EVIDENCE_RULE_V1
+from cryowsp.evalkit.instances import scan_for_tokens
+from cryowsp.evalkit.targets import deployment_splits, load_checked_split
+from cryowsp.harness import e11, runner
+from cryowsp.harness.arms import arm_spec
+from cryowsp.harness.experience import (
     EXPERIENCE_KEYS,
     RULE_EXPERIENCE_KEYS,
     RULE_EXPERIENCE_SOURCE,
@@ -47,16 +47,16 @@ from cryowisp.harness.experience import (
     ExperienceError,
     learn_task_rule,
 )
-from cryowisp.harness.finalize import STATUS_DRY_RUN
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.leaks import HINT_WORDS
-from cryowisp.harness.prompts import PROMPT_DIR, Budgets, render_task
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import tool_specs
-from cryowisp.harness.trial import StudentOverride, TrialError, assemble
-from cryowisp.models import vit_synth as V
+from cryowsp.harness.finalize import STATUS_DRY_RUN
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.leaks import HINT_WORDS
+from cryowsp.harness.prompts import PROMPT_DIR, Budgets, render_task
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import tool_specs
+from cryowsp.harness.trial import StudentOverride, TrialError, assemble
+from cryowsp.models import vit_synth as V
 
 REPO = Path(__file__).resolve().parents[1]
 PREREG = REPO / "docs" / "PREREG_v0_DRAFT.md"
@@ -76,7 +76,7 @@ OFFICIAL_SOURCE = {
 }
 # What each standard view showed at main f155d9b, before any K1 code (dry runs on the toy stores with retention floor
 # 0.005; E11 at 120 min, E10 at 90 min; ``_view_digest``), with only the public namespace migrated.
-# E11 LEARN equals a4_view.B_SHOWN_CRYOWISP on the trial.
+# E11 LEARN equals a4_view.B_SHOWN_CRYOWSP on the trial.
 BEFORE_K1 = {
     "e10_learn": {
         "trial": {

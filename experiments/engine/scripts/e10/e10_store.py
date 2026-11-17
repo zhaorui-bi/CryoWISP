@@ -1,9 +1,9 @@
-"""PREREG E10 store steps in the project environment (``cryowisp.data.e10``, ``cryowisp.models.e10_export``).
+"""PREREG E10 store steps in the project environment (``cryowsp.data.e10``, ``cryowsp.models.e10_export``).
 
     source scripts/env.sh
     .venv/bin/python scripts/e10/e10_store.py clean
     .venv/bin/python scripts/e10/e10_store.py condition --staged DIR --fidelity FILE --install FILE CORRUPTION ...
-    .venv/bin/python scripts/e10/e10_store.py import --run-dir $CRYOWISP_PRIVATE/nscc_runs/RUN --note "..."
+    .venv/bin/python scripts/e10/e10_store.py import --run-dir $CRYOWSP_PRIVATE/nscc_runs/RUN --note "..."
     .venv/bin/python scripts/e10/e10_store.py headroom --seed 100 --out FILE
 
 ``headroom`` (the entry's check before any instance): the student's clean V_select accuracy and its accuracy on each
@@ -20,25 +20,25 @@ from pathlib import Path
 
 import numpy as np
 
-from cryowisp.data import e10 as D
-from cryowisp.data.store import list_conditions, load_split, read_dataset_json, split_sha256
-from cryowisp.models import e10_export as E
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import e10 as D
+from cryowsp.data.store import list_conditions, load_split, read_dataset_json, split_sha256
+from cryowsp.models import e10_export as E
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HEADROOM_POINTS = 15.0
 
 
 def _headroom(seed: int, out: Path) -> dict:
-    from cryowisp.common.identity import load_params, params_sha256
-    from cryowisp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
+    from cryowsp.common.identity import load_params, params_sha256
+    from cryowsp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
 
     if out.exists():
         raise SystemExit(f"{out} exists; nothing written")
     meta = read_dataset_meta(D.DATASET)
     forward, forward_sha, _ = load_dataset_forward(D.DATASET, meta)
     (entry,) = [e for e in read_model_index(D.DATASET) if e.seed == seed and e.role == "dev"]
-    from cryowisp.data.store import models_dir
+    from cryowsp.data.store import models_dir
 
     params = load_params(models_dir(D.DATASET) / entry.model_id / "model.npz")
     if params_sha256(params) != entry.params_sha256:
@@ -64,7 +64,7 @@ def _headroom(seed: int, out: Path) -> dict:
             "runs": gap >= HEADROOM_POINTS,
         }
     record = {
-        "schema": "cryowisp.e10.headroom.v1",
+        "schema": "cryowsp.e10.headroom.v1",
         "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
         "V_select (PREREG E10, before any instance)",
         "model_id": entry.model_id,

@@ -1,14 +1,15 @@
-# CryoWISP
+# CryoWSP
 
-**Cryo-EM particle picking via Weight-space Installation of Skills by Program synthesis**
+**Cryo-EM Weight-Space Programming: new picking skills welded into frozen networks, one program at a time**
 
-CryoWISP 把 WeightCode 的权重空间编程（WSP, Weight-Space Programming）范式变成 cryoEM
+CryoWSP 把 WeightCode 的权重空间编程（WSP, Weight-Space Programming）范式变成 cryoEM
 颗粒挑选的新方法：主干网络永久冻结（cryo），新数据集/新颗粒类型的识别能力由一个
 LLM 综合出的**权重程序**"安装"进去 —— 像低温焊接（weld），而不是像微调那样把整个
 网络熔掉重铸。接缝极小：v1 实测只改 0.009% 的参数，任何 2-D 卷积零改动。
 
-**名字**：WISP = **W**eight-space **I**nstallation of **S**kills by **P**rogram synthesis，
-同时是 WSP（Weight-Space Programming）的谐音延展；一缕冰晶（a wisp of ice）呼应 cryo。
+**名字**：CryoWSP = Cryo-EM + **W**eight-**S**pace **P**rogramming，与范式名 1:1 映射
+（WeightCode 论文与 effl-lab 仓库均以 WSP 指代该范式）。先前曾用名 CryoWISP
+（WISP backronym）已弃用——直白胜过巧妙，审稿人零解码成本。
 机制上"焊接"保留为第三阶段的意象：冻结主干 + 加性权重补丁（引擎产物本身就是
 `weightcode.patch.v0` 的 add_dense 补丁）。
 
@@ -43,7 +44,6 @@ v1 结果（CryoPPP 10005/10291/10081 → 10947）：final +22.5/+3.75 pt（优�
 
 ## 命名备选（均已查重）
 
-- **CryoWISP**（选定）— cryoEM/DL 领域零占用；WISP 在物理领域指 WIMPs 类假想粒子、另有同名的桌面科研工具，均不同领域
-- **CryoWSP** — 最直白 sober 的备选（Weight-Space Programming 字面缩写）
+- **CryoWSP**（选定，曾用名 CryoWISP 已弃用）— 与 WSP 范式名 1:1 映射，零解码成本
 - ~~IcePick~~ — Langlois & Frank 2014 已用（低对比度挑选器，J Struct Biol）
 - ~~CryoWeld~~ — 保留为机制隐喻（焊接 vs 熔化），未用作方法名；NY 一家消防公司同名，不同领域

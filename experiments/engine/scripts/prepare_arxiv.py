@@ -1,12 +1,12 @@
-"""Install, split and store ogbn-arxiv (``cryowisp.data.arxiv``), with the GCN students' numpy forward.py.
+"""Install, split and store ogbn-arxiv (``cryowsp.data.arxiv``), with the GCN students' numpy forward.py.
 
-Steps: ``--install ZIP`` copies a downloaded official arxiv.zip into $CRYOWISP_PRIVATE/raw/ogbn_arxiv/ (read-only; its
+Steps: ``--install ZIP`` copies a downloaded official arxiv.zip into $CRYOWSP_PRIVATE/raw/ogbn_arxiv/ (read-only; its
 sha256 must be ``ARXIV_ZIP_SHA256``) and records its provenance. The build then parses the zip and writes both
-protocol datasets (``cryowisp.data.arxiv.PROTOCOLS``), each with permuted node and class ids, graph.npz,
+protocol datasets (``cryowsp.data.arxiv.PROTOCOLS``), each with permuted node and class ids, graph.npz,
 permutation.npz, the splits (train, old_select, old_check, old_replay, V_select, V_evidence, V_check,
 valid_unused), forward.py (``templates/forward_gcn.py.tmpl``, rendered for its graph's node count) and
 dataset.json: ``ogbn_arxiv`` (transductive, every node; the official test nodes go to
-$CRYOWISP_SEALED/ogbn_arxiv/test.npz only) and ``ogbn_arxiv_ind`` (inductive: graph.npz is the snapshot up to 2018,
+$CRYOWSP_SEALED/ogbn_arxiv/test.npz only) and ``ogbn_arxiv_ind`` (inductive: graph.npz is the snapshot up to 2018,
 graph_train.npz the snapshot up to 2017). ``--verify`` re-derives everything from the zip and compares hashes (the
 sealed file is not read).
 
@@ -24,11 +24,11 @@ import json
 import sys
 from pathlib import Path
 
-from cryowisp.data import arxiv as A
-from cryowisp.data.store import forward_path
-from cryowisp.models.forward_gen import render_gcn_forward, write_forward
-from cryowisp.models.gcn import GCNConfig
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import arxiv as A
+from cryowsp.data.store import forward_path
+from cryowsp.models.forward_gen import render_gcn_forward, write_forward
+from cryowsp.models.gcn import GCNConfig
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -72,8 +72,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
         return 0 if ok else 1
-    from cryowisp.data.sources import provenance_path
-    from cryowisp.data.store import read_json
+    from cryowsp.data.sources import provenance_path
+    from cryowsp.data.store import read_json
 
     provenance = read_json(provenance_path())["sources"][A.SOURCE]
     info = run_info(REPO_ROOT)

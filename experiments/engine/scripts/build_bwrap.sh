@@ -6,7 +6,7 @@
 # Downloads the bubblewrap release and libcap 2.73 (both checked by sha256), builds libcap as a static library and
 # bubblewrap against it, and installs <prefix>/bin/bwrap (default prefix ~/.local/opt/bubblewrap-<version>). Needs a C
 # compiler, make, curl, xz and uv (meson, ninja and pkgconf come from PyPI through uv). Then pass the binary with
-# --bwrap, or export CRYOWISP_BWRAP=<prefix>/bin/bwrap. Like any bubblewrap without setuid, it needs the host to allow
+# --bwrap, or export CRYOWSP_BWRAP=<prefix>/bin/bwrap. Like any bubblewrap without setuid, it needs the host to allow
 # unprivileged user namespaces; the script's last check says so if it does not. Built and checked on Ubuntu 22.04
 # (GCC 11) and 26.04 (GCC 15).
 set -euo pipefail
@@ -36,7 +36,7 @@ PREFIX=${PREFIX:-$HOME/.local/opt/bubblewrap-$VERSION}
 for tool in cc make curl xz uv; do
   command -v "$tool" > /dev/null || { echo "$tool is not on PATH" >&2; exit 2; }
 done
-WORK=${WORK:-$(mktemp -d "${TMPDIR:-/tmp}/cryowisp-bwrap-XXXXXX")}
+WORK=${WORK:-$(mktemp -d "${TMPDIR:-/tmp}/cryowsp-bwrap-XXXXXX")}
 mkdir -p "$WORK"
 
 fetch() {  # url file sha256
@@ -64,4 +64,4 @@ PKG_CONFIG=pkgconf PKG_CONFIG_PATH="$WORK/libcap/lib/pkgconfig" "${MESON[@]}" se
   --symlink usr/lib /lib --symlink usr/lib64 /lib64 --proc /proc --dev /dev /usr/bin/true \
   || { echo "$PREFIX/bin/bwrap was built but cannot create the sandbox here (user namespaces disabled?)" >&2; exit 1; }
 echo "bubblewrap $VERSION ready: $PREFIX/bin/bwrap"
-echo "next: export CRYOWISP_BWRAP=$PREFIX/bin/bwrap   (or pass --bwrap $PREFIX/bin/bwrap)"
+echo "next: export CRYOWSP_BWRAP=$PREFIX/bin/bwrap   (or pass --bwrap $PREFIX/bin/bwrap)"

@@ -33,16 +33,16 @@ for role in ("exp", "sel", "fin"):
 print("synthetic assets written")
 PY
 
-.venv/bin/cryowisp import-model --checkpoint $OUT/model.pt --labels $OUT/labels.json --out $OUT/model
+.venv/bin/cryowsp import-model --checkpoint $OUT/model.pt --labels $OUT/labels.json --out $OUT/model
 for r in exp sel fin; do
-  .venv/bin/cryowisp prepare-data --model $OUT/model --new $OUT/crops/$r/new --old $OUT/crops/$r/old --out $OUT/$r.npz > /dev/null
+  .venv/bin/cryowsp prepare-data --model $OUT/model --new $OUT/crops/$r/new --old $OUT/crops/$r/old --out $OUT/$r.npz > /dev/null
 done
-.venv/bin/cryowisp prepare-task --model $OUT/model --experience $OUT/exp.npz --selection $OUT/sel.npz \
+.venv/bin/cryowsp prepare-task --model $OUT/model --experience $OUT/exp.npz --selection $OUT/sel.npz \
   --final $OUT/fin.npz --goal 'synthetic smoke test' --retention-drop 0.01 --min-new-gain 0.01 --out $OUT/task
-.venv/bin/cryowisp pack-program --program experiments/engine/programs/resnet18-ridge-head/program.py \
+.venv/bin/cryowsp pack-program --program experiments/engine/programs/resnet18-ridge-head/program.py \
   --model $OUT/model --out $OUT/program
 SHA=$(sha256sum experiments/engine/programs/resnet18-ridge-head/program.py | cut -d' ' -f1)
-.venv/bin/cryowisp apply --task $OUT/task --program $OUT/program --program-sha256 $SHA \
+.venv/bin/cryowsp apply --task $OUT/task --program $OUT/program --program-sha256 $SHA \
   --wall-s 300 --out $OUT/reuse > /dev/null
 .venv/bin/python -I -c "
 import json

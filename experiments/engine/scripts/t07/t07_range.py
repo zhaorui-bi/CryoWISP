@@ -4,12 +4,12 @@ references, read on the 26 T07 image sets against their base, with no rerun of a
 Subcommands (all CPU, numpy; run on NSCC by scripts/store/t07_main.sh):
 
 * ``identity --arch A --network N``: N's readout on its own condition's V_select and on the clean companion, by
-  ``cryowisp.harness.clean.dev_readout_joint`` as the records were made, must equal the record (the final's info.json, or
+  ``cryowsp.harness.clean.dev_readout_joint`` as the records were made, must equal the record (the final's info.json, or
   the F1 floor -20 readout of the fine-tuning pick) on every field; writes ``identity/<A>_<N>.json``.
-* ``predict --arch A --network N --set S``: predictions of N on set S (``cryowisp.evalkit.devreadout.predict``, batch 1024,
+* ``predict --arch A --network N --set S``: predictions of N on set S (``cryowsp.evalkit.devreadout.predict``, batch 1024,
   as every dev readout); writes ``preds/<A>/<N>/<S>.npy`` and a JSON beside it.
 * ``gates --final F --set S``: T07-G, the trigger rates and output norms of the E11 final F's gates on set S
-  (``cryowisp.analysis.vit_internal``; the gates are the ones its T08 diagonal cell printed and built); writes
+  (``cryowsp.analysis.vit_internal``; the gates are the ones its T08 diagonal cell printed and built); writes
   ``gates/<F>_<S>.json``.
 * ``table``: every readout of the T07 bullet from the predictions, with paired image bootstrap intervals, checked
   against the identity records; writes ``t07_table.json`` and prints the tables.
@@ -41,7 +41,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import t07_conditions as C  # noqa: E402
 
-SCHEMA = "cryowisp.t07.range.v1"
+SCHEMA = "cryowsp.t07.range.v1"
 SPEC = "docs/PREREG_v0_DRAFT.md section 0.1, 'T07 and M05 phase 1'; NSCC R38-t07-m05"
 BATCH = 1024
 N_CLASSES = 10
@@ -226,19 +226,19 @@ def require_sha(path: Path, expected: str) -> str:
 
 
 def runs_root() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return Path(runs_dir())
 
 
 def private_root() -> Path:
-    from cryowisp.common.paths import private_dir
+    from cryowsp.common.paths import private_dir
 
     return Path(private_dir())
 
 
 def jsonable(value: Any) -> Any:
-    from cryowisp.baselines.fit.runner import jsonable as convert
+    from cryowsp.baselines.fit.runner import jsonable as convert
 
     return convert(value)
 
@@ -255,13 +255,13 @@ def write_json(path: Path, data: Any) -> str:
 
 
 def provenance() -> dict[str, Any]:
-    from cryowisp.baselines.fit.runner import git_state
+    from cryowsp.baselines.fit.runner import git_state
 
     return {
         "script": str(Path(__file__).resolve()),
         "script_sha256": file_sha256(Path(__file__)),
-        "vit_internal_sha256": file_sha256(Path(sys.modules["cryowisp.analysis.vit_internal"].__file__))
-        if "cryowisp.analysis.vit_internal" in sys.modules
+        "vit_internal_sha256": file_sha256(Path(sys.modules["cryowsp.analysis.vit_internal"].__file__))
+        if "cryowsp.analysis.vit_internal" in sys.modules
         else None,
         "git": git_state(),
         "numpy": np.__version__,
@@ -280,8 +280,8 @@ def provenance() -> dict[str, Any]:
 
 @functools.lru_cache(maxsize=None)
 def instance(arch: str, condition: str) -> Any:
-    from cryowisp.baselines.instance_io import load_instance
-    from cryowisp.evalkit.instances import instances_root
+    from cryowsp.baselines.instance_io import load_instance
+    from cryowsp.evalkit.instances import instances_root
 
     spec = ARCHS[arch]
     inst = load_instance(instances_root() / spec["instances"][condition])
@@ -298,10 +298,10 @@ def instance(arch: str, condition: str) -> Any:
 
 def network(arch: str, name: str) -> tuple[Any, dict[str, np.ndarray], dict[str, Any]]:
     """(the instance the network belongs to, its parameters, provenance), each rebuilt network hash-checked."""
-    import cryowisp.evalkit.devreadout as D
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.evalkit.e10 import e10_program_limits
-    from cryowisp.patch.limits import dense_delta_bytes
+    import cryowsp.evalkit.devreadout as D
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.evalkit.e10 import e10_program_limits
+    from cryowsp.patch.limits import dense_delta_bytes
 
     if name == "base":
         insts = [instance(arch, c) for c in C.OWN]
@@ -354,7 +354,7 @@ def network(arch: str, name: str) -> tuple[Any, dict[str, np.ndarray], dict[str,
 
 @functools.lru_cache(maxsize=None)
 def clean_rows(arch: str) -> Any:
-    from cryowisp.evalkit.companions import load_clean_rows
+    from cryowsp.evalkit.companions import load_clean_rows
 
     rows = load_clean_rows(instance(arch, C.OWN[0]), "V_select")
     if rows.clean_sha256 != CLEAN_SPLIT_SHA256:
@@ -390,7 +390,7 @@ def load_set(arch: str, name: str, conditions_sha256: str) -> tuple[dict[str, np
             "split_sha256": rows.clean_sha256,
         }
     if name in C.STORED:
-        from cryowisp.evalkit.targets import deployment_splits, load_checked_split
+        from cryowsp.evalkit.targets import deployment_splits, load_checked_split
 
         splits = deployment_splits(STORED_DATASET, name)
         arrays = load_checked_split(splits.v_select, splits.v_select_sha256)
@@ -461,7 +461,7 @@ def record_readouts(arch: str, name: str) -> tuple[dict[str, Any], dict[str, Any
 
 
 def cmd_identity(args: argparse.Namespace) -> int:
-    from cryowisp.harness.clean import dev_readout_joint
+    from cryowsp.harness.clean import dev_readout_joint
 
     started = time.time()
     inst, child, info = network(args.arch, args.network)
@@ -497,7 +497,7 @@ def cmd_identity(args: argparse.Namespace) -> int:
 
 
 def cmd_predict(args: argparse.Namespace) -> int:
-    from cryowisp.evalkit.devreadout import predict
+    from cryowsp.evalkit.devreadout import predict
 
     started = time.time()
     inst, params, info = network(args.arch, args.network)
@@ -545,7 +545,7 @@ def gate_spec(final: str) -> tuple[dict[str, Any], str]:
 
 
 def cmd_gates(args: argparse.Namespace) -> int:
-    import cryowisp.analysis.vit_internal as V
+    import cryowsp.analysis.vit_internal as V
 
     started = time.time()
     base_inst = instance("vit", args.final)
@@ -621,8 +621,8 @@ def main_gate_rate(final: str, stats: Mapping[str, Any]) -> float:
 
 
 def cmd_table(args: argparse.Namespace) -> int:
-    from cryowisp.analysis.vit_internal import spearman
-    from cryowisp.evalkit.sealed import split_readouts
+    from cryowsp.analysis.vit_internal import spearman
+    from cryowsp.evalkit.sealed import split_readouts
 
     out_dir = Path(args.out)
     y = {arch: clean_rows(arch).y for arch in ARCHS}

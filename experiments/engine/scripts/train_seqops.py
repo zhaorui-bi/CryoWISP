@@ -1,4 +1,4 @@
-"""Train, export, import and report the seqops students (PREREG E5; ``cryowisp.models.train_seq``).
+"""Train, export, import and report the seqops students (PREREG E5; ``cryowsp.models.train_seq``).
 
 Groups:
 
@@ -7,9 +7,9 @@ Groups:
   One that misses is exported as role ``dev`` with its size check, and the next pre-registered size (d 128) is
   trained and exported as ``base`` whatever its own check says (the size steps up once only). ``--size-step``
   trains one step alone, so each size can run as its own job. The held-out keys are
-  re-derived from the code and checked against dataset.json (``cryowisp.data.seqops_build.checked_exclusion``), so the
+  re-derived from the code and checked against dataset.json (``cryowsp.data.seqops_build.checked_exclusion``), so the
   job needs only dataset.json, forward.py and V_select.
-* ``import``: the students of a fetched NSCC run (``cryowisp.models.seq_export.import_seq_models``).
+* ``import``: the students of a fetched NSCC run (``cryowsp.models.seq_export.import_seq_models``).
 * ``report``: the local index with each student's V_select exact match, size check and weakest operator pair.
 
 ``--smoke-steps N`` trains N steps per size into ``--models-root`` (required with it), marks every model smoke (the
@@ -18,7 +18,7 @@ importer refuses them) and never writes the store's index.
 Usage:
     source scripts/env.sh
     .venv/bin/python scripts/train_seqops.py --group train --seeds 100 --device cuda
-    .venv/bin/python scripts/train_seqops.py --group import --run-dir $CRYOWISP_PRIVATE/nscc_runs/RUN_NAME --note "..."
+    .venv/bin/python scripts/train_seqops.py --group import --run-dir $CRYOWSP_PRIVATE/nscc_runs/RUN_NAME --note "..."
     .venv/bin/python scripts/train_seqops.py --group report
 """
 
@@ -33,15 +33,15 @@ from typing import Any
 
 import torch
 
-from cryowisp.data import seqops as S
-from cryowisp.data.seqops_build import checked_exclusion
-from cryowisp.data.store import read_dataset_json, write_json
-from cryowisp.models.export import read_index, write_index
-from cryowisp.models.importer import _checked_vselect
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.seq_export import export_seq_model, import_seq_models
-from cryowisp.models.train import configure_determinism
-from cryowisp.models.train_seq import (
+from cryowsp.data import seqops as S
+from cryowsp.data.seqops_build import checked_exclusion
+from cryowsp.data.store import read_dataset_json, write_json
+from cryowsp.models.export import read_index, write_index
+from cryowsp.models.importer import _checked_vselect
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.seq_export import export_seq_model, import_seq_models
+from cryowsp.models.train import configure_determinism
+from cryowsp.models.train_seq import (
     SIZE_CHECK_EM,
     SIZE_STEPS,
     em_by_operator,
@@ -152,7 +152,7 @@ def import_group(args: argparse.Namespace) -> int:
 
 
 def report_group(_: argparse.Namespace) -> int:
-    from cryowisp.data.store import models_dir, read_json
+    from cryowsp.data.store import models_dir, read_json
 
     rows = []
     for entry in read_index(S.DATASET):

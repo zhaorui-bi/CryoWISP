@@ -8,12 +8,12 @@ import pytest
 from test_evalkit_instances_store import build_v0
 from test_harness_fixtures import HarnessStore, harness_store, needs_sandbox  # noqa: F401
 
-import cryowisp.evalkit.instances as evalkit_instances
-import cryowisp.harness.instance as harness_instance
-from cryowisp.evalkit.instances import supersede_instances
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.runner import run_session
-from cryowisp.patch import Limits, task_limits
+import cryowsp.evalkit.instances as evalkit_instances
+import cryowsp.harness.instance as harness_instance
+from cryowsp.evalkit.instances import supersede_instances
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.runner import run_session
+from cryowsp.patch import Limits, task_limits
 
 
 def _nothing_written(store: HarnessStore) -> bool:

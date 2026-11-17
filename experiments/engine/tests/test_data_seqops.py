@@ -1,11 +1,11 @@
-"""Tests of the synthetic sequence-operator family (cryowisp.data.seqops)."""
+"""Tests of the synthetic sequence-operator family (cryowsp.data.seqops)."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from cryowisp.data import seqops as S
+from cryowsp.data import seqops as S
 
 
 def _one(sym: list[int], opa: str, opb: str = "NONE") -> list[int]:

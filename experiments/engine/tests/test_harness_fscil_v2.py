@@ -1,7 +1,7 @@
 """The E9 v2 harness (PREREG "E9 v2"): check score fscil-cb-v1 and kept rule fscil-retain-v2 through patch_check, the
 ledger, the final selection, the prompts, the library and the lineages T2, F2 and C2.
 
-The score functions are ``cryowisp.evalkit.fscil``'s (``cb_check_rows``, ``cb_check_score``, ``retain_v2_floor``,
+The score functions are ``cryowsp.evalkit.fscil``'s (``cb_check_rows``, ``cb_check_score``, ``retain_v2_floor``,
 ``retain_v2_pick``); these tests check that the harness feeds them the check's rows in the oracle's order, shows what
 they return, keeps what ``retain_v2_pick`` picks, and leaves E9's (v1) sessions as they were.
 
@@ -27,28 +27,28 @@ from fscil_toy import ToyFscil, build_toy_fscil_store
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session
 from test_harness_fscil import imprint_program, needs_neutral_repo, program_cell, toy_floor, toy_source
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import load_params, save_params
-from cryowisp.data import store as data_store
-from cryowisp.evalkit import fscil as FS
-from cryowisp.evalkit.patch_check import BudgetExceeded, predict
-from cryowisp.harness import fscil
-from cryowisp.harness import fscil_lineage as L
-from cryowisp.harness.applying import SessionConfigError
-from cryowisp.harness.arms import arm_spec
-from cryowisp.harness.finalize import FINAL_RULE_FSCIL_V2, FinalizeError, select_final_v2
-from cryowisp.harness.instance import read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.library import LIBRARY_INDEX_FILE
-from cryowisp.harness.prompts import PROMPT_DIR, Budgets, render_system, render_task
-from cryowisp.harness.runner import SANDBOX_PYTHON, run_session
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import tool_specs
-from cryowisp.harness.trial import assemble
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import load_params, save_params
+from cryowsp.data import store as data_store
+from cryowsp.evalkit import fscil as FS
+from cryowsp.evalkit.patch_check import BudgetExceeded, predict
+from cryowsp.harness import fscil
+from cryowsp.harness import fscil_lineage as L
+from cryowsp.harness.applying import SessionConfigError
+from cryowsp.harness.arms import arm_spec
+from cryowsp.harness.finalize import FINAL_RULE_FSCIL_V2, FinalizeError, select_final_v2
+from cryowsp.harness.instance import read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.library import LIBRARY_INDEX_FILE
+from cryowsp.harness.prompts import PROMPT_DIR, Budgets, render_system, render_task
+from cryowsp.harness.runner import SANDBOX_PYTHON, run_session
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import tool_specs
+from cryowsp.harness.trial import assemble
+from cryowsp.sandbox.program import ProgramSandbox
 
 TOY_ROWS = (120, 120)  # old_check and old_select rows of the toy store (2 per base class)
 COVER_TEMPLATE = """HYPOTHESIS = "a class is recognised when its head row points at the mean feature of its images"
@@ -358,7 +358,7 @@ def test_the_v2_tools_state_the_v2_scores_and_nothing_else_changes(rule: dict[st
 
 
 def test_a_v2_session_refuses_a_floor_and_another_version_before_any_write(toy: ToyFscil, cid: str) -> None:
-    runs = Path(os.environ["CRYOWISP_RUNS"])
+    runs = Path(os.environ["CRYOWSP_RUNS"])
     before = sorted(path.name for path in runs.iterdir())
     refusals = [
         ("retention floor", {"fscil_version": "v2", "retention_floor_rows": 0}),
@@ -451,7 +451,7 @@ def test_a_v2_library_holds_the_v2_kept_program_and_refuses_a_v1_one(
     toy: ToyFscil, cid: str, rule: dict[str, Any], v2_session: tuple[Any, list[Any]]
 ) -> None:
     result, replies = v2_session
-    sessions_dir = Path(os.environ["CRYOWISP_RUNS"]) / "sessions"
+    sessions_dir = Path(os.environ["CRYOWSP_RUNS"]) / "sessions"
     row = FS.build_fscil_instance(
         3,
         lineage="T2",
@@ -536,7 +536,7 @@ def test_the_v2_lineages_run_with_no_floor_on_their_own_state(toy: ToyFscil, tmp
         "sandbox": sandbox,
         "session_kwargs": {"launcher": ScriptedLauncher(script), "skip_audit": True},
     }
-    sessions_dir = Path(os.environ["CRYOWISP_RUNS"]) / "sessions"
+    sessions_dir = Path(os.environ["CRYOWSP_RUNS"]) / "sessions"
     floors = {2: L.FloorRecord(session=2, floor=-12, source={})}
     for lineage in ("T2", "F2", "C2"):
         with pytest.raises(L.LineageError, match="reads no floors"):

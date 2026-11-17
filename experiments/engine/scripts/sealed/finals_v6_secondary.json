@@ -1,5 +1,5 @@
 {
- "schema": "cryowisp.t04.secondary_plan.v1",
+ "schema": "cryowsp.t04.secondary_plan.v1",
  "list": "scripts/sealed/finals_v6.json",
  "entries_sha256": "0754a1a6c0266badc48eb65f5a17b919d5365f950137e04ee7b490da53c4002c",
  "rows": "test rows with row % 25 in [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]",

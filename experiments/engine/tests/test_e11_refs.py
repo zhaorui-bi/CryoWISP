@@ -12,13 +12,13 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from cryowisp.baselines.fit import cli as C
-from cryowisp.baselines.fit import lnrefs as L
-from cryowisp.baselines.fit import rules as RU
-from cryowisp.baselines.fit import torch_forward as TF
-from cryowisp.baselines.fit.runner import Evidence
-from cryowisp.models import vitlite as V
-from cryowisp.models.forward_gen import render_vitlite_forward
+from cryowsp.baselines.fit import cli as C
+from cryowsp.baselines.fit import lnrefs as L
+from cryowsp.baselines.fit import rules as RU
+from cryowsp.baselines.fit import torch_forward as TF
+from cryowsp.baselines.fit.runner import Evidence
+from cryowsp.models import vitlite as V
+from cryowsp.models.forward_gen import render_vitlite_forward
 
 MEAN = [0.4909, 0.4818, 0.4460]
 STD = [0.2471, 0.2435, 0.2616]
@@ -191,8 +191,8 @@ def test_cli_dispatches_e11_and_refuses_mixing() -> None:
 
 
 def test_second_grid_values_labels_and_run_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from cryowisp.baselines.fit import grad as G
-    from cryowisp.baselines.fit.runner import baseline_run_dir
+    from cryowsp.baselines.fit import grad as G
+    from cryowsp.baselines.fit.runner import baseline_run_dir
 
     assert G.GRID_E1.learning_rates == (1e-3, 1e-2) and G.GRID_E1.interp_alphas == tuple(
         k / 8 for k in range(1, 9)
@@ -219,14 +219,14 @@ def test_second_grid_values_labels_and_run_dirs(tmp_path: Path, monkeypatch: pyt
         "grad_sparse19_traj",
         "interp",
     )
-    monkeypatch.setenv("CRYOWISP_RUNS", str(tmp_path))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(tmp_path))
     first = baseline_run_dir("i00802425", "grad_full", 0, C.E11_REF_LABEL)
     second = baseline_run_dir("i00802425", "grad_full", 0, C.E11_GRID2_LABEL)
     assert first != second and second.parts[-2] == "e11g2" and first.parts[-2] == "e11"
 
 
 def test_second_grid_candidates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from cryowisp.baselines.fit import grad as G
+    from cryowsp.baselines.fit import grad as G
 
     params = _student(5)
     instance = _instance(tmp_path, params)

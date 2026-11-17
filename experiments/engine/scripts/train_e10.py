@@ -1,4 +1,4 @@
-"""Train the PREREG E10 ResNet-20 students (``cryowisp.models.resnet20a``, ``cryowisp.models.e10_export``).
+"""Train the PREREG E10 ResNet-20 students (``cryowsp.models.resnet20a``, ``cryowsp.models.e10_export``).
 
 Group ``train``: for each seed, He et al.'s CIFAR recipe (``HeTrainConfig``) on E1's 40,000 cifar10 train rows; each
 student goes to the pending directory with a pending index row. The job needs cifar10's dataset.json and
@@ -23,11 +23,11 @@ from typing import Any
 
 import torch
 
-from cryowisp.data.store import read_json, write_json
-from cryowisp.models import e10_export as E
-from cryowisp.models import resnet20a as A
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.train import configure_determinism
+from cryowsp.data.store import read_json, write_json
+from cryowsp.models import e10_export as E
+from cryowsp.models import resnet20a as A
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.train import configure_determinism
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_EVERY = 10

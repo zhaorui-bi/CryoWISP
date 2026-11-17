@@ -3,48 +3,48 @@
 Fitting references: grad_last, grad_sparse, grad_full, ridge_last (bounded) and ridge_last_free (unconstrained, like
 grad_full). Fixed-rule arms: prior_shift (label-shift correction of the final-layer bias), tie_inputs (first-layer
 input weights tied across input channels) and input_stats (label-free per-channel input statistics); see
-``cryowisp.baselines.fit.rules``.
+``cryowsp.baselines.fit.rules``.
 
-Instances: the given ``--instance`` ids, or by default every instance in ``$CRYOWISP_PRIVATE/instances/index.json`` with
+Instances: the given ``--instance`` ids, or by default every instance in ``$CRYOWSP_PRIVATE/instances/index.json`` with
 split_role "dev" (optionally one ``--dataset``). Every selected instance's private.json split_role is checked before
 anything runs: a main instance is refused (exit status 2, nothing written) unless ``--allow-main`` is given, which is
 reserved for runs after the pre-registration freeze (PREREG section 2).
 
 Each method on each instance gets its own counted oracle with 8 patch-check queries and writes
-``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/<seed>/`` (one ``q<k>/`` patch per checked candidate plus run.json).
+``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/<seed>/`` (one ``q<k>/`` patch per checked candidate plus run.json).
 An existing run directory is never overwritten.
 
 ``--joint`` (PREREG E1, evidence-v1 instances of a named condition): the label fits train on the 64 evidence rows
 plus the dataset's 64 replay rows (clean train images, replay-v1), the fixed rules keep the 64 evidence rows, and
 every candidate is scored by the joint oracle (condition V_check plus its clean companion, S_joint = S_new + S_old).
-Runs go to ``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e1joint/<seed>/``.
+Runs go to ``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e1joint/<seed>/``.
 
 ``--fewshot`` (PREREG E2, fewshot-v1 instances: ``--instance f<8 hex>`` or every active one in
-``$CRYOWISP_PRIVATE/fewshot_instances/index.json``, optionally one ``--dataset``): the four E2 references by default
+``$CRYOWSP_PRIVATE/fewshot_instances/index.json``, optionally one ``--dataset``): the four E2 references by default
 (imprint, ridge_margin, grad_last, grad_full), each fitted on the instance's 50 new-class rows plus its 64 replay
 rows, scored by the fewshot joint oracle (V_check rows of the new classes and of the train classes) and held to the
 E2 program limits (head exempt from max_rel_frob, at most 20% of the entries changed). Runs go to
-``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e2/<seed>/``.
+``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e2/<seed>/``.
 
 ``--e10`` (PREREG E10, evidence-v1 instances of the cifar10_r20 conditions; implies ``--joint``): the E10 references
 by default (E1's six; grad_sparse19_sal, grad_sparse19_traj and interp; bn_adapt and tent, which read the 64
 condition inputs only), scored by the joint oracle and held to the E10 program limits (rel-Frob 0.5 on tensors of rank
 2 or more, at most 20% of the entries changed, max_ops at least the tensor count). Runs go to
-``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e10/<seed>/``.
+``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e10/<seed>/``.
 
 ``--e11`` (PREREG E11, evidence-v1 instances of the cifar10_vl7 conditions, a ViT-Lite-7/4 student; implies
 ``--e10``'s limits and oracle): the E11 references by default (E1's six adapted; grad_sparse19_sal, grad_sparse19_traj
 and interp; tent_ln and sar, which read the 64 condition inputs only). Runs go to
-``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e11/<seed>/``.
+``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e11/<seed>/``.
 
 ``--e11-grid2`` (with ``--e11``; PREREG E11's second reference grid, amended 2026-11-05): grad_last, grad_full,
 grad_sparse19_sal and grad_sparse19_traj over Adam lr {1e-5, 1e-4} x steps {10, 30, 100, 300}, and interp at alpha
 k/64 (k = 1..8) toward the first grid's theta_full; these five by default and only these. Runs go to
-``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e11g2/<seed>/``, never into the first grid's ``e11`` directories.
+``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e11g2/<seed>/``, never into the first grid's ``e11`` directories.
 
 ``--e12`` (PREREG E12, evidence-v1 instances of the cifar10_r18 conditions, the ImageNet-pretrained ResNet-18
 student; implies ``--e10``'s limits and oracle): E10's eleven references, adapted to ResNet-18 (bn_adapt and tent
-included). Runs go to ``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e12/<seed>/``. ``--e12-grid2`` (with ``--e12``):
+included). Runs go to ``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e12/<seed>/``. ``--e12-grid2`` (with ``--e12``):
 the second grid as ``--e11-grid2`` defines it, run label ``e12g2``; its grad_full and grad_last are F1's "full" and
 "last layer" on E12. ``--t04`` and ``--t04-grid2`` (PREREG T04, in1k_t04 instances, the native ImageNet ResNet-18)
 run exactly as ``--e12`` and ``--e12-grid2``, with run labels ``t04`` and ``t04g2``. ``--t04-edge`` (with ``--t04``;
@@ -183,12 +183,12 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import (
+    from cryowsp.baselines.fit.cli import (
         E10_METHODS,
         E10_ONLY,
         E10_REF_LABEL,
@@ -222,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
         select_instance_ids,
         summary_line,
     )
-    from cryowisp.baselines.fit.runner import SplitRoleError, baseline_run_dir
+    from cryowsp.baselines.fit.runner import SplitRoleError, baseline_run_dir
 
     if set(METHODS) != set(FIT_METHODS):
         raise RuntimeError(f"script methods {METHODS} differ from the library's {FIT_METHODS}")

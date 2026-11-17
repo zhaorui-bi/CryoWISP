@@ -8,19 +8,19 @@ Groups:
           for the same seeds. Its pre-registered shortcut check is decided once, on the main seeds of the first main
           run (one rebuild at rho = 0.999 and base retraining if triggered); later main runs only add models.
 
-Main and dev seeds are disjoint. Each model is exported to $CRYOWISP_PRIVATE/<dataset>/models/<model_id>/ and appended
+Main and dev seeds are disjoint. Each model is exported to $CRYOWSP_PRIVATE/<dataset>/models/<model_id>/ and appended
 to models/index.json. A (role, seed) pair that is already in the index is refused.
 
     fewshot  PREREG E2 students: role "dev", seeds 100 and 101 by default, trained with the dataset's recipe on the
              train-split rows of --train-classes only (default 0-4), with every output kept. --arch picks the
              architecture (default the dataset's; cnn4 is the second CIFAR architecture). Exported to
-             $CRYOWISP_PRIVATE/<dataset>/fewshot/models/ with their own index.json, so the dataset index and its
+             $CRYOWSP_PRIVATE/<dataset>/fewshot/models/ with their own index.json, so the dataset index and its
              builders never see them. Main and confirmation seeds are refused. The V_select monitor of the epoch log
              reads the rows of the train classes.
 
-Deployment conditions (--condition, cryowisp.data.conditions):
+Deployment conditions (--condition, cryowsp.data.conditions):
     ceiling    role "ceiling" on the condition's corrupted train split, seeds 0 and 1 by default, exported to
-               $CRYOWISP_PRIVATE/<dataset>/conditions/<condition>/models/ (reference points, never edited). Runs on NSCC.
+               $CRYOWSP_PRIVATE/<dataset>/conditions/<condition>/models/ (reference points, never edited). Runs on NSCC.
     base_eval  V_select accuracy of the clean base (0, 1) and dev (100, 101) models on the condition's V_select,
                written to conditions/<condition>/models/base_eval.json. Local, seconds.
     import     check and copy models exported by an NSCC run (--run-dir <fetched run>) into the store.
@@ -56,12 +56,12 @@ from typing import Any
 import numpy as np
 import torch
 
-from cryowisp.data import build as B
-from cryowisp.data import colored
-from cryowisp.data.conditions import CONDITIONS
-from cryowisp.data.registry import DATASETS
-from cryowisp.data.sources import download_and_load
-from cryowisp.data.store import (
+from cryowsp.data import build as B
+from cryowsp.data import colored
+from cryowsp.data.conditions import CONDITIONS
+from cryowsp.data.registry import DATASETS
+from cryowsp.data.sources import download_and_load
+from cryowsp.data.store import (
     dataset_dir,
     dataset_json_path,
     load_split,
@@ -70,8 +70,8 @@ from cryowisp.data.store import (
     split_sha256,
     write_json,
 )
-from cryowisp.models.arch import build_model
-from cryowisp.models.export import (
+from cryowsp.models.arch import build_model
+from cryowsp.models.export import (
     export_model,
     fewshot_models_dir,
     read_fewshot_index,
@@ -80,9 +80,9 @@ from cryowisp.models.export import (
     write_fewshot_index,
     write_index,
 )
-from cryowisp.models.importer import evaluate_on_condition, import_models
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.train import (
+from cryowsp.models.importer import evaluate_on_condition, import_models
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.train import (
     CONFIRMATION_SEEDS,
     DEFAULT_MAIN_SEEDS,
     DEV_SEEDS,

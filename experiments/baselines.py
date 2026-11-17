@@ -9,8 +9,11 @@ Modes:
   copied_delta  no training: add seed1's weight-program deltas to this seed's weights
   random_knob   no training: random deltas on the same three tensors, per-tensor Frobenius
                 norm matched to the program's deltas
+  proto_centroid no training, no weight change: classify by nearest class centroid of the
+                frozen penultimate features of the experience crops (the trivial-memory control)
+  proto_1nn     no training, no weight change: classify by the label of the nearest experience
+                crop in frozen penultimate feature space
 """
-
 from __future__ import annotations
 
 import argparse
@@ -45,8 +48,8 @@ def cond_accuracy(model: nn.Module, npz: Path) -> dict:
         y = torch.from_numpy(z[f"y_{role}"].astype(np.int64))
         correct = total = 0
         for i in range(0, len(x), 256):
-            pred = model((x[i : i + 256] - IMAGENET_MEAN) / IMAGENET_STD).argmax(1)
-            correct += int((pred == y[i : i + 256]).sum())
+            pred = model((x[i:i + 256] - IMAGENET_MEAN) / IMAGENET_STD).argmax(1)
+            correct += int((pred == y[i:i + 256]).sum())
             total += len(pred)
         out[role] = {"accuracy": correct / total, "n": total}
     return out
@@ -60,10 +63,8 @@ def params_from_engine_model(model_dir: Path) -> dict[str, np.ndarray]:
 def program_deltas(attempt_dir: Path, engine_model_dir: Path) -> dict[str, np.ndarray]:
     child = np.load(attempt_dir / "child.npz")
     base = params_from_engine_model(engine_model_dir)
-    return {
-        k: child[k].astype(np.float64) - base[k].astype(np.float64)
-        for k in ("layer4.1.bn2.weight", "layer4.1.bn2.bias", "fc.bias")
-    }
+    return {k: child[k].astype(np.float64) - base[k].astype(np.float64)
+            for k in ("layer4.1.bn2.weight", "layer4.1.bn2.bias", "fc.bias")}
 
 
 def apply_deltas(model: nn.Module, deltas: dict[str, np.ndarray]) -> None:
@@ -75,9 +76,9 @@ def apply_deltas(model: nn.Module, deltas: dict[str, np.ndarray]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument(
-        "--mode", required=True, choices=("full", "linear_probe", "knob", "copied_delta", "random_knob")
-    )
+    ap.add_argument("--mode", required=True,
+                    choices=("full", "linear_probe", "knob", "copied_delta", "random_knob",
+                             "proto_centroid", "proto_1nn"))
     ap.add_argument("--base-model", type=Path, required=True)
     ap.add_argument("--experience", type=Path, required=True)
     ap.add_argument("--selection", type=Path, required=True)
@@ -87,50 +88,76 @@ def main() -> None:
     ap.add_argument("--batch-size", type=int, default=64)
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument(
-        "--class-weight-new",
-        type=float,
-        default=1.0,
-        help="loss weight of new-condition samples (the program used ~10x)",
-    )
-    ap.add_argument(
-        "--deltas-from",
-        type=Path,
-        default=None,
-        help="copied_delta/random_knob: attempt dir holding child.npz (default: seed1 synth attempt)",
-    )
-    ap.add_argument(
-        "--engine-model-dir",
-        type=Path,
-        default=Path("/g/data/jz31/zhaorui/weight_program/cryoexp/engine/seed1/task/model"),
-    )
+    ap.add_argument("--class-weight-new", type=float, default=1.0,
+                    help="loss weight of new-condition samples (the program used ~10x)")
+    ap.add_argument("--deltas-from", type=Path, default=None,
+                    help="copied_delta/random_knob: attempt dir holding child.npz (default: seed1 synth attempt)")
+    ap.add_argument("--engine-model-dir", type=Path,
+                    default=Path("/g/data/jz31/zhaorui/weight_program/cryoexp/engine/seed1/task/model"))
     args = ap.parse_args()
     torch.manual_seed(args.seed)
 
     model = resnet18(num_classes=2)
     model.load_state_dict(torch.load(args.base_model, map_location="cpu", weights_only=True))
 
+    if args.mode in ("proto_centroid", "proto_1nn"):
+        # Trivial-memory control (the BM25 analogue): no weight change, no training — classify
+        # by the frozen penultimate features of the experience crops alone.
+        model.eval()
+
+        @torch.no_grad()
+        def feats(x_u8: np.ndarray) -> np.ndarray:
+            out = []
+            for i in range(0, len(x_u8), 256):
+                t = torch.from_numpy(x_u8[i:i + 256].astype(np.float32) / 255.0)
+                t = (t - IMAGENET_MEAN) / IMAGENET_STD
+                h = model.avgpool(model.layer4(model.layer3(model.layer2(model.layer1(
+                    model.maxpool(model.relu(model.bn1(model.conv1(t)))))))))
+                out.append(h.flatten(1).numpy())
+            return np.concatenate(out)
+
+        z = np.load(args.experience)
+        ye = np.concatenate([z["y_new"], z["y_old"]]).astype(np.int64)
+        fe = feats(np.concatenate([z["x_new"], z["x_old"]]))
+
+        def proto_score(npz: Path) -> dict:
+            zz = np.load(npz)
+            res = {}
+            for role in ("new", "old"):
+                fx = feats(zz[f"x_{role}"])
+                if args.mode == "proto_centroid":
+                    cent = np.stack([fe[ye == c].mean(0) for c in (0, 1)])
+                    d = ((fx[:, None] - cent[None]) ** 2).sum(-1)
+                    pred = d.argmin(1)
+                else:
+                    d = ((fx[:, None] - fe[None]) ** 2).sum(-1)
+                    pred = ye[d.argmin(1)]
+                yy = zz[f"y_{role}"]
+                res[role] = {"accuracy": float((pred == yy).mean()), "n": int(len(yy))}
+            return res
+
+        result = {"mode": args.mode, "seed": args.seed,
+                  "selection": proto_score(args.selection), "final": proto_score(args.final)}
+        print(json.dumps(result["final"]))
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(result, indent=2))
+        return
+
     if args.mode in ("copied_delta", "random_knob"):
-        deltas = program_deltas(
-            args.deltas_from
-            or Path("/g/data/jz31/zhaorui/weight_program/cryoexp/engine/seed1/synth/attempts/0004"),
-            args.engine_model_dir,
-        )
+        deltas = program_deltas(args.deltas_from or Path(
+            "/g/data/jz31/zhaorui/weight_program/cryoexp/engine/seed1/synth/attempts/0004"),
+            args.engine_model_dir)
         if args.mode == "random_knob":
             rng = np.random.default_rng(args.seed)
-
             def norm_matched(d):
                 g = rng.normal(0, 1, d.shape)
                 return g / np.linalg.norm(g) * np.linalg.norm(d)
 
             deltas = {k: norm_matched(d) for k, d in deltas.items()}
         apply_deltas(model, deltas)
-        result = {
-            "mode": args.mode,
-            "seed": args.seed,
-            "selection": cond_accuracy(model, args.selection),
-            "final": cond_accuracy(model, args.final),
-        }
+        result = {"mode": args.mode, "seed": args.seed,
+                  "selection": cond_accuracy(model, args.selection),
+                  "final": cond_accuracy(model, args.final)}
         print(json.dumps(result["final"]))
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(result, indent=2))
@@ -154,10 +181,9 @@ def main() -> None:
         perm = torch.randperm(len(x))
         losses = []
         for i in range(0, len(perm) - args.batch_size + 1, args.batch_size):
-            idx = perm[i : i + args.batch_size]
-            per = nn.functional.cross_entropy(
-                model((x[idx] - IMAGENET_MEAN) / IMAGENET_STD), y[idx], reduction="none"
-            )
+            idx = perm[i:i + args.batch_size]
+            per = nn.functional.cross_entropy(model((x[idx] - IMAGENET_MEAN) / IMAGENET_STD), y[idx],
+                                              reduction="none")
             loss = (per * weights[idx]).sum() / weights[idx].sum()
             opt.zero_grad(set_to_none=True)
             loss.backward()
@@ -167,26 +193,17 @@ def main() -> None:
         sel = cond_accuracy(model, args.selection)
         net = sel["new"]["accuracy"] + sel["old"]["accuracy"]
         history.append({"epoch": epoch, "loss": sum(losses) / max(1, len(losses)), "selection": sel})
-        print(
-            f"epoch {epoch}: loss {sum(losses) / max(1, len(losses)):.4f} "
-            f"sel new {sel['new']['accuracy']:.4f} old {sel['old']['accuracy']:.4f}",
-            flush=True,
-        )
+        print(f"epoch {epoch}: loss {sum(losses) / max(1, len(losses)):.4f} "
+              f"sel new {sel['new']['accuracy']:.4f} old {sel['old']['accuracy']:.4f}", flush=True)
         if net >= best_net:
             best_net = net
             best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
 
     model.load_state_dict(best_state)
-    result = {
-        "mode": args.mode,
-        "seed": args.seed,
-        "lr": args.lr,
-        "epochs": args.epochs,
-        "best_selection_net": best_net,
-        "history": history,
-        "selection": cond_accuracy(model, args.selection),
-        "final": cond_accuracy(model, args.final),
-    }
+    result = {"mode": args.mode, "seed": args.seed, "lr": args.lr, "epochs": args.epochs,
+              "best_selection_net": best_net, "history": history,
+              "selection": cond_accuracy(model, args.selection),
+              "final": cond_accuracy(model, args.final)}
     print("final", json.dumps(result["final"]))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2))

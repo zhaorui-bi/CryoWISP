@@ -1,22 +1,22 @@
-"""PREREG T04 store steps (``cryowisp.data.t04``, ``cryowisp.data.t04_build``). Dev rows only; run on NSCC inside
+"""PREREG T04 store steps (``cryowsp.data.t04``, ``cryowsp.data.t04_build``). Dev rows only; run on NSCC inside
 scripts/nscc_session/outer.sh, so that the records hold the workstation's store paths.
 
     python scripts/t04/t04_store.py rows                                    # the row rule and its sha256 (no data)
     python scripts/t04/t04_store.py clean --data-dir SHARDS [--d-index runs/t03/d_index.jsonl]
-    python scripts/t04/t04_store.py models --weights $CRYOWISP_PRIVATE/pretrained/resnet18-f37072fd.pth
-    python scripts/t04/t04_store.py diag --official make_imagenet_c.py --out $CRYOWISP_RUNS/t04/severity_diag.json
+    python scripts/t04/t04_store.py models --weights $CRYOWSP_PRIVATE/pretrained/resnet18-f37072fd.pth
+    python scripts/t04/t04_store.py diag --official make_imagenet_c.py --out $CRYOWSP_RUNS/t04/severity_diag.json
     python scripts/t04/t04_store.py condition --corruption gaussian_noise --official make_imagenet_c.py \\
-        --diag $CRYOWISP_RUNS/t04/severity_diag.json
-    python scripts/t04/t04_store.py base --out $CRYOWISP_RUNS/t04/base_readouts.json
-    python scripts/t04/t04_store.py instances --base $CRYOWISP_RUNS/t04/base_readouts.json
-    OMP_NUM_THREADS=4 python scripts/t04/t04_store.py timing --out $CRYOWISP_RUNS/t04/timing.json
+        --diag $CRYOWSP_RUNS/t04/severity_diag.json
+    python scripts/t04/t04_store.py base --out $CRYOWSP_RUNS/t04/base_readouts.json
+    python scripts/t04/t04_store.py instances --base $CRYOWSP_RUNS/t04/base_readouts.json
+    OMP_NUM_THREADS=4 python scripts/t04/t04_store.py timing --out $CRYOWSP_RUNS/t04/timing.json
 
 ``diag`` (PREREG T04's severity rule, before any condition is stored): the seed-100 network's forward.py accuracy on
 D (the clean dev rows whose number is a multiple of 50, read from the clean store) and on D under each corruption at
-severities 1 to 5, and the rule's choice per corruption (``cryowisp.data.t04.choose_severity``). ``condition`` stores the
+severities 1 to 5, and the rule's choice per corruption (``cryowsp.data.t04.choose_severity``). ``condition`` stores the
 chosen severity of one corruption, and refuses a corruption the rule chose none for. ``base`` (before any instance):
 the base's accuracy on the clean and every stored condition's V_evidence, V_check and V_select, the V_select headroom
-H, E10's headroom rule (H >= 15 points) and the gain bar (``cryowisp.data.t04.gain_bar``). ``instances`` builds the
+H, E10's headroom rule (H >= 15 points) and the gain bar (``cryowsp.data.t04.gain_bar``). ``instances`` builds the
 evidence-v1 instances (seeds 100 and 101, the decoy map 100 <-> 101) of every stored condition that passes the
 headroom rule. ``timing`` measures forward.py per check (8,000 rows) and per program pass (128 rows) at the thread
 count the environment sets (the sessions use 4) and derives the session wall limit; it also times the large-sample
@@ -37,9 +37,9 @@ from pathlib import Path
 
 import numpy as np
 
-from cryowisp.data import t04 as T
-from cryowisp.data import t04_build as B
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import t04 as T
+from cryowsp.data import t04_build as B
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -54,9 +54,9 @@ def _write_once(out: Path, record: dict) -> None:
 
 
 def _student(seed: int) -> tuple[dict, object, dict]:
-    from cryowisp.common.identity import load_params, params_sha256
-    from cryowisp.data.store import models_dir
-    from cryowisp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
+    from cryowsp.common.identity import load_params, params_sha256
+    from cryowsp.data.store import models_dir
+    from cryowsp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
 
     meta = read_dataset_meta(T.DATASET)
     forward, forward_sha, _ = load_dataset_forward(T.DATASET, meta)
@@ -78,7 +78,7 @@ def _student(seed: int) -> tuple[dict, object, dict]:
 
 def _d_rows_from_store() -> dict[str, np.ndarray]:
     """D's crops, labels and rows, gathered from the clean splits (hash-checked) in row order."""
-    from cryowisp.data.store import load_split, read_dataset_json, split_sha256
+    from cryowsp.data.store import load_split, read_dataset_json, split_sha256
 
     meta = read_dataset_json(T.DATASET)
     xs, ys, rows = [], [], []
@@ -115,7 +115,7 @@ def cmd_diag(args: argparse.Namespace) -> int:
             print(f"{corruption} s{severity}: {accs[severity]:.4f}", flush=True)
         by_corruption[corruption] = T.choose_severity(clean_acc, accs)
     record = {
-        "schema": "cryowisp.t04.severity_diag.v1",
+        "schema": "cryowsp.t04.severity_diag.v1",
         "rows": "D: clean dev rows with row % 50 == 0 (1,000)",
         "d_rows_sha256": T.rows_sha256(d["idx"]),
         "student": student,
@@ -164,7 +164,7 @@ def cmd_condition(args: argparse.Namespace) -> int:
 
 
 def cmd_base(args: argparse.Namespace) -> int:
-    from cryowisp.data.store import list_conditions
+    from cryowsp.data.store import list_conditions
 
     if Path(args.out).exists():
         raise SystemExit(f"{args.out} exists; nothing written")
@@ -181,7 +181,7 @@ def cmd_base(args: argparse.Namespace) -> int:
             "gain_bar_points": T.gain_bar(headroom),
         }
     record = {
-        "schema": "cryowisp.t04.base_readouts.v1",
+        "schema": "cryowsp.t04.base_readouts.v1",
         "student": student,
         "accuracy": table,
         "headroom_rule": f"clean minus condition V_select accuracy >= {T.MIN_DROP_POINTS} points (E10's)",
@@ -202,7 +202,7 @@ def cmd_timing(args: argparse.Namespace) -> int:
     import os
     import resource
 
-    from cryowisp.data.store import list_conditions, load_split
+    from cryowsp.data.store import list_conditions, load_split
 
     if Path(args.out).exists():
         raise SystemExit(f"{args.out} exists; nothing written")
@@ -225,7 +225,7 @@ def cmd_timing(args: argparse.Namespace) -> int:
     wall_min = 120 + max(0.0, 8 * worst / 60.0 - 30.0)
     train_step = _train_step_timing(condition, args.train_threads, args.train_steps)
     record = {
-        "schema": "cryowisp.t04.timing.v1",
+        "schema": "cryowsp.t04.timing.v1",
         "student": student,
         "condition": condition,
         "rows_per_check": len(x),
@@ -269,9 +269,9 @@ def _train_step_timing(condition: str, thread_counts: list[int], steps: int) -> 
 
     import torch
 
-    from cryowisp.baselines.instance_io import load_instance
-    from cryowisp.evalkit.instances import instances_root
-    from cryowisp.harness import t04 as H
+    from cryowsp.baselines.instance_io import load_instance
+    from cryowsp.evalkit.instances import instances_root
+    from cryowsp.harness import t04 as H
 
     spec = importlib.util.spec_from_file_location(
         "t04_large_ft", REPO_ROOT / "scripts" / "t04" / "large_ft.py"
@@ -284,8 +284,8 @@ def _train_step_timing(condition: str, thread_counts: list[int], steps: int) -> 
     params = instance.params
     arch = large.architecture_from(params, large.read_model_spec(instance))
     trainable = large.trainable_tensors(arch, params)
-    from cryowisp.data.store import load_split
-    from cryowisp.evalkit.targets import deployment_splits, load_checked_split
+    from cryowsp.data.store import load_split
+    from cryowsp.evalkit.targets import deployment_splits, load_checked_split
 
     splits = deployment_splits(T.DATASET, condition)
     cond = load_checked_split(splits.v_evidence, splits.v_evidence_sha256)
@@ -318,8 +318,8 @@ def _train_step_timing(condition: str, thread_counts: list[int], steps: int) -> 
 
 
 def cmd_instances(args: argparse.Namespace) -> int:
-    from cryowisp.evalkit.instances import build_deployment_instances
-    from cryowisp.evalkit.targets import SeedSelection
+    from cryowsp.evalkit.instances import build_deployment_instances
+    from cryowsp.evalkit.targets import SeedSelection
 
     base = json.loads(Path(args.base).read_text(encoding="utf-8"))
     out = {}

@@ -16,12 +16,12 @@ import numpy as np
 import torch
 from torchvision.models import resnet18
 
-from cryowisp.application.bundles import new_dir, pack_program, prepare_task, read, sha, write
-from cryowisp.application.editor import synthesize
-from cryowisp.application.resnet import import_checkpoint
-from cryowisp.application.runtime import apply_program
-from cryowisp.harness.jsonio import utc_now
-from cryowisp.harness.launch import LaunchOutcome, record_launch_start
+from cryowsp.application.bundles import new_dir, pack_program, prepare_task, read, sha, write
+from cryowsp.application.editor import synthesize
+from cryowsp.application.resnet import import_checkpoint
+from cryowsp.application.runtime import apply_program
+from cryowsp.harness.jsonio import utc_now
+from cryowsp.harness.launch import LaunchOutcome, record_launch_start
 
 # Deliberately simple engineering fixture: calibrate a class-1 bias using the current model's own logits.
 PROGRAM = """import numpy as np
@@ -43,7 +43,7 @@ class McpFixtureLauncher:
 
     def launch(self, session, paths, task_prompt):
         record_launch_start(paths, session)
-        config = read(paths.mcp_json)["mcpServers"]["cryowisp"]
+        config = read(paths.mcp_json)["mcpServers"]["cryowsp"]
         with paths.claude_stderr.open("wb") as err:
             proc = subprocess.Popen(
                 [config["command"], *config["args"]],

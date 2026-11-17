@@ -1,4 +1,4 @@
-"""Which bubblewrap and which interpreters the sandbox accepts (``cryowisp.sandbox.host``).
+"""Which bubblewrap and which interpreters the sandbox accepts (``cryowsp.sandbox.host``).
 
 ``check_bwrap`` refuses a bubblewrap older than 0.8.0 by name. ``interpreter_mounts`` mounts a venv whose base
 interpreter lies outside /usr (a uv-managed CPython, say) file by file and recreates the links on the way, and refuses
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.sandbox.host import SandboxError, check_bwrap, interpreter_mounts
+from cryowsp.sandbox.host import SandboxError, check_bwrap, interpreter_mounts
 
 
 def _fake_bwrap(tmp_path: Path, output: str) -> Path:
@@ -135,7 +135,7 @@ def test_a_link_on_the_venv_path_is_refused(tmp_path: Path) -> None:
 
 
 def test_the_cli_requires_a_sandbox_or_a_trusted_hash(capsys: pytest.CaptureFixture[str]) -> None:
-    from cryowisp.application.cli import main, parser
+    from cryowsp.application.cli import main, parser
 
     common = ["--task", "t", "--out", "o", "--wall-s", "1"]
     with pytest.raises(SystemExit) as stop:
@@ -150,11 +150,11 @@ def test_the_cli_requires_a_sandbox_or_a_trusted_hash(capsys: pytest.CaptureFixt
 
 
 def test_the_mcp_server_takes_bwrap_from_the_session_record(tmp_path: Path) -> None:
-    """The research harness's MCP server starts with a cleaned environment, so ``$CRYOWISP_BWRAP`` never reaches it;
+    """The research harness's MCP server starts with a cleaned environment, so ``$CRYOWSP_BWRAP`` never reaches it;
     session.json records the binary and the server's SandboxConfig reads it from there (old records: the default)."""
-    from cryowisp.harness.session import SessionPaths
-    from cryowisp.harness.tools import sandbox_config
-    from cryowisp.sandbox import DEFAULT_BWRAP
+    from cryowsp.harness.session import SessionPaths
+    from cryowsp.harness.tools import sandbox_config
+    from cryowsp.sandbox import DEFAULT_BWRAP
 
     sandbox = {
         "python": "/x/bin/python",

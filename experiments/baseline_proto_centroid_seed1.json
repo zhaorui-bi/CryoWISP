@@ -1,0 +1,24 @@
+{
+  "mode": "proto_centroid",
+  "seed": 1,
+  "selection": {
+    "new": {
+      "accuracy": 0.4967105263157895,
+      "n": 304
+    },
+    "old": {
+      "accuracy": 0.8546875,
+      "n": 640
+    }
+  },
+  "final": {
+    "new": {
+      "accuracy": 0.485,
+      "n": 400
+    },
+    "old": {
+      "accuracy": 0.890625,
+      "n": 640
+    }
+  }
+}

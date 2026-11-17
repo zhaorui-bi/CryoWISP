@@ -1,6 +1,6 @@
 """GCN students of ogbn-arxiv: the numpy forward.py against torch, the symmetric aggregation, training and params.
 
-A small random graph built by ``cryowisp.data.arxiv.build_graph`` stands in for the real one; nothing reads the store.
+A small random graph built by ``cryowsp.data.arxiv.build_graph`` stands in for the real one; nothing reads the store.
 """
 
 from __future__ import annotations
@@ -11,11 +11,11 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.data.arxiv import build_graph
-from cryowisp.models import gcn as G
-from cryowisp.models.export import ParityError, load_forward_no_cache
-from cryowisp.models.forward_gen import render_gcn_forward, write_forward
-from cryowisp.models.parity import FLOAT32_STEP, check_logit_parity
+from cryowsp.data.arxiv import build_graph
+from cryowsp.models import gcn as G
+from cryowsp.models.export import ParityError, load_forward_no_cache
+from cryowsp.models.forward_gen import render_gcn_forward, write_forward
+from cryowsp.models.parity import FLOAT32_STEP, check_logit_parity
 
 N, F_IN, K = 60, 7, 5
 

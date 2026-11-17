@@ -1,4 +1,4 @@
-"""PREREG E11 in the harness (``cryowisp.harness.e11``): a ViT-Lite student on E10's conditions.
+"""PREREG E11 in the harness (``cryowsp.harness.e11``): a ViT-Lite student on E10's conditions.
 
 Units: the dataset name and leak words, the MCP floors, the student check, the LEARN limits on the ViT-Lite-7/4 tensor
 shapes themselves (LayerNorm and every bias 1-D: exempt from rel-Frob and counted in the 20%; the class token, the
@@ -24,23 +24,23 @@ from e11_toy import CLASSES, PLANT_CONDITION, build_e11_store, e11_store  # noqa
 from test_harness_fixtures import needs_sandbox
 from test_harness_learn import STRINGS, _program_cell
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit.devreadout import readout_run
-from cryowisp.evalkit.e10 import e10_program_limits
-from cryowisp.evalkit.evidence import EVIDENCE_RULE_V1
-from cryowisp.evalkit.instances import leak_tokens, scan_for_tokens
-from cryowisp.harness import e10, e11, runner
-from cryowisp.harness.arms import applied_limits
-from cryowisp.harness.finalize import KIND_CHECKED, STATUS_DRY_RUN
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.program import write_derived_patch
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.models import vit_synth as V
-from cryowisp.patch import Limits, PatchError, apply_patch, task_limits
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit.devreadout import readout_run
+from cryowsp.evalkit.e10 import e10_program_limits
+from cryowsp.evalkit.evidence import EVIDENCE_RULE_V1
+from cryowsp.evalkit.instances import leak_tokens, scan_for_tokens
+from cryowsp.harness import e10, e11, runner
+from cryowsp.harness.arms import applied_limits
+from cryowsp.harness.finalize import KIND_CHECKED, STATUS_DRY_RUN
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.program import write_derived_patch
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.models import vit_synth as V
+from cryowsp.patch import Limits, PatchError, apply_patch, task_limits
+from cryowsp.sandbox.program import ProgramSandbox
 
 WALL_S = 300.0
 ARCH_WORDS = (

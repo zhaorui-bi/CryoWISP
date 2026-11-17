@@ -6,8 +6,8 @@ bias, then bn1 with weight, bias, running_mean and running_var, then ReLU and fc
 1-D parameters of model.npz as in the E10 ResNet-20. With running_mean 0, running_var 1 - eps, weight 1 and bias 0
 the layer is the identity, so the toy store's planted confusions and its fixing programs carry over. Dev seeds 100
 to 105 (the E10 students), one instance per (condition, seed), and the replay draw. The four conditions use the toy
-store's one corruption under the E10 names (``cryowisp.harness.e10.STREAM_CONDITIONS``). Everything lives under a pytest
-tmp directory with CRYOWISP_* monkeypatched; nothing touches the real store.
+store's one corruption under the E10 names (``cryowsp.harness.e10.STREAM_CONDITIONS``). Everything lives under a pytest
+tmp directory with CRYOWSP_* monkeypatched; nothing touches the real store.
 """
 
 from __future__ import annotations
@@ -29,12 +29,12 @@ from test_evalkit_instances_store import (
     toy_params,
 )
 
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.evalkit.companions import build_replay
-from cryowisp.evalkit.instances import build_deployment_instances
-from cryowisp.evalkit.patch_check import load_forward, predict
-from cryowisp.evalkit.targets import SeedSelection
-from cryowisp.harness import e10
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.evalkit.companions import build_replay
+from cryowsp.evalkit.instances import build_deployment_instances
+from cryowsp.evalkit.patch_check import load_forward, predict
+from cryowsp.evalkit.targets import SeedSelection
+from cryowsp.harness import e10
 
 BN_EPS = 1e-5
 DEV_SEEDS = (100, 101, 102, 103, 104, 105)
@@ -73,7 +73,7 @@ def bn_params(tag: int) -> dict[str, np.ndarray]:
 
 def _model_spec(model_id: str) -> dict[str, object]:
     return {
-        "schema": "cryowisp.model_spec.v0",
+        "schema": "cryowsp.model_spec.v0",
         "model_id": model_id,
         "input": {
             "shape": [1, 4, 4],
@@ -135,7 +135,7 @@ def build_store(root: Path) -> ToyStore:
             for split, arrays in splits.items()
             if split != "test"
         },
-        "test": {"location": f"$CRYOWISP_SEALED/{dataset}/test.npz", "sha256": params_sha256(splits["test"])},
+        "test": {"location": f"$CRYOWSP_SEALED/{dataset}/test.npz", "sha256": params_sha256(splits["test"])},
     }
     (data / "dataset.json").write_text(json.dumps(meta, indent=2))
     rows: list[dict[str, object]] = []

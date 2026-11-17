@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.models import resnet20a as A
-from cryowisp.models.forward_gen import render_resnet20a_forward
+from cryowsp.models import resnet20a as A
+from cryowsp.models.forward_gen import render_resnet20a_forward
 
 MEAN = [0.4909, 0.4818, 0.4460]
 STD = [0.2471, 0.2435, 0.2616]

@@ -1,6 +1,6 @@
 """E1 and E3 numbers of one LEARN session against the bars of PREREG section 0 (dev, seed 100). Reads only the outputs of
-scripts/dev/post_learn.sh: $CRYOWISP_RUNS/devreadouts/learn/<sid>/info.json (session_info) and
-$CRYOWISP_RUNS/devreadouts/learn/<sid>/transfer/transfer_*.json.
+scripts/dev/post_learn.sh: $CRYOWSP_RUNS/devreadouts/learn/<sid>/info.json (session_info) and
+$CRYOWSP_RUNS/devreadouts/learn/<sid>/transfer/transfer_*.json.
 
 Usage: judge_e1.py [--bar INSTANCE=JOINT ...] SESSION_ID [SESSION_ID ...]
 
@@ -21,7 +21,7 @@ import os
 import sys
 from pathlib import Path
 
-LEARN_ROOT = Path(os.environ["CRYOWISP_RUNS"]) / "devreadouts" / "learn"
+LEARN_ROOT = Path(os.environ["CRYOWSP_RUNS"]) / "devreadouts" / "learn"
 # PREREG section 0, E1 bars (joint needed), fixed before any LEARN session ran.
 BARS = {
     "ibb1f3fc6": ("gaussian_noise_s3", 10.55, True),

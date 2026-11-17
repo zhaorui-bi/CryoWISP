@@ -22,11 +22,11 @@ from test_evalkit_instances_store import (  # noqa: F401
     write_condition_meta,
 )
 
-import cryowisp.evalkit.sealed as sealed
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.evalkit.metrics import sealed_readout
-from cryowisp.evalkit.patch_check import predict
+import cryowsp.evalkit.sealed as sealed
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.evalkit.metrics import sealed_readout
+from cryowsp.evalkit.patch_check import predict
 
 
 def _main_seed0(store: ToyStore) -> str:
@@ -40,7 +40,7 @@ def _manifest(store: ToyStore, tmp_path: Path, instance_id: str) -> Path:
     child_path.parent.mkdir(parents=True)
     digest = save_params(child_path, fixing_child(instance.params))
     payload = {
-        "schema": "cryowisp.sealed_manifest.v0",
+        "schema": "cryowsp.sealed_manifest.v0",
         "created_at": "2026-11-03T12:00:00+00:00",
         "note": "condition test",
         "entries": [

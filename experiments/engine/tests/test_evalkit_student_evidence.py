@@ -15,11 +15,11 @@ from test_evalkit_instances_store import (  # noqa: F401
     toy_store,
 )
 
-from cryowisp.baselines.instance_io import Instance, load_instance
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit.evidence import EVIDENCE_KEYS, K_FAIL, K_RAND, evidence_content_sha256, evidence_seed_v1
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.evalkit.student_evidence import StudentEvidenceError, draw_evidence_for
+from cryowsp.baselines.instance_io import Instance, load_instance
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit.evidence import EVIDENCE_KEYS, K_FAIL, K_RAND, evidence_content_sha256, evidence_seed_v1
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.evalkit.student_evidence import StudentEvidenceError, draw_evidence_for
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 """PREREG E7 instrument: Correct-and-Smooth and label propagation on a graphnew instance, read on V_select.
 
-Not a reference, never gating, not a weight edit (``cryowisp.analysis.graphnew_cs``). The seeds are the instance's 144
+Not a reference, never gating, not a weight edit (``cryowsp.analysis.graphnew_cs``). The seeds are the instance's 144
 evidence nodes with their labels, the base model output is the softmax of forward.py's logits at every node, and the
 settings are the official C&S code's ogbn-arxiv settings. Each variant's 40-way argmax is read on V_select against the
 base (``fewshot.class_split_readout``: all, new-class and old-class rows), with class-balanced new-class accuracy;
@@ -8,7 +8,7 @@ a class with no V_select row has a null accuracy. Writes one JSON record and ref
 
     source scripts/env.sh
     .venv/bin/python scripts/dev/e7_cs_instrument.py --instance g06de3fa0 \\
-        --out $CRYOWISP_RUNS/devreadouts/e7_cs_g06de3fa0_dev_20261104.json
+        --out $CRYOWSP_RUNS/devreadouts/e7_cs_g06de3fa0_dev_20261104.json
 """
 
 from __future__ import annotations
@@ -39,11 +39,11 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.analysis import graphnew_cs as C
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.evalkit import graphnew as GN
-    from cryowisp.evalkit.devreadout import json_safe
-    from cryowisp.evalkit.fewshot import class_split_readout
+    from cryowsp.analysis import graphnew_cs as C
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.evalkit import graphnew as GN
+    from cryowsp.evalkit.devreadout import json_safe
+    from cryowsp.evalkit.fewshot import class_split_readout
 
     started = time.perf_counter()
     instance = GN.load_graphnew_instance(args.instance)
@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         readout["n_vselect_zero_mass_rows"] = C.zero_rows(output, v_sel["x"])
         variants[name] = {"setting": C.SETTINGS[name], "readout": json_safe(readout)}
     record = {
-        "schema": "cryowisp.e7_cs_instrument.v1",
+        "schema": "cryowsp.e7_cs_instrument.v1",
         "prereg": "E7 instrument (label propagation / Correct-and-Smooth on the base softmax); not a reference, "
         "never gating, not a weight edit",
         "instance_id": instance.instance_id,

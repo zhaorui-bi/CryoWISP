@@ -1,6 +1,6 @@
 """Cell-log reading, report fields and the audit_session.py script (HARNESS_SPEC section 7).
 
-All logs are synthetic and written under pytest's tmp_path; nothing touches $CRYOWISP_*.
+All logs are synthetic and written under pytest's tmp_path; nothing touches $CRYOWSP_*.
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.audit import report as R
-from cryowisp.audit.session import (
+from cryowsp.audit import report as R
+from cryowsp.audit.session import (
     AuditInputError,
     CellRecord,
     audit_cells,
@@ -23,7 +23,7 @@ from cryowisp.audit.session import (
     read_cells,
     write_report,
 )
-from cryowisp.sandbox.host import INFLIGHT_SCHEMA, INFLIGHT_SUFFIX, _cell_record
+from cryowsp.sandbox.host import INFLIGHT_SCHEMA, INFLIGHT_SUFFIX, _cell_record
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "scripts" / "audit_session.py"
@@ -65,7 +65,7 @@ def record(
     error: str | None = None,
     generation: int = 0,
 ) -> dict[str, object]:
-    """A cell-log line as cryowisp.sandbox.host writes it."""
+    """A cell-log line as cryowsp.sandbox.host writes it."""
     return _cell_record(
         index=index,
         timestamp="2026-11-03T00:00:00+00:00",
@@ -358,7 +358,7 @@ def test_auditor_hash_covers_the_judge_prompt() -> None:
 
 
 def run_script(*args: str) -> subprocess.CompletedProcess[str]:
-    env = {key: value for key, value in os.environ.items() if not key.startswith("CRYOWISP_")}
+    env = {key: value for key, value in os.environ.items() if not key.startswith("CRYOWSP_")}
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
         capture_output=True,

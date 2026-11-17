@@ -1,6 +1,6 @@
 """Sandbox isolation against the real bubblewrap (docs/HARNESS_SPEC.md section 3) and the isolation self-test.
 
-The fake $CRYOWISP_* roots live under ~/.cache, not /tmp: the sandbox mounts its own /tmp, so host paths under
+The fake $CRYOWSP_* roots live under ~/.cache, not /tmp: the sandbox mounts its own /tmp, so host paths under
 /tmp would be invisible for a trivial reason and the invisibility checks would prove nothing.
 """
 
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-import cryowisp.sandbox.host as host_module
-from cryowisp.sandbox import (
+import cryowsp.sandbox.host as host_module
+from cryowsp.sandbox import (
     DEFAULT_BWRAP,
     KERNEL_SCRIPT,
     SandboxConfig,
@@ -28,12 +28,12 @@ from cryowisp.sandbox import (
     isolation_selftest,
     sandbox_environment,
 )
-from cryowisp.sandbox.selftest import INSIDE_CHECKS
+from cryowsp.sandbox.selftest import INSIDE_CHECKS
 
 REPO = Path(__file__).resolve().parents[1]
 SANDBOX_PYTHON = REPO / ".venv-sandbox" / "bin" / "python"
 SANDBOX_VENV = SANDBOX_PYTHON.parent.parent
-BWRAP = DEFAULT_BWRAP  # $CRYOWISP_BWRAP or /usr/bin/bwrap
+BWRAP = DEFAULT_BWRAP  # $CRYOWSP_BWRAP or /usr/bin/bwrap
 
 pytestmark = [
     pytest.mark.skipif(
@@ -56,13 +56,13 @@ HOST_SIDE_CHECKS = {
 
 @pytest.fixture
 def store(monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[str, Path]]:
-    """Fake $CRYOWISP_PRIVATE, $CRYOWISP_SEALED and $CRYOWISP_RUNS with a marker file each, removed afterwards."""
-    root = Path(tempfile.mkdtemp(prefix="cryowisp-sandbox-test-", dir=Path.home() / ".cache"))
+    """Fake $CRYOWSP_PRIVATE, $CRYOWSP_SEALED and $CRYOWSP_RUNS with a marker file each, removed afterwards."""
+    root = Path(tempfile.mkdtemp(prefix="cryowsp-sandbox-test-", dir=Path.home() / ".cache"))
     roots = {}
     for name, variable in (
-        ("private", "CRYOWISP_PRIVATE"),
-        ("sealed", "CRYOWISP_SEALED"),
-        ("runs", "CRYOWISP_RUNS"),
+        ("private", "CRYOWSP_PRIVATE"),
+        ("sealed", "CRYOWSP_SEALED"),
+        ("runs", "CRYOWSP_RUNS"),
     ):
         path = root / name
         path.mkdir()
@@ -116,13 +116,13 @@ def value_of(kernel: SandboxKernel, code: str) -> object:
 def test_numpy_present_and_other_numeric_stacks_absent(kernel: SandboxKernel) -> None:
     version = value_of(kernel, "import numpy\nnumpy.__version__")
     assert isinstance(version, str) and version.startswith("2.")
-    for module in ("scipy", "torch", "sklearn", "cryowisp"):
+    for module in ("scipy", "torch", "sklearn", "cryowsp"):
         result = kernel.run(f"import {module}")
         assert result.error is not None and "ModuleNotFoundError" in result.error, module
 
 
 def test_network_dns_and_host_sockets_are_unreachable(kernel: SandboxKernel) -> None:
-    abstract_name = f"\0cryowisp-sandbox-test-{secrets.token_hex(8)}"
+    abstract_name = f"\0cryowsp-sandbox-test-{secrets.token_hex(8)}"
     with (
         socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener,
         socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as abstract,
@@ -173,7 +173,7 @@ def test_host_files_and_protected_roots_are_invisible(store: dict[str, Path], di
         store["private"] / "SECRET.txt",
         Path("/etc/passwd"),
         Path("/etc"),
-        REPO / "cryowisp",
+        REPO / "cryowsp",
         REPO / ".venv",
         REPO / "docs",
         KERNEL_SCRIPT,
@@ -183,7 +183,7 @@ def test_host_files_and_protected_roots_are_invisible(store: dict[str, Path], di
     present_on_host = {path for path in hidden if os.path.lexists(path)}
     assert present_on_host >= {
         store["private"] / "SECRET.txt",
-        REPO / "cryowisp",
+        REPO / "cryowsp",
         KERNEL_SCRIPT,
         dirs["trial"],
     }
@@ -213,7 +213,7 @@ def test_parent_environment_is_not_visible(
     store: dict[str, Path], dirs: dict[str, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     canary = secrets.token_hex(16)
-    monkeypatch.setenv("CRYOWISP_CANARY", canary)
+    monkeypatch.setenv("CRYOWSP_CANARY", canary)
     config = make_config(dirs)
     with SandboxKernel(config) as kernel:
         environment = value_of(kernel, "import os\ndict(os.environ)")
@@ -222,8 +222,8 @@ def test_parent_environment_is_not_visible(
     assert isinstance(environment, dict) and isinstance(initial, bytes)
     assert set(environment) <= set(expected) | {"PWD", "LC_CTYPE"}
     assert {key: environment.get(key) for key in expected} == expected
-    assert not any("CRYOWISP" in key for key in environment)
-    for secret in (canary, str(store["private"]), str(store["sealed"]), "CRYOWISP"):
+    assert not any("CRYOWSP" in key for key in environment)
+    for secret in (canary, str(store["private"]), str(store["sealed"]), "CRYOWSP"):
         assert secret.encode() not in initial and secret not in repr(environment)
 
 
@@ -248,7 +248,7 @@ def test_trial_is_read_only_while_patches_and_scratch_are_writable(
                 outcome[label] = "ALLOWED"
         outcome["read"] = open("/work/trial/model_spec.json").read()
         with open("/work/patches/p01.json", "w") as handle:
-            handle.write('{"schema": "cryowisp.patch.v0"}')
+            handle.write('{"schema": "cryowsp.patch.v0"}')
         with open(os.path.expanduser("~/note.txt"), "w") as handle:
             handle.write("scratch")
         outcome["cwd"] = os.getcwd()
@@ -261,7 +261,7 @@ def test_trial_is_read_only_while_patches_and_scratch_are_writable(
     assert {outcome[label] for label in ("create", "modify", "delete", "chmod")} == {"EROFS"}
     assert outcome["read"] == '{"schema": "test"}\n'
     assert (outcome["cwd"], outcome["home"]) == ("/work", "/work/scratch")
-    assert (dirs["patches"] / "p01.json").read_text() == '{"schema": "cryowisp.patch.v0"}'
+    assert (dirs["patches"] / "p01.json").read_text() == '{"schema": "cryowsp.patch.v0"}'
     assert (dirs["scratch"] / "note.txt").read_text() == "scratch"
     assert sorted(os.listdir(dirs["trial"])) == ["model_spec.json"]
     assert (dirs["trial"] / "model_spec.json").read_text() == '{"schema": "test"}\n'
@@ -273,7 +273,7 @@ def test_sandbox_root_and_system_paths_are_read_only_and_tmp_is_bounded(dirs: di
             """
             import errno, os
             outcome = {}
-            for target in ("/probe", "/work/probe", "/usr/probe", "/dev/probe", "/home/probe", "/opt/cryowisp/probe",
+            for target in ("/probe", "/work/probe", "/usr/probe", "/dev/probe", "/home/probe", "/opt/cryowsp/probe",
                            "/tmp/probe", "/dev/shm/probe"):
                 try:
                     with open(target, "x") as handle:
@@ -284,7 +284,7 @@ def test_sandbox_root_and_system_paths_are_read_only_and_tmp_is_bounded(dirs: di
                     os.unlink(target)
                     outcome[target] = "WRITABLE"
             try:
-                open("/opt/cryowisp/kernel.py", "a").close()
+                open("/opt/cryowsp/kernel.py", "a").close()
             except OSError as exc:
                 outcome["kernel"] = errno.errorcode[exc.errno]
             try:
@@ -301,7 +301,7 @@ def test_sandbox_root_and_system_paths_are_read_only_and_tmp_is_bounded(dirs: di
         )
         outcome = value_of(kernel, code)
     assert isinstance(outcome, dict)
-    for target in ("/probe", "/work/probe", "/usr/probe", "/dev/probe", "/home/probe", "/opt/cryowisp/probe"):
+    for target in ("/probe", "/work/probe", "/usr/probe", "/dev/probe", "/home/probe", "/opt/cryowsp/probe"):
         assert outcome[target] == "EROFS", (target, outcome)
     assert outcome["kernel"] == "EROFS"
     assert outcome["/tmp/probe"] == outcome["/dev/shm/probe"] == "WRITABLE"
@@ -330,7 +330,7 @@ def test_isolation_selftest_detects_injected_leaks(
         argv = original(config, response_fd)
         position = argv.index("--remount-ro")
         extra = [
-            "--setenv", "CRYOWISP_LEAK", "1",
+            "--setenv", "CRYOWSP_LEAK", "1",
             "--ro-bind", str(store["private"]), str(store["private"]),
             "--bind", str(config.trial_dir.resolve()), "/work/trial",
         ]  # fmt: skip
@@ -371,7 +371,7 @@ def test_isolation_selftest_finds_forbidden_strings_in_bind_source_paths(
 def test_isolation_selftest_fails_closed_without_protected_roots(
     dirs: dict[str, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         monkeypatch.delenv(variable, raising=False)
     report = isolation_selftest(make_config(dirs))
     assert report["status"] == "fail"

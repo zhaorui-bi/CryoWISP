@@ -46,10 +46,10 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "t07"))
 import t07_range as T  # noqa: E402
 
-from cryowisp.evalkit.sealed import manifest_sha256  # noqa: E402
-from cryowisp.evalkit.sealed_range import decode_bits  # noqa: E402
+from cryowsp.evalkit.sealed import manifest_sha256  # noqa: E402
+from cryowsp.evalkit.sealed_range import decode_bits  # noqa: E402
 
-SCHEMA = "cryowisp.t07_v5_table.v1"
+SCHEMA = "cryowsp.t07_v5_table.v1"
 T07_RECORD_SHA256 = "55982f0da04b35140b494022768e64e4f0aa2115f7aff4084fbd2453265fa556"
 ARCHS = ("vit", "r18")
 FINALS = ("llm_gaussian_noise", "llm_contrast")

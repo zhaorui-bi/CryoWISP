@@ -1,5 +1,5 @@
 {
-  "schema": "cryowisp.namespace_migration.v1",
+  "schema": "cryowsp.namespace_migration.v1",
   "scope": "Repository record formats and naming only; external experiment stores are unchanged.",
   "measurements_rerun": false,
   "candidate_lists_and_parameter_hashes_unchanged": true,

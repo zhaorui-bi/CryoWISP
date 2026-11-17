@@ -5,7 +5,7 @@ main seeds 0..4, condition "deploy", 172 parameters, so the edit-size limit is 0
 relative-Frobenius limit 0.5 applies to fc1.weight and fc2.weight. ``FIX_OPS`` lets a true-class-0 image (pixel 4
 bright) excite hidden unit 0 and inhibit unit 1: it fixes the twelve planted (0 -> 1) errors of V_check and breaks
 nothing, within every limit (edit size 2, relative norm about 0.42). Everything lives under pytest tmp dirs with
-monkeypatched CRYOWISP_* variables; no test touches the real store, and no test starts Claude Code.
+monkeypatched CRYOWSP_* variables; no test touches the real store, and no test starts Claude Code.
 """
 
 from __future__ import annotations
@@ -19,11 +19,11 @@ from typing import Any
 import pytest
 from test_evalkit_instances_store import ToyStore, build_toy_store, build_v1
 
-from cryowisp.harness.runner import SANDBOX_PYTHON, SessionResult, run_session
-from cryowisp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
-from cryowisp.sandbox.host import DEFAULT_BWRAP
+from cryowsp.harness.runner import SANDBOX_PYTHON, SessionResult, run_session
+from cryowsp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
+from cryowsp.sandbox.host import DEFAULT_BWRAP
 
-BWRAP = DEFAULT_BWRAP  # $CRYOWISP_BWRAP or /usr/bin/bwrap
+BWRAP = DEFAULT_BWRAP  # $CRYOWSP_BWRAP or /usr/bin/bwrap
 needs_sandbox = pytest.mark.skipif(
     not (BWRAP.exists() and SANDBOX_PYTHON.exists()),
     reason="scripted sessions need the real bubblewrap sandbox and the sandbox venv (scripts/setup_sandbox_venv.sh)",
@@ -86,7 +86,7 @@ def patch_code(patches: Mapping[str, list[dict[str, Any]]], **extra: str) -> str
         "import json\n"
         "parent = json.load(open('/work/trial/task.json'))['parent_sha256']\n"
         f"for name, ops in json.loads({payload}).items():\n"
-        "    patch = {'schema': 'cryowisp.patch.v0', 'parent_sha256': parent, 'ops': ops}\n"
+        "    patch = {'schema': 'cryowsp.patch.v0', 'parent_sha256': parent, 'ops': ops}\n"
         f"    patch.update(json.loads({fields}))\n"
         "    json.dump(patch, open('/work/patches/' + name, 'w'))\n"
         "print(sorted(json.loads(" + payload + ")))\n"

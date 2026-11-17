@@ -1,19 +1,19 @@
-"""Run PREREG D2 (``cryowisp.baselines.fit.d2struct``): the LLM final's structure trained by gradient, on an E11 instance.
+"""Run PREREG D2 (``cryowsp.baselines.fit.d2struct``): the LLM final's structure trained by gradient, on an E11 instance.
 
 Methods: d2_struct_base (start (i), the base) and d2_struct_final (start (ii), the final's child), 8 configurations
 each, one joint check per configuration, on the instance's 64 condition rows and 64 clean replay rows. The trainable
 entries are those the final changes, rebuilt from its program-transfer record on this instance (``--transfer``).
-Runs go to ``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/d2/<seed>/``; an existing run directory is never
+Runs go to ``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/d2/<seed>/``; an existing run directory is never
 overwritten. Main instances are refused (exit status 2, nothing written).
 
-Read the runs as F1's are read: ``python -m cryowisp.evalkit.devreadout RUN --clean`` (own pick), ``--retention-floor
+Read the runs as F1's are read: ``python -m cryowsp.evalkit.devreadout RUN --clean`` (own pick), ``--retention-floor
 -20`` (the kept pick) and ``--all-candidates`` (every configuration).
 
 Example::
 
     source scripts/env.sh
     .venv/bin/python scripts/run_d2_struct.py --instance i00802425 \\
-        --transfer $CRYOWISP_RUNS/devreadouts/learn/sc918e11dceef637a/transfer/transfer_3c1cebc35ef0_i00802425.json
+        --transfer $CRYOWSP_RUNS/devreadouts/learn/sc918e11dceef637a/transfer/transfer_3c1cebc35ef0_i00802425.json
 """
 
 from __future__ import annotations
@@ -49,15 +49,15 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import EXIT_REFUSED, load_checked_instances, refusal_message, summary_line
-    from cryowisp.baselines.fit.d2struct import D2_LABEL, D2_METHODS, D2Error, run_d2
-    from cryowisp.baselines.fit.ftcompare import F1_DATASET
-    from cryowisp.baselines.fit.runner import SplitRoleError, baseline_run_dir
+    from cryowsp.baselines.fit.cli import EXIT_REFUSED, load_checked_instances, refusal_message, summary_line
+    from cryowsp.baselines.fit.d2struct import D2_LABEL, D2_METHODS, D2Error, run_d2
+    from cryowsp.baselines.fit.ftcompare import F1_DATASET
+    from cryowsp.baselines.fit.runner import SplitRoleError, baseline_run_dir
 
     if set(METHODS) != set(D2_METHODS):
         raise RuntimeError(f"script methods {METHODS} differ from the library's {D2_METHODS}")

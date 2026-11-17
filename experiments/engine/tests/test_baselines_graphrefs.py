@@ -1,4 +1,4 @@
-"""PREREG E7 references (``cryowisp.baselines.fit.graphrefs``) and the runner's graphnew mode on the toy inductive store
+"""PREREG E7 references (``cryowsp.baselines.fit.graphrefs``) and the runner's graphnew mode on the toy inductive store
 of tests/test_evalkit_graphnew.py, with a student wide enough (hidden 160) that its head is under the 20% cap.
 
 Covers: parity of the functional rebuild at every node, the head input identity, the trainable set (never the
@@ -16,12 +16,12 @@ import pytest
 import torch
 from test_evalkit_graphnew import build_toy_store
 
-from cryowisp.baselines.fit import graphrefs as R
-from cryowisp.baselines.fit.runner import MethodSpec, execute_run, load_graphnew_evidence
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit import devreadout as D
-from cryowisp.evalkit import graphnew as GN
-from cryowisp.models.export import ParityError
+from cryowsp.baselines.fit import graphrefs as R
+from cryowsp.baselines.fit.runner import MethodSpec, execute_run, load_graphnew_evidence
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit import devreadout as D
+from cryowsp.evalkit import graphnew as GN
+from cryowsp.models.export import ParityError
 
 HIDDEN = 160
 
@@ -29,11 +29,11 @@ HIDDEN = 160
 @pytest.fixture()
 def wide(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     store = build_toy_store(tmp_path, monkeypatch, hidden=HIDDEN)
-    (tmp_path / "CRYOWISP_RUNS").mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(tmp_path / "CRYOWISP_RUNS"))
+    (tmp_path / "CRYOWSP_RUNS").mkdir()
+    monkeypatch.setenv("CRYOWSP_RUNS", str(tmp_path / "CRYOWSP_RUNS"))
     (outcome,) = GN.build_graphnew_instances()
     instance = GN.load_graphnew_instance(outcome["instance_id"])
-    return {**store, "instance": instance, "runs": tmp_path / "CRYOWISP_RUNS"}
+    return {**store, "instance": instance, "runs": tmp_path / "CRYOWSP_RUNS"}
 
 
 def _ctx(instance):

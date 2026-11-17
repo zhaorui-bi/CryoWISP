@@ -1,10 +1,10 @@
-"""PREREG T08: the reuse matrix table (``python -m cryowisp.harness.reuse_matrix table``) as markdown.
+"""PREREG T08: the reuse matrix table (``python -m cryowsp.harness.reuse_matrix table``) as markdown.
 
 Per condition and arm, the 5 x 6 matrix of V_select gain / clean / joint in points (status when not ok; the
 diagonal program cell marked *), the diagonal gates, the per-source readings, the per-target means and the E3 and F6
 cross-checks. Numbers are copied from the table JSON, nothing is recomputed.
 
-    python scripts/t08/t08_tables.py $CRYOWISP_RUNS/t08/t08_matrix_<date>.json > tables.md
+    python scripts/t08/t08_tables.py $CRYOWSP_RUNS/t08/t08_matrix_<date>.json > tables.md
 """
 
 from __future__ import annotations

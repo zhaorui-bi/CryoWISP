@@ -1,10 +1,10 @@
-"""Regression tests of cryowisp.audit for defects found on real editor sessions."""
+"""Regression tests of cryowsp.audit for defects found on real editor sessions."""
 
 from __future__ import annotations
 
 import pytest
 
-from cryowisp.audit.interp import UNBOUNDED_LABEL, _merge_sigs
+from cryowsp.audit.interp import UNBOUNDED_LABEL, _merge_sigs
 
 
 def test_an_overflowed_signature_absorbs_a_merge() -> None:
@@ -50,7 +50,7 @@ def compose(strengths):
 
 
 def test_evaluations_made_while_a_patch_is_composed_are_not_candidates() -> None:
-    from cryowisp.audit.session import audit_cells
+    from cryowsp.audit.session import audit_cells
 
     report = audit_cells(
         [
@@ -66,7 +66,7 @@ print((forward(Q, xf).argmax(1) == yf).mean())
 
 
 def test_a_label_score_inside_the_compose_loop_is_still_counted_per_iteration() -> None:
-    from cryowisp.audit.session import audit_cells
+    from cryowsp.audit.session import audit_cells
 
     report = audit_cells(
         [
@@ -83,7 +83,7 @@ for s in np.linspace(0.1, 0.9, 9):
 
 
 def test_dropping_a_loop_from_an_evaluation_signature() -> None:
-    from cryowisp.audit.interp import _loop_evals, _without_loop
+    from cryowsp.audit.interp import _loop_evals, _without_loop
 
     assert (
         _without_loop("eval:c1.2.3+c1.4.5#L1_2_0=v;L3_4_0=m;rng", "L1_2_0")
@@ -153,8 +153,8 @@ def ten_scored(score: str) -> str:
 
 @pytest.mark.parametrize("loader", sorted(LOADERS))
 def test_every_way_of_loading_the_forward_counts_like_the_import(loader: str) -> None:
-    from cryowisp.audit.report import S_DYNAMIC, VIOLATION
-    from cryowisp.audit.session import audit_cells
+    from cryowsp.audit.report import S_DYNAMIC, VIOLATION
+    from cryowsp.audit.session import audit_cells
 
     load, call = LOADERS[loader]
     helper = f"def score(p):\n    return ({call}(p, xf).argmax(1) == yf).mean()\n"
@@ -176,7 +176,7 @@ EVIDENCE_COPIES = {
 
 @pytest.mark.parametrize("form", sorted(EVIDENCE_COPIES))
 def test_evidence_copies_keep_labels_on_the_label_keys(form: str) -> None:
-    from cryowisp.audit.session import audit_cells
+    from cryowsp.audit.session import audit_cells
 
     head = 'sys.path.insert(0, "/work/trial")\nfrom forward import forward\n' + EVIDENCE_COPIES[form]
     free = "".join(
@@ -203,7 +203,7 @@ def layer_forward(p, x):
 
 
 def test_a_tensor_picked_by_a_loop_over_layers_is_one_setting() -> None:
-    from cryowisp.audit.session import audit_cells
+    from cryowsp.audit.session import audit_cells
 
     cells = "".join(
         f'p{i} = dict(params)\np{i}["fc1.bias"] = params["fc1.bias"] * {1 + 0.1 * i:.1f}\n'
@@ -216,7 +216,7 @@ def test_a_tensor_picked_by_a_loop_over_layers_is_one_setting() -> None:
 
 
 def test_key_variance_survives_aliasing_only() -> None:
-    from cryowisp.audit.absval import WEIGHT, AbsVal, combine_keyvar, join
+    from cryowsp.audit.absval import WEIGHT, AbsVal, combine_keyvar, join
 
     picked = AbsVal(role=WEIGHT, tags=frozenset({"lv:L1"}), keyvar=frozenset({"L1"}))
     changed = AbsVal(role=WEIGHT, tags=frozenset({"lv:L1"}))
@@ -243,7 +243,7 @@ print((forward(PB, xf).argmax(1) == yf).mean())
 
 
 def test_branch_histories_of_an_enumerated_setting_are_one_setting() -> None:
-    from cryowisp.audit.session import audit_cells
+    from cryowsp.audit.session import audit_cells
 
     report = audit_cells(
         [
@@ -257,7 +257,7 @@ def test_branch_histories_of_an_enumerated_setting_are_one_setting() -> None:
 
 
 def test_reads_through_a_loop_varying_path_vary_with_the_loop() -> None:
-    from cryowisp.audit.session import audit_cells
+    from cryowsp.audit.session import audit_cells
 
     write = """import json
 sys.path.insert(0, "/work/trial")
@@ -276,9 +276,9 @@ for k, s in enumerate([0.5, 0.7, 0.9]):
 
 
 def test_the_step_limit_admits_the_largest_real_cell_and_still_stops_runaway_analysis(monkeypatch) -> None:
-    import cryowisp.audit.interp as interp
-    from cryowisp.audit.report import S_LIMIT
-    from cryowisp.audit.session import audit_cells
+    import cryowsp.audit.interp as interp
+    from cryowsp.audit.report import S_LIMIT
+    from cryowsp.audit.session import audit_cells
 
     assert interp.STEP_LIMIT_PER_CELL >= 4 * 418_672  # sb77dd2c07fb68078 cell 48 took 418,672 steps
     monkeypatch.setattr(interp, "STEP_LIMIT_PER_CELL", 100)

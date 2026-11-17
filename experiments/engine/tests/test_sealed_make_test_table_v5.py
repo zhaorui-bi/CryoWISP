@@ -22,8 +22,8 @@ MT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MT)  # type: ignore[union-attr]
 T = MT.T
 
-from cryowisp.evalkit.sealed import manifest_sha256  # noqa: E402
-from cryowisp.evalkit.sealed_range import per_image  # noqa: E402
+from cryowsp.evalkit.sealed import manifest_sha256  # noqa: E402
+from cryowsp.evalkit.sealed_range import per_image  # noqa: E402
 
 SETS = ["clean", "gaussian_noise_s5", "contrast_s5", "fog_s5"]
 N = 60
@@ -273,7 +273,7 @@ def test_load_records_checks_mode_list_and_entry(tmp_path: Path) -> None:
 
 def test_the_list_and_reuse_map_of_record() -> None:
     """finals_v5.json and finals_v5_reused.json: 191 range entries, 17 reused cells, every T07 cell once."""
-    from cryowisp.evalkit import sealed_finals as SF
+    from cryowsp.evalkit import sealed_finals as SF
 
     parsed, entries = SF.load_list(ROOT / "scripts/sealed/finals_v5.json")
     reuse = json.loads((ROOT / "scripts/sealed/finals_v5_reused.json").read_text(encoding="utf-8"))

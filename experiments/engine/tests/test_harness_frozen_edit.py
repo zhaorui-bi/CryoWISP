@@ -1,4 +1,4 @@
-"""PREREG F6 (``cryowisp.harness.frozen_edit``) on the toy E11 store: a frozen edit read as E3 reads a rerun program.
+"""PREREG F6 (``cryowsp.harness.frozen_edit``) on the toy E11 store: a frozen edit read as E3 reads a rerun program.
 
 A zero delta reads as 0 / 0. The seed-100 student with its own program's deltas gives E3's child and E3's readouts
 exactly (the frozen path is E3's without the program run). On the other students the frozen deltas are the source's
@@ -19,12 +19,12 @@ from e11_toy import PLANT_CONDITION, e11_store  # noqa: F401
 from test_harness_e11 import QKV_Q, _sandbox
 from test_harness_fixtures import needs_sandbox
 
-from cryowisp.common.identity import load_params, params_sha256, save_params
-from cryowisp.harness import e11, fewshot
-from cryowisp.harness import frozen_edit as F
-from cryowisp.harness.jsonio import file_sha256, read_json, write_json
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.models import vit_synth as V
+from cryowsp.common.identity import load_params, params_sha256, save_params
+from cryowsp.harness import e11, fewshot
+from cryowsp.harness import frozen_edit as F
+from cryowsp.harness.jsonio import file_sha256, read_json, write_json
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.models import vit_synth as V
 
 
 def _fake_session(root: Path, e3_record: dict[str, Any], source_id: str) -> Path:

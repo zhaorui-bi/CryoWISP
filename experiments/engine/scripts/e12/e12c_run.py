@@ -6,14 +6,14 @@ instances only (V_check and the sealed store are never read; main instances are 
 Stages:
 
 * ``programs`` (this workstation: the LEARN program sandbox exists only here). For each target instance, E3's
-  ``stage_student`` and ``run_update`` (``cryowisp.harness.transfer``): the program runs once in the sandbox with the same wall
-  limit and virtual clock as the session, and its deltas are kept. One record per run in ``$CRYOWISP_RUNS/e12/c/rerun/``
+  ``stage_student`` and ``run_update`` (``cryowsp.harness.transfer``): the program runs once in the sandbox with the same wall
+  limit and virtual clock as the session, and its deltas are kept. One record per run in ``$CRYOWSP_RUNS/e12/c/rerun/``
   (``rerun_<program sha256[:12]>_<instance>.json``, never overwritten). The source instance is run too as a gate: its
   deltas must hash to the session's final deltas. Needs at least ``MIN_FREE_GB`` of free memory before each run.
 * ``read`` (NSCC CPU, or any machine). ``--kind rerun``: the program-run deltas of a record become the child exactly as E3
   makes it (``write_derived_patch``, the target's LEARN limits, ``transfer._child``) and are read on V_select of the
   condition and on its clean companion (``clean.dev_readout_joint``). ``--kind frozen``: the session's final deltas
-  (``cryowisp.harness.frozen_edit``, F6) added unchanged to the target, read the same way. Both reuse the code after the
+  (``cryowsp.harness.frozen_edit``, F6) added unchanged to the target, read the same way. Both reuse the code after the
   program run that E3 and F6 share; F6's seed-100 gate showed that this gives E3's child and readouts field for field.
 * ``summary``: per condition the table (rerun and frozen, gain and clean, within limits), the reuse ratio against the
   own gain of E3's rerun on the session's own student, and the readings fixed in the entry.
@@ -53,7 +53,7 @@ MIN_FREE_GB = 6.0
 RATIO_BAR = 0.7
 CLEAN_FLOOR = -1.0
 CLEAN_OK_NEEDED = 4
-RERUN_SCHEMA = "cryowisp.e12c.rerun.v0"
+RERUN_SCHEMA = "cryowsp.e12c.rerun.v0"
 FINALS: dict[str, dict[str, str]] = {
     "gaussian_noise_s5": {
         "session": "s2abaefab30d20b42",
@@ -73,7 +73,7 @@ class E12CError(RuntimeError):
 
 
 def runs_root() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return Path(runs_dir())
 
@@ -88,7 +88,7 @@ def session_dir(condition: str) -> Path:
 
 def targets(condition: str) -> dict[int, str]:
     """Seed -> instance id of the E12 dev instances of ``condition`` for the students of seeds 101 to 105 (one each)."""
-    from cryowisp.evalkit.instances import instances_root
+    from cryowsp.evalkit.instances import instances_root
 
     index = json.loads((instances_root() / "index.json").read_text(encoding="utf-8"))
     rows = [
@@ -134,7 +134,7 @@ def wait_for_memory(minimum: float = MIN_FREE_GB, timeout_s: float = 1800.0) -> 
 
 
 def final_program(condition: str) -> tuple[Path, str]:
-    from cryowisp.harness.jsonio import file_sha256, read_json
+    from cryowsp.harness.jsonio import file_sha256, read_json
 
     root = session_dir(condition)
     run = read_json(root / "run.json")
@@ -154,10 +154,10 @@ def rerun_one(
     program: Path, instance: Any, work: Path, sandbox: Any, final_deltas_sha: str | None
 ) -> dict[str, Any]:
     """E3's program run on one target (``transfer_one`` up to the deltas), without the child and the readout."""
-    from cryowisp.harness.jsonio import file_sha256, utc_now
-    from cryowisp.harness.program import ProgramProblem, run_update
-    from cryowisp.harness.transfer import stage_student
-    from cryowisp.sandbox.program import PROGRAM_WALL_S
+    from cryowsp.harness.jsonio import file_sha256, utc_now
+    from cryowsp.harness.program import ProgramProblem, run_update
+    from cryowsp.harness.transfer import stage_student
+    from cryowsp.sandbox.program import PROGRAM_WALL_S
 
     work.mkdir(mode=0o700)
     student, experience_file, experience = stage_student(instance, work / "student")
@@ -207,12 +207,12 @@ def cmd_targets(args: argparse.Namespace) -> int:
 
 
 def cmd_programs(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.instance_io import load_instance
-    from cryowisp.evalkit.instances import instances_root
-    from cryowisp.harness.jsonio import file_sha256, write_json
-    from cryowisp.harness.runner import DEFAULT_MEMORY_BYTES, SANDBOX_PYTHON
-    from cryowisp.harness.transfer import TransferError
-    from cryowisp.sandbox.program import ProgramSandbox
+    from cryowsp.baselines.instance_io import load_instance
+    from cryowsp.evalkit.instances import instances_root
+    from cryowsp.harness.jsonio import file_sha256, write_json
+    from cryowsp.harness.runner import DEFAULT_MEMORY_BYTES, SANDBOX_PYTHON
+    from cryowsp.harness.transfer import TransferError
+    from cryowsp.sandbox.program import ProgramSandbox
 
     condition = args.condition
     program, final_deltas_sha = final_program(condition)
@@ -265,11 +265,11 @@ def cmd_programs(args: argparse.Namespace) -> int:
 
 
 def cmd_read(args: argparse.Namespace) -> int:
-    from cryowisp.baselines.instance_io import load_instance
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE
-    from cryowisp.evalkit.instances import instances_root
-    from cryowisp.harness import frozen_edit as F
-    from cryowisp.harness.jsonio import file_sha256, read_json, write_json
+    from cryowsp.baselines.instance_io import load_instance
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE
+    from cryowsp.evalkit.instances import instances_root
+    from cryowsp.harness import frozen_edit as F
+    from cryowsp.harness.jsonio import file_sha256, read_json, write_json
 
     condition = args.condition
     by_seed = targets(condition)
@@ -328,7 +328,7 @@ def cmd_read(args: argparse.Namespace) -> int:
     )
     instance = load_instance(instances_root() / args.instance)
     record = F.frozen_one(edit, instance, out / stem, batch)
-    record["schema"] = "cryowisp.e12c.rerun_read.v0"
+    record["schema"] = "cryowsp.e12c.rerun_read.v0"
     write_json(path, record)
     print(
         json.dumps(
@@ -358,7 +358,7 @@ def condition_table(
     rerun: Sequence[Mapping[str, Any]], frozen: Sequence[Mapping[str, Any]], own: Mapping[str, Any]
 ) -> dict[str, Any]:
     """The reading of one condition from its rerun and frozen records on the five targets and E3's own-student record."""
-    from cryowisp.harness import frozen_edit as F
+    from cryowsp.harness import frozen_edit as F
 
     def row(r: Mapping[str, Any]) -> dict[str, Any]:
         return {
@@ -423,10 +423,10 @@ def condition_table(
 
 
 def cmd_summary(args: argparse.Namespace) -> int:
-    from cryowisp.harness.jsonio import file_sha256, read_json, write_json
+    from cryowsp.harness.jsonio import file_sha256, read_json, write_json
 
     base = Path(args.reads) if args.reads else out_root() / "read"
-    result: dict[str, Any] = {"schema": "cryowisp.e12c.summary.v0", "conditions": {}, "files": {}}
+    result: dict[str, Any] = {"schema": "cryowsp.e12c.summary.v0", "conditions": {}, "files": {}}
     for condition, final in FINALS.items():
         program, _ = final_program(condition)
         digest = file_sha256(program)

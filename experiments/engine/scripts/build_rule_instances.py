@@ -3,10 +3,10 @@
 A thin command-line entry over the builders that wrote the instances of record; it adds no logic of its own
 (docs/maintenance/CODE_AUDIT.md section 4). The vision rules (evidence-v0, evidence-v1) stay in build_instances.py.
 
-    scanskill-v1    cryowisp.evalkit.scanskill.build_scan_instances(condition, seeds=..., batch_size=...)
-    policyskill-v1  cryowisp.evalkit.e14.build_e14_instance(model_id)
+    scanskill-v1    cryowsp.evalkit.scanskill.build_scan_instances(condition, seeds=..., batch_size=...)
+    policyskill-v1  cryowsp.evalkit.e14.build_e14_instance(model_id)
 
-The builds of record (2026-11-06; read from $CRYOWISP_PRIVATE/scan_instances/index.json, e14_instances/index.json and
+The builds of record (2026-11-06; read from $CRYOWSP_PRIVATE/scan_instances/index.json, e14_instances/index.json and
 the instances' private.json):
 
     .venv/bin/python scripts/build_rule_instances.py --rule scanskill-v1 --condition addprim_jump   # ncc5c260f, ma78dbcbb
@@ -26,9 +26,9 @@ import json
 from collections.abc import Sequence
 from typing import Any
 
-SCAN_RULE = "scanskill-v1"  # cryowisp.evalkit.scanskill.SCAN_RULE; the test holds the two equal
-POLICY_RULE = "policyskill-v1"  # cryowisp.evalkit.e14.POLICYSKILL_RULE, likewise
-SCAN_DEFAULT_BATCH = 1024  # cryowisp.evalkit.scanskill.EVALUATION_BATCH, likewise
+SCAN_RULE = "scanskill-v1"  # cryowsp.evalkit.scanskill.SCAN_RULE; the test holds the two equal
+POLICY_RULE = "policyskill-v1"  # cryowsp.evalkit.e14.POLICYSKILL_RULE, likewise
+SCAN_DEFAULT_BATCH = 1024  # cryowsp.evalkit.scanskill.EVALUATION_BATCH, likewise
 
 
 def _seeds(text: str) -> list[int]:
@@ -41,10 +41,10 @@ def _seeds(text: str) -> list[int]:
 def build(args: argparse.Namespace) -> list[dict[str, Any]]:
     """Call the rule's builder with the parsed arguments; the modules are imported here, so --help needs neither."""
     if args.rule == SCAN_RULE:
-        from cryowisp.evalkit import scanskill as K
+        from cryowsp.evalkit import scanskill as K
 
         return K.build_scan_instances(args.condition, seeds=args.seeds, batch_size=args.batch_size)
-    from cryowisp.evalkit import e14 as E
+    from cryowsp.evalkit import e14 as E
 
     return [E.build_e14_instance(args.model_id)]
 

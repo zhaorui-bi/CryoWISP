@@ -1,6 +1,6 @@
 """Export and import of seqops students, and batch prefetch in training (no effect on the trained parameters).
 
-Nothing here reads the real stores: CRYOWISP_PRIVATE and CRYOWISP_SEALED point to tmp dirs.
+Nothing here reads the real stores: CRYOWSP_PRIVATE and CRYOWSP_SEALED point to tmp dirs.
 """
 
 from __future__ import annotations
@@ -14,14 +14,14 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.data import seqops as S
-from cryowisp.data import seqops_build as B
-from cryowisp.data.store import forward_path, load_split, models_dir, read_dataset_json, read_json
-from cryowisp.models import train_seq as TS
-from cryowisp.models import transformer as T
-from cryowisp.models.export import read_index
-from cryowisp.models.forward_gen import render_seq_forward, write_forward
-from cryowisp.models.seq_export import export_seq_model, import_seq_models
+from cryowsp.data import seqops as S
+from cryowsp.data import seqops_build as B
+from cryowsp.data.store import forward_path, load_split, models_dir, read_dataset_json, read_json
+from cryowsp.models import train_seq as TS
+from cryowsp.models import transformer as T
+from cryowsp.models.export import read_index
+from cryowsp.models.forward_gen import render_seq_forward, write_forward
+from cryowsp.models.seq_export import export_seq_model, import_seq_models
 
 TINY = TS.SeqTrainConfig(d_model=16, n_layers=1, d_mlp=32, steps=4, warmup_steps=1, log_every=2)
 
@@ -29,8 +29,8 @@ TINY = TS.SeqTrainConfig(d_model=16, n_layers=1, d_mlp=32, steps=4, warmup_steps
 def _make_store(root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ("private", "sealed"):
         (root / name).mkdir(parents=True)
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(root / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(root / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(root / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(root / "sealed"))
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def _fake_run(local: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role
     source = local / "private" / S.DATASET
     for name in ("dataset.json", "forward.py", "splits/V_select.npz"):
         shutil.copy(source / name, store / name)
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(run / "private"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(run / "private"))
     manifest = read_dataset_json(S.DATASET)
     result = _train()
     entry = export_seq_model(
@@ -92,7 +92,7 @@ def _fake_run(local: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role
     (run / "exit.json").write_text(json.dumps({"exit_code": 0, "elapsed_s": 10}))
     (run / "environment.txt").write_text(f"{'0' * 64} /images/container.sif\n")
     (run / "job_id.txt").write_text("1.pbs\n")
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(local / "private"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(local / "private"))
     return run
 
 
@@ -134,7 +134,7 @@ def _as_4090_run(run: Path, reason: str = "NUS unreachable: VPN down") -> None:
                 "host": "4090",
                 "name": "seqops_base",
                 "reason": reason,
-                "venv": "/home/bob/cryowisp/venv_seqops",
+                "venv": "/home/bob/cryowsp/venv_seqops",
                 "code_digest": "abc",
             }
         )
@@ -144,7 +144,7 @@ def _as_4090_run(run: Path, reason: str = "NUS unreachable: VPN down") -> None:
     (run / "venv_freeze.txt").write_text(freeze)
     digest = hashlib.sha256(freeze.encode()).hexdigest()
     (run / "environment.txt").write_text(
-        f"$ hostname\nbob\nvenv /home/bob/cryowisp/venv_seqops\npython_version 3.12.4\n"
+        f"$ hostname\nbob\nvenv /home/bob/cryowsp/venv_seqops\npython_version 3.12.4\n"
         f"venv_freeze_sha256 {digest}\n"
     )
 
@@ -181,7 +181,7 @@ def test_import_refuses_a_smoke_model(local: Path, tmp_path: Path, monkeypatch: 
 
 
 def test_export_refuses_a_config_the_forward_cannot_run(local: Path) -> None:
-    from cryowisp.models.seq_export import check_model_config
+    from cryowsp.models.seq_export import check_model_config
 
     check_model_config(TINY.model_config())
     with pytest.raises(ValueError):
@@ -191,8 +191,8 @@ def test_export_refuses_a_config_the_forward_cannot_run(local: Path) -> None:
 def test_parity_bounds_scale_with_the_logits(local: Path) -> None:
     """A common logit offset leaves the forward exact; the float32 bound grows with it, and a forward off by a few
     float32 steps fails the float64 test even where the absolute difference is small."""
-    from cryowisp.models.export import PARITY_TOL, ParityError, load_forward_no_cache
-    from cryowisp.models.seq_export import FLOAT32_STEP, seq_parity
+    from cryowsp.models.export import PARITY_TOL, ParityError, load_forward_no_cache
+    from cryowsp.models.seq_export import FLOAT32_STEP, seq_parity
 
     forward, _ = load_forward_no_cache(forward_path(S.DATASET))
     config = TINY.model_config()

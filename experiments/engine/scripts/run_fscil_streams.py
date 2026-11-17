@@ -1,4 +1,4 @@
-"""Run the PREREG E9 reference streams in lockstep (``cryowisp.baselines.fit.fscilrefs.run_streams``) over a process pool.
+"""Run the PREREG E9 reference streams in lockstep (``cryowsp.baselines.fit.fscilrefs.run_streams``) over a process pool.
 
     .venv/bin/python scripts/run_fscil_streams.py --out DIR --validity FILE --sessions 2 [3 ...] \\
         [--workers 12] [--fit-threads 2]
@@ -32,13 +32,13 @@ def _init(fit_threads: int) -> None:
     import torch
 
     torch.set_num_threads(fit_threads)
-    from cryowisp.baselines.fit import fscilrefs as FR
+    from cryowsp.baselines.fit import fscilrefs as FR
 
     _DATA = FR.load_stream_data(need_allclass=False)
 
 
 def _fit(method: str, params: dict, session: int) -> dict:
-    from cryowisp.baselines.fit import fscilrefs as FR
+    from cryowsp.baselines.fit import fscilrefs as FR
 
     return FR.fit_stream(method, params, FR.session_rows(_DATA, session), _DATA)
 
@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
         os.environ[name] = "1"  # forward.py chunks run one per worker; torch threads are set per worker
-    from cryowisp.baselines.fit import fscilrefs as FR
+    from cryowsp.baselines.fit import fscilrefs as FR
 
     validity_bytes = args.validity.read_bytes()
     validity = json.loads(validity_bytes)

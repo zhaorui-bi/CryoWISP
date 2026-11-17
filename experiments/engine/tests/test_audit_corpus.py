@@ -16,7 +16,7 @@ CLEAN cases. The corpus was written together with the audit, so these are develo
 Cases v34 to v40 and a44 to a51 (loop scoring of composed patches) were added after the first real editor session
 (s70d918e75805bb13) was audited as VIOLATION, 349 or more candidates, where a count by hand gives 4: the audit counted
 evaluations made while one patch was composed op by op, inside a helper's loop, as candidates of that loop. They
-encode the corrected rule (``cryowisp.audit`` docstring, candidate count) and were written after that result was seen.
+encode the corrected rule (``cryowsp.audit`` docstring, candidate count) and were written after that result was seen.
 
 Cases v41 to v50 and a52 to a57 were added after the dev-wave-1 sessions were audited (2026-11-04) and were written
 after those results were seen: a forward module loaded with importlib hid label scoring (s5385e6440ac967bf, CLEAN 1
@@ -40,8 +40,8 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from cryowisp.audit import report as R
-from cryowisp.audit.session import audit_cells
+from cryowsp.audit import report as R
+from cryowsp.audit.session import audit_cells
 
 LOAD_CELL = """import json
 import sys
@@ -1185,7 +1185,7 @@ np.fill_diagonal(corr, 0.0)
 i, j = np.unravel_index(np.nanargmax(corr), corr.shape)
 groups = [[int(i), int(j)]]
 patch = {
-    "schema": "cryowisp.patch.v0",
+    "schema": "cryowsp.patch.v0",
     "parent_sha256": PARENT,
     "ops": [{"op": "tie", "tensor": "fc2.weight", "axis": 0, "groups": groups, "strength": 0.5}],
     "hypothesis": "two hidden units have the same class profile",
@@ -1202,7 +1202,7 @@ with open("/work/patches/tie_01.json", "w") as handle:
 W3 = params["fc3.weight"]
 row_norms = np.linalg.norm(W3, axis=1)
 target = int(np.argmax(row_norms))
-patch = {"schema": "cryowisp.patch.v0", "parent_sha256": PARENT,
+patch = {"schema": "cryowsp.patch.v0", "parent_sha256": PARENT,
          "ops": [{"op": "scale_rows", "tensor": "fc3.weight", "rows": [target], "factor": 0.9}],
          "hypothesis": "the largest output row dominates", "predicted_effect": "fewer predictions of that class"}
 Path("/work/patches/p01.json").write_text(json.dumps(patch, indent=1))
@@ -1252,7 +1252,7 @@ Hf = hidden(params, xf)
 d = Hf.mean(0) - H[pr == yr].mean(0)
 d = d / np.linalg.norm(d)
 np.save("/work/patches/dir_fail.npy", d.astype(np.float32))
-patch = {"schema": "cryowisp.patch.v0", "parent_sha256": PARENT,
+patch = {"schema": "cryowsp.patch.v0", "parent_sha256": PARENT,
          "ops": [{"op": "project_out", "tensor": "fc3.weight", "side": "in", "direction": "dir_fail.npy",
                   "strength": 0.5}],
          "hypothesis": "the failures share one activation direction", "predicted_effect": "some failures fixed"}
@@ -1728,7 +1728,7 @@ params["fc3.weight"] = w
 w = params["fc3.weight"].copy()
 w[3] *= 0.8
 gain = acc({**params, "fc3.weight": w}, xr, yr) - acc(params, xr, yr)
-patch = {"schema": "cryowisp.patch.v0", "parent_sha256": PARENT,
+patch = {"schema": "cryowsp.patch.v0", "parent_sha256": PARENT,
          "ops": [{"op": "scale_rows", "tensor": "fc3.weight", "rows": [3], "factor": 0.8}],
          "hypothesis": f"row 3 is too strong (gain {gain:.3f} on the random examples)", "predicted_effect": "small gain"}
 json.dump(patch, open("/work/patches/p03.json", "w"))

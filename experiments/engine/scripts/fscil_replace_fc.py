@@ -1,4 +1,4 @@
-"""Apply CEC's replace_base_fc to the E9 students of one seed (``cryowisp.models.fscil_export.replace_base_fc``).
+"""Apply CEC's replace_base_fc to the E9 students of one seed (``cryowsp.models.fscil_export.replace_base_fc``).
 
     .venv/bin/python scripts/fscil_replace_fc.py --seed 100 --note "..." [--workers 4]
 
@@ -22,8 +22,8 @@ _FEATURES: Any = None
 
 def _init() -> None:
     global _FEATURES
-    from cryowisp.data.store import read_dataset_json
-    from cryowisp.models.fscil_export import DATASET, checked_features
+    from cryowsp.data.store import read_dataset_json
+    from cryowsp.models.fscil_export import DATASET, checked_features
 
     _FEATURES = checked_features(DATASET, read_dataset_json(DATASET))
 
@@ -39,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--note", required=True)
     parser.add_argument("--workers", type=int, default=1)
     args = parser.parse_args(argv)
-    from cryowisp.models.fscil_export import replace_base_fc
+    from cryowsp.models.fscil_export import replace_base_fc
 
     if args.workers <= 1:
         records = replace_base_fc(args.seed, note=args.note)

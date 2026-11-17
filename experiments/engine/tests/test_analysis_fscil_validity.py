@@ -1,4 +1,4 @@
-"""cryowisp.analysis.fscil_validity (PREREG E9 V1 to V3) on the toy store."""
+"""cryowsp.analysis.fscil_validity (PREREG E9 V1 to V3) on the toy store."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from fscil_toy import add_toy_allclass, toy_fscil  # noqa: F401
 
-from cryowisp.analysis import fscil_validity as V
+from cryowsp.analysis import fscil_validity as V
 
 
 def test_retention_criterion_and_balanced_difference() -> None:

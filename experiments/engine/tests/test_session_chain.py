@@ -24,7 +24,7 @@ args = sys.argv[1:]
 Path(os.environ["FAKE_CALLS"]).open("a").write(" ".join(args) + "\\n")
 if outcome.get("no_dir"):
     sys.exit(3)
-root = Path(os.environ["CRYOWISP_RUNS"]) / "sessions" / ("s" + uuid.uuid4().hex[:16])
+root = Path(os.environ["CRYOWSP_RUNS"]) / "sessions" / ("s" + uuid.uuid4().hex[:16])
 root.mkdir(parents=True)
 inst, arm, rep = args[args.index("--instance") + 1], args[args.index("--arm") + 1], int(args[args.index("--repeat") + 1])
 (root / "session.json").write_text(json.dumps({"instance_id": inst, "arm": arm, "repeat": rep}))
@@ -47,7 +47,7 @@ def _run(
     queue, calls = tmp_path / "queue.json", tmp_path / "calls.txt"
     queue.write_text(json.dumps(outcomes))
     calls.write_text("")
-    monkeypatch.setenv("CRYOWISP_RUNS", str(tmp_path / "runs"))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(tmp_path / "runs"))
     monkeypatch.setenv("FAKE_QUEUE", str(queue))
     monkeypatch.setenv("FAKE_CALLS", str(calls))
     log = tmp_path / "chain" / "log.jsonl"

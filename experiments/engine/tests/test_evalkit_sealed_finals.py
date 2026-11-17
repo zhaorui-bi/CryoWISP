@@ -1,4 +1,4 @@
-"""Tests for the sealed read of a list of finals and its dev dry run (cryowisp.evalkit.sealed_finals, vision_joint).
+"""Tests for the sealed read of a list of finals and its dev dry run (cryowsp.evalkit.sealed_finals, vision_joint).
 
 Toy store: the evalkit toy store with the condition toyblur_s2 and its dev instances. A final is a hand-written session
 (run.json, session.json with its limits, final/patch.json) or a one-round loop-stream record; a reference is a
@@ -35,15 +35,15 @@ from test_evalkit_instances_store import (  # noqa: F401
     write_condition_meta,
 )
 
-from cryowisp.baselines.instance_io import Instance, load_instance, write_delta_patch
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.evalkit.sealed import read_registry
-from cryowisp.evalkit.targets import file_sha256
-from cryowisp.harness.program_stream import _readout as stream_readout
-from cryowisp.patch import Limits, task_limits
+from cryowsp.baselines.instance_io import Instance, load_instance, write_delta_patch
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.evalkit.sealed import read_registry
+from cryowsp.evalkit.targets import file_sha256
+from cryowsp.harness.program_stream import _readout as stream_readout
+from cryowsp.patch import Limits, task_limits
 
 SESSION = "s0123456789abcdef"
 OTHER_SESSION = "sfedcba9876543210"
@@ -111,7 +111,7 @@ def _stream(
     instance: Instance,
     child: dict[str, np.ndarray],
     rel: str = STREAM,
-    schema: str = "cryowisp.harness.loop_stream.v0",
+    schema: str = "cryowsp.harness.loop_stream.v0",
 ) -> None:
     """A completed one-round stream record at ``rel`` whose student after round 1 is ``child``: a loop stream, or with
     ``schema`` a fine-tuning stream under the same loop (PREREG F4, the same round fields)."""
@@ -295,7 +295,7 @@ def _two_round_stream(
             }
         )
     record = {
-        "schema": "cryowisp.harness.loop_stream.v0",
+        "schema": "cryowsp.harness.loop_stream.v0",
         "base_params_sha256": instance.params_sha256,
         "instances": [
             {"instance_id": instance.instance_id, "condition": CONDITION, "round": 1},
@@ -307,7 +307,7 @@ def _two_round_stream(
 
 
 def _transfer(store: ToyStore, target: Instance, child: dict[str, np.ndarray], layout: str = TRANSFER) -> str:
-    """A transfer record (cryowisp.harness.program_transfer.v0) of a session's program on ``target``: the work directory
+    """A transfer record (cryowsp.harness.program_transfer.v0) of a session's program on ``target``: the work directory
     of the record's stem with patch/derived_patch.json, the readouts of record (``clean.dev_readout_joint``'s
     fields), and the program file under the session's final/. ``layout`` is E3's (devreadouts/learn/<id>/transfer/)
     or T08's program arm (t08/program/<id>/)."""
@@ -406,7 +406,7 @@ def test_dev_equals_the_readouts_of_record(toy: Toy, tmp_path: Path) -> None:
 
 def test_a_fine_tuning_stream_is_a_reference_read_as_its_record(toy: Toy, tmp_path: Path) -> None:
     _stream(
-        toy.store, toy.instance, toy.own_child, F4_STREAM, "cryowisp.baselines.checked_reference_stream.v0"
+        toy.store, toy.instance, toy.own_child, F4_STREAM, "cryowsp.baselines.checked_reference_stream.v0"
     )
     ref = {
         **_final(
@@ -430,7 +430,7 @@ def test_a_fine_tuning_stream_is_a_reference_read_as_its_record(toy: Toy, tmp_pa
     assert record["pairs_with"] == "stream_final"
     record_path = toy.store.runs / F4_STREAM
     changed = json.loads(record_path.read_text())
-    changed["schema"] = "cryowisp.baselines.some_other_stream.v0"
+    changed["schema"] = "cryowsp.baselines.some_other_stream.v0"
     record_path.write_text(json.dumps(changed))
     with pytest.raises(SF.SealedFinalsError, match="has schema"):
         SF.run_dev(listed, tmp_path / "again.jsonl", code_state_path=tmp_path / "git_state.json")
@@ -587,7 +587,7 @@ def test_a_transfer_final_is_rebuilt_from_its_patch_and_read_as_its_record(toy: 
             SF.recover_child(entry, toy.other)
         path.write_text(original)
 
-    refused(lambda d: d.update(schema="cryowisp.harness.other.v0"), "has schema")
+    refused(lambda d: d.update(schema="cryowsp.harness.other.v0"), "has schema")
     refused(lambda d: d["target"].update(instance_id=toy.instance.instance_id), "ran on")
     refused(
         lambda d: d.update(within_limits=False, readout_child="unbounded"), "only a child the limits admitted"
@@ -636,7 +636,7 @@ def test_a_t08_program_arm_record_is_a_transfer_source_with_the_same_checks(toy:
 def test_a_family_whose_code_is_missing_is_refused(
     toy: Toy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setitem(SF.FAMILY_MODULES, SF.READOUT_SCAN_EM, "cryowisp.evalkit.no_such_family")
+    monkeypatch.setitem(SF.FAMILY_MODULES, SF.READOUT_SCAN_EM, "cryowsp.evalkit.no_such_family")
     scan = {
         "name": "scan_final",
         "readout": "scan_em",
@@ -660,7 +660,7 @@ def test_dev_opens_nothing_under_the_sealed_store(
     sealed_root = str(toy.store.sealed.resolve())
     empty = tmp_path / "empty_sealed"
     empty.mkdir()
-    monkeypatch.setenv("CRYOWISP_SEALED", str(empty))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(empty))
     opened: list[str] = []
     active = [True]
 
@@ -721,15 +721,15 @@ def test_cli_entry_point_runs_the_imported_module(toy: Toy, tmp_path: Path) -> N
     state = _git_state(tmp_path / "git_state.json")
     env = {
         **os.environ,
-        "CRYOWISP_PRIVATE": str(toy.store.private),
-        "CRYOWISP_RUNS": str(toy.store.runs),
-        "CRYOWISP_SEALED": str(toy.store.sealed),
+        "CRYOWSP_PRIVATE": str(toy.store.private),
+        "CRYOWSP_RUNS": str(toy.store.runs),
+        "CRYOWSP_SEALED": str(toy.store.sealed),
     }
     done = subprocess.run(
         [
             sys.executable,
             "-m",
-            "cryowisp.evalkit.sealed_finals",
+            "cryowsp.evalkit.sealed_finals",
             "--list",
             str(listed),
             "--dev",
@@ -749,7 +749,7 @@ def test_cli_entry_point_runs_the_imported_module(toy: Toy, tmp_path: Path) -> N
         [
             sys.executable,
             "-m",
-            "cryowisp.evalkit.sealed_finals",
+            "cryowsp.evalkit.sealed_finals",
             "--list",
             str(tmp_path / "no.json"),
             "--dev",
@@ -1102,7 +1102,7 @@ def _as_cifar10c(toy: Toy) -> Path:
     clean_json.write_text(json.dumps(clean_meta, indent=2))
     meta = json.loads((condition_dir(toy.store) / "dataset.json").read_text())
     meta["test"] = {
-        "location": "$CRYOWISP_SEALED/cifar10c/CIFAR-10-C/toyblur.npy",
+        "location": "$CRYOWSP_SEALED/cifar10c/CIFAR-10-C/toyblur.npy",
         "rows": f"{4 * n} .. {5 * n - 1} (severity 5)",
         "format": SF.CIFAR10C_FORMAT_TEXT,
         "n": n,
@@ -1170,7 +1170,7 @@ def _sha(line: str) -> str:
 def _four(toy: Toy) -> list[dict[str, Any]]:
     """Three references beside the two finals: the kept pick and a fine-tuning stream (four distinct children)."""
     _stream(
-        toy.store, toy.instance, toy.own_child, F4_STREAM, "cryowisp.baselines.checked_reference_stream.v0"
+        toy.store, toy.instance, toy.own_child, F4_STREAM, "cryowsp.baselines.checked_reference_stream.v0"
     )
     return [
         *_references(toy),
@@ -1365,7 +1365,7 @@ def test_sealed_refusals_before_any_record(toy: Toy, tmp_path: Path, monkeypatch
     ("change", "message"),
     [
         (lambda t: t.update(location="/abs/test.npz"), "not under"),
-        (lambda t: t.update(location="$CRYOWISP_SEALED/../x.npy"), "leaves"),
+        (lambda t: t.update(location="$CRYOWSP_SEALED/../x.npy"), "leaves"),
         (lambda t: t.update(format="png"), "unknown test format"),
         (lambda t: t.update(rows="1 .. 2 (severity 5)"), "not the severity block"),
         (lambda t: t.update(rows="rows 0 to 9"), "records n and rows"),

@@ -1,12 +1,12 @@
 """Run the PREREG E7 references on graphnew-v1 instances.
 
-References (``cryowisp.baselines.fit.graphrefs``): grad_full and interp (edit limits ignored), grad_last,
+References (``cryowsp.baselines.fit.graphrefs``): grad_full and interp (edit limits ignored), grad_last,
 grad_sparse19_sal, grad_sparse19_traj, ridge_margin, imprint and imprint_retain (E7 program limits enforced). Each is
 fitted on the instance's 80 new-class nodes plus its 64 replay nodes, with a full-graph forward on the instance's
 graph.npz, and scored by the graphnew joint oracle (V_check cut by class), 8 patch-check queries per run. Runs go to
-``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e7/<seed>/``; an existing run directory is never overwritten.
+``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e7/<seed>/``; an existing run directory is never overwritten.
 
-Instances: the given ``--instance`` ids, or every active instance in ``$CRYOWISP_PRIVATE/graphnew_instances/index.json``.
+Instances: the given ``--instance`` ids, or every active instance in ``$CRYOWSP_PRIVATE/graphnew_instances/index.json``.
 Graphnew instances are dev only; any other role is refused (exit status 2, nothing written). Dev readouts are a
 separate step (``scripts/dev/e7_readouts.sh``)::
 
@@ -49,15 +49,15 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import EXIT_REFUSED, summary_line
-    from cryowisp.baselines.fit.graphrefs import GRAPH_REF_METHODS, GRAPHNEW_REF_LABEL, run_graph_ref
-    from cryowisp.baselines.fit.runner import SplitRoleError, baseline_run_dir, check_split_role
-    from cryowisp.evalkit.graphnew import active_graphnew_ids, load_graphnew_instance
+    from cryowsp.baselines.fit.cli import EXIT_REFUSED, summary_line
+    from cryowsp.baselines.fit.graphrefs import GRAPH_REF_METHODS, GRAPHNEW_REF_LABEL, run_graph_ref
+    from cryowsp.baselines.fit.runner import SplitRoleError, baseline_run_dir, check_split_role
+    from cryowsp.evalkit.graphnew import active_graphnew_ids, load_graphnew_instance
 
     if set(METHODS) != set(GRAPH_REF_METHODS):
         raise RuntimeError(f"script methods {METHODS} differ from the library's {GRAPH_REF_METHODS}")

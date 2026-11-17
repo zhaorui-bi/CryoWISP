@@ -1,4 +1,4 @@
-"""The `cryowisp` skill's documents agree with the engine: every documented `cryowisp` command line parses with
+"""The `cryowsp` skill's documents agree with the engine: every documented `cryowsp` command line parses with
 the real CLI, the skill's front matter is valid, and the reuse walkthrough (scripts/demo/skill_cli_walkthrough.py)
 runs the documented commands end to end on a synthetic project."""
 
@@ -13,21 +13,21 @@ from pathlib import Path
 import pytest
 from test_harness_fixtures import needs_sandbox
 
-from cryowisp.application.cli import parser
+from cryowsp.application.cli import parser
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / "skills" / "cryowisp"
+SKILL = ROOT / "skills" / "cryowsp"
 DOCS = [
     ROOT / "README.md",
     ROOT / "README.zh-CN.md",
     SKILL / "SKILL.md",
     *sorted((SKILL / "references").glob("*.md")),
 ]
-COMMAND = re.compile(r"^(?:uv run(?: --project \S+)? |\.venv/bin/)?cryowisp (\S.*)$")
+COMMAND = re.compile(r"^(?:uv run(?: --project \S+)? |\.venv/bin/)?cryowsp (\S.*)$")
 
 
 def documented_commands() -> list[tuple[str, str]]:
-    """Every line inside a fenced block of the skill documents and README that runs the `cryowisp` CLI."""
+    """Every line inside a fenced block of the skill documents and README that runs the `cryowsp` CLI."""
     found = []
     for path in DOCS:
         fenced = False
@@ -66,7 +66,7 @@ def test_the_skill_front_matter() -> None:
     text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
     head = text.split("---")[1]
     fields = dict(line.split(": ", 1) for line in head.strip().splitlines())
-    assert fields["name"] == "cryowisp" == SKILL.name
+    assert fields["name"] == "cryowsp" == SKILL.name
     assert 0 < len(fields["description"]) <= 1024
     for link in re.findall(r"\]\(([^)#]+)\)", text):
         assert (SKILL / link).is_file(), link

@@ -1,4 +1,4 @@
-"""PREREG E11 student: ViT-Lite-7/4 (cryowisp.models.vitlite) and its CIFAR recipe."""
+"""PREREG E11 student: ViT-Lite-7/4 (cryowsp.models.vitlite) and its CIFAR recipe."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.models import vitlite as V
+from cryowsp.common.identity import params_sha256
+from cryowsp.models import vitlite as V
 
 MEAN, STD = [0.49, 0.48, 0.45], [0.25, 0.24, 0.26]
 
@@ -105,7 +105,7 @@ def _load_forward(text: str):
 
 
 def test_numpy_forward_matches_torch_float64() -> None:
-    from cryowisp.models.forward_gen import render_vitlite_forward
+    from cryowsp.models.forward_gen import render_vitlite_forward
 
     text = render_vitlite_forward(MEAN, STD, 10, V.LN_EPS)
     for word in ("gaussian", "cifar", "vl7"):

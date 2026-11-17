@@ -1,8 +1,8 @@
-"""Run PREREG F1's fine-tuning methods on E11, E12 and T04 instances (``cryowisp.baselines.fit.ftcompare``).
+"""Run PREREG F1's fine-tuning methods on E11, E12 and T04 instances (``cryowsp.baselines.fit.ftcompare``).
 
 Methods: ft_ln, lora_r4, lora_r16, ft_full_noreplay, ft_full_lwf and ft_full_l2sp (all six by default), 8
 configurations each, one joint check per configuration, on the instance's 64 condition rows and 64 clean replay rows
-(ft_full_noreplay on the condition rows only). Runs go to ``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/f1/<seed>/``;
+(ft_full_noreplay on the condition rows only). Runs go to ``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/f1/<seed>/``;
 an existing run directory is never overwritten. Main instances are refused (exit status 2, nothing written). F1's
 full and last-layer methods are the E11 second-grid runs (``run_fit_baselines.py --e11 --e11-grid2``), not rerun here.
 
@@ -15,7 +15,7 @@ invocation takes instances of one dataset.
 ``--t04-edge`` (T04 instances only; PREREG T04's edge-extension amendment, main 9f0baa9): each method's grid with every
 learning rate divided by 10, run label ``t04g3``; the pairs to run are scripts/t04/edge_extension.py's.
 
-Read the runs as the references are read: ``python -m cryowisp.evalkit.devreadout RUN --clean`` (own pick),
+Read the runs as the references are read: ``python -m cryowsp.evalkit.devreadout RUN --clean`` (own pick),
 ``--retention-floor -20`` (the kept pick) and ``--all-candidates`` (every configuration, the descriptive frontier).
 
 Example::
@@ -66,19 +66,19 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import (
+    from cryowsp.baselines.fit.cli import (
         EXIT_REFUSED,
         T04_EDGE_LABEL,
         load_checked_instances,
         refusal_message,
         summary_line,
     )
-    from cryowisp.baselines.fit.ftcompare import (
+    from cryowsp.baselines.fit.ftcompare import (
         F1_DATASET_METHODS,
         F1_E12_DATASET,
         F1_LABEL,
@@ -87,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
         F1Error,
         run_f1,
     )
-    from cryowisp.baselines.fit.runner import SplitRoleError, baseline_run_dir
+    from cryowsp.baselines.fit.runner import SplitRoleError, baseline_run_dir
 
     if set(METHODS) != set(F1_METHODS) or set(E12_METHODS) != set(F1_DATASET_METHODS[F1_E12_DATASET]):
         raise RuntimeError(

@@ -1,7 +1,7 @@
 """Predict calls in the tool log count as scored candidates (PREREG v0.3 section 4.1, HARNESS_SPEC section 7).
 
 Synthetic logs live under pytest's tmp_path; the scripted NOWEIGHT session runs on the harness toy store, also under
-tmp dirs. Nothing touches $CRYOWISP_*.
+tmp dirs. Nothing touches $CRYOWSP_*.
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ from test_harness_fixtures import (  # noqa: F401
     scripted_session,
 )
 
-from cryowisp.audit import report as R
-from cryowisp.audit.session import (
+from cryowsp.audit import report as R
+from cryowsp.audit.session import (
     AuditInputError,
     PredictCall,
     audit_cells,
@@ -52,7 +52,7 @@ def predict(
     error: bool = False,
     attempt: str | None = "a0000",
 ) -> dict[str, Any]:
-    """A predict record as cryowisp.harness.mcp_server writes it."""
+    """A predict record as cryowsp.harness.mcp_server writes it."""
     if error:
         return {
             "time": "t",

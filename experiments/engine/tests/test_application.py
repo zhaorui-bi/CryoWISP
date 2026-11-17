@@ -9,7 +9,7 @@ import pytest
 torch = pytest.importorskip("torch")
 pytest.importorskip("torchvision")
 
-from cryowisp.application.bundles import (
+from cryowsp.application.bundles import (
     compatibility,
     copy_model,
     dataset,
@@ -20,11 +20,11 @@ from cryowisp.application.bundles import (
     read,
     sha,
 )
-from cryowisp.application.data import prepare_data
-from cryowisp.application.editor import EditorTools
-from cryowisp.application.resnet import import_checkpoint, load_buffers
-from cryowisp.application.runtime import Application, apply_program, prepare_run
-from cryowisp.common.identity import params_sha256
+from cryowsp.application.data import prepare_data
+from cryowsp.application.editor import EditorTools
+from cryowsp.application.resnet import import_checkpoint, load_buffers
+from cryowsp.application.runtime import Application, apply_program, prepare_run
+from cryowsp.common.identity import params_sha256
 
 SANDBOX = Path(__file__).resolve().parents[1] / ".venv-sandbox/bin/python"
 PROGRAM = """import numpy as np

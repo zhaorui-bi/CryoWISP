@@ -20,15 +20,15 @@ from test_evalkit_instances_store import add_condition, build_condition
 from test_harness_fixtures import needs_sandbox
 from test_harness_learn import FIX, STRINGS, WORSE, LearnStore, _program_cell, learn_store  # noqa: F401
 
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.evalkit.devreadout import DevReadoutError, readout_run
-from cryowisp.evalkit.patch_check import BudgetExceeded
-from cryowisp.harness import loop_stream, runner
-from cryowisp.harness.finalize import KIND_BASE, KIND_CHECKED, FinalizeError, select_final
-from cryowisp.harness.instance import InstanceRefused
-from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.leaks import HINT_WORDS
-from cryowisp.harness.loop import (
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.evalkit.devreadout import DevReadoutError, readout_run
+from cryowsp.evalkit.patch_check import BudgetExceeded
+from cryowsp.harness import loop_stream, runner
+from cryowsp.harness.finalize import KIND_BASE, KIND_CHECKED, FinalizeError, select_final
+from cryowsp.harness.instance import InstanceRefused
+from cryowsp.harness.jsonio import file_sha256, read_json
+from cryowsp.harness.leaks import HINT_WORDS
+from cryowsp.harness.loop import (
     FILES_ANCHOR,
     KEPT_HEADING,
     KEPT_RULE_LOOP,
@@ -52,11 +52,11 @@ from cryowisp.harness.loop import (
     withheld_tokens,
     write_loop_library,
 )
-from cryowisp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
-from cryowisp.harness.prompts import render_system
-from cryowisp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
+from cryowsp.harness.prompts import render_system
+from cryowsp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.sandbox.program import ProgramSandbox
 
 SECOND = "toyblur_s3"
 PROGRAM = "HYPOTHESIS = 'h'\nPREDICTED_EFFECT = 'p'\n\ndef update(student, experience):\n    return {}\n"
@@ -315,7 +315,7 @@ def test_a_loop_context_is_refused_before_any_session_write(learn_store: LearnSt
         runner.run_session(target, "LEARN", 0, loop_context=context, **common)
     context.write_text(json.dumps({"schema": "other"}))
     with pytest.raises(
-        InstanceRefused, match="refused for a loop round: .*is not a cryowisp.harness.loop_context"
+        InstanceRefused, match="refused for a loop round: .*is not a cryowsp.harness.loop_context"
     ):
         runner.run_session(target, "LEARN", 0, loop_context=context, **common)
     context.write_text(json.dumps({"schema": LOOP_CONTEXT_SCHEMA, "round": 1, "prev": [], "library": []}))

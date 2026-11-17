@@ -1,5 +1,5 @@
 """Control (b) of E4-loop: label fits re-selected each round by the loop's check and kept rule loop-retain-v1, on their
-own current student, with the loop's rows (cryowisp.baselines.fit.checked_reference_stream).
+own current student, with the loop's rows (cryowsp.baselines.fit.checked_reference_stream).
 
 The store is the program stream's toy store (two named conditions sharing one base model per seed). Its MLP has no
 mean/std block, so the torch rebuild of grad_* and ridge_* does not apply to it, and the streams here run a fixed
@@ -18,13 +18,13 @@ import pytest
 from test_evalkit_instances_store import CONDITION
 from test_harness_program_stream import SECOND, StreamStore, stream_store  # noqa: F401
 
-import cryowisp.harness.program_stream as program_stream
-from cryowisp.baselines.fit import checked_reference_stream as C
-from cryowisp.baselines.fit.reference_stream import load_stream_instances
-from cryowisp.baselines.fit.runner import CandidatePatch, Evidence, jsonable
-from cryowisp.baselines.instance_io import Instance
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.harness import loop, loop_stream
+import cryowsp.harness.program_stream as program_stream
+from cryowsp.baselines.fit import checked_reference_stream as C
+from cryowsp.baselines.fit.reference_stream import load_stream_instances
+from cryowsp.baselines.fit.runner import CandidatePatch, Evidence, jsonable
+from cryowsp.baselines.instance_io import Instance
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.harness import loop, loop_stream
 
 Delta = Callable[[dict[str, np.ndarray]], dict[str, np.ndarray]]
 

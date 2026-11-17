@@ -7,22 +7,22 @@ its clean companion for every readout. Nothing reads the sealed store.
 
 Shared paths, reused, not reimplemented:
 
-* Readouts: ``cryowisp.harness.clean.dev_readout_joint`` (``cryowisp.evalkit.devreadout.dev_readout_joint``), the readout of
+* Readouts: ``cryowsp.harness.clean.dev_readout_joint`` (``cryowsp.evalkit.devreadout.dev_readout_joint``), the readout of
   ``scripts/dev/post_learn.sh``, the transfer runs and the references. The base model's predictions on the two
   V_select sets are memoized within a process (``install_base_memo``: same function, same params hash, same rows hash),
   which changes no number and halves the cost.
-* Program runs (repro, T0, T1, T2): ``cryowisp.harness.transfer.stage_student`` and ``cryowisp.harness.program.run_update`` in
+* Program runs (repro, T0, T1, T2): ``cryowsp.harness.transfer.stage_student`` and ``cryowsp.harness.program.run_update`` in
   the LEARN program sandbox (``.venv-sandbox``, 4 threads, 300 s), the derived patch of ``write_derived_patch``, as
   ``scripts/run_program_transfer.py`` runs a frozen program.
-* Checks (T0, T1): ``cryowisp.baselines.fit.runner.execute_run`` with ``joint=True, e10=True`` (the E10 program limits,
+* Checks (T0, T1): ``cryowsp.baselines.fit.runner.execute_run`` with ``joint=True, e10=True`` (the E10 program limits,
   the joint oracle, at most 8 checks), as ``run_fit_baselines.py --e11`` runs the references; the pick is
-  ``cryowisp.evalkit.devreadout.readout_retention`` with floor -20 (joint-retain-v1, S_old >= -20 of 4000), read on
+  ``cryowsp.evalkit.devreadout.readout_retention`` with floor -20 (joint-retain-v1, S_old >= -20 of 4000), read on
   V_select, as the references' floor20 records.
-* Limits: ``cryowisp.evalkit.e10.e10_program_limits`` (rel-Frob 0.5 on tensors of rank >= 2, at most 20% of the entries,
+* Limits: ``cryowsp.evalkit.e10.e10_program_limits`` (rel-Frob 0.5 on tensors of rank >= 2, at most 20% of the entries,
   max_ops 85), asserted equal to the session's recorded limits. An unchecked variant (A1, T2, T3) is applied within
   them; if refused, the refusal is recorded and the variant is read out without the size limits (as transfer does).
 
-Subcommands, each writing ``$CRYOWISP_RUNS/devreadouts/e11_mech/<name>.jsonl`` (never overwritten) and its sha256:
+Subcommands, each writing ``$CRYOWSP_RUNS/devreadouts/e11_mech/<name>.jsonl`` (never overwritten) and its sha256:
 
 * ``repro``: the final's deltas re-applied to the base (child hash e40c2078...) and the program rerun in the sandbox
   (deltas hash 5b9cdfac...), read on V_select; must give gain +31.625 and clean +0.125.
@@ -68,7 +68,7 @@ THREADS = 4
 for _variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_variable] = str(THREADS)  # before numpy is imported, or BLAS ignores it
 sys.dont_write_bytecode = (
-    True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
 )
 
 import numpy as np  # noqa: E402
@@ -120,7 +120,7 @@ READING_FRACTION = 0.75
 READING_CLEAN_FLOOR = -1.0
 MAX_CHECKS = 8
 MLP_PARTS = ("linear1.weight", "linear1.bias", "linear2.weight", "linear2.bias")
-SCHEMA = "cryowisp.e11.mech.v1"
+SCHEMA = "cryowsp.e11.mech.v1"
 A2_CHUNK = 250
 
 
@@ -133,7 +133,7 @@ class MechError(RuntimeError):
 
 
 def runs_root() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return Path(runs_dir())
 
@@ -178,8 +178,8 @@ def instance() -> Any:
     """The dev instance, loaded once; refuses anything but a dev instance of the expected student."""
     global _INSTANCE
     if _INSTANCE is None:
-        from cryowisp.baselines.instance_io import load_instance
-        from cryowisp.evalkit.instances import instances_root
+        from cryowsp.baselines.instance_io import load_instance
+        from cryowsp.evalkit.instances import instances_root
 
         condition = TARGETS[_TARGET_ID]["condition"]
         inst = load_instance(instances_root() / _TARGET_ID)
@@ -196,8 +196,8 @@ def instance() -> Any:
 
 def program_limits(inst: Any) -> Any:
     """E10 program limits of the instance, asserted equal to the limits the session applied."""
-    from cryowisp.evalkit.e10 import e10_program_limits
-    from cryowisp.patch import Limits
+    from cryowsp.evalkit.e10 import e10_program_limits
+    from cryowsp.patch import Limits
 
     limits = e10_program_limits(inst.task["limits"], len(inst.params))
     recorded = Limits(**json.loads((target_session_dir() / "session.json").read_text())["limits"])
@@ -215,7 +215,7 @@ def final_source() -> str:
 
 def final_child() -> dict[str, np.ndarray]:
     """The session's final child, rebuilt by devreadout.final_child from its patch under the session's limits."""
-    from cryowisp.evalkit.devreadout import final_child as rebuild
+    from cryowsp.evalkit.devreadout import final_child as rebuild
 
     run = json.loads((session_dir() / "run.json").read_text())
     child = rebuild(run, session_dir(), instance())
@@ -229,7 +229,7 @@ def write_records(name: str, records: Sequence[Mapping[str, Any]]) -> Path:
     path = folder / f"{name}.jsonl"
     if path.exists():
         raise MechError(f"{path} exists; records are never overwritten")
-    from cryowisp.baselines.fit.runner import jsonable
+    from cryowsp.baselines.fit.runner import jsonable
 
     path.write_text(
         "".join(json.dumps(jsonable(r), sort_keys=True, allow_nan=False) + "\n" for r in records),
@@ -241,7 +241,7 @@ def write_records(name: str, records: Sequence[Mapping[str, Any]]) -> Path:
 
 
 def provenance() -> dict[str, Any]:
-    from cryowisp.baselines.fit.runner import git_state
+    from cryowsp.baselines.fit.runner import git_state
 
     return {
         "script": str(Path(__file__).resolve()),
@@ -262,9 +262,9 @@ _BASE_CACHE: dict[tuple[str, int], np.ndarray] = {}
 
 
 def install_base_memo(inst: Any) -> None:
-    """Memoize the base model's predictions inside cryowisp.evalkit.devreadout (same function, same inputs)."""
-    import cryowisp.evalkit.devreadout as devreadout
-    from cryowisp.common.identity import params_sha256
+    """Memoize the base model's predictions inside cryowsp.evalkit.devreadout (same function, same inputs)."""
+    import cryowsp.evalkit.devreadout as devreadout
+    from cryowsp.common.identity import params_sha256
 
     if getattr(devreadout.predict, "_e11_mech_memo", False):
         return
@@ -289,8 +289,8 @@ def points(value: float) -> float:
 
 def readout(inst: Any, child: Mapping[str, np.ndarray]) -> dict[str, Any]:
     """dev_readout_joint of one child: gain and clean in points, joint = gain + clean, the worst classes, per class."""
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE
-    from cryowisp.harness import clean
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE
+    from cryowsp.harness import clean
 
     install_base_memo(inst)
     started = time.perf_counter()
@@ -323,7 +323,7 @@ def summarize_readout(
         "n_clean": record["n_clean"],
         "clean_split_sha256": record.get("clean_split_sha256"),
         "readout_seconds": seconds,
-        "readout_source": source or "cryowisp.evalkit.devreadout.dev_readout_joint",
+        "readout_source": source or "cryowsp.evalkit.devreadout.dev_readout_joint",
     }
 
 
@@ -331,9 +331,9 @@ def apply_within_limits(
     inst: Any, patch: Mapping[str, Any], patch_dir: Path
 ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Apply a patch under the E10 program limits; on a refusal, record it and apply it without the size limits
-    (``cryowisp.harness.transfer._child``'s rule). Returns the child and its edit record."""
-    from cryowisp.baselines.fit.edits import edit_stats_under
-    from cryowisp.patch import PatchError, apply_patch, task_limits
+    (``cryowsp.harness.transfer._child``'s rule). Returns the child and its edit record."""
+    from cryowsp.baselines.fit.edits import edit_stats_under
+    from cryowsp.patch import PatchError, apply_patch, task_limits
 
     limits = program_limits(inst)
     try:
@@ -371,8 +371,8 @@ def delta_patch_child(
 ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Write ``child - base`` as a delta patch (``write_delta_patch``), apply it within the limits, check the round
     trip, and return the applied child with its edit record."""
-    from cryowisp.baselines.instance_io import write_delta_patch
-    from cryowisp.common.identity import params_sha256
+    from cryowsp.baselines.instance_io import write_delta_patch
+    from cryowsp.common.identity import params_sha256
 
     patch_file = write_delta_patch(
         patch_dir,
@@ -400,8 +400,8 @@ def delta_patch_child(
 
 
 def sandbox() -> Any:
-    from cryowisp.harness.runner import DEFAULT_MEMORY_BYTES, SANDBOX_PYTHON
-    from cryowisp.sandbox.program import ProgramSandbox
+    from cryowsp.harness.runner import DEFAULT_MEMORY_BYTES, SANDBOX_PYTHON
+    from cryowsp.sandbox.program import ProgramSandbox
 
     return ProgramSandbox(python=SANDBOX_PYTHON, memory_bytes=DEFAULT_MEMORY_BYTES, threads=THREADS)
 
@@ -409,8 +409,8 @@ def sandbox() -> Any:
 def run_program(inst: Any, program_file: Path, work: Path) -> tuple[Any, Any, dict[str, Any]]:
     """Run one program file on the instance's own student and experience, as a transfer run does. Returns the update,
     its derived patch (dict, directory) and the run record."""
-    from cryowisp.harness.program import run_update, write_derived_patch
-    from cryowisp.harness.transfer import stage_student
+    from cryowsp.harness.program import run_update, write_derived_patch
+    from cryowsp.harness.transfer import stage_student
 
     work.mkdir(parents=True, mode=0o700)
     student, experience_file, experience = stage_student(inst, work / "student")
@@ -712,7 +712,7 @@ def t3_child(
 def cmd_repro(args: argparse.Namespace) -> list[dict[str, Any]]:
     """The final's deltas re-applied (child hash) and read on V_select; the program rerun in the sandbox (deltas)."""
     inst = instance()
-    from cryowisp.common.identity import load_params, params_sha256
+    from cryowsp.common.identity import load_params, params_sha256
 
     records: list[dict[str, Any]] = []
     child = final_child()
@@ -869,8 +869,8 @@ def _vit_module() -> types.ModuleType:
 def cmd_a2(args: argparse.Namespace) -> list[dict[str, Any]]:
     """Selectivity on V_select (condition rows and their clean companions, paired by idx) and residual offsets."""
     inst = instance()
-    from cryowisp.evalkit.companions import load_clean_rows
-    from cryowisp.evalkit.devreadout import readout_split
+    from cryowsp.evalkit.companions import load_clean_rows
+    from cryowsp.evalkit.devreadout import readout_split
 
     base = {k: np.asarray(v) for k, v in inst.params.items()}
     final = final_child()
@@ -1048,8 +1048,8 @@ def _checked_run(
     hypothesis: Callable[[dict[str, Any]], str],
 ) -> dict[str, Any]:
     """execute_run over program variants (generated before any check), then the joint-retain-v1 pick on V_select."""
-    from cryowisp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_retention
+    from cryowsp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_retention
 
     inst = instance()
     install_base_memo(inst)
@@ -1069,7 +1069,7 @@ def _checked_run(
         runs = {}
         for slot, (name, config, program) in enumerate(variants):
             update, (patch, patch_dir), run = run_program(inst, program, gen_work / name)
-            from cryowisp.patch import apply_patch
+            from cryowsp.patch import apply_patch
 
             unbounded = program_limits(inst).without_edit_limits(len(inst.params))
             child = {
@@ -1195,8 +1195,8 @@ def _checked_run(
 
 
 def readout_base_record(inst: Any) -> dict[str, Any]:
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE
-    from cryowisp.harness import clean
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE
+    from cryowsp.harness import clean
 
     install_base_memo(inst)
     return clean.dev_readout_joint(inst, dict(inst.params), DEFAULT_BATCH_SIZE)

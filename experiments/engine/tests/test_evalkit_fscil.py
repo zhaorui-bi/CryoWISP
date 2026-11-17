@@ -1,4 +1,4 @@
-"""cryowisp.evalkit.fscil (rule fscil-v1, PREREG E9) on the toy store of ``fscil_toy``."""
+"""cryowsp.evalkit.fscil (rule fscil-v1, PREREG E9) on the toy store of ``fscil_toy``."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ import numpy as np
 import pytest
 from fscil_toy import CIFAR100_FINE_NAMES, toy_fscil  # noqa: F401
 
-from cryowisp.common.identity import save_params
-from cryowisp.evalkit import fscil as FS
-from cryowisp.evalkit.instances import QUERY_BUDGET
-from cryowisp.evalkit.patch_check import predict
+from cryowsp.common.identity import save_params
+from cryowsp.evalkit import fscil as FS
+from cryowsp.evalkit.instances import QUERY_BUDGET
+from cryowsp.evalkit.patch_check import predict
 
 
 def test_session_arithmetic() -> None:
@@ -76,12 +76,12 @@ def test_readout_summaries_pooled_and_balanced() -> None:
 
 
 def test_real_class_names_pass_the_leak_scan(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (tmp_path / variable).mkdir()
         monkeypatch.setenv(variable, str(tmp_path / variable))
     assert FS.fscil_scan("\n".join(CIFAR100_FINE_NAMES)) == []
     assert FS.fscil_scan("a CIFAR-100 few-shot model") == ["cifar", "cifar-100"]
-    assert FS.fscil_scan(f"see {tmp_path}/CRYOWISP_PRIVATE/x") != []
+    assert FS.fscil_scan(f"see {tmp_path}/CRYOWSP_PRIVATE/x") != []
 
 
 def _child_on_new_classes(instance, scale: float = 3.0) -> dict[str, np.ndarray]:
@@ -203,4 +203,4 @@ def test_task_wording_names_the_earlier_sessions() -> None:
     assert (
         "were added in sessions 2 to 8;" in ninth["statement"] and ninth["evidence"]["prev"]["count"] == 175
     )
-    assert ninth["n_seen"] == 100 and ninth["schema"] == "cryowisp.task.incremental.v1"
+    assert ninth["n_seen"] == 100 and ninth["schema"] == "cryowsp.task.incremental.v1"

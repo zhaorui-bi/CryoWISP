@@ -8,9 +8,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.models.forward_gen import render_resnet20_forward, write_forward
-from cryowisp.models.parity import check_logit_parity
+from cryowsp.evalkit.patch_check import load_forward
+from cryowsp.models.forward_gen import render_resnet20_forward, write_forward
+from cryowsp.models.parity import check_logit_parity
 
 MEAN = (0.507, 0.487, 0.441)
 STD = (0.267, 0.256, 0.276)

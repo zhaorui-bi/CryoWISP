@@ -1,4 +1,4 @@
-"""E9 reference streams (``cryowisp.baselines.fit.fscilrefs``) on the toy store of ``fscil_toy``."""
+"""E9 reference streams (``cryowsp.baselines.fit.fscilrefs``) on the toy store of ``fscil_toy``."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ import numpy as np
 import pytest
 from fscil_toy import toy_fscil  # noqa: F401
 
-from cryowisp.baselines.fit import fscilrefs as FR
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.data.store import forward_path
-from cryowisp.evalkit import fscil as FS
-from cryowisp.evalkit.patch_check import predict
+from cryowsp.baselines.fit import fscilrefs as FR
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.data.store import forward_path
+from cryowsp.evalkit import fscil as FS
+from cryowsp.evalkit.patch_check import predict
 
 
 def _features(params, x):

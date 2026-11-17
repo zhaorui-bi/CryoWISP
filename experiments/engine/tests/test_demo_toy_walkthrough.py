@@ -22,7 +22,7 @@ def test_the_walkthrough_runs_end_to_end(
     tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # main() sets the three store variables itself; setting them here first lets monkeypatch restore them afterwards.
-    for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    for name in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         monkeypatch.setenv(name, "unset-by-the-test")
     root = (
         tmp_path_factory.mktemp("hs") / "store"
@@ -38,7 +38,7 @@ def test_the_walkthrough_runs_end_to_end(
     assert len(records) == 6 and all(r["status"] == "ok" for r in records)
     own = next(r for r in records if r["target"]["instance_id"] == run["instance"]["instance_id"])
     assert own["readouts"]["delta_acc"] > 0 and own["readouts_clean"]["delta_acc"] >= 0
-    assert (root / "env.sh").read_text().count("export CRYOWISP_") == 3
+    assert (root / "env.sh").read_text().count("export CRYOWSP_") == 3
 
     with pytest.raises(SystemExit, match="already exists and is not empty"):
         TW.main(["--root", str(root)])

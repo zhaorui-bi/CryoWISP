@@ -9,7 +9,7 @@ only; nothing reads the sealed store.
   transfer run there (``runs/devreadouts/learn/<session>/transfer/transfer_<program12>_<instance>``), rebuilt from the
   run's derived patch under the limits the run recorded (the E10 program limits) and checked against the run's child
   hash, student hash and experience content hash.
-* The wrapper (``cryowisp.analysis.nullspace``): per edited weight tensor, the uncentred second moment of its layer's
+* The wrapper (``cryowsp.analysis.nullspace``): per edited weight tensor, the uncentred second moment of its layer's
   inputs over x_old (the run's 64 clean experience rows, all tokens) on the unedited student; the top eigenvectors
   holding a fraction e of the energy; the delta's input side projected onto their complement; biases and other 1-D
   deltas unchanged. Scope s1: every edited weight tensor; s2: the edited weight tensors outside the freed gate units
@@ -17,7 +17,7 @@ only; nothing reads the sealed store.
   final (s2 is its no-op and is not checked). Grid e in {0.90, 0.99, 0.999} x scope, scope outer: 6 configurations
   for the contrast final, 3 for the gaussian final.
 * ``grid FINAL``: on student 100 (the final's own instance), every configuration is one check
-  (``cryowisp.baselines.fit.runner.execute_run`` with ``joint=True, e10=True``: the joint oracle on V_check and its clean
+  (``cryowsp.baselines.fit.runner.execute_run`` with ``joint=True, e10=True``: the joint oracle on V_check and its clean
   companion, the E10 program limits, at most 8 checks). The pick is joint-retain-v1 (S_old >= -20 of 4000,
   ``devreadout.readout_retention``), read on V_select; every configuration is also read on V_select
   (``devreadout.readout_candidates``, descriptive).
@@ -29,8 +29,8 @@ only; nothing reads the sealed store.
   final, C is met with the wrapper (ratio >= 0.7, clean >= -1.0 on at least 4 of 5) while the student-100 joint stays
   >= 75% of the final's (+13.49).
 
-Records go to ``$CRYOWISP_RUNS/devreadouts/d1/`` (never overwritten, each with a .sha256 file); the check runs to
-``$CRYOWISP_RUNS/devreadouts/d1/runs/``.
+Records go to ``$CRYOWSP_RUNS/devreadouts/d1/`` (never overwritten, each with a .sha256 file); the check runs to
+``$CRYOWSP_RUNS/devreadouts/d1/runs/``.
 
     source scripts/env.sh
     .venv/bin/python -B scripts/e11/d1_nullspace.py --threads 8 grid contrast
@@ -51,7 +51,7 @@ from pathlib import Path
 from typing import Any
 
 THREAD_VARIABLES = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
-SCHEMA = "cryowisp.d1.nullspace.v1"
+SCHEMA = "cryowsp.d1.nullspace.v1"
 SPEC = "docs/PREREG_v0_DRAFT.md main 3bc7838, D1 (null-space projection of a final's edit)"
 RETENTION_FLOOR = -20
 MAX_CHECKS = 8
@@ -121,7 +121,7 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 
 
 def runs_root() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return Path(runs_dir())
 
@@ -139,7 +139,7 @@ def file_sha256(path: Path) -> str:
 
 
 def write_records(name: str, records: Sequence[Mapping[str, Any]]) -> Path:
-    from cryowisp.baselines.fit.runner import jsonable
+    from cryowsp.baselines.fit.runner import jsonable
 
     folder = out_dir()
     folder.mkdir(parents=True, exist_ok=True)
@@ -168,8 +168,8 @@ def read_records(name: str) -> list[dict[str, Any]]:
 def provenance(threads: int) -> dict[str, Any]:
     import numpy as np
 
-    from cryowisp.analysis import nullspace
-    from cryowisp.baselines.fit.runner import git_state
+    from cryowsp.analysis import nullspace
+    from cryowsp.baselines.fit.runner import git_state
 
     return {
         "script": str(Path(__file__).resolve()),
@@ -191,7 +191,7 @@ def summarize(record: Mapping[str, Any]) -> dict[str, Any]:
     """V_select fields in points: gain, clean, joint = gain + clean, the worst classes.
 
     ``record`` is a ``dev_readout_joint``-style record (the devreadout picks and frontier, the C readouts: ``n``) or
-    a transfer run record (``cryowisp.harness.program_transfer.v0``: ``n_select``)."""
+    a transfer run record (``cryowsp.harness.program_transfer.v0``: ``n_select``)."""
     ro, rc = record["readouts"], record["readouts_clean"]
     n = record["n"] if "n" in record else record["n_select"]
     gain, clean = points(ro["delta_acc"]), points(rc["delta_acc"])
@@ -227,7 +227,7 @@ class Edit:
 
 
 def unbounded_limits(limits: Any) -> Any:
-    """The limits without the size limits, as ``cryowisp.harness.transfer._child`` applies a refused derived patch."""
+    """The limits without the size limits, as ``cryowsp.harness.transfer._child`` applies a refused derived patch."""
     import dataclasses
 
     return dataclasses.replace(limits, max_rel_frob=None, max_changed_frac=None)
@@ -237,10 +237,10 @@ def load_edit(final: Final, instance_id: str) -> Edit:
     """The final's child on ``instance_id``, rebuilt from the transfer run's derived patch and checked."""
     import numpy as np
 
-    from cryowisp.baselines.fit.cli import load_checked_instances
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.evalkit.e10 import e10_program_limits
-    from cryowisp.patch import Limits, apply_patch
+    from cryowsp.baselines.fit.cli import load_checked_instances
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.evalkit.e10 import e10_program_limits
+    from cryowsp.patch import Limits, apply_patch
 
     path = transfer_dir(final) / f"transfer_{final.program12}_{instance_id}.json"
     record = json.loads(path.read_text())
@@ -293,7 +293,7 @@ def gate_units(
     """
     import numpy as np
 
-    from cryowisp.analysis.nullspace import layer_of
+    from cryowsp.analysis.nullspace import layer_of
 
     blocks: dict[int, set[int]] = {}
     for tensor in edited:
@@ -328,7 +328,7 @@ def scope_tensors(
 
 def wrapper_configs(final: Final, scopes: Mapping[str, list[str]]) -> list[dict[str, Any]]:
     """The grid in check order (scope outer, e inner); an empty scope is a no-op and is not a configuration."""
-    from cryowisp.analysis.nullspace import ENERGY_FRACTIONS
+    from cryowsp.analysis.nullspace import ENERGY_FRACTIONS
 
     return [{"scope": s, "e": e} for s in SCOPES if scopes[s] for e in ENERGY_FRACTIONS]
 
@@ -337,7 +337,7 @@ def wrapped(
     edit: Edit, config: Mapping[str, Any], tensors: Sequence[str]
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """The edit's child with the projection of ``config`` on ``tensors``, and the projection record."""
-    from cryowisp.analysis import nullspace as N
+    from cryowsp.analysis import nullspace as N
 
     module = N.forward_module(edit.instance.instance_dir / "forward.py", edit.instance.forward_sha256)
     moments, rows, parity = N.moments(module, edit.instance.params, edit.x_old, tensors)
@@ -361,9 +361,9 @@ def wrapped(
 def cmd_grid(final: Final, threads: int) -> None:
     import numpy as np
 
-    from cryowisp.analysis import nullspace as N
-    from cryowisp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_candidates, readout_retention
+    from cryowsp.analysis import nullspace as N
+    from cryowsp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_candidates, readout_retention
 
     edit = load_edit(final, final.instance_id)
     edited = N.edited_weight_tensors(edit.instance.params, edit.child)
@@ -549,9 +549,9 @@ def apply_wrapped(edit: Edit, child: Mapping[str, Any], work: Path) -> tuple[dic
     it without the size limits (the transfer runs' rule)."""
     import numpy as np
 
-    from cryowisp.baselines.instance_io import write_delta_patch
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.patch import PatchError, apply_patch
+    from cryowsp.baselines.instance_io import write_delta_patch
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.patch import PatchError, apply_patch
 
     inst = edit.instance
     patch_file = write_delta_patch(
@@ -582,9 +582,9 @@ def apply_wrapped(edit: Edit, child: Mapping[str, Any], work: Path) -> tuple[dic
 
 
 def cmd_transfer(final: Final, threads: int) -> None:
-    from cryowisp.analysis import nullspace as N
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE
-    from cryowisp.harness import clean as clean_source
+    from cryowsp.analysis import nullspace as N
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE
+    from cryowsp.harness import clean as clean_source
 
     (pick,) = read_records(f"d1_{final.name}_s100_pick")
     config = pick["picked_config"]
@@ -739,7 +739,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     if args.command == "summary":
         cmd_summary()

@@ -1,4 +1,4 @@
-"""CryoWISP on a toy network, end to end, with no data download, no store and no LLM (about one minute).
+"""CryoWSP on a toy network, end to end, with no data download, no store and no LLM (about one minute).
 
 The script builds a toy store under ``--root``: six tiny synthetic ViT-Lite students (seeds 100 to 105, 3 x 8 x 8
 images, 4 classes, 30 tensors) and one repair instance per student for the condition ``gaussian_noise_s5``. The
@@ -75,12 +75,12 @@ def _points(value: float | None) -> str:
 
 
 def _check_prerequisites(repo: Path) -> None:
-    from cryowisp.harness.runner import SANDBOX_PYTHON
-    from cryowisp.sandbox import SandboxError, check_bwrap
+    from cryowsp.harness.runner import SANDBOX_PYTHON
+    from cryowsp.sandbox import SandboxError, check_bwrap
 
     missing = []
     try:
-        check_bwrap()  # $CRYOWISP_BWRAP or /usr/bin/bwrap, 0.8.0 or newer
+        check_bwrap()  # $CRYOWSP_BWRAP or /usr/bin/bwrap, 0.8.0 or newer
     except SandboxError as error:
         missing.append(str(error))
     if not SANDBOX_PYTHON.exists():
@@ -104,25 +104,25 @@ def main(argv: list[str] | None = None) -> int:
         sys.exit(f"toy_walkthrough: {root} already exists and is not empty; remove it or pass another --root")
     _check_prerequisites(repo)
 
-    # The store variables must point at the toy store before any cryowisp module resolves them; the real store is never
+    # The store variables must point at the toy store before any cryowsp module resolves them; the real store is never
     # touched (vit_synth.build_store refuses to write anywhere else).
     env = {
-        "CRYOWISP_PRIVATE": root / "private",
-        "CRYOWISP_SEALED": root / "sealed",
-        "CRYOWISP_RUNS": root / "runs",
+        "CRYOWSP_PRIVATE": root / "private",
+        "CRYOWSP_SEALED": root / "sealed",
+        "CRYOWSP_RUNS": root / "runs",
     }
     for name, path in env.items():
         path.mkdir(parents=True, exist_ok=True)
         os.environ[name] = str(path)
 
-    from cryowisp.evalkit.devreadout import readout_run
-    from cryowisp.harness import e10, e11, runner
-    from cryowisp.harness.jsonio import read_json
-    from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-    from cryowisp.harness.session import SessionPaths
-    from cryowisp.harness.transfer import run_transfer
-    from cryowisp.models import vit_synth
-    from cryowisp.sandbox.program import ProgramSandbox
+    from cryowsp.evalkit.devreadout import readout_run
+    from cryowsp.harness import e10, e11, runner
+    from cryowsp.harness.jsonio import read_json
+    from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+    from cryowsp.harness.session import SessionPaths
+    from cryowsp.harness.transfer import run_transfer
+    from cryowsp.models import vit_synth
+    from cryowsp.sandbox.program import ProgramSandbox
 
     print(f"[1/4] Building the toy store under {root}")
     store = vit_synth.build_store(

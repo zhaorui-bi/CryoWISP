@@ -25,11 +25,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.common.identity import Params, params_sha256, save_params
-from cryowisp.data import store
-from cryowisp.evalkit import fscil as FS
-from cryowisp.models.export import fewshot_models_dir, write_fewshot_index
-from cryowisp.models.forward_gen import render_resnet20_forward, write_forward
+from cryowsp.common.identity import Params, params_sha256, save_params
+from cryowsp.data import store
+from cryowsp.evalkit import fscil as FS
+from cryowsp.models.export import fewshot_models_dir, write_fewshot_index
+from cryowsp.models.forward_gen import render_resnet20_forward, write_forward
 
 CIFAR100_FINE_NAMES: tuple[str, ...] = (
     "apple",
@@ -174,7 +174,7 @@ def toy_spec(shapes: dict[str, tuple[int, ...]], model_id: str) -> dict:
     """A minimal ResNet-20 model_spec.json whose last layer is the cosine head (what evalkit.fscil reads). It carries
     its model_id, as the store's real specs do (``build_resnet20_spec``); instances must leave it out."""
     return {
-        "schema": "cryowisp.model_spec.resnet20.v1",
+        "schema": "cryowsp.model_spec.resnet20.v1",
         "model_id": model_id,
         "arch": FS.ARCH,
         "input_shape": list(SHAPE),
@@ -201,8 +201,8 @@ def _forward_module(path: Path):
 
 
 def build_toy_fscil_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ToyFscil:
-    """Write the toy store under ``tmp_path`` and point CRYOWISP_PRIVATE / CRYOWISP_SEALED / CRYOWISP_RUNS at it."""
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    """Write the toy store under ``tmp_path`` and point CRYOWSP_PRIVATE / CRYOWSP_SEALED / CRYOWSP_RUNS at it."""
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (tmp_path / variable).mkdir()
         monkeypatch.setenv(variable, str(tmp_path / variable))
     rng = np.random.default_rng(9)
@@ -239,7 +239,7 @@ def build_toy_fscil_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> To
     store.write_json(
         store.dataset_json_path(dataset),
         {
-            "schema": "cryowisp.dataset.fscil.v1",
+            "schema": "cryowsp.dataset.fscil.v1",
             "dataset": dataset,
             "task": "fscil",
             "toy": True,
@@ -333,7 +333,7 @@ def add_toy_allclass(toy: ToyFscil, seed: int = TOY_SEED) -> str:
         + "\n",
         encoding="utf-8",
     )
-    from cryowisp.models.export import read_fewshot_index
+    from cryowsp.models.export import read_fewshot_index
 
     write_fewshot_index(
         toy.dataset,

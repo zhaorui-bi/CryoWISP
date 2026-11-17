@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from cryowisp.audit import report as R
-from cryowisp.audit.session import audit_cells
+from cryowsp.audit import report as R
+from cryowsp.audit.session import audit_cells
 
 LOAD = """import json
 import numpy as np

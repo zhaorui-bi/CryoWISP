@@ -1,8 +1,8 @@
-"""The paper examples of ``cryowisp reproduce`` (``cryowisp.examples``).
+"""The paper examples of ``cryowsp reproduce`` (``cryowsp.examples``).
 
 Offline: every download is checked against its recorded sha256 (a wrong file is refused and removed, a right one is
 kept and not fetched again), ``SHA256SUMS`` lines parse, a dataset path that names no file is an error, and the CLI
-parses the command. Online (``CRYOWISP_ONLINE_TESTS=1``): the SCAN example downloads its files, reruns the program
+parses the command. Online (``CRYOWSP_ONLINE_TESTS=1``): the SCAN example downloads its files, reruns the program
 without the sandbox and reproduces the paper's test reading exactly.
 """
 
@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.application.cli import parser
-from cryowisp.examples import EXAMPLES
-from cryowisp.examples import fetch as F
+from cryowsp.application.cli import parser
+from cryowsp.examples import EXAMPLES
+from cryowsp.examples import fetch as F
 
 
 def _file(path: Path, text: str) -> str:
@@ -68,8 +68,8 @@ def test_the_examples_run_without_pytorch() -> None:
 
     code = (
         "import sys\nsys.modules['torch'] = sys.modules['torchvision'] = None\n"
-        "import cryowisp.application.cli, cryowisp.examples.replay\n"
-        "from cryowisp.examples import EXAMPLES\nimport importlib\n"
+        "import cryowsp.application.cli, cryowsp.examples.replay\n"
+        "from cryowsp.examples import EXAMPLES\nimport importlib\n"
         "[importlib.import_module(m) for m in EXAMPLES.values()]\n"
     )
     done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
@@ -83,13 +83,13 @@ def test_the_cli_parses_every_example() -> None:
 
 
 @pytest.mark.skipif(
-    os.environ.get("CRYOWISP_ONLINE_TESTS") != "1", reason="downloads ~10 MB; set CRYOWISP_ONLINE_TESTS=1"
+    os.environ.get("CRYOWSP_ONLINE_TESTS") != "1", reason="downloads ~10 MB; set CRYOWSP_ONLINE_TESTS=1"
 )
 def test_scan_reproduces_the_paper(tmp_path: Path) -> None:
     import sys
 
-    from cryowisp.examples import scan
-    from cryowisp.sandbox.program import UnisolatedRunner
+    from cryowsp.examples import scan
+    from cryowsp.sandbox.program import UnisolatedRunner
 
     runner = UnisolatedRunner(python=Path(sys.executable), memory_bytes=8 * 2**30, threads=4)
     summary = scan.run(tmp_path, runner, log=lambda _: None)
@@ -107,8 +107,8 @@ def test_imagenet_reads_the_records_per_image_bits() -> None:
 
     import numpy as np
 
-    from cryowisp.examples import imagenet
-    from cryowisp.examples.replay import ReplayError
+    from cryowsp.examples import imagenet
+    from cryowsp.examples.replay import ReplayError
 
     bits = np.random.default_rng(0).random(13) < 0.5
     text = base64.b64encode(np.packbits(bits, bitorder="big").tobytes()).decode("ascii")

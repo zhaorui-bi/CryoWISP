@@ -1,4 +1,4 @@
-"""Tests for the dev readout on V_select (cryowisp.evalkit.devreadout)."""
+"""Tests for the dev readout on V_select (cryowsp.evalkit.devreadout)."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ import numpy as np
 import pytest
 from test_evalkit_instances_store import ToyStore, build_v1, toy_store  # noqa: F401
 
-from cryowisp.baselines.instance_io import load_instance, write_delta_patch
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit.instances import StaleInstanceError, supersede_instances
-from cryowisp.evalkit.metrics import sealed_readout
-from cryowisp.evalkit.patch_check import predict
+from cryowsp.baselines.instance_io import load_instance, write_delta_patch
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit.instances import StaleInstanceError, supersede_instances
+from cryowsp.evalkit.metrics import sealed_readout
+from cryowsp.evalkit.patch_check import predict
 
 
 def _instances(store: ToyStore) -> dict[str, Path]:
@@ -143,7 +143,7 @@ def test_readout_run_rebuilds_the_final_child_and_checks_its_hash(toy_store: Toy
 
 
 def test_saved_children_for_decoy_and_rewrite_are_loaded_and_hash_checked(toy_store: ToyStore) -> None:  # noqa: F811
-    from cryowisp.common.identity import save_params
+    from cryowsp.common.identity import save_params
 
     dev = load_instance(_instances(toy_store)["dev100"])
     child = _shifted_child(dict(dev.params))
@@ -180,7 +180,7 @@ def test_a_harness_final_is_rebuilt_with_the_session_s_own_limits(toy_store: Toy
     limit but not the limits its session recorded; the readout rebuilds it with the recorded ones."""
     from dataclasses import asdict
 
-    from cryowisp.patch import Limits, PatchError
+    from cryowsp.patch import Limits, PatchError
 
     dev = load_instance(_instances(toy_store)["dev100"])
     child = {key: np.array(value, copy=True) for key, value in dev.params.items()}
@@ -223,9 +223,9 @@ def test_an_e10_reference_final_is_rebuilt_with_the_e10_program_limits(toy_store
     rebuilds it with the E10 program limits the run records, and refuses a run that records other limits."""
     from dataclasses import asdict
 
-    from cryowisp.baselines.fit.runner import E10_LIMITS_SOURCE
-    from cryowisp.evalkit.e10 import e10_program_limits
-    from cryowisp.patch import PatchError
+    from cryowsp.baselines.fit.runner import E10_LIMITS_SOURCE
+    from cryowsp.evalkit.e10 import e10_program_limits
+    from cryowsp.patch import PatchError
 
     dev = load_instance(_instances(toy_store)["dev100"])
     child = {key: np.array(value, copy=True) for key, value in dev.params.items()}

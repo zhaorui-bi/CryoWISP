@@ -1,4 +1,4 @@
-"""Tests for the dev-only run comparison against a channel tie (cryowisp.analysis.compare_patches)."""
+"""Tests for the dev-only run comparison against a channel tie (cryowsp.analysis.compare_patches)."""
 
 from __future__ import annotations
 
@@ -12,14 +12,14 @@ import numpy as np
 import pytest
 from test_evalkit_instances_store import ToyStore, build_v1, fixing_child, toy_store  # noqa: F401
 
-import cryowisp.common.paths
-import cryowisp.evalkit.sealed
-from cryowisp.analysis import compare_patches as cp
-from cryowisp.baselines.instance_io import Instance, load_instance, write_delta_patch
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.patch import SCHEMA, Limits, apply_patch
+import cryowsp.common.paths
+import cryowsp.evalkit.sealed
+from cryowsp.analysis import compare_patches as cp
+from cryowsp.baselines.instance_io import Instance, load_instance, write_delta_patch
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.patch import SCHEMA, Limits, apply_patch
 
 # ----------------------------------------------------------------------------------------------- synthetic 3-channel model
 
@@ -327,9 +327,9 @@ def test_the_sealed_store_is_never_opened(toy_store: ToyStore, monkeypatch: pyte
     run = _patch_run(toy_store, dev, "fix", fixing_child(dict(dev.params)))
     ref = _noop_run(toy_store, dev)
     shutil.rmtree(toy_store.sealed / toy_store.dataset)
-    monkeypatch.setattr(cryowisp.evalkit.sealed, "_load_test_set", _raise)
-    monkeypatch.setattr(cryowisp.evalkit.sealed, "evaluate_manifest", _raise)
-    monkeypatch.setattr(cryowisp.common.paths, "sealed_dir", _raise)
+    monkeypatch.setattr(cryowsp.evalkit.sealed, "_load_test_set", _raise)
+    monkeypatch.setattr(cryowsp.evalkit.sealed, "evaluate_manifest", _raise)
+    monkeypatch.setattr(cryowsp.common.paths, "sealed_dir", _raise)
     _FORBIDDEN_ROOTS.append(os.path.realpath(toy_store.sealed))
     try:
         with pytest.raises(PermissionError, match="test guard"):

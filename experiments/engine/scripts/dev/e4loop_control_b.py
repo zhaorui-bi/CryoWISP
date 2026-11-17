@@ -1,31 +1,31 @@
 """Control (b) of PREREG "E4 with the teacher in the loop": the equal-feedback label-fit references (dev only).
 
 Each method (grad_last, ridge_last, grad_full) is one checked reference stream
-(``cryowisp.baselines.fit.checked_reference_stream``): every round re-selects the fit over its E1 configurations by the
+(``cryowsp.baselines.fit.checked_reference_stream``): every round re-selects the fit over its E1 configurations by the
 loop's check and kept rule loop-retain-v1, on its own current student, with variant (b)'s rows. No LLM call.
 
 Before the stream, the loop records given with ``--loop-record`` are rebuilt round by round on their own students
 (``loop_round_rows``): the run stops unless every rebuilt experience hashes to what the loop recorded. The first one
 is then the loop the stream's rows are compared with, round by round (``compare_rows``). Records go to ``--out``
-(default ``$CRYOWISP_RUNS/loop_control_b``) and are never overwritten.
+(default ``$CRYOWSP_RUNS/loop_control_b``) and are never overwritten.
 
 Example (seed 100, the E4 order: noise, contrast, blur, gamma, colormix)::
 
     source scripts/env.sh
     .venv/bin/python scripts/dev/e4loop_control_b.py --method grad_last --threads 6 \\
-        --loop-record $CRYOWISP_RUNS/loop_streams/loop_teacher_ccc1fe9fe3ac_d5bef5b0f9b3.json \\
-        $CRYOWISP_RUNS/loop_streams/loop_checked_selection_ded0afcd73b5_d5bef5b0f9b3.json
+        --loop-record $CRYOWSP_RUNS/loop_streams/loop_teacher_ccc1fe9fe3ac_d5bef5b0f9b3.json \\
+        $CRYOWSP_RUNS/loop_streams/loop_checked_selection_ded0afcd73b5_d5bef5b0f9b3.json
 
 PREREG E10's control (b) is the same command on the E10 stream (seed 100, conditions in the E10 order), with the
 methods grad_last, ridge_last, grad_full, bn_adapt and tent; on E10 instances every candidate is applied under the E10
 program limits, and bn_adapt and tent fit the round's 64 condition inputs only::
 
     .venv/bin/python scripts/dev/e4loop_control_b.py --method bn_adapt --threads 6 \\
-        --instances $(.venv/bin/python -m cryowisp.harness.e10 ids) --out $CRYOWISP_RUNS/e10/control_b \\
+        --instances $(.venv/bin/python -m cryowsp.harness.e10 ids) --out $CRYOWSP_RUNS/e10/control_b \\
         --loop-record <E10 teacher loop record> <E10 control (a) record>
 
 ``--kept-rule loop-retain-v2`` re-selects each round under the stream's clean budget instead
-(``cryowisp.harness.loop.loop_kept_rule_v2``: -60 of 4000 clean V_check rows over the stream, less this stream's own kept
+(``cryowsp.harness.loop.loop_kept_rule_v2``: -60 of 4000 clean V_check rows over the stream, less this stream's own kept
 score_old of the earlier rounds); give it the loop records of the v2 teacher stream and its v2 control (a).
 """
 
@@ -64,7 +64,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="loop stream records to rebuild and check first; the first is compared row by row",
     )
     parser.add_argument(
-        "--out", type=Path, help="directory for the record (default $CRYOWISP_RUNS/loop_control_b)"
+        "--out", type=Path, help="directory for the record (default $CRYOWSP_RUNS/loop_control_b)"
     )
     parser.add_argument("--seed", type=int, default=0, help="run seed of the fits (E1's)")
     parser.add_argument("--threads", type=int, default=4, help="CPU threads for torch and BLAS")
@@ -72,7 +72,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--kept-rule",
         default="loop-retain-v1",
         choices=("loop-retain-v1", "loop-retain-v2"),
-        help="the loop's kept rule the rounds re-select by (cryowisp.harness.loop.KEPT_RULES)",
+        help="the loop's kept rule the rounds re-select by (cryowsp.harness.loop.KEPT_RULES)",
     )
     return parser.parse_args(argv)
 
@@ -88,17 +88,17 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.checked_reference_stream import (
+    from cryowsp.baselines.fit.checked_reference_stream import (
         METHODS,
         loop_round_rows,
         run_checked_reference_stream,
     )
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     if args.method not in METHODS:
         print(f"refused: unknown method {args.method!r}; methods {METHODS}", file=sys.stderr)

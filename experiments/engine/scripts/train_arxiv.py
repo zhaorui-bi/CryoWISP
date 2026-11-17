@@ -1,13 +1,13 @@
-"""Train, export, import and report the ogbn-arxiv GCN students (``cryowisp.models.gcn``, ``cryowisp.models.gcn_export``).
+"""Train, export, import and report the ogbn-arxiv GCN students (``cryowsp.models.gcn``, ``cryowsp.models.gcn_export``).
 
 Groups:
 
-``--protocol`` picks the store dataset (``cryowisp.data.arxiv.PROTOCOLS``): ``transductive`` (ogbn_arxiv) or
+``--protocol`` picks the store dataset (``cryowsp.data.arxiv.PROTOCOLS``): ``transductive`` (ogbn_arxiv) or
 ``inductive`` (ogbn_arxiv_ind).
 
 * ``train``: for each seed, the OGB reference GCN under the fixed recipe (``GCNTrainConfig``), as ``--role base``
   (labels of the train split), ``--role ceiling`` (train plus valid_unused) or ``--role newclass`` (PREREG E7: the
-  train nodes of the train classes of ``graphnew_classes.json``, ``cryowisp.data.arxiv_classes``; inductive only), on
+  train nodes of the train classes of ``graphnew_classes.json``, ``cryowsp.data.arxiv_classes``; inductive only), on
   the role's training graph (``gcn_export.training_graph``). The job needs dataset.json, forward.py, graph.npz
   (graph_train.npz too for an inductive base or newclass student; graphnew_classes.json for newclass) and the
   training and readout splits (train, V_select, old_select; valid_unused for a ceiling). Each student is exported
@@ -24,7 +24,7 @@ importer refuses them) and never writes the store's index.
 Usage:
     source scripts/env.sh
     .venv/bin/python scripts/train_arxiv.py --protocol inductive --group train --role base --seeds 100 --device cuda
-    .venv/bin/python scripts/train_arxiv.py --protocol inductive --group import --run-dir $CRYOWISP_PRIVATE/nscc_runs/RUN --note "..."
+    .venv/bin/python scripts/train_arxiv.py --protocol inductive --group import --run-dir $CRYOWSP_PRIVATE/nscc_runs/RUN --note "..."
     .venv/bin/python scripts/train_arxiv.py --protocol inductive --group report
 """
 
@@ -39,20 +39,20 @@ from typing import Any
 
 import torch
 
-from cryowisp.data import arxiv as A
-from cryowisp.data.arxiv_classes import class_draw_block
-from cryowisp.data.store import read_dataset_json, write_json
-from cryowisp.models import gcn as G
-from cryowisp.models.export import read_fewshot_index, read_index, write_fewshot_index, write_index
-from cryowisp.models.gcn_export import (
+from cryowsp.data import arxiv as A
+from cryowsp.data.arxiv_classes import class_draw_block
+from cryowsp.data.store import read_dataset_json, write_json
+from cryowsp.models import gcn as G
+from cryowsp.models.export import read_fewshot_index, read_index, write_fewshot_index, write_index
+from cryowsp.models.gcn_export import (
     CLASS_SUBSET_ROLES,
     export_gcn_model,
     import_gcn_models,
     training_graph,
     training_nodes,
 )
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.train import configure_determinism
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.train import configure_determinism
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -145,8 +145,8 @@ def import_group(args: argparse.Namespace) -> int:
 
 
 def report_group(args: argparse.Namespace) -> int:
-    from cryowisp.data.store import models_dir, read_json
-    from cryowisp.models.export import fewshot_models_dir
+    from cryowsp.data.store import models_dir, read_json
+    from cryowsp.models.export import fewshot_models_dir
 
     dataset = A.PROTOCOLS[args.protocol]
     rows = []

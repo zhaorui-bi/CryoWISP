@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The `cryowisp` skill's reuse workflow, command by command, on a small synthetic project (no API, about 30 s).
+"""The `cryowsp` skill's reuse workflow, command by command, on a small synthetic project (no API, about 30 s).
 
 It first writes what a user would bring:
 - `model.pt`: a plain torchvision ResNet-18 state_dict. The backbone is random (seed 0); the head is fitted to the old
@@ -9,7 +9,7 @@ It first writes what a user would bring:
   `old/<class>/` PNG files. A class is a colour under heavy noise in the new condition and a stripe orientation in
   the old one.
 
-Then it runs the exact commands of `skills/cryowisp/references/workflow.md` through the installed `cryowisp`
+Then it runs the exact commands of `skills/cryowsp/references/workflow.md` through the installed `cryowsp`
 executable (doctor, import-model, prepare-data three times, prepare-task, pack-program, apply) and prints the outcome.
 Last, it applies the same program again without the sandbox, naming its sha256 (``--program-sha256``), and checks that
 both runs reach the same decision and the same released weights.
@@ -99,7 +99,7 @@ def write_project(root: Path) -> None:
 
 
 def run(command: list[str], cwd: Path) -> dict:
-    """Run one `cryowisp` command as a user would, echo it, and return its JSON output."""
+    """Run one `cryowsp` command as a user would, echo it, and return its JSON output."""
     print("$ " + shlex.join(command), flush=True)
     done = subprocess.run(command, cwd=cwd, capture_output=True, text=True)
     if done.returncode != 0:
@@ -121,14 +121,14 @@ def main(argv: list[str] | None = None) -> int:
     if root.exists():
         sys.exit(f"skill_cli_walkthrough: {root} already exists; remove it or pass another --root")
     sandbox = args.sandbox_python.absolute()
-    cryowisp = Path(sys.executable).parent / "cryowisp"  # the executable `uv sync` installs next to python
-    if not cryowisp.exists():
-        sys.exit(f"skill_cli_walkthrough: {cryowisp} not found; run `uv sync --extra train` in the checkout")
+    cryowsp = Path(sys.executable).parent / "cryowsp"  # the executable `uv sync` installs next to python
+    if not cryowsp.exists():
+        sys.exit(f"skill_cli_walkthrough: {cryowsp} not found; run `uv sync --extra train` in the checkout")
     root.mkdir(parents=True)
     write_project(root)
     print(f"Synthetic project in {root}: model.pt, labels.json, images/{{experience,selection,final}}")
 
-    wc = [str(cryowisp)]
+    wc = [str(cryowsp)]
     run(wc + ["doctor", "--sandbox-python", str(sandbox)], root)
     run(
         wc + ["import-model", "--checkpoint", "model.pt", "--labels", "labels.json", "--out", "work/model"],

@@ -19,10 +19,10 @@ from test_evalkit_instances_store import (  # noqa: F401
     write_condition_meta,
 )
 
-from cryowisp.baselines.instance_io import Instance, load_instance
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit.companions import (
+from cryowsp.baselines.instance_io import Instance, load_instance
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit.companions import (
     CompanionError,
     build_replay,
     clean_companion,
@@ -31,9 +31,9 @@ from cryowisp.evalkit.companions import (
     make_joint_oracle,
     replay_paths,
 )
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.evalkit.patch_check import BudgetExceeded, PatchCheckOracle, predict
-from cryowisp.evalkit.targets import ConditionMismatch
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.evalkit.patch_check import BudgetExceeded, PatchCheckOracle, predict
+from cryowsp.evalkit.targets import ConditionMismatch
 
 
 @pytest.fixture

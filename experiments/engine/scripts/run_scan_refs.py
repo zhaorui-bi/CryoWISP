@@ -1,14 +1,14 @@
 """Run the PREREG E13 references, the rule-label check and the walk diagnostic on scanskill-v1 instances.
 
-References (``cryowisp.baselines.fit.scanrefs``): E5's seqgrad set and F1's eight configurations on the experience rows,
+References (``cryowsp.baselines.fit.scanrefs``): E5's seqgrad set and F1's eight configurations on the experience rows,
 and the rule-generated references (fit sets ``full`` and ``mixed``), seed 0, 8 checks each by the scan joint oracle.
-Each writes ``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/<label>/0/`` (label ``f1`` for F1's eight, ``e13`` for the
+Each writes ``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/<label>/0/`` (label ``f1`` for F1's eight, ``e13`` for the
 rest); an existing run directory is never overwritten.
 
 Three modes::
 
     source scripts/env.sh
-    # local only (reads $CRYOWISP_PRIVATE/scan/raw/tasks.txt, which never goes to NSCC): every rule-generated row's
+    # local only (reads $CRYOWSP_PRIVATE/scan/raw/tasks.txt, which never goes to NSCC): every rule-generated row's
     # labels against the official file; writes the record the reference runs check their fit sets against
     .venv/bin/python scripts/run_scan_refs.py check-labels --out scripts/store/e13_rulegen_labels.json
     # references (NSCC GPU main of R22-e13, or a smoke with --methods); --device cuda fits on the GPU with
@@ -21,9 +21,9 @@ Three modes::
 Dev readouts are a separate step: the run's final, the kept pick (S_old >= -5 of 1000) and, for F1, every checked
 configuration::
 
-    .venv/bin/python -m cryowisp.evalkit.devreadout RUN.json [...] --out FILE
-    .venv/bin/python -m cryowisp.evalkit.devreadout RUN.json [...] --retention-floor -5 --out FILE
-    .venv/bin/python -m cryowisp.evalkit.devreadout RUN.json [...] --all-candidates --out FILE
+    .venv/bin/python -m cryowsp.evalkit.devreadout RUN.json [...] --out FILE
+    .venv/bin/python -m cryowsp.evalkit.devreadout RUN.json [...] --retention-floor -5 --out FILE
+    .venv/bin/python -m cryowsp.evalkit.devreadout RUN.json [...] --all-candidates --out FILE
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 THREAD_VARIABLES = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
-LABEL_RECORD_SCHEMA = "cryowisp.e13_rulegen_labels.v1"
+LABEL_RECORD_SCHEMA = "cryowsp.e13_rulegen_labels.v1"
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -76,19 +76,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.device == "cuda":  # before torch initialises CUDA (deterministic cuBLAS)
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit import scanrefs as R
-    from cryowisp.baselines.fit.cli import EXIT_REFUSED, summary_line
-    from cryowisp.baselines.fit.runner import SplitRoleError, check_split_role
-    from cryowisp.data import scan as S
-    from cryowisp.evalkit.scanskill import load_scan_instance, scan_instance_dir
+    from cryowsp.baselines.fit import scanrefs as R
+    from cryowsp.baselines.fit.cli import EXIT_REFUSED, summary_line
+    from cryowsp.baselines.fit.runner import SplitRoleError, check_split_role
+    from cryowsp.data import scan as S
+    from cryowsp.evalkit.scanskill import load_scan_instance, scan_instance_dir
 
     if args.mode == "check-labels":
-        from cryowisp.data.scan_build import raw_dir
+        from cryowsp.data.scan_build import raw_dir
 
         tasks = raw_dir() / S.ALL_FILE
         record = {"schema": LABEL_RECORD_SCHEMA, "fits": {}}

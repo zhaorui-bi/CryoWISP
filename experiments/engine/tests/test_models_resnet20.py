@@ -1,6 +1,6 @@
-"""The E9 ResNet-20 student (cryowisp.models.resnet20) and its export and import (cryowisp.models.fscil_export).
+"""The E9 ResNet-20 student (cryowsp.models.resnet20) and its export and import (cryowsp.models.fscil_export).
 
-Every test runs in a temporary store (CRYOWISP_PRIVATE, CRYOWISP_SEALED and CRYOWISP_RUNS point there) with synthetic images.
+Every test runs in a temporary store (CRYOWSP_PRIVATE, CRYOWSP_SEALED and CRYOWSP_RUNS point there) with synthetic images.
 """
 
 from __future__ import annotations
@@ -13,9 +13,9 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.common.identity import load_params
-from cryowisp.data import cifar100_fscil as C
-from cryowisp.data.store import (
+from cryowsp.common.identity import load_params
+from cryowsp.data import cifar100_fscil as C
+from cryowsp.data.store import (
     dataset_json_path,
     forward_path,
     read_json,
@@ -24,17 +24,17 @@ from cryowisp.data.store import (
     split_sha256,
     write_json,
 )
-from cryowisp.models import fscil_export as E
-from cryowisp.models import resnet20 as R
-from cryowisp.models.export import (
+from cryowsp.models import fscil_export as E
+from cryowsp.models import resnet20 as R
+from cryowsp.models.export import (
     FEWSHOT_INDEX_KEYS,
     fewshot_models_dir,
     load_forward_no_cache,
     read_fewshot_index,
 )
-from cryowisp.models.forward_gen import render_resnet20_forward, write_forward
-from cryowisp.models.parity import check_logit_parity
-from cryowisp.models.spec import FORBIDDEN_TERMS
+from cryowsp.models.forward_gen import render_resnet20_forward, write_forward
+from cryowsp.models.parity import check_logit_parity
+from cryowsp.models.spec import FORBIDDEN_TERMS
 
 MEAN, STD = list(C.MEAN), list(C.STD)
 
@@ -113,7 +113,7 @@ def test_spec_ends_in_the_cosine_head_and_is_public() -> None:
 
 def test_numpy_forward_matches_torch_in_float64_and_float32() -> None:
     """forward.py (D's template) is an exact implementation of the torch student: float64 within one float32 step,
-    float32 within the logit-scaled bound (cryowisp.models.parity)."""
+    float32 within the logit-scaled bound (cryowsp.models.parity)."""
     model = _nontrivial_model()
     params = R.export_params(model)
     x = _images(64, 0)
@@ -171,7 +171,7 @@ TOY_ROWS = {"train": 2, "old_select": 1, "ref_pool": 1, "V_evidence": 1, "V_sele
 
 
 def _toy_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (tmp_path / variable).mkdir()
         monkeypatch.setenv(variable, str(tmp_path / variable))
     splits = {}

@@ -1,5 +1,5 @@
 {
- "schema": "cryowisp.t05.frozen_t04.v1",
+ "schema": "cryowsp.t05.frozen_t04.v1",
  "prereg": "T05 (retention on ImageNetV2)",
  "list": {
   "path": "scripts/sealed/finals_v6.json",
@@ -43,7 +43,7 @@
  "networks": [
   {
    "name": "base",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_gaussian_base.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_gaussian_base.npz",
    "params_sha256": "d68d3932c5169cb3ab8eeb128436d1ad487e55a3409865ac47f0cd2bd9149412",
    "file_sha256": "493155292bf631dd4073e6e58d00861de5ad720b21aea190683932987aa5c3a6",
    "instance_id": "i4c8c63bd",
@@ -51,7 +51,7 @@
   },
   {
    "name": "gaussian_LEARN_r1",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_gaussian_LEARN_r1.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_gaussian_LEARN_r1.npz",
    "params_sha256": "3a3ae203fe15d82f865ec81887d17cbd5263bb24670d3eee7c513e926a1f319e",
    "file_sha256": "701795d18378e35f9b566c4f480d9a7119867e9562ad371e43be6e18899c0f9f",
    "instance_id": "i4c8c63bd",
@@ -59,7 +59,7 @@
   },
   {
    "name": "gaussian_LEARN_r2",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_gaussian_LEARN_r2.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_gaussian_LEARN_r2.npz",
    "params_sha256": "54b9a2ed9342581b27ab95cb3333e3466e6d00627f2637b3a2163289bcd1f452",
    "file_sha256": "702da0fdaf6575f601783b21298230076331365ba826ed90c74a9100cd1a8837",
    "instance_id": "i4c8c63bd",
@@ -67,7 +67,7 @@
   },
   {
    "name": "gaussian_main_ft_bn",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_gaussian_main_ft_bn.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_gaussian_main_ft_bn.npz",
    "params_sha256": "25b6d3e00258aafc2a3fff01f2214cebc5aee7f78ec6df345e48b5598267bda4",
    "file_sha256": "9613207becbaa7937b976dce01403eec029cfeb0f460503f6c3be5c2aac76ba5",
    "instance_id": "i4c8c63bd",
@@ -75,7 +75,7 @@
   },
   {
    "name": "gaussian_bn_adapt",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_gaussian_bn_adapt.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_gaussian_bn_adapt.npz",
    "params_sha256": "56a9bd8c5f58a8dd4092d04901f081a758e645fb5ee1f33d1096cf82bbba2870",
    "file_sha256": "db208790b1ca3e645c3e6493f172d4d1161c52195f3447cd3efa24b09b7b42e3",
    "instance_id": "i4c8c63bd",
@@ -83,7 +83,7 @@
   },
   {
    "name": "contrast_LEARN_r1",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_contrast_LEARN_r1.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_contrast_LEARN_r1.npz",
    "params_sha256": "0d7971e153e31f0e11c2e9e86a10ad7fb973ebcad375d348cb98a385d1d5b94d",
    "file_sha256": "ed06412d7a3fd2269f81e0a4ebab019e033ef36dc67c0a503488d44d586ac119",
    "instance_id": "i62cbf956",
@@ -91,7 +91,7 @@
   },
   {
    "name": "contrast_LEARN_r2",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_contrast_LEARN_r2.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_contrast_LEARN_r2.npz",
    "params_sha256": "ce55b9a551a5d6d063c0aa0d7fd903b5dda9d382b01330d3d1fdc2cbdfb1b1e7",
    "file_sha256": "821df91196af08f434ef745309102f25d433b42fb2f8d1992818217aacda620b",
    "instance_id": "i62cbf956",
@@ -99,7 +99,7 @@
   },
   {
    "name": "contrast_main_grad_full",
-   "path": "$CRYOWISP_RUNS/frozen/finals_v6/T04_contrast_main_grad_full.npz",
+   "path": "$CRYOWSP_RUNS/frozen/finals_v6/T04_contrast_main_grad_full.npz",
    "params_sha256": "34d2ff5a657460444ee6bbe2e681151e55bd57c8bbcb8f5668f7deacba697e30",
    "file_sha256": "7c9b26663e264a923eb887392393eb56f05784ea1385ae7de104f8185f6163c4",
    "instance_id": "i62cbf956",

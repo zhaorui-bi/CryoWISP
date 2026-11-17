@@ -11,20 +11,20 @@ import test_models_conditions
 import torch
 from test_models_conditions import _make_store
 
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import load_params, params_sha256, save_params
-from cryowisp.data import store
-from cryowisp.evalkit import fewshot as F
-from cryowisp.evalkit.instances import leak_tokens
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.models.arch import build_model, export_params
-from cryowisp.models.export import (
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import load_params, params_sha256, save_params
+from cryowsp.data import store
+from cryowsp.evalkit import fewshot as F
+from cryowsp.evalkit.instances import leak_tokens
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.models.arch import build_model, export_params
+from cryowsp.models.export import (
     FEWSHOT_INDEX_KEYS,
     fewshot_models_dir,
     read_fewshot_index,
     write_fewshot_index,
 )
-from cryowisp.models.spec import build_model_spec
+from cryowsp.models.spec import build_model_spec
 
 SIZES = {"train": 200, "V_select": 120, "V_evidence": 120, "V_check": 100}
 NEW = [5, 6, 7, 8, 9]
@@ -220,9 +220,9 @@ def test_oracle_and_readout_score_the_two_parts(fewshot_store: list[dict[str, ob
 def test_devreadout_rebuilds_a_fewshot_final_under_the_head_exemption(
     fewshot_store: list[dict[str, object]], tmp_path: Path
 ) -> None:
-    from cryowisp.baselines.instance_io import write_delta_patch
-    from cryowisp.evalkit import devreadout
-    from cryowisp.patch import Limits, PatchError, apply_patch_file, task_limits
+    from cryowsp.baselines.instance_io import write_delta_patch
+    from cryowsp.evalkit import devreadout
+    from cryowsp.patch import Limits, PatchError, apply_patch_file, task_limits
 
     (outcome,) = F.build_fewshot_instances("cifar10", arch="cnn", seeds=[101])
     instance = load_instance(F.fewshot_instance_dir(outcome["instance_id"]))
@@ -279,18 +279,18 @@ def test_devreadout_rebuilds_a_fewshot_final_under_the_head_exemption(
 
 
 def test_module_import_does_not_need_torch() -> None:
-    """CODE_AUDIT section 4: ``cryowisp.models.export`` (which imports torch) is imported inside the two student-store
+    """CODE_AUDIT section 4: ``cryowsp.models.export`` (which imports torch) is imported inside the two student-store
     functions only, so numpy-only use of the module loads without torch. A fresh interpreter blocks torch and imports
     the module from the same source tree as this test."""
     import subprocess
     import sys
 
-    import cryowisp
+    import cryowsp
 
-    src = str(Path(cryowisp.__file__).resolve().parents[1])
+    src = str(Path(cryowsp.__file__).resolve().parents[1])
     code = (
-        "import sys; sys.modules['torch'] = None; import cryowisp.evalkit.fewshot as F; "
-        "assert 'cryowisp.models.export' not in sys.modules; print(F.FEWSHOT_RULE)"
+        "import sys; sys.modules['torch'] = None; import cryowsp.evalkit.fewshot as F; "
+        "assert 'cryowsp.models.export' not in sys.modules; print(F.FEWSHOT_RULE)"
     )
     done = subprocess.run(
         [sys.executable, "-c", code],

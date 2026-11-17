@@ -13,10 +13,10 @@ Two masks, fixed before any run, each the top 19% of a tensor's entries (stable 
 * ``seq_grad_sparse19_traj``: by |w - w_base| after unconstrained full-batch Adam, lr 1e-3, 300 steps (the
   seq_grad_full trajectory whose checkpoint was that reference's final).
 
-Everything else is seq_grad_full's recipe (``cryowisp.baselines.fit.seqgrad``): the same 64 new-operator plus 64 replay
+Everything else is seq_grad_full's recipe (``cryowsp.baselines.fit.seqgrad``): the same 64 new-operator plus 64 replay
 rows, mean token cross-entropy, Adam lr {1e-3, 1e-2} x steps {10, 30, 100, 300}, run seed 0, 8 candidates, each
-checked once by the seqskill joint oracle. Runs go to ``$CRYOWISP_RUNS/baselines/<instance>/<method>/e5diag/0/``; read
-them with ``cryowisp.evalkit.devreadout`` (own final, and ``--retention-floor -20`` for the kept rule).
+checked once by the seqskill joint oracle. Runs go to ``$CRYOWSP_RUNS/baselines/<instance>/<method>/e5diag/0/``; read
+them with ``cryowsp.evalkit.devreadout`` (own final, and ``--retention-floor -20`` for the kept rule).
 
     source scripts/env.sh
     .venv/bin/python scripts/dev/e5_diag_sparse.py --instance qa000f6cd
@@ -55,17 +55,17 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.edits import scale_to_norm_limit
-    from cryowisp.baselines.fit.grad import LEARNING_RATES, STEP_CHECKPOINTS
-    from cryowisp.baselines.fit.runner import CandidatePatch, MethodSpec, baseline_run_dir, execute_run
-    from cryowisp.baselines.fit.seqgrad import (
+    from cryowsp.baselines.fit.edits import scale_to_norm_limit
+    from cryowsp.baselines.fit.grad import LEARNING_RATES, STEP_CHECKPOINTS
+    from cryowsp.baselines.fit.runner import CandidatePatch, MethodSpec, baseline_run_dir, execute_run
+    from cryowsp.baselines.fit.seqgrad import (
         adam_checkpoints,
         rebuild,
         seq_grad_config,
         seq_parity,
         token_loss,
     )
-    from cryowisp.evalkit.seqskill import load_seqskill_instance, seqskill_program_limits
+    from cryowsp.evalkit.seqskill import load_seqskill_instance, seqskill_program_limits
 
     instance = load_seqskill_instance(args.instance)
     params = instance.params

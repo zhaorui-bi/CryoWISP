@@ -19,7 +19,7 @@ sys.modules[SPEC.name] = U
 SPEC.loader.exec_module(U)
 C = U.C
 
-from cryowisp.common.identity import params_sha256  # noqa: E402
+from cryowsp.common.identity import params_sha256  # noqa: E402
 
 # ------------------------------------------------------------------------------------------------------------------
 # Arms and the partition check

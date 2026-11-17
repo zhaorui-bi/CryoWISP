@@ -1,4 +1,4 @@
-"""Tables and the pre-registered reading of the E11 mechanism records ($CRYOWISP_RUNS/devreadouts/e11_mech/*.jsonl).
+"""Tables and the pre-registered reading of the E11 mechanism records ($CRYOWSP_RUNS/devreadouts/e11_mech/*.jsonl).
 
 Reads the records ``scripts/e11/e11_mech.py`` wrote, prints markdown tables (points, V_select) and applies the reading
 fixed in PREREG (d83f0fc, "Mechanism of the E11 gaussian final"): "most of the gain" is >= 75% of the final's joint at
@@ -24,7 +24,7 @@ GATES = (2, 4, 6)
 
 
 def folder() -> Path:
-    return Path(os.environ["CRYOWISP_RUNS"]) / "devreadouts" / "e11_mech"
+    return Path(os.environ["CRYOWSP_RUNS"]) / "devreadouts" / "e11_mech"
 
 
 def load(name: str) -> list[dict[str, Any]]:
@@ -48,7 +48,7 @@ def ranks() -> dict[str, int]:
     if not _RANKS:
         import numpy as np
 
-        path = Path(os.environ["CRYOWISP_PRIVATE"]) / "instances" / "i00802425" / "model.npz"
+        path = Path(os.environ["CRYOWSP_PRIVATE"]) / "instances" / "i00802425" / "model.npz"
         with np.load(path, allow_pickle=False) as archive:
             _RANKS.update({key: archive[key].ndim for key in archive.files})
     return _RANKS
@@ -219,7 +219,7 @@ def main() -> int:
         else:
             branch = "neither reaches it: both the inferred corruption model and the gate matter"
         reading = {
-            "schema": "cryowisp.e11.mech.reading.v1",
+            "schema": "cryowsp.e11.mech.reading.v1",
             "final_joint": final_joint,
             "bar": bar,
             "clean_floor": READING_CLEAN_FLOOR,

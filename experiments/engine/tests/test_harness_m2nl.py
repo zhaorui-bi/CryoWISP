@@ -21,14 +21,14 @@ from test_harness_fixtures import (  # noqa: F401
     scripted_session,
 )
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.evalkit.devreadout import dev_readout, final_child
-from cryowisp.evalkit.evidence import load_evidence
-from cryowisp.evalkit.instances import build_task_v1, instances_root
-from cryowisp.harness import runner
-from cryowisp.harness.arms import (
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.evalkit.devreadout import dev_readout, final_child
+from cryowsp.evalkit.evidence import load_evidence
+from cryowsp.evalkit.instances import build_task_v1, instances_root
+from cryowsp.harness import runner
+from cryowsp.harness.arms import (
     APPLY_REAL,
     ARMS,
     SHOWN_REAL,
@@ -37,7 +37,7 @@ from cryowisp.harness.arms import (
     limits_dict,
     patch_check_budget,
 )
-from cryowisp.harness.finalize import (
+from cryowsp.harness.finalize import (
     KIND_BASE,
     KIND_DECLARED,
     RULE_REASON,
@@ -45,19 +45,19 @@ from cryowisp.harness.finalize import (
     run_record,
     select_final,
 )
-from cryowisp.harness.launch import KILL_REASON_WALL, LaunchOutcome
-from cryowisp.harness.leaks import ForbiddenStrings, scan_label_arrays
-from cryowisp.harness.prompts import Budgets, render_system, render_task
-from cryowisp.harness.scripted import McpError, ScriptedLauncher
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import (
+from cryowsp.harness.launch import KILL_REASON_WALL, LaunchOutcome
+from cryowsp.harness.leaks import ForbiddenStrings, scan_label_arrays
+from cryowsp.harness.prompts import Budgets, render_system, render_task
+from cryowsp.harness.scripted import McpError, ScriptedLauncher
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import (
     NO_CHECK_DESCRIPTIONS,
     TOOL_DESCRIPTIONS,
     last_valid_declaration,
     tool_specs,
 )
-from cryowisp.harness.trial import DECLARED_FINAL_SELECTION, EVIDENCE_FROM_INSTANCE_RANDOM, arm_task, assemble
-from cryowisp.patch import Limits, apply_patch_file
+from cryowsp.harness.trial import DECLARED_FINAL_SELECTION, EVIDENCE_FROM_INSTANCE_RANDOM, arm_task, assemble
+from cryowsp.patch import Limits, apply_patch_file
 
 CLASSES = ["c0", "c1", "c2", "c3"]
 BUDGETS = Budgets(patch_checks=0, python_cells=150, cell_timeout_s=120.0, wall_timeout_s=3600.0)
@@ -95,9 +95,9 @@ def test_the_spec_is_m2_without_labels_or_checks() -> None:
     assert nl.tools == ("python", "status", "declare_final") and not nl.labels and not nl.checks
     assert m2.labels and m2.checks and all(arm_spec(arm).labels for arm in ARMS if arm != "M2NL")
     assert nl.allowed_tools == (
-        "mcp__cryowisp__python",
-        "mcp__cryowisp__status",
-        "mcp__cryowisp__declare_final",
+        "mcp__cryowsp__python",
+        "mcp__cryowsp__status",
+        "mcp__cryowsp__declare_final",
     )
     assert patch_check_budget(8, "M2NL") == 0 and patch_check_budget(8, "M2") == 8
     limits = build_task_v1(CLASSES)["limits"]

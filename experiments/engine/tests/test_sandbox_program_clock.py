@@ -1,4 +1,4 @@
-"""The virtual clock of update-program runs (``virtual-v1``, ``cryowisp.sandbox.program_driver``).
+"""The virtual clock of update-program runs (``virtual-v1``, ``cryowsp.sandbox.program_driver``).
 
 Units: every replaced clock advances one shared counter by one step per read, ``time.sleep`` is left alone, an unknown
 clock is refused, and the host passes and records the clock. Runs on the learn toy store: a program that stops a loop
@@ -34,9 +34,9 @@ from test_harness_learn import (  # noqa: F401
     learn_store,
 )
 
-from cryowisp.harness.program import ProgramProblem, Update, run_update
-from cryowisp.sandbox import program_driver as driver
-from cryowisp.sandbox.program import PROGRAM_CLOCK, ProgramSandbox, build_program_argv
+from cryowsp.harness.program import ProgramProblem, Update, run_update
+from cryowsp.sandbox import program_driver as driver
+from cryowsp.sandbox.program import PROGRAM_CLOCK, ProgramSandbox, build_program_argv
 
 COMPUTE = """HYPOTHESIS = "a data-dependent update"
 PREDICTED_EFFECT = "deterministic deltas"

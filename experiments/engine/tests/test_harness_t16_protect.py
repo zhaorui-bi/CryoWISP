@@ -28,15 +28,15 @@ from test_harness_loop import SESSION_KWARGS, _round_one, _round_two, _sandbox, 
 from test_harness_loop_v2 import _e11_session
 from test_harness_t16_edit_log import _assert_arms_differ_only_by_the_log, _child, _params, _trial
 
-from cryowisp.common.identity import load_params
-from cryowisp.harness import loop, loop_stream
-from cryowisp.harness.applying import (
+from cryowsp.common.identity import load_params
+from cryowsp.harness import loop, loop_stream
+from cryowsp.harness.applying import (
     REDACTION_PROTECTED,
     ArmApplier,
     ProtectedEntryChange,
     SessionConfigError,
 )
-from cryowisp.harness.finalize import (
+from cryowsp.harness.finalize import (
     KIND_BASE,
     STATUS_DRY_RUN,
     STATUS_INFRA,
@@ -44,12 +44,12 @@ from cryowisp.harness.finalize import (
     finalize_session,
     write_final,
 )
-from cryowisp.harness.instance import read_instance_record
-from cryowisp.harness.jsonio import read_json, write_json
-from cryowisp.harness.launch import LaunchOutcome
-from cryowisp.harness.leaks import scan_hint_words
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.loop import (
+from cryowsp.harness.instance import read_instance_record
+from cryowsp.harness.jsonio import read_json, write_json
+from cryowsp.harness.launch import LaunchOutcome
+from cryowsp.harness.leaks import scan_hint_words
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.loop import (
     EDIT_LOG_FILE,
     EDIT_LOG_SENTENCE,
     KEPT_RULE_LOOP_V2,
@@ -65,10 +65,10 @@ from cryowisp.harness.loop import (
     protected_counts,
     protected_entries,
 )
-from cryowisp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
-from cryowisp.harness.prompts import render_system
-from cryowisp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
-from cryowisp.harness.session import SessionPaths
+from cryowsp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
+from cryowsp.harness.prompts import render_system
+from cryowsp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
+from cryowsp.harness.session import SessionPaths
 
 PROPOSED_SENTENCE = (
     "A candidate or final that changes any entry listed in edit_log.json is refused by the "

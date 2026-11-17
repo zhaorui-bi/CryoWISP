@@ -7,7 +7,7 @@ import pytest
 
 minigrid = pytest.importorskip("minigrid")
 
-from cryowisp.data import e14 as E  # noqa: E402
+from cryowsp.data import e14 as E  # noqa: E402
 
 
 def test_versions_and_registered_old_level() -> None:

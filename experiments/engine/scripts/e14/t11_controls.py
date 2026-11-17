@@ -5,22 +5,22 @@ Subcommands, run in this order:
 
     programs --sandbox-python PATH [--threads 4]
         Write the two ablation copies of the final program (exact-once replacements of its text, diff recorded) under
-        $CRYOWISP_RUNS/t11/programs/ beside a byte copy of the final, run each once in the LEARN program sandbox on the
+        $CRYOWSP_RUNS/t11/programs/ beside a byte copy of the final, run each once in the LEARN program sandbox on the
         instance's student and experience as a transfer run stages them (``stage_student`` with the policyskill
         experience, ``run_update``, ``write_derived_patch``), and apply its deltas within the LEARN limits (a refused
         child is recorded and kept without the size limits, as transfer does). The unmodified final runs first; if its
         deltas are not final/deltas.npz bit for bit, nothing else runs. One record per program,
-        $CRYOWISP_RUNS/t11/reruns/<arm>.json, with the child in $CRYOWISP_RUNS/t11/reruns/<arm>/child.npz.
+        $CRYOWSP_RUNS/t11/reruns/<arm>.json, with the child in $CRYOWSP_RUNS/t11/reruns/<arm>/child.npz.
     read --arms ARM [ARM ...]
         Traced V_select readouts (``e14_fn_readout`` on a ``RolloutTrace``) of each arm against the base, new and old
         mission, with every check of the entry: base success against the instance record, wrapper_v1 against the
         record of record, program arms against ``e14_readout`` and the program against the session's readout. One
-        record per arm, $CRYOWISP_RUNS/devreadouts/t11_e14_<arm>_<instance>.jsonl (one line, never overwritten).
+        record per arm, $CRYOWSP_RUNS/devreadouts/t11_e14_<arm>_<instance>.jsonl (one line, never overwritten).
     independence
         The final against the base: tensor names, shapes and dtypes, patch ops, n_changed, forward.py, and forward time
-        of base, final and the external rules on the same rows. $CRYOWISP_RUNS/t11/independence.json.
+        of base, final and the external rules on the same rows. $CRYOWSP_RUNS/t11/independence.json.
     summary
-        $CRYOWISP_RUNS/t11/e14_t11_summary.json and $CRYOWISP_RUNS/t11/e14_t11_table.md from the records above.
+        $CRYOWSP_RUNS/t11/e14_t11_summary.json and $CRYOWSP_RUNS/t11/e14_t11_table.md from the records above.
 
     bash -c 'source scripts/env.sh; OMP_NUM_THREADS=2 nice -n 10 <venv>/bin/python -B scripts/e14/t11_controls.py read \\
         --arms base wrapper_v1'
@@ -82,9 +82,9 @@ PAIRS = (
     ("program_no_trigger", "base"),
 )
 """Paired comparisons on the same episodes: discordant counts per mission."""
-SCHEMA_RERUN = "cryowisp.t11.e14_program_rerun.v1"
-SCHEMA_ARM = "cryowisp.t11.e14_arm_readout.v1"
-SCHEMA_SUMMARY = "cryowisp.t11.e14_summary.v1"
+SCHEMA_RERUN = "cryowsp.t11.e14_program_rerun.v1"
+SCHEMA_ARM = "cryowsp.t11.e14_arm_readout.v1"
+SCHEMA_SUMMARY = "cryowsp.t11.e14_summary.v1"
 LEARN_ARM = "LEARN"
 
 
@@ -97,7 +97,7 @@ class T11Error(RuntimeError):
 
 
 def runs() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return runs_dir()
 
@@ -159,7 +159,7 @@ def code_record() -> dict[str, Any]:
         "git_head": head.stdout.strip(),
         "git_dirty": bool(status.stdout.strip()),
         "script_sha256": sha256_file(Path(__file__).resolve()),
-        "e14_py_sha256": sha256_file(root / "cryowisp" / "evalkit" / "e14.py"),
+        "e14_py_sha256": sha256_file(root / "cryowsp" / "evalkit" / "e14.py"),
         "numpy": np.__version__,
         "blas_threads": {
             k: os.environ.get(k) for k in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
@@ -301,13 +301,13 @@ def deltas_equal(a: Mapping[str, np.ndarray], b: Mapping[str, np.ndarray]) -> di
 def run_program_arm(
     instance: Any, arm: str, program: Path, sandbox: Any
 ) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
-    from cryowisp.common.identity import save_params
-    from cryowisp.evalkit.e14 import e14_program_limits
-    from cryowisp.harness import policyskill
-    from cryowisp.harness.arms import applied_limits, limits_dict
-    from cryowisp.harness.program import run_update, write_derived_patch
-    from cryowisp.harness.transfer import _child, stage_student
-    from cryowisp.patch.limits import dense_delta_bytes
+    from cryowsp.common.identity import save_params
+    from cryowsp.evalkit.e14 import e14_program_limits
+    from cryowsp.harness import policyskill
+    from cryowsp.harness.arms import applied_limits, limits_dict
+    from cryowsp.harness.program import run_update, write_derived_patch
+    from cryowsp.harness.transfer import _child, stage_student
+    from cryowsp.patch.limits import dense_delta_bytes
 
     work = t11_dir() / "reruns" / arm
     if work.exists():
@@ -360,14 +360,14 @@ def run_program_arm(
 
 
 def utc() -> str:
-    from cryowisp.evalkit.targets import utc_now
+    from cryowsp.evalkit.targets import utc_now
 
     return utc_now()
 
 
 def cmd_programs(args: argparse.Namespace) -> int:
-    from cryowisp.evalkit.e14 import load_e14_instance
-    from cryowisp.sandbox.program import ProgramSandbox
+    from cryowsp.evalkit.e14 import load_e14_instance
+    from cryowsp.sandbox.program import ProgramSandbox
 
     instance = load_e14_instance(args.instance)
     sandbox = ProgramSandbox(python=args.sandbox_python, memory_bytes=args.memory_bytes, threads=args.threads)
@@ -426,7 +426,7 @@ def _drop_descriptors(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _per_episode(children: Mapping[str, Any], steps: Sequence[Mapping[str, np.ndarray]]) -> dict[str, Any]:
-    from cryowisp.evalkit.e14 import seeds_sha256, trajectory_features
+    from cryowsp.evalkit.e14 import seeds_sha256, trajectory_features
 
     out = {}
     for (part, child), part_steps in zip(children.items(), steps):
@@ -442,8 +442,8 @@ def _per_episode(children: Mapping[str, Any], steps: Sequence[Mapping[str, np.nd
 
 
 def arm_fn(instance: Any, arm: str) -> Any:
-    from cryowisp.common.identity import load_params, params_sha256
-    from cryowisp.evalkit.e14 import T11_RULES, control_logits_fn, logits_fn, wrapper_logits_fn
+    from cryowsp.common.identity import load_params, params_sha256
+    from cryowsp.evalkit.e14 import T11_RULES, control_logits_fn, logits_fn, wrapper_logits_fn
 
     if arm == "base":
         return logits_fn(instance.forward, instance.params), None
@@ -459,7 +459,7 @@ def arm_fn(instance: Any, arm: str) -> Any:
 
 
 def read_arm(instance: Any, arm: str, session: str) -> dict[str, Any]:
-    from cryowisp.evalkit.e14 import (
+    from cryowsp.evalkit.e14 import (
         RolloutTrace,
         e14_fn_readout,
         e14_readout,
@@ -529,7 +529,7 @@ def diff_paths(a: Any, b: Any, prefix: str = "") -> list[str]:
 
 
 def cmd_read(args: argparse.Namespace) -> int:
-    from cryowisp.evalkit.e14 import load_e14_instance
+    from cryowsp.evalkit.e14 import load_e14_instance
 
     unknown = [arm for arm in args.arms if arm not in ARMS]
     if unknown:
@@ -557,8 +557,8 @@ def cmd_read(args: argparse.Namespace) -> int:
 
 
 def cmd_independence(args: argparse.Namespace) -> int:
-    from cryowisp.common.identity import count_changed, load_params, params_sha256
-    from cryowisp.evalkit.e14 import (
+    from cryowsp.common.identity import count_changed, load_params, params_sha256
+    from cryowsp.evalkit.e14 import (
         T11_RULES,
         control_logits_fn,
         load_e14_instance,
@@ -597,7 +597,7 @@ def cmd_independence(args: argparse.Namespace) -> int:
             laps.append(time.perf_counter() - started)
         timing[name] = {"rows": int(len(rows)), "median_s": float(np.median(laps)), "laps_s": laps}
     record = {
-        "schema": "cryowisp.t11.e14_independence.v1",
+        "schema": "cryowsp.t11.e14_independence.v1",
         "instance_id": args.instance,
         "session": args.session,
         "created_at": utc(),
@@ -619,7 +619,7 @@ def cmd_independence(args: argparse.Namespace) -> int:
         "forward_py_sha256_of_record": instance.private["forward_sha256"],
         "model_spec_sha256": sha256_file(Path(instance.instance_dir) / "model_spec.json"),
         "model_spec_sha256_of_record": instance.private["model_spec_sha256"],
-        "readout_path": "cryowisp.evalkit.e14.e14_readout(instance, child): logits_fn(instance forward.py, child), argmax "
+        "readout_path": "cryowsp.evalkit.e14.e14_readout(instance, child): logits_fn(instance forward.py, child), argmax "
         "per step, no rule outside the weights",
         "program_run_duration_s": run["run"]["duration_s"],
         "forward_timing": timing,
@@ -643,7 +643,7 @@ def cmd_independence(args: argparse.Namespace) -> int:
 
 
 def _category_table(records: Mapping[str, Any], base: Mapping[str, Any]) -> dict[str, Any]:
-    from cryowisp.evalkit.e14 import T11_CATEGORIES, episode_categories
+    from cryowsp.evalkit.e14 import T11_CATEGORIES, episode_categories
 
     out: dict[str, Any] = {}
     for part in ("new", "old"):
@@ -724,7 +724,7 @@ def _fmt(value: Any, spec: str) -> str:
 
 
 def markdown(summary: Mapping[str, Any]) -> str:
-    from cryowisp.evalkit.e14 import T11_CATEGORIES
+    from cryowsp.evalkit.e14 import T11_CATEGORIES
 
     lines = [
         f"# E14 T11 controls ({summary['instance_id']}, session {summary['session']}; dev, seed 100)",
@@ -847,7 +847,7 @@ def cmd_summary(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from cryowisp.harness.runner import DEFAULT_MEMORY_BYTES, DEFAULT_THREADS
+    from cryowsp.harness.runner import DEFAULT_MEMORY_BYTES, DEFAULT_THREADS
 
     sys.dont_write_bytecode = True
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])

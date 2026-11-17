@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from cryowisp.common.identity import count_changed, load_params, params_sha256, save_params
-from cryowisp.evalkit.metrics import (
+from cryowsp.common.identity import count_changed, load_params, params_sha256, save_params
+from cryowsp.evalkit.metrics import (
     BASE_CANDIDATE,
     Candidate,
     choose_final,
@@ -16,7 +16,7 @@ from cryowisp.evalkit.metrics import (
     sealed_readout,
     summarize,
 )
-from cryowisp.evalkit.patch_check import BudgetExceeded, PatchCheckOracle
+from cryowsp.evalkit.patch_check import BudgetExceeded, PatchCheckOracle
 
 
 def _params(seed: int = 0) -> dict[str, np.ndarray]:

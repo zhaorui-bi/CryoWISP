@@ -10,17 +10,17 @@ Subcommands, run in this order:
         final/deltas.npz and the final child bit for bit (otherwise nothing else runs for that condition); then on the
         relabelled student (``scan_t11.default_relabel``: word ids and action ids permuted, the layout and the
         experience rewritten), with its deltas moved back to the original ids and compared with the final's. Records
-        $CRYOWISP_RUNS/t11scan/reruns/<condition>_<arm>.json, children <condition>_<arm>/child.npz.
+        $CRYOWSP_RUNS/t11scan/reruns/<condition>_<arm>.json, children <condition>_<arm>/child.npz.
     arms --condition C
         One readout per arm of the condition (``ARMS``) on new and old V_select: exact match, the command-structure
-        groups, per-row correctness, and the arm's own checks. $CRYOWISP_RUNS/devreadouts/t11_e13_<arm>_<instance>.jsonl
+        groups, per-row correctness, and the arm's own checks. $CRYOWSP_RUNS/devreadouts/t11_e13_<arm>_<instance>.jsonl
         (one line each, never overwritten).
     mech
         M04 on addprim_jump: the four networks (base, E only, H only, E+H), traced forward parity, the identity checks,
         slot-level outputs and margins, and the hidden states at the decision slots against the base's states for the
-        same commands with jump renamed to walk, look and run. $CRYOWISP_RUNS/t11scan/m04_<instance>.json.
+        same commands with jump renamed to walk, look and run. $CRYOWSP_RUNS/t11scan/m04_<instance>.json.
     summary
-        $CRYOWISP_RUNS/t11scan/e13_t11_summary.json and e13_t11_tables.md, from the records above, with the readings fixed
+        $CRYOWSP_RUNS/t11scan/e13_t11_summary.json and e13_t11_tables.md, from the records above, with the readings fixed
         in the PREREG entry.
 
     bash -c 'source scripts/env.sh; OMP_NUM_THREADS=4 nice -n 10 .venv/bin/python -B scripts/e13/t11_scan.py arms \\
@@ -42,10 +42,10 @@ from typing import Any
 
 import numpy as np
 
-SCHEMA_RERUN = "cryowisp.t11.e13_program_rerun.v1"
-SCHEMA_ARM = "cryowisp.t11.e13_arm_readout.v1"
-SCHEMA_M04 = "cryowisp.t11.e13_m04.v1"
-SCHEMA_SUMMARY = "cryowisp.t11.e13_summary.v1"
+SCHEMA_RERUN = "cryowsp.t11.e13_program_rerun.v1"
+SCHEMA_ARM = "cryowsp.t11.e13_arm_readout.v1"
+SCHEMA_M04 = "cryowsp.t11.e13_m04.v1"
+SCHEMA_SUMMARY = "cryowsp.t11.e13_summary.v1"
 BATCH = 1024
 JOINT_TOLERANCE = 1.0
 """Points: an arm 'matches' the final when its joint is at least the final's minus this (PREREG entry)."""
@@ -140,7 +140,7 @@ class T11ScanError(RuntimeError):
 
 
 def runs() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return runs_dir()
 
@@ -166,7 +166,7 @@ def sha256_file(path: Path) -> str:
 
 
 def _jsonable(value: Any) -> Any:
-    from cryowisp.evalkit.targets import jsonable
+    from cryowsp.evalkit.targets import jsonable
 
     return jsonable(value)
 
@@ -216,7 +216,7 @@ def code_record() -> dict[str, Any]:
         "git_head": head.stdout.strip(),
         "git_dirty": bool(status.stdout.strip()),
         "script_sha256": sha256_file(Path(__file__).resolve()),
-        "scan_t11_py_sha256": sha256_file(root / "cryowisp" / "evalkit" / "scan_t11.py"),
+        "scan_t11_py_sha256": sha256_file(root / "cryowsp" / "evalkit" / "scan_t11.py"),
         "python": sys.version.split()[0],
         "numpy": np.__version__,
         "blas_threads": {
@@ -226,7 +226,7 @@ def code_record() -> dict[str, Any]:
 
 
 def utc() -> str:
-    from cryowisp.evalkit.targets import utc_now
+    from cryowsp.evalkit.targets import utc_now
 
     return utc_now()
 
@@ -238,7 +238,7 @@ def load_npz(path: Path) -> dict[str, np.ndarray]:
 
 def deltas_equal(a: Mapping[str, np.ndarray], b: Mapping[str, np.ndarray]) -> dict[str, Any]:
     """Keys, dtypes, shapes and bytes of two delta sets, with the largest absolute difference per tensor."""
-    from cryowisp.evalkit.scan_t11 import bytes_equal, max_abs_difference
+    from cryowsp.evalkit.scan_t11 import bytes_equal, max_abs_difference
 
     per: dict[str, Any] = {}
     for key in sorted(set(a) | set(b)):
@@ -258,7 +258,7 @@ def deltas_equal(a: Mapping[str, np.ndarray], b: Mapping[str, np.ndarray]) -> di
 
 
 def instance_of(condition: str) -> Any:
-    from cryowisp.evalkit.scanskill import check_scan_current, load_scan_instance
+    from cryowsp.evalkit.scanskill import check_scan_current, load_scan_instance
 
     instance = load_scan_instance(str(CONDITIONS[condition]["instance"]))
     if instance.private.get("condition") != condition or instance.private.get("split_role") != "dev":
@@ -273,7 +273,7 @@ def session_info(session: str) -> dict[str, Any]:
 
 def final_child(condition: str, instance: Any) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """The session's kept final, checked against info.json (child hash, kept query, program)."""
-    from cryowisp.common.identity import load_params, params_sha256
+    from cryowsp.common.identity import load_params, params_sha256
 
     spec = CONDITIONS[condition]
     info = session_info(str(spec["session"]))
@@ -307,8 +307,8 @@ def reference_child(
 ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """The kept pick of record of one reference, rebuilt from its run as its floor5 record was (``retention_final``
     at S_old >= -5, ``final_child`` under the E13 program limits), checked against the record."""
-    from cryowisp.evalkit import devreadout as DR
-    from cryowisp.evalkit.scanskill import scan_program_limits
+    from cryowsp.evalkit import devreadout as DR
+    from cryowsp.evalkit.scanskill import scan_program_limits
 
     record = refs_records(condition)[method]
     expected = CONDITIONS[condition]["refs"][method]
@@ -344,7 +344,7 @@ def reference_child(
 
 
 def vselect(instance: Any) -> dict[str, dict[str, np.ndarray]]:
-    from cryowisp.evalkit.scanskill import load_recorded
+    from cryowsp.evalkit.scanskill import load_recorded
 
     return {
         "new": load_recorded(instance.private, "V_select"),
@@ -353,7 +353,7 @@ def vselect(instance: Any) -> dict[str, dict[str, np.ndarray]]:
 
 
 def predictor(instance: Any, params: Mapping[str, np.ndarray]) -> Any:
-    from cryowisp.evalkit.patch_check import predict
+    from cryowsp.evalkit.patch_check import predict
 
     return lambda x: predict(instance.forward, params, np.ascontiguousarray(x), BATCH).astype(np.int64)
 
@@ -364,7 +364,7 @@ def predictor(instance: Any, params: Mapping[str, np.ndarray]) -> Any:
 
 def sandbox_of(session: str) -> tuple[Any, dict[str, Any]]:
     """The session's program sandbox, from its final/program_run.json."""
-    from cryowisp.sandbox.program import ProgramSandbox, driver_sha256
+    from cryowsp.sandbox.program import ProgramSandbox, driver_sha256
 
     recorded = json.loads((session_dir(session) / "final" / "program_run.json").read_text(encoding="utf-8"))[
         "sandbox"
@@ -388,10 +388,10 @@ def relabelled_student(instance: Any, dest: Path, relabel: Any) -> tuple[Any, Pa
     """The instance's student and experience under ``relabel``, staged as a transfer run stages a student."""
     import shutil
 
-    from cryowisp.common.identity import params_sha256, save_params
-    from cryowisp.evalkit import scan_t11 as T
-    from cryowisp.harness import seqskill
-    from cryowisp.harness.program import Student
+    from cryowsp.common.identity import params_sha256, save_params
+    from cryowsp.evalkit import scan_t11 as T
+    from cryowsp.harness import seqskill
+    from cryowsp.harness.program import Student
 
     dest.mkdir(mode=0o700, parents=True)
     spec = json.loads((instance.instance_dir / "model_spec.json").read_text(encoding="utf-8"))
@@ -431,7 +431,7 @@ def relabelled_student(instance: Any, dest: Path, relabel: Any) -> tuple[Any, Pa
 def isomorphism_check(instance: Any, relabel: Any) -> dict[str, Any]:
     """The relabelled base on the relabelled evidence rows against the base on the evidence rows: logits column for
     column under the class map, and argmax predictions (the evidence rows only; no V_select row is read here)."""
-    from cryowisp.evalkit import scan_t11 as T
+    from cryowsp.evalkit import scan_t11 as T
 
     rows = np.concatenate([instance.evidence[k] for k in ("x_prim", "x_old") if k in instance.evidence])
     base = np.asarray(instance.forward(instance.params, rows))
@@ -451,9 +451,9 @@ def apply_deltas(
     params: Mapping[str, np.ndarray], deltas_update: Any, work: Path, limits: Any
 ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Write the derived patch of a program run and apply it to ``params`` under ``limits``."""
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.harness.program import write_derived_patch
-    from cryowisp.patch import apply_patch
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.harness.program import write_derived_patch
+    from cryowsp.patch import apply_patch
 
     patch_dir = work / "patch"
     patch_dir.mkdir()
@@ -469,11 +469,11 @@ def apply_deltas(
 
 
 def cmd_programs(args: argparse.Namespace) -> int:
-    from cryowisp.common.identity import save_params
-    from cryowisp.evalkit import scan_t11 as T
-    from cryowisp.harness.program import run_update
-    from cryowisp.harness.transfer import stage_student
-    from cryowisp.patch import Limits
+    from cryowsp.common.identity import save_params
+    from cryowsp.evalkit import scan_t11 as T
+    from cryowsp.harness.program import run_update
+    from cryowsp.harness.transfer import stage_student
+    from cryowsp.patch import Limits
 
     for condition in args.conditions:
         spec = CONDITIONS[condition]
@@ -582,7 +582,7 @@ def dataclass_dict(value: Any) -> dict[str, Any]:
 
 
 def rows_right_list(y: np.ndarray, pred: np.ndarray) -> list[int]:
-    from cryowisp.evalkit.metrics import rows_right
+    from cryowsp.evalkit.metrics import rows_right
 
     return rows_right(y, pred).astype(int).tolist()
 
@@ -590,7 +590,7 @@ def rows_right_list(y: np.ndarray, pred: np.ndarray) -> list[int]:
 def part_block(
     commands: Sequence[str], condition: str, part: str, y: np.ndarray, base: np.ndarray, child: np.ndarray
 ) -> dict[str, Any]:
-    from cryowisp.evalkit import scan_t11 as T
+    from cryowsp.evalkit import scan_t11 as T
 
     return {
         "all": T.part_readout(y, base, child),
@@ -618,9 +618,9 @@ def arm_readout(
     commands: Mapping[str, list[str]],
     base_pred: Mapping[str, np.ndarray],
 ) -> dict[str, Any]:
-    from cryowisp.common.identity import load_params, params_sha256
-    from cryowisp.data import scan as S
-    from cryowisp.evalkit import scan_t11 as T
+    from cryowsp.common.identity import load_params, params_sha256
+    from cryowsp.data import scan as S
+    from cryowsp.evalkit import scan_t11 as T
 
     y = {part: np.asarray(data[part]["y"]) for part in ("new", "old")}
     record: dict[str, Any] = {
@@ -696,7 +696,7 @@ def arm_readout(
             raise T11ScanError("the relabelled child does not hash to its rerun record")
         relabel = T.default_relabel()
         moved_base = T.relabel_params(instance.params, relabel)
-        from cryowisp.evalkit.patch_check import predict
+        from cryowsp.evalkit.patch_check import predict
 
         for part in ("new", "old"):
             xr = T.relabel_tokens(data[part]["x"], relabel)
@@ -775,8 +775,8 @@ def arm_readout(
 
 
 def cmd_arms(args: argparse.Namespace) -> int:
-    from cryowisp.data import scan as S
-    from cryowisp.evalkit.patch_check import predict
+    from cryowsp.data import scan as S
+    from cryowsp.evalkit.patch_check import predict
 
     condition = args.condition
     instance = instance_of(condition)
@@ -810,9 +810,9 @@ def cmd_arms(args: argparse.Namespace) -> int:
 
 
 def cmd_mech(args: argparse.Namespace) -> int:
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.data import scan as S
-    from cryowisp.evalkit import scan_t11 as T
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.data import scan as S
+    from cryowsp.evalkit import scan_t11 as T
 
     condition = "addprim_jump"
     instance = instance_of(condition)

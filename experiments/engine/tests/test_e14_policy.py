@@ -8,10 +8,10 @@ import pytest
 torch = pytest.importorskip("torch")
 pytest.importorskip("minigrid")
 
-from cryowisp.data import e14 as D  # noqa: E402
-from cryowisp.evalkit.patch_check import load_forward  # noqa: E402
-from cryowisp.models import e14_policy as P  # noqa: E402
-from cryowisp.models.parity import check_logit_parity  # noqa: E402
+from cryowsp.data import e14 as D  # noqa: E402
+from cryowsp.evalkit.patch_check import load_forward  # noqa: E402
+from cryowsp.models import e14_policy as P  # noqa: E402
+from cryowsp.models.parity import check_logit_parity  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -106,7 +106,7 @@ def test_training_recipe_small(rows: np.ndarray) -> None:
 def test_training_recipe_cuda(monkeypatch: pytest.MonkeyPatch) -> None:
     """PREREG E14 device amendment: CUDA training under the deterministic settings is repeatable, starts from the
     CPU initialisation, keeps the reserved rows and returns a CPU model."""
-    from cryowisp.models.train import configure_determinism
+    from cryowsp.models.train import configure_determinism
 
     monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     demos = D.demo_arrays(D.bot_episode("old", s) for s in range(200))

@@ -8,14 +8,14 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from cryowisp.baselines.fit import bnrefs as B
-from cryowisp.baselines.fit import rules as RU
-from cryowisp.baselines.fit import torch_forward as TF
-from cryowisp.evalkit.e10 import e10_program_limits
-from cryowisp.harness.arms import applied_limits
-from cryowisp.models import resnet20a as A
-from cryowisp.models.forward_gen import render_resnet20a_forward
-from cryowisp.patch import Limits, task_limits
+from cryowsp.baselines.fit import bnrefs as B
+from cryowsp.baselines.fit import rules as RU
+from cryowsp.baselines.fit import torch_forward as TF
+from cryowsp.evalkit.e10 import e10_program_limits
+from cryowsp.harness.arms import applied_limits
+from cryowsp.models import resnet20a as A
+from cryowsp.models.forward_gen import render_resnet20a_forward
+from cryowsp.patch import Limits, task_limits
 
 MEAN = [0.4909, 0.4818, 0.4460]
 STD = [0.2471, 0.2435, 0.2616]
@@ -139,7 +139,7 @@ def test_every_runner_the_cli_dispatches_with_e10_accepts_it() -> None:
     """cli.run_method passes ``e10`` to each runner; a runner without the keyword fails only when its method runs."""
     import inspect
 
-    from cryowisp.baselines.fit import grad, ridge
+    from cryowsp.baselines.fit import grad, ridge
 
     runners = (
         grad.run_grad,

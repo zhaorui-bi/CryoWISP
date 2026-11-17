@@ -14,7 +14,7 @@ pick of ``devreadout.retention_final`` at S_old >= -20, a run's own final, or th
 configuration. An entry whose (instance_id, child_sha256) is already on the list is not added again; its cell maps to
 the entry already there. A base no-op pick gets no entry (child = base, so gain = clean = 0 on any rows).
 
-Usage (reads $CRYOWISP_RUNS and $CRYOWISP_PRIVATE only; opens nothing under $CRYOWISP_SEALED)::
+Usage (reads $CRYOWSP_RUNS and $CRYOWSP_PRIVATE only; opens nothing under $CRYOWSP_SEALED)::
 
     .venv/bin/python scripts/sealed/make_finals_v2_draft.py \
         --v1 scripts/sealed/finals_v1.json --out scripts/sealed/finals_v2_draft.json \
@@ -29,9 +29,9 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from cryowisp.common.paths import runs_dir
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit import sealed_finals as SF
+from cryowsp.common.paths import runs_dir
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit import sealed_finals as SF
 
 READOUT = SF.READOUT_VISION_JOINT
 FLOOR = -20
@@ -53,7 +53,7 @@ E12_FINALS = {
     "contrast": ("E12_B_contrast_s100", "ie3840b28", "contrast_s5"),
 }
 E12_OWN = {"gaussian": "ft_full_l2sp", "contrast": "lora_r16"}
-"""tab:main's best F1 own pick on ResNet-18 (CRYOWISP-main 2026-11-06, from the f1e12 own records: gaussian L2-SP
+"""tab:main's best F1 own pick on ResNet-18 (CRYOWSP-main 2026-11-06, from the f1e12 own records: gaussian L2-SP
 +31.625 / -2.375, contrast LoRA r16 +28.925 / -2.80)."""
 E14 = ("E14_B_pickup_s100", "p6ce8ad67", -3)
 E14_F1 = (
@@ -403,7 +403,7 @@ def main() -> int:
     n = len(draft.finals) + len(draft.references)
     note = (
         "Draft v2 of the sealed-read list (PREREG Sealed read, list v2: main 9c80cfe / eddd941; user decision about "
-        "16:15 Beijing on 2026-11-06, before any sealed read), drafted by session cryowisp-0e for CRYOWISP-main from the "
+        "16:15 Beijing on 2026-11-06, before any sealed read), drafted by session cryowsp-0e for CRYOWSP-main from the "
         f"store's run records. It keeps the {n_v1} entries of the approved list v1 unchanged (scripts/sealed/"
         "finals_v1.json) and adds every child behind a cell of the paper's main tables (Paper/manuscript/tables/"
         "table_data.json, paper-writing 242cb7c and f0768ff): tab:main, the E12 F1 own picks without the clean floor "

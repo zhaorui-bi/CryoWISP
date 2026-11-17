@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.baselines.fit import cli as C
-from cryowisp.baselines.fit import ftcompare as FT
-from cryowisp.baselines.fit import torch_forward as TF
-from cryowisp.data import imagenet_val as V
-from cryowisp.data import t04 as T
-from cryowisp.evalkit.instances import leak_tokens, scan_for_tokens
-from cryowisp.harness import t04 as H
-from cryowisp.models import resnet18native as N
-from cryowisp.models import resnet18up as M
+from cryowsp.baselines.fit import cli as C
+from cryowsp.baselines.fit import ftcompare as FT
+from cryowsp.baselines.fit import torch_forward as TF
+from cryowsp.data import imagenet_val as V
+from cryowsp.data import t04 as T
+from cryowsp.evalkit.instances import leak_tokens, scan_for_tokens
+from cryowsp.harness import t04 as H
+from cryowsp.models import resnet18native as N
+from cryowsp.models import resnet18up as M
 
 OFFICIAL_FUNCTIONS = """import os
 import wand  # never executed by load_official
@@ -68,7 +68,7 @@ READOUT_CLASSES = 8
 
 
 def _params(seed: int) -> dict[str, np.ndarray]:
-    from cryowisp.data.t04_build import decoy_params
+    from cryowsp.data.t04_build import decoy_params
 
     params = decoy_params(seed)
     rng = np.random.default_rng(seed)
@@ -187,10 +187,10 @@ def test_official_functions_are_taken_from_the_file_and_checked(tmp_path: Path) 
 def test_official_file_of_record_when_present() -> None:
     import os
 
-    path = os.environ.get("CRYOWISP_T04_OFFICIAL")
+    path = os.environ.get("CRYOWSP_T04_OFFICIAL")
     if not path:
         pytest.skip(
-            "set CRYOWISP_T04_OFFICIAL to the official make_imagenet_c.py to check the file of record"
+            "set CRYOWSP_T04_OFFICIAL to the official make_imagenet_c.py to check the file of record"
         )
     official = T.load_official(Path(path))
     T.check_official_constants(official)
@@ -316,11 +316,11 @@ def test_cli_dispatch_for_t04(tmp_path: Path) -> None:
 def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     """A store with 72 V_evidence, 8 V_check, 8 V_select and 64 train rows of synthetic JPEGs, 1000 synthetic classes
     (with the duplicate and the forbidden-token cases), random-weight networks, one condition."""
-    from cryowisp.data import t04_build as B
+    from cryowsp.data import t04_build as B
 
     for name in ("private", "sealed", "runs"):
         (tmp_path / name).mkdir()
-        monkeypatch.setenv(f"CRYOWISP_{name.upper()}", str(tmp_path / name))
+        monkeypatch.setenv(f"CRYOWSP_{name.upper()}", str(tmp_path / name))
     sizes = {"V_evidence": 72, "V_check": 8, "V_select": 8, "train": 64}
     dev = T.dev_rows()[: sum(sizes.values())]
     order = np.random.default_rng(0).permutation(dev)
@@ -372,9 +372,9 @@ def tiny_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
 
 
 def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch) -> None:
-    from cryowisp.data.store import load_split, read_dataset_json
-    from cryowisp.evalkit.instances import build_deployment_instances
-    from cryowisp.evalkit.targets import SeedSelection, deployment_splits
+    from cryowsp.data.store import load_split, read_dataset_json
+    from cryowsp.evalkit.instances import build_deployment_instances
+    from cryowsp.evalkit.targets import SeedSelection, deployment_splits
 
     B = tiny_store["B"]
     info = {"note": "test"}
@@ -444,8 +444,8 @@ def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch
     step = timing["large_ft_step_s"]["2"]
     assert step["batch"] == 128 and step["torch_threads"] == 2 and len(step["steps_s"]) == 1
     # the LEARN dry run of R37: trial assembly, the leak scan and the session record, no editor
-    from cryowisp.harness import runner
-    from cryowisp.harness.finalize import STATUS_DRY_RUN
+    from cryowsp.harness import runner
+    from cryowsp.harness.finalize import STATUS_DRY_RUN
 
     result = runner.run_session(
         H.find("gaussian_noise_s3", 100),
@@ -458,7 +458,7 @@ def test_tiny_store_end_to_end(tiny_store: dict, monkeypatch: pytest.MonkeyPatch
     )  # 8 clean rows here, 4,000 on NSCC
     if "t04" in str(Path(__file__).resolve().parents[1]).lower():
         # this checkout's own path holds the leak token "t04" (the dataset id's part), and the sandbox self-test
-        # rightly finds it in the mount table; NSCC mounts the code at CryoWISP-nsess. That must be the only failure.
+        # rightly finds it in the mount table; NSCC mounts the code at CryoWSP-nsess. That must be the only failure.
         selftest = json.loads((result.root / "logs" / "selftest.json").read_text())
         assert selftest["failed"] == ["forbidden_strings_absent"]
         assert json.loads(selftest["checks"]["forbidden_strings_absent"]["detail"]) == ["'t04' in mountinfo"]
@@ -482,9 +482,9 @@ def test_tiny_store_reference_arms(tiny_store: dict, monkeypatch: pytest.MonkeyP
     both through execute_run's joint oracle under the E10 limits."""
     import importlib.util
 
-    from cryowisp.baselines.instance_io import load_instance
-    from cryowisp.evalkit.instances import build_deployment_instances
-    from cryowisp.evalkit.targets import SeedSelection
+    from cryowsp.baselines.instance_io import load_instance
+    from cryowsp.evalkit.instances import build_deployment_instances
+    from cryowsp.evalkit.targets import SeedSelection
 
     B = tiny_store["B"]
     B.build_clean(tiny_store["data_dir"], {}, verify_shards=False)
@@ -499,7 +499,7 @@ def test_tiny_store_reference_arms(tiny_store: dict, monkeypatch: pytest.MonkeyP
         split_roles=("dev",),
         batch_size=16,
     )
-    from cryowisp.evalkit.instances import instances_root
+    from cryowsp.evalkit.instances import instances_root
 
     instance = load_instance(instances_root() / next(o.instance_id for o in outcomes if o.seed == 100))
     record = C.run_method(
@@ -556,7 +556,7 @@ def test_tiny_store_reference_arms(tiny_store: dict, monkeypatch: pytest.MonkeyP
     )
     assert run["queries_used"] == 4 and run["limits_source"].startswith("e10_program_limits")
     # the kept-pick dev readout every R37 fitting job runs on its own runs (V_select and its clean companion)
-    from cryowisp.evalkit import devreadout
+    from cryowsp.evalkit import devreadout
 
     # the tiny V_select holds classes 0 .. 7 only; the real one holds all 1,000 (T.split_rows), which the per-class
     # readout requires

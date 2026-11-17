@@ -139,5 +139,5 @@
       "without_sha256": "c765f8fabc55482a8269c5a8461cb5bff7586ea9519e6af5344fb7175039f471"
     }
   },
-  "schema": "cryowisp.e13_rulegen_labels.v1"
+  "schema": "cryowsp.e13_rulegen_labels.v1"
 }

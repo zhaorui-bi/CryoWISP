@@ -1,4 +1,4 @@
-"""PREREG E10 in the harness (``cryowisp.harness.e10``): the leak words, ids and MCP timeouts of an E10 session, the LEARN
+"""PREREG E10 in the harness (``cryowsp.harness.e10``): the leak words, ids and MCP timeouts of an E10 session, the LEARN
 limits on a BatchNorm student, a dry run and a scripted session on toy E10 instances, the session clock in every tool
 result, the C transfer, a loop stream whose round 1 kept the base, control (a) rounds without a candidate, a teacher
 dry run, the round library's programs scanned on E4-loop's standard, and control (b) with the label-free references
@@ -24,31 +24,31 @@ from test_baselines_checked_reference_stream import Grid
 from test_harness_fixtures import needs_sandbox
 from test_harness_learn import FIX, STRINGS, _program_cell
 
-from cryowisp.baselines.fit import checked_reference_stream as C
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit.e10 import e10_program_limits
-from cryowisp.evalkit.evidence import EVIDENCE_RULE_V1
-from cryowisp.evalkit.instances import scan_for_tokens
-from cryowisp.harness import e10, loop, loop_stream, runner
-from cryowisp.harness.arms import applied_limits
-from cryowisp.harness.finalize import KIND_BASE, KIND_CHECKED, STATUS_DRY_RUN
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.launch import (
+from cryowsp.baselines.fit import checked_reference_stream as C
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit.e10 import e10_program_limits
+from cryowsp.evalkit.evidence import EVIDENCE_RULE_V1
+from cryowsp.evalkit.instances import scan_for_tokens
+from cryowsp.harness import e10, loop, loop_stream, runner
+from cryowsp.harness.arms import applied_limits
+from cryowsp.harness.finalize import KIND_BASE, KIND_CHECKED, STATUS_DRY_RUN
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.launch import (
     LAUNCH_START_SCHEMA,
     LaunchStartError,
     read_launch_start,
     record_launch_start,
 )
-from cryowisp.harness.leaks import LIBRARY_PROGRAM_RE, scan_trial
-from cryowisp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
-from cryowisp.harness.program import write_derived_patch
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import ToolServer
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.patch import Limits, PatchError, apply_patch, task_limits
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.harness.leaks import LIBRARY_PROGRAM_RE, scan_trial
+from cryowsp.harness.loop_stream import MODE_SELECT, MODE_TEACHER, LoopStreamError, run_loop_stream
+from cryowsp.harness.program import write_derived_patch
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import ToolServer
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.patch import Limits, PatchError, apply_patch, task_limits
+from cryowsp.sandbox.program import ProgramSandbox
 
 BN_SHIFT = (
     STRINGS
@@ -80,7 +80,7 @@ def _write(directory: Path, name: str, source: str) -> Path:
 
 
 def test_the_constants_restate_the_data_module() -> None:
-    from cryowisp.data import e10 as data
+    from cryowsp.data import e10 as data
 
     assert (e10.DATASET, e10.SEVERITY, e10.CORRUPTIONS, e10.FAMILIES) == (
         data.DATASET,
@@ -153,7 +153,7 @@ def test_an_e10_session_gets_longer_mcp_timeouts_and_refuses_shorter_ones() -> N
 def test_the_learn_limits_on_the_resnet20_tensors_exempt_and_count_the_batchnorm_statistics(
     tmp_path: Path,
 ) -> None:
-    from cryowisp.models.resnet20a import param_shapes
+    from cryowsp.models.resnet20a import param_shapes
 
     params = {name: np.ones(shape, np.float32) for name, shape in param_shapes(10).items()}
     sha = params_sha256(params)

@@ -1,17 +1,17 @@
-"""E11 harness checks on a SYNTHETIC random-init ViT-Lite-7/4 (``cryowisp.models.vit_synth``); never a student of record.
+"""E11 harness checks on a SYNTHETIC random-init ViT-Lite-7/4 (``cryowsp.models.vit_synth``); never a student of record.
 
 Subcommands, each writing one JSON record next to its inputs and printing it:
 
 * ``export --out DIR``: model.npz, model_spec.json, forward.py and synthetic.json of a random-init ViT-Lite-7/4.
 * ``parity --export DIR``: the export's numpy forward.py (float64 inside, float32 logits) against an independent torch
   float64 rebuild (``vit_synth.torch_logits``) on random uint8 images.
-* ``timing --export DIR``: the export's forward through ``cryowisp.evalkit.patch_check.predict`` at the check's batch
+* ``timing --export DIR``: the export's forward through ``cryowsp.evalkit.patch_check.predict`` at the check's batch
   size on N random 32x32 images, under the MCP server's BLAS thread variables (the caller sets them; refused when they
   differ from ``--threads``). The verdict compares one check (program run up to PROGRAM_WALL_S plus V_check new and
   clean predictions) with the MCP tool timeout, and the server's base predictions with the connect timeout.
 * ``store --root ROOT``: a synthetic E11 store of full-size ViT-Lite-7/4 students (``vit_synth.build_store``) for
-  dry runs; CRYOWISP_PRIVATE, CRYOWISP_SEALED and CRYOWISP_RUNS must already point at ROOT/private, sealed and runs.
-* ``scripted --instance ID``: a scripted LEARN session (no LLM: ``cryowisp.harness.scripted.ScriptedLauncher``) on a
+  dry runs; CRYOWSP_PRIVATE, CRYOWSP_SEALED and CRYOWSP_RUNS must already point at ROOT/private, sealed and runs.
+* ``scripted --instance ID``: a scripted LEARN session (no LLM: ``cryowsp.harness.scripted.ScriptedLauncher``) on a
   synthetic instance that checks a LayerNorm program, a qkv program and a one-entry-per-tensor program (85 ops, the
   max_ops of this layout), is refused on rel-Frob (qkv, positional embedding, class token) and on the 20% cap, declares
   the LayerNorm program and reads the final out on V_select and its clean companion.
@@ -19,16 +19,16 @@ Subcommands, each writing one JSON record next to its inputs and printing it:
 Example (the synthetic store keeps the real store untouched)::
 
     export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
-    S=$CRYOWISP_RUNS/e11/synthetic
+    S=$CRYOWSP_RUNS/e11/synthetic
     .venv/bin/python scripts/e11/vit_synth_check.py export --out $S/export_s100
     .venv/bin/python scripts/e11/vit_synth_check.py parity --export $S/export_s100 --n 1000
     .venv/bin/python scripts/e11/vit_synth_check.py timing --export $S/export_s100 --n 8000 --threads 4
-    R=$S/store_v1; export CRYOWISP_PRIVATE=$R/private CRYOWISP_SEALED=$R/sealed CRYOWISP_RUNS=$R/runs
+    R=$S/store_v1; export CRYOWSP_PRIVATE=$R/private CRYOWSP_SEALED=$R/sealed CRYOWSP_RUNS=$R/runs
     .venv/bin/python scripts/e11/vit_synth_check.py store --root $R
-    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowisp.harness.e11 ids \\
+    .venv/bin/python scripts/run_editor_session.py --instance $(.venv/bin/python -m cryowsp.harness.e11 ids \\
         --condition gaussian_noise_s5) --arm LEARN --repeat 0 --effort max --wall-timeout-min 90 \\
         --retention-floor-frac 0.005 --dry-run
-    .venv/bin/python scripts/e11/vit_synth_check.py scripted --instance $(.venv/bin/python -m cryowisp.harness.e11 ids \\
+    .venv/bin/python scripts/e11/vit_synth_check.py scripted --instance $(.venv/bin/python -m cryowsp.harness.e11 ids \\
         --condition gaussian_noise_s5)
 """
 
@@ -46,8 +46,8 @@ from typing import Any
 
 import numpy as np
 
-from cryowisp.harness import e10, e11
-from cryowisp.models import vit_synth as V
+from cryowsp.harness import e10, e11
+from cryowsp.models import vit_synth as V
 
 THREAD_VARIABLES = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 CHECK_ROWS = 8000
@@ -131,8 +131,8 @@ def _write(path: Path, record: dict[str, Any]) -> None:
 
 
 def _export(directory: Path) -> tuple[Any, dict[str, np.ndarray], dict[str, Any]]:
-    from cryowisp.common.identity import load_params
-    from cryowisp.evalkit.patch_check import load_forward
+    from cryowsp.common.identity import load_params
+    from cryowsp.evalkit.patch_check import load_forward
 
     record = json.loads((directory / "synthetic.json").read_text())
     if not record.get("synthetic"):
@@ -195,9 +195,9 @@ def cmd_parity(args: argparse.Namespace) -> None:
 
 
 def cmd_timing(args: argparse.Namespace) -> None:
-    from cryowisp.evalkit.patch_check import predict
-    from cryowisp.harness.runner import DEFAULT_THREADS
-    from cryowisp.sandbox.program import PROGRAM_WALL_S
+    from cryowsp.evalkit.patch_check import predict
+    from cryowsp.harness.runner import DEFAULT_THREADS
+    from cryowsp.sandbox.program import PROGRAM_WALL_S
 
     threads = {name: os.environ.get(name) for name in THREAD_VARIABLES}
     if any(value != str(args.threads) for value in threads.values()):
@@ -285,18 +285,18 @@ def cmd_store(args: argparse.Namespace) -> None:
 
 
 def cmd_scripted(args: argparse.Namespace) -> None:
-    from cryowisp.common.identity import load_params
-    from cryowisp.evalkit.devreadout import readout_run
-    from cryowisp.harness import runner
-    from cryowisp.harness.instance import read_instance_record
-    from cryowisp.harness.jsonio import read_json
-    from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-    from cryowisp.harness.session import SessionPaths
+    from cryowsp.common.identity import load_params
+    from cryowsp.evalkit.devreadout import readout_run
+    from cryowsp.harness import runner
+    from cryowsp.harness.instance import read_instance_record
+    from cryowsp.harness.jsonio import read_json
+    from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+    from cryowsp.harness.session import SessionPaths
 
     record = read_instance_record(args.instance)
     if not (
         e11.is_e11(record.private)
-        and Path(os.environ["CRYOWISP_PRIVATE"]).parent.joinpath("store_check.json").is_file()
+        and Path(os.environ["CRYOWSP_PRIVATE"]).parent.joinpath("store_check.json").is_file()
     ):
         raise SystemExit(
             f"{args.instance} is not an instance of a synthetic E11 store; this command runs only there"

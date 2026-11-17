@@ -1,10 +1,10 @@
-"""PREREG E12 store steps in the project environment (``cryowisp.data.e12``, ``cryowisp.models.e12_export``).
+"""PREREG E12 store steps in the project environment (``cryowsp.data.e12``, ``cryowsp.models.e12_export``).
 
     source scripts/env.sh
     OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4 python scripts/e12/e12_store.py timing --resize 128 --out FILE
     python scripts/e12/e12_store.py clean --resize R
     python scripts/e12/e12_store.py condition gaussian_noise_s5 contrast_s5 defocus_blur_s5 snow_s5
-    python scripts/e12/e12_store.py import --run-dir $CRYOWISP_PRIVATE/nscc_runs/RUN --note "..."
+    python scripts/e12/e12_store.py import --run-dir $CRYOWSP_PRIVATE/nscc_runs/RUN --note "..."
     python scripts/e12/e12_store.py headroom --seed 100 --out FILE
 
 ``timing`` (PREREG E12's R rule, before training and before any instance): forward.py rendered at ``--resize``, run
@@ -31,11 +31,11 @@ from pathlib import Path
 
 import numpy as np
 
-from cryowisp.data import e12 as D
-from cryowisp.data.store import list_conditions, load_split, read_dataset_json, split_sha256
-from cryowisp.models import e12_export as E
-from cryowisp.models import resnet18up as M
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import e12 as D
+from cryowsp.data.store import list_conditions, load_split, read_dataset_json, split_sha256
+from cryowsp.models import e12_export as E
+from cryowsp.models import resnet18up as M
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HEADROOM_POINTS = 15.0
@@ -46,9 +46,9 @@ THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
 def _student(seed: int) -> tuple[dict, object, str, dict]:
-    from cryowisp.common.identity import load_params, params_sha256
-    from cryowisp.data.store import models_dir
-    from cryowisp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
+    from cryowsp.common.identity import load_params, params_sha256
+    from cryowsp.data.store import models_dir
+    from cryowsp.evalkit.targets import load_dataset_forward, read_dataset_meta, read_model_index
 
     meta = read_dataset_meta(D.DATASET)
     forward, forward_sha, _ = load_dataset_forward(D.DATASET, meta)
@@ -92,7 +92,7 @@ def _headroom(seed: int, out: Path) -> dict:
             "runs": gap >= HEADROOM_POINTS,
         }
     record = {
-        "schema": "cryowisp.e12.headroom.v1",
+        "schema": "cryowsp.e12.headroom.v1",
         "rule": f"clean minus condition >= {HEADROOM_POINTS} points on "
         "V_select (PREREG E12 on E10's rule, before any instance); gaussian_noise_s5 and contrast_s5 first, "
         "then defocus_blur_s5, snow_s5 in that order for a condition short of it",
@@ -119,8 +119,8 @@ def _timed(forward, params, x, repeats: int) -> tuple[list[float], list[list[flo
 
 
 def _timing(resize: int, seed: int, repeats: int, out: Path | None) -> dict:
-    from cryowisp.evalkit.targets import file_sha256
-    from cryowisp.models.forward_gen import render_resnet18up_forward
+    from cryowsp.evalkit.targets import file_sha256
+    from cryowsp.models.forward_gen import render_resnet18up_forward
 
     threads = {name: os.environ.get(name) for name in THREAD_VARS}
     if len(set(threads.values())) != 1 or None in threads.values():
@@ -141,7 +141,7 @@ def _timing(resize: int, seed: int, repeats: int, out: Path | None) -> dict:
     times, loads = _timed(module.forward, params, x, repeats)
     small, small_loads = _timed(module.forward, params, np.ascontiguousarray(x[:PROGRAM_ROWS]), repeats)
     record = {
-        "schema": "cryowisp.e12.forward_timing.v1",
+        "schema": "cryowsp.e12.forward_timing.v1",
         "resize": config.resize,
         "seed": seed,
         "student": "the fine-tuning start (ImageNet weights, fc from the seed); the time depends on R only",

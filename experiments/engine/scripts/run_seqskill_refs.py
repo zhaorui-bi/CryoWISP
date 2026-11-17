@@ -1,22 +1,22 @@
 """Run the PREREG E5 gradient references on seqskill-v1 instances.
 
-References (``cryowisp.baselines.fit.seqgrad``): seq_grad_full (all parameters, edit limits ignored: the unconstrained
+References (``cryowsp.baselines.fit.seqgrad``): seq_grad_full (all parameters, edit limits ignored: the unconstrained
 reference of the E5 bar), seq_grad_emb_head (the token embedding and the head) and seq_grad_new_row (the new
 operator's embedding row only), the last two under the E5 program limits. Each is fitted on the instance's 64
 new-operator rows plus its 64 replay rows and scored by the seqskill joint oracle (V_check parts 1 and 4).
 
-Instances: the given ``--instance`` ids, or every active instance in ``$CRYOWISP_PRIVATE/seqskill_instances/index.json``
+Instances: the given ``--instance`` ids, or every active instance in ``$CRYOWSP_PRIVATE/seqskill_instances/index.json``
 (optionally of one ``--condition``). Seqskill instances are dev only; any other role is refused (exit status 2,
 nothing written). Each method on each instance gets its own counted oracle with 8 patch-check queries and writes
-``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/e5/<seed>/``; an existing run directory is never overwritten.
+``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/e5/<seed>/``; an existing run directory is never overwritten.
 
 Dev readouts are a separate step, the run's final and the kept rule v2 pick (S_old floor -40 of the 4000 old-operator
 V_check rows)::
 
     source scripts/env.sh
     .venv/bin/python scripts/run_seqskill_refs.py --condition new0_substitution
-    .venv/bin/python -m cryowisp.evalkit.devreadout RUN.json [RUN.json ...] --out FILE
-    .venv/bin/python -m cryowisp.evalkit.devreadout RUN.json [RUN.json ...] --retention-floor -40 --out FILE
+    .venv/bin/python -m cryowsp.evalkit.devreadout RUN.json [RUN.json ...] --out FILE
+    .venv/bin/python -m cryowsp.evalkit.devreadout RUN.json [RUN.json ...] --retention-floor -40 --out FILE
 """
 
 from __future__ import annotations
@@ -48,15 +48,15 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import EXIT_REFUSED, summary_line
-    from cryowisp.baselines.fit.runner import SplitRoleError, baseline_run_dir, check_split_role
-    from cryowisp.baselines.fit.seqgrad import SEQ_GRAD_METHODS, SEQSKILL_REF_LABEL, run_seq_grad
-    from cryowisp.evalkit.seqskill import active_seqskill_ids, load_seqskill_instance
+    from cryowsp.baselines.fit.cli import EXIT_REFUSED, summary_line
+    from cryowsp.baselines.fit.runner import SplitRoleError, baseline_run_dir, check_split_role
+    from cryowsp.baselines.fit.seqgrad import SEQ_GRAD_METHODS, SEQSKILL_REF_LABEL, run_seq_grad
+    from cryowsp.evalkit.seqskill import active_seqskill_ids, load_seqskill_instance
 
     if set(METHODS) != set(SEQ_GRAD_METHODS):
         raise RuntimeError(f"script methods {METHODS} differ from the library's {SEQ_GRAD_METHODS}")

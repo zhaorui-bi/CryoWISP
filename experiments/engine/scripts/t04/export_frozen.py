@@ -1,15 +1,15 @@
 """Export the frozen networks of a sealed list to params files (R37 jobs 51 to 54; PREREG T04 and T05).
 
     python scripts/t04/export_frozen.py --list scripts/sealed/finals_v6.json --only NAME ... \
-        --out-dir $CRYOWISP_RUNS/frozen/v6 --record $CRYOWISP_RUNS/frozen/v6/export_<tag>.json
+        --out-dir $CRYOWSP_RUNS/frozen/v6 --record $CRYOWSP_RUNS/frozen/v6/export_<tag>.json
 
-For each named entry the child is recovered exactly as the sealed pipeline recovers it (``cryowisp.evalkit.sealed_finals.
+For each named entry the child is recovered exactly as the sealed pipeline recovers it (``cryowsp.evalkit.sealed_finals.
 recover_child``: a session's final/patch.json, or a reference run's kept pick, applied to the instance's base under
 the limits the run applied, and refused unless its params_sha256 is the list's child_sha256), saved as
-``<out-dir>/<name>.npz`` (``cryowisp.common.identity.save_params``, which reloads the file and checks its hash), and
+``<out-dir>/<name>.npz`` (``cryowsp.common.identity.save_params``, which reloads the file and checks its hash), and
 recorded with its params_sha256 and file sha256. These files are what T05's readout (``scripts/t05/t05_readout.py``)
-and the local sealed read of in1k_t04 (``cryowisp.evalkit.sealed_t04``) load; both refuse a file whose params_sha256 is
-not the frozen one. Nothing under $CRYOWISP_SEALED is opened. An existing file or record is never overwritten.
+and the local sealed read of in1k_t04 (``cryowsp.evalkit.sealed_t04``) load; both refuse a file whose params_sha256 is
+not the frozen one. Nothing under $CRYOWSP_SEALED is opened. An existing file or record is never overwritten.
 """
 
 from __future__ import annotations
@@ -19,12 +19,12 @@ import json
 import sys
 from pathlib import Path
 
-from cryowisp.common.identity import load_params, params_sha256, save_params
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit.sealed import manifest_sha256
-from cryowisp.evalkit.targets import file_sha256, utc_now
+from cryowsp.common.identity import load_params, params_sha256, save_params
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit.sealed import manifest_sha256
+from cryowsp.evalkit.targets import file_sha256, utc_now
 
-SCHEMA = "cryowisp.t04.frozen_export.v1"
+SCHEMA = "cryowsp.t04.frozen_export.v1"
 
 
 def main(argv: list[str] | None = None) -> int:

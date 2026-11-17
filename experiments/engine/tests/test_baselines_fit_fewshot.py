@@ -10,19 +10,19 @@ import numpy as np
 import pytest
 from test_evalkit_fewshot import NEW, fewshot_store  # noqa: F401
 
-from cryowisp.baselines.fit import imprint
-from cryowisp.baselines.fit.cli import FEWSHOT_METHODS, run_method
-from cryowisp.baselines.fit.edits import edit_stats, edit_stats_under, scale_to_norm_limit
-from cryowisp.baselines.fit.grad import run_grad
-from cryowisp.baselines.fit.imprint import fit_shared_offset
-from cryowisp.baselines.fit.ridge import margin_targets
-from cryowisp.baselines.fit.runner import load_fewshot_evidence
-from cryowisp.baselines.instance_io import Instance, load_instance
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit import fewshot as F
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, applied_limits
-from cryowisp.patch import Limits, task_limits
+from cryowsp.baselines.fit import imprint
+from cryowsp.baselines.fit.cli import FEWSHOT_METHODS, run_method
+from cryowsp.baselines.fit.edits import edit_stats, edit_stats_under, scale_to_norm_limit
+from cryowsp.baselines.fit.grad import run_grad
+from cryowsp.baselines.fit.imprint import fit_shared_offset
+from cryowsp.baselines.fit.ridge import margin_targets
+from cryowsp.baselines.fit.runner import load_fewshot_evidence
+from cryowsp.baselines.instance_io import Instance, load_instance
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit import fewshot as F
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, applied_limits
+from cryowsp.patch import Limits, task_limits
 
 OLD = [0, 1, 2, 3, 4]
 REPO = Path(__file__).resolve().parents[1]

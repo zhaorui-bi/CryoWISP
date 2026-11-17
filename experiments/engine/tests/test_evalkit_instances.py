@@ -1,4 +1,4 @@
-"""Tests for the evidence-v0 draw and target-pair instances (cryowisp.evalkit.evidence, cryowisp.evalkit.instances).
+"""Tests for the evidence-v0 draw and target-pair instances (cryowsp.evalkit.evidence, cryowsp.evalkit.instances).
 
 evidence-v1 instances, supersession, decoy maps and edit limits are tested in test_evalkit_instances_v1.py.
 """
@@ -21,9 +21,9 @@ from test_evalkit_instances_store import (  # noqa: F401
     toy_store,
 )
 
-from cryowisp.baselines.instance_io import load_instance, make_oracle
-from cryowisp.evalkit.evidence import EVIDENCE_KEYS, K_RAND, draw_evidence, evidence_seed, load_evidence
-from cryowisp.evalkit.instances import (
+from cryowsp.baselines.instance_io import load_instance, make_oracle
+from cryowsp.evalkit.evidence import EVIDENCE_KEYS, K_RAND, draw_evidence, evidence_seed, load_evidence
+from cryowsp.evalkit.instances import (
     DEFAULT_DECOYS,
     EDITOR_VISIBLE_FILES,
     QUERY_BUDGET,
@@ -33,8 +33,8 @@ from cryowisp.evalkit.instances import (
     limit_definitions,
     read_index,
 )
-from cryowisp.evalkit.targets import K_FAIL, run_target_selection
-from cryowisp.patch import OP_NAMES, task_limits
+from cryowsp.evalkit.targets import K_FAIL, run_target_selection
+from cryowsp.patch import OP_NAMES, task_limits
 
 
 def _evidence_inputs(n: int = 200, cell: int = 30) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -116,19 +116,19 @@ def test_instance_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa:
         ]
         task = json.loads(task_text)
         a, b = outcome.target
-        assert task["schema"] == "cryowisp.task.v0"
+        assert task["schema"] == "cryowsp.task.v0"
         assert task["target"] == {"a": a, "b": b, "a_name": task["classes"][a], "b_name": task["classes"][b]}
         assert task["selection_counts"]["n_class_a"] == 100
         assert task["selection_counts"]["n_class_a_predicted_b"] == {(0, 1): 30, (3, 2): 20}[(a, b)]
         assert task["patch_check"]["budget_queries"] == QUERY_BUDGET
         assert task["limits"] == task_limits()
         assert task["limit_definitions"] == limit_definitions(task["limits"])
-        assert task["patch_format"] == {"schema": "cryowisp.patch.v0", "allowed_ops": list(OP_NAMES)}
+        assert task["patch_format"] == {"schema": "cryowsp.patch.v0", "allowed_ops": list(OP_NAMES)}
         assert len(task["training_free_rule"]["forbidden"]) == 5
         private = json.loads((folder / "private.json").read_text())
         assert private["split_role"] == outcome.split_role and private["target"] == [a, b]
         assert (
-            private["evidence_rule"] == "evidence-v0" and private["schema"] == "cryowisp.instance_private.v0"
+            private["evidence_rule"] == "evidence-v0" and private["schema"] == "cryowsp.instance_private.v0"
         )
         assert private["k_fail"] == K_FAIL and private["k_rand"] == K_RAND
         assert private["reference_ceiling_models"] == []

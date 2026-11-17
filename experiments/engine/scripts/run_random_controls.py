@@ -1,13 +1,13 @@
 """Run B1 matched random controls (permuted, gaussian) against a reference patch per instance.
 
-Instances: the given ``--instance`` ids, or by default every instance in ``$CRYOWISP_PRIVATE/instances/index.json`` with
+Instances: the given ``--instance`` ids, or by default every instance in ``$CRYOWSP_PRIVATE/instances/index.json`` with
 split_role "dev" (optionally one ``--dataset``). Every selected instance's private.json split_role is checked before
 anything runs: a main instance is refused (exit status 2, nothing written) unless ``--allow-main`` is given, which is
 reserved for runs after the pre-registration freeze (PREREG section 2).
 
 The reference is a run in the shared run-record format (a directory holding run.json, or the run.json): a fitting run
 written by run_fit_baselines.py or a harness editor session (M2, NOWEIGHT, DECOY). Its final child is rebuilt by
-``cryowisp.evalkit.devreadout.final_child``; a base no-op final is recorded and no control is written. A bare patch (a
+``cryowsp.evalkit.devreadout.final_child``; a base no-op final is recorded and no control is written. A bare patch (a
 patch JSON file or a directory holding patch.json) also works. With more than one instance, ``--reference-patch``
 must contain the literal ``{instance_id}``, which is replaced per instance.
 
@@ -17,15 +17,15 @@ For a run the arm is its ``method``, the B1 session id is its ``session_id`` (a 
 given, must agree with them. For a bare patch both are required and the label is ``--ref-label``.
 
 Each kind runs ``--runs`` times (default 3, run_index 0, 1, 2), each run with its own counted oracle of 8 queries
-(8 seeded candidates; see ``cryowisp.baselines.fit.controls``), written to
-``$CRYOWISP_RUNS/baselines/<instance_id>/<kind>/<label>/r<run_index>/``. The B1 value of a kind is the mean final S over
+(8 seeded candidates; see ``cryowsp.baselines.fit.controls``), written to
+``$CRYOWSP_RUNS/baselines/<instance_id>/<kind>/<label>/r<run_index>/``. The B1 value of a kind is the mean final S over
 its runs, printed after them. An existing run directory is never overwritten.
 
 Example::
 
     source scripts/env.sh
     .venv/bin/python scripts/run_random_controls.py --dataset fashion_mnist \
-        --reference-patch "$CRYOWISP_RUNS/baselines/{instance_id}/grad_last/0"
+        --reference-patch "$CRYOWSP_RUNS/baselines/{instance_id}/grad_last/0"
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ LABEL = re.compile(r"^[A-Za-z0-9_.-]{1,128}$")
 
 
 def reference_label(value: str) -> str:
-    """argparse type: a plain path component, as cryowisp.baselines.fit.runner.safe_name requires."""
+    """argparse type: a plain path component, as cryowsp.baselines.fit.runner.safe_name requires."""
     if not LABEL.fullmatch(value) or value in {".", ".."}:
         raise argparse.ArgumentTypeError(f"{value!r} must match {LABEL.pattern} and not be '.' or '..'")
     return value
@@ -89,9 +89,9 @@ def main(argv: list[str] | None = None) -> int:
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
     sys.dont_write_bytecode = (
-        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+        True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
     )
-    from cryowisp.baselines.fit.cli import (
+    from cryowsp.baselines.fit.cli import (
         EXIT_REFUSED,
         SelectionError,
         load_checked_instances,
@@ -99,8 +99,8 @@ def main(argv: list[str] | None = None) -> int:
         select_instance_ids,
         summary_line,
     )
-    from cryowisp.baselines.fit.controls import b1_value, load_reference, resolve_reference, run_control
-    from cryowisp.baselines.fit.runner import NoValidCandidate, SplitRoleError, control_run_dir
+    from cryowsp.baselines.fit.controls import b1_value, load_reference, resolve_reference, run_control
+    from cryowsp.baselines.fit.runner import NoValidCandidate, SplitRoleError, control_run_dir
 
     try:
         ids = select_instance_ids(args.instance, split_role=args.split_role, dataset=args.dataset)

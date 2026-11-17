@@ -1,7 +1,7 @@
 """SCAN for PREREG E13: the interpretation function, the grammar, token rows, the seed-100 splits and the store.
 
 Nothing here reads the real stores or the SCAN repository: the raw files are written from the grammar into a tmp dir
-(``fake_raw``), with ``scan.RAW_SHA256`` patched to their hashes, and CRYOWISP_PRIVATE and CRYOWISP_SEALED point to tmp dirs.
+(``fake_raw``), with ``scan.RAW_SHA256`` patched to their hashes, and CRYOWSP_PRIVATE and CRYOWSP_SEALED point to tmp dirs.
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ import numpy as np
 import pytest
 import scan_toy
 
-from cryowisp.data import scan as S
-from cryowisp.data import scan_build as B
-from cryowisp.data.store import load_split, read_dataset_json, save_split, sealed_test_path, split_path
+from cryowsp.data import scan as S
+from cryowsp.data import scan_build as B
+from cryowsp.data.store import load_split, read_dataset_json, save_split, sealed_test_path, split_path
 
 PUBLISHED = {
     "jump": ["I_JUMP"],

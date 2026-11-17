@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 from test_models_conditions import _git_state, _make_store, _train_base_module
 
-from cryowisp.data import store
-from cryowisp.models.export import (
+from cryowsp.data import store
+from cryowsp.models.export import (
     FEWSHOT_INDEX_KEYS,
     all_model_ids,
     fewshot_models_dir,

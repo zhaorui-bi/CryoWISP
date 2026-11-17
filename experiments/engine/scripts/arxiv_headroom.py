@@ -1,6 +1,6 @@
-"""PREREG E6 headroom report of one ogbn-arxiv protocol (``cryowisp.analysis.arxiv_headroom``), dev seed 100.
+"""PREREG E6 headroom report of one ogbn-arxiv protocol (``cryowsp.analysis.arxiv_headroom``), dev seed 100.
 
-Writes $CRYOWISP_RUNS/devreadouts/e6_headroom_<protocol>_s<seed>_dev_<date>.json (refuses an existing file) and prints
+Writes $CRYOWSP_RUNS/devreadouts/e6_headroom_<protocol>_s<seed>_dev_<date>.json (refuses an existing file) and prints
 the gate and the diagnostics' headline numbers with the file's sha256.
 
 Usage:
@@ -15,9 +15,9 @@ import hashlib
 import json
 import sys
 
-from cryowisp.analysis.arxiv_headroom import headroom_report
-from cryowisp.common.paths import runs_dir
-from cryowisp.data import arxiv as A
+from cryowsp.analysis.arxiv_headroom import headroom_report
+from cryowsp.common.paths import runs_dir
+from cryowsp.data import arxiv as A
 
 
 def main() -> int:

@@ -17,24 +17,24 @@ import pytest
 from test_evalkit_fewshot import NEW, fewshot_store  # noqa: F401
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit import fewshot as F
-from cryowisp.harness import fewshot
-from cryowisp.harness.applying import ArmApplier
-from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, arm_spec
-from cryowisp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.prompts import render_system
-from cryowisp.harness.runner import SANDBOX_PYTHON, run_session
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import FEWSHOT_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.harness.trial import CLEAN_VCHECK_FILE, TrialError, assemble
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit import fewshot as F
+from cryowsp.harness import fewshot
+from cryowsp.harness.applying import ArmApplier
+from cryowsp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, arm_spec
+from cryowsp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.prompts import render_system
+from cryowsp.harness.runner import SANDBOX_PYTHON, run_session
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import FEWSHOT_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.harness.trial import CLEAN_VCHECK_FILE, TrialError, assemble
+from cryowsp.sandbox.program import ProgramSandbox
 
 OLD = [0, 1, 2, 3, 4]
 # Sets every new-class head bias to the mean old-class bias: an architecture-agnostic edit (the head is the last
@@ -63,7 +63,7 @@ def fewshot_ids(
     """The toy fewshot instances built, with a runs root for sessions: {(arch, seed): instance id}."""
     runs = tmp_path / "store" / "runs"
     runs.mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(runs))
     ids = {}
     for outcome in F.build_fewshot_instances("cifar10"):
         private = read_json(F.fewshot_instance_dir(outcome["instance_id"]) / "private.json")
@@ -92,7 +92,7 @@ def _sandbox() -> ProgramSandbox:
 def test_the_harness_names_agree_with_the_evalkit_rule(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path))
     assert fewshot.FEWSHOT_RULE == F.FEWSHOT_RULE
     assert fewshot.INSTANCE_ID_RE.pattern == F.INSTANCE_ID_RE.pattern
     assert fewshot.EXPERIENCE_KEYS == F.EVIDENCE_KEYS == EXPERIENCE_KEYS
@@ -113,7 +113,7 @@ def test_a_fewshot_id_resolves_in_its_own_store_and_is_refused_when_not_current(
         read_instance_record("f00000000")
     with pytest.raises(InstanceRefused, match="program arm"):
         run_session(instance_id, "M2", 0, effort="low", wall_timeout_s=60.0, dry_run=True)
-    assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
+    assert not list(Path(os.environ["CRYOWSP_RUNS"]).rglob("session.json"))  # refused before any write
     other = fewshot_ids[("cnn", 101)]
     task_path = F.fewshot_instance_dir(other) / "task.json"
     task_path.write_text(

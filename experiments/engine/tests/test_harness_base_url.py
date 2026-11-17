@@ -1,4 +1,4 @@
-"""Compatible-endpoint support of the editor (cryowisp.harness.launch: read_base_url, read_auth_token,
+"""Compatible-endpoint support of the editor (cryowsp.harness.launch: read_base_url, read_auth_token,
 billing_record, ClaudeLauncher): point the Claude Code CLI at GLM, Kimi, DeepSeek or another Anthropic-compatible
 endpoint, so the editor's model is the caller's choice and no Anthropic credential is needed."""
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.harness import launch
+from cryowsp.harness import launch
 
 SESSION = {"mcp": {"tool_timeout_ms": 1000, "connect_timeout_ms": 1000}}
 TOKEN = "bearer-token-not-real-0123456789"

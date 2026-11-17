@@ -1,7 +1,7 @@
-"""Run PREREG F1s (``cryowisp.baselines.fit.f1s``): stronger fine-tuning arms s1 to s5 on E11 dev instances.
+"""Run PREREG F1s (``cryowsp.baselines.fit.f1s``): stronger fine-tuning arms s1 to s5 on E11 dev instances.
 
-Runs go to ``$CRYOWISP_RUNS/baselines/<instance_id>/<method>/f1s/<seed>/``; an existing run directory is never
-overwritten. Read the runs as F1's: ``python -m cryowisp.evalkit.devreadout RUN --clean`` (own), ``--retention-floor -20``
+Runs go to ``$CRYOWSP_RUNS/baselines/<instance_id>/<method>/f1s/<seed>/``; an existing run directory is never
+overwritten. Read the runs as F1's: ``python -m cryowsp.evalkit.devreadout RUN --clean`` (own), ``--retention-floor -20``
 (kept) and ``--all-candidates`` (frontier). ``f1s_s5_oracle_prior`` needs ``--s5-rows`` (the record written by
 ``scripts/f1s/f1s_s5_rows.py``).
 """
@@ -51,10 +51,10 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.cli import EXIT_REFUSED, load_checked_instances, refusal_message, summary_line
-    from cryowisp.baselines.fit.f1s import F1S_LABEL, F1S_METHODS, F1sError, run_f1s
-    from cryowisp.baselines.fit.ftcompare import F1_DATASET
-    from cryowisp.baselines.fit.runner import SplitRoleError, baseline_run_dir
+    from cryowsp.baselines.fit.cli import EXIT_REFUSED, load_checked_instances, refusal_message, summary_line
+    from cryowsp.baselines.fit.f1s import F1S_LABEL, F1S_METHODS, F1sError, run_f1s
+    from cryowsp.baselines.fit.ftcompare import F1_DATASET
+    from cryowsp.baselines.fit.runner import SplitRoleError, baseline_run_dir
 
     if set(METHODS) != set(F1S_METHODS):
         raise RuntimeError(f"script methods {METHODS} differ from the library's {F1S_METHODS}")

@@ -6,13 +6,13 @@ draw k with seed ``1005 + k`` (k = 0 to 7, fixed in PREREG K1 before this script
 generator once per draw and corrupts the 64 images in row order, exactly as ``scripts/f1s/f1s_s5_rows.py`` does for its
 one draw, so draw 0 (seed 1005) equals that file's gaussian rows (checked when ``--f1s-rows`` is given). Writes
 ``<out-dir>/gaussian_noise_s5_rule_draws.npz`` (array ``x``: uint8 [8, 64, ...] in the replay rows' layout) and
-``k1_rule_rows.json`` (schema cryowisp.k1.rule_rows.v1; the replay content hash, each draw's seed and x sha256, the file's
+``k1_rule_rows.json`` (schema cryowsp.k1.rule_rows.v1; the replay content hash, each draw's seed and x sha256, the file's
 sha256). No condition row and no label is read. Refuses to overwrite.
 
     .venv/bin/python -I scripts/k1/k1_rule_rows.py \\
-        --official $CRYOWISP_PRIVATE/external/robustness_8190fe3/make_cifar_c.py \\
-        --replay-dir $CRYOWISP_PRIVATE/cifar10_vl7/replay --out-dir $CRYOWISP_PRIVATE/cifar10_vl7/k1_rule \\
-        --f1s-rows $CRYOWISP_PRIVATE/cifar10_vl7/f1s_s5/s5_rows.json
+        --official $CRYOWSP_PRIVATE/external/robustness_8190fe3/make_cifar_c.py \\
+        --replay-dir $CRYOWSP_PRIVATE/cifar10_vl7/replay --out-dir $CRYOWSP_PRIVATE/cifar10_vl7/k1_rule \\
+        --f1s-rows $CRYOWSP_PRIVATE/cifar10_vl7/f1s_s5/s5_rows.json
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     target = args.out_dir / f"{FUNCTION}_s5_rule_draws.npz"
     np.savez(target, x=stacked)
     record = {
-        "schema": "cryowisp.k1.rule_rows.v1",
+        "schema": "cryowsp.k1.rule_rows.v1",
         "severity": O.SEVERITY,
         "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
         "libraries": O.library_versions(),

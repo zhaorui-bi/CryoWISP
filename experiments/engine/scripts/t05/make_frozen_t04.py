@@ -21,10 +21,10 @@ import json
 import sys
 from pathlib import Path
 
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit.sealed import manifest_sha256
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit.sealed import manifest_sha256
 
-SCHEMA = "cryowisp.t05.frozen_t04.v1"
+SCHEMA = "cryowsp.t05.frozen_t04.v1"
 T05_KEYS = ("LEARN_r1", "LEARN_r2", "main_", "bn_adapt", "large_sample")
 """PREREG T05's networks per condition besides the base: role keys of the v6 role map (main_ is a prefix)."""
 
@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     export_records = []
     for path in args.exports:
         record = json.loads(path.read_text(encoding="utf-8"))
-        if record.get("schema") != "cryowisp.t04.frozen_export.v1" or record.get("list_sha256") != list_sha:
+        if record.get("schema") != "cryowsp.t04.frozen_export.v1" or record.get("list_sha256") != list_sha:
             raise SystemExit(f"{path}: not an export record of list {list_sha}")
         export_records.append(
             {

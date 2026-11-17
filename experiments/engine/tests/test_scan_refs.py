@@ -14,11 +14,11 @@ import numpy as np
 import pytest
 import scan_toy
 
-from cryowisp.baselines.fit import scanrefs as R
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.data import scan as S
-from cryowisp.evalkit import devreadout as D
-from cryowisp.evalkit import scanskill as K
+from cryowsp.baselines.fit import scanrefs as R
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.data import scan as S
+from cryowsp.evalkit import devreadout as D
+from cryowsp.evalkit import scanskill as K
 
 FAST_STEPS = (1, 2, 3, 4)
 
@@ -97,7 +97,7 @@ def test_methods_and_grids() -> None:
 
 
 def test_rule_rows_match_the_official_labels(store: dict[str, str]) -> None:
-    from cryowisp.data.scan_build import raw_dir
+    from cryowsp.data.scan_build import raw_dir
 
     fit = R.rulegen_fit_set("around_right", "full")
     record = R.check_rows_against_official(raw_dir() / S.ALL_FILE, fit["commands"], fit["y"])
@@ -279,8 +279,8 @@ def test_device_settings_refuse_an_unprepared_gpu(monkeypatch: pytest.MonkeyPatc
 def test_gpu_fits_match_the_cpu_and_run_every_kind(
     store: dict[str, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, device_flags: None
 ) -> None:
-    from cryowisp.baselines.fit import seqgrad as SG
-    from cryowisp.baselines.fit.runner import load_scan_evidence
+    from cryowsp.baselines.fit import seqgrad as SG
+    from cryowsp.baselines.fit.runner import load_scan_evidence
 
     monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", R.CUBLAS_WORKSPACE)
     settings = R.configure_device("cuda")

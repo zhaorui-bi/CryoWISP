@@ -1,17 +1,17 @@
-"""Download, split and store the CryoWISP datasets (contract section 2).
+"""Download, split and store the CryoWSP datasets (contract section 2).
 
-For each dataset: download the official sets with torchvision into $CRYOWISP_PRIVATE/raw (sha256 of every raw file in
+For each dataset: download the official sets with torchvision into $CRYOWSP_PRIVATE/raw (sha256 of every raw file in
 raw/provenance.json), split the official train set with split seed 20261103, write
-$CRYOWISP_PRIVATE/<dataset>/splits/{train,V_select,V_evidence,V_check}.npz (Colored-MNIST adds train_uniform.npz),
-the official test set to $CRYOWISP_SEALED/<dataset>/test.npz only, the numpy reference forward.py and dataset.json.
+$CRYOWSP_PRIVATE/<dataset>/splits/{train,V_select,V_evidence,V_check}.npz (Colored-MNIST adds train_uniform.npz),
+the official test set to $CRYOWSP_SEALED/<dataset>/test.npz only, the numpy reference forward.py and dataset.json.
 
-Deployment conditions (cryowisp.data.conditions, CIFAR-10-C corruptions) are built from the stored clean splits and the
-raw official test set: $CRYOWISP_PRIVATE/<dataset>/conditions/<condition>/{dataset.json,splits/*.npz} and
-$CRYOWISP_SEALED/<dataset>/conditions/<condition>/test.npz.
+Deployment conditions (cryowsp.data.conditions, CIFAR-10-C corruptions) are built from the stored clean splits and the
+raw official test set: $CRYOWSP_PRIVATE/<dataset>/conditions/<condition>/{dataset.json,splits/*.npz} and
+$CRYOWSP_SEALED/<dataset>/conditions/<condition>/test.npz.
 
 The drawn-parameter conditions of contract section 2.1 (colormix_d1, blur5_d1, gamma_d1) are calibrated first, on
 the train split only (--calibrate writes conditions/<condition>/calibration.json). The chosen severity is then
-entered as the condition's constant in cryowisp.data.conditions, and the normal build writes the splits. Every build
+entered as the condition's constant in cryowsp.data.conditions, and the normal build writes the splits. Every build
 checks the calibration log against the registered parameters and severity.
 
 Usage:
@@ -32,15 +32,15 @@ from pathlib import Path
 
 import numpy as np
 
-from cryowisp.data import build as B
-from cryowisp.data import conditions as C
-from cryowisp.data.colored import RHO_PRIMARY
-from cryowisp.data.registry import DATASETS, N_CLASSES
-from cryowisp.data.sources import download_and_load, record_provenance
-from cryowisp.data.store import dataset_json_path, forward_path, read_dataset_json
-from cryowisp.models.calibration import calibrate, write_calibration
-from cryowisp.models.forward_gen import render_forward, write_forward
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import build as B
+from cryowsp.data import conditions as C
+from cryowsp.data.colored import RHO_PRIMARY
+from cryowsp.data.registry import DATASETS, N_CLASSES
+from cryowsp.data.sources import download_and_load, record_provenance
+from cryowsp.data.store import dataset_json_path, forward_path, read_dataset_json
+from cryowsp.models.calibration import calibrate, write_calibration
+from cryowsp.models.forward_gen import render_forward, write_forward
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

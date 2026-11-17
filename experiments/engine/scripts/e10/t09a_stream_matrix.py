@@ -1,6 +1,6 @@
 """T09-A (Execution Plan v1.1): the per-round capability matrix of recorded E10 streams and its marginal readings.
 
-Reads stream records (cryowisp.harness.loop_stream.v0 or cryowisp.baselines.checked_reference_stream.v0) and writes, for each,
+Reads stream records (cryowsp.harness.loop_stream.v0 or cryowsp.baselines.checked_reference_stream.v0) and writes, for each,
 the matrix A[t, j] = V_select gain on condition j after round t (W0 = the base, A[0, j] = 0), the clean change after
 each round, and these readings (points, i.e. accuracy x 100):
 
@@ -8,7 +8,7 @@ each round, and these readings (points, i.e. accuracy x 100):
 - round_sum[t]         sum over all conditions of A[t, j] - A[t-1, j], so a broad update shows on the others too;
 - seen_mean[t]         mean of A[t, j] over the conditions of rounds 1..t; all_mean[t] the mean over every condition,
                        future ones included;
-- forgetting_signed[j] A[t_j, j] - A[T, j] (the frozen stream definition, cryowisp.harness.program_stream.stream_summary);
+- forgetting_signed[j] A[t_j, j] - A[T, j] (the frozen stream definition, cryowsp.harness.program_stream.stream_summary);
 - forgetting_best[j]   max over t >= t_j of A[t, j] minus A[T, j] (T09-A's definition, never negative);
 - forward[j]           A[t_j - 1, j], the gain on condition j before its own round (improvement before installation);
 - stop_after_2         the stream read at W2 against W4 on the same four conditions (mean, clean, mean + clean).
@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 POINTS = 100.0
-SCHEMAS = ("cryowisp.harness.loop_stream.v0", "cryowisp.baselines.checked_reference_stream.v0")
+SCHEMAS = ("cryowsp.harness.loop_stream.v0", "cryowsp.baselines.checked_reference_stream.v0")
 
 
 class StreamRecordError(ValueError):
@@ -173,7 +173,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.out.write_text(
         json.dumps(
             {
-                "schema": "cryowisp.e10.t09a_stream_matrix.v0",
+                "schema": "cryowsp.e10.t09a_stream_matrix.v0",
                 "units": "points (accuracy x 100)",
                 "readout": "V_select",
                 "sources": sources,

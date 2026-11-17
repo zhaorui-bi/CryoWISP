@@ -18,7 +18,7 @@ sealed mode its mode and the list's canonical sha256; the primary n is 38,000 (s
 every entry on an instance has the same base correctness; a record's per-image bits reproduce its gain and clean.
 
     python scripts/sealed/make_test_table_v6.py --list scripts/sealed/finals_v6.json \\
-        --results $CRYOWISP_SEALED/results/<sha>.jsonl --out <table.json> [--dev-records <dev jsonl> ...]
+        --results $CRYOWSP_SEALED/results/<sha>.jsonl --out <table.json> [--dev-records <dev jsonl> ...]
     python scripts/sealed/make_test_table_v6.py --list scripts/sealed/finals_v6.json --mode dev \\
         --dev-records <dev jsonl> ... --out <table.json>
 """
@@ -35,11 +35,11 @@ from typing import Any
 
 import numpy as np
 
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit.sealed import manifest_sha256
-from cryowisp.evalkit.sealed_range import decode_bits
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit.sealed import manifest_sha256
+from cryowsp.evalkit.sealed_range import decode_bits
 
-SCHEMA = "cryowisp.t04_test_table_v6.v1"
+SCHEMA = "cryowsp.t04_test_table_v6.v1"
 ROLES_FILE = "finals_v6_roles.json"
 G = {"gaussian_noise_s3": 7.0, "contrast_s4": 8.5}
 """PREREG T04: G = 0.15 x the base's V_select headroom, rounded to 0.5 (DEV_RESULTS "T04 build")."""
@@ -71,7 +71,7 @@ def interval(d: np.ndarray) -> dict[str, float]:
 def load_roles(list_path: Path, list_sha: str) -> list[dict[str, Any]]:
     """The role map beside the list; refused unless it names the list's entries."""
     roles = json.loads((list_path.parent / ROLES_FILE).read_text(encoding="utf-8"))
-    if roles.get("schema") != "cryowisp.t04_v6_roles.v1":
+    if roles.get("schema") != "cryowsp.t04_v6_roles.v1":
         raise TableError(f"{ROLES_FILE}: unexpected schema {roles.get('schema')!r}")
     return list(roles["roles"])
 

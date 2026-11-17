@@ -2,13 +2,13 @@
 final's delta through the alignment, add it to the target and read it as F6 and E3 read.
 
 Spec: docs/PREREG_v0_DRAFT.md, the bullet "F6b, the aligned frozen edit". No LLM call, no sealed read, no V_check read for
-a decision; dev instances only. Library: ``cryowisp.analysis.align``. The reading (F6's ``frozen_one``) and the source checks
-(``session_edit``) are F6's (``cryowisp.harness.frozen_edit``).
+a decision; dev instances only. Library: ``cryowsp.analysis.align``. The reading (F6's ``frozen_one``) and the source checks
+(``session_edit``) are F6's (``cryowsp.harness.frozen_edit``).
 
 Stages:
 
 * ``rows`` (once, on the workstation): the first 2,048 rows of cifar10_vl7's clean train split in stored order, written
-  to ``$CRYOWISP_PRIVATE/f6b/align_rows_2048.npz`` with the sha256 of the split file (the only input of the alignment besides
+  to ``$CRYOWSP_PRIVATE/f6b/align_rows_2048.npz`` with the sha256 of the split file (the only input of the alignment besides
   the two students; no V_select, V_check, V_evidence, test or sealed row).
 * ``run --condition C --instance ID --out DIR [--gate-only]``: one target. Alignment (residual permutation by the Hungarian
   method on the summed correlations of the eight residual places, one hidden permutation per edited block), the
@@ -67,13 +67,13 @@ class F6bError(RuntimeError):
 
 
 def runs_root() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return Path(runs_dir())
 
 
 def private_root() -> Path:
-    from cryowisp.common.paths import private_dir
+    from cryowsp.common.paths import private_dir
 
     return Path(private_dir())
 
@@ -87,7 +87,7 @@ def session_dir(condition: str) -> Path:
 
 
 def targets(condition: str) -> list[str]:
-    from cryowisp.harness import e11
+    from cryowsp.harness import e11
 
     found = e11.transfer_targets(FINALS[condition]["source"])
     if len(found) != 5:
@@ -106,8 +106,8 @@ def cmd_targets(args: argparse.Namespace) -> int:
 
 
 def cmd_rows(args: argparse.Namespace) -> int:
-    from cryowisp.data.store import load_split, split_sha256
-    from cryowisp.harness.jsonio import file_sha256, write_json
+    from cryowsp.data.store import load_split, split_sha256
+    from cryowsp.harness.jsonio import file_sha256, write_json
 
     path = rows_path()
     if path.exists():
@@ -131,7 +131,7 @@ def cmd_rows(args: argparse.Namespace) -> int:
 
 
 def load_rows() -> tuple[np.ndarray, str]:
-    from cryowisp.harness.jsonio import file_sha256, read_json
+    from cryowsp.harness.jsonio import file_sha256, read_json
 
     path = rows_path()
     record = read_json(path.with_suffix(".json"))
@@ -219,14 +219,14 @@ def describe_gaussian(
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    from cryowisp.analysis import align as A
-    from cryowisp.analysis import nullspace as N
-    from cryowisp.evalkit.companions import load_clean_rows
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_split
-    from cryowisp.harness import fewshot
-    from cryowisp.harness import frozen_edit as F
-    from cryowisp.harness.jsonio import file_sha256, utc_now, write_json
-    from cryowisp.harness.program import load_deltas
+    from cryowsp.analysis import align as A
+    from cryowsp.analysis import nullspace as N
+    from cryowsp.evalkit.companions import load_clean_rows
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_split
+    from cryowsp.harness import fewshot
+    from cryowsp.harness import frozen_edit as F
+    from cryowsp.harness.jsonio import file_sha256, utc_now, write_json
+    from cryowsp.harness.program import load_deltas
 
     condition, instance_id = args.condition, args.instance
     final = FINALS[condition]
@@ -255,7 +255,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     }
     gate = A.symmetry_gate(module, target.params, alignment, images)
     record: dict[str, Any] = {
-        "schema": "cryowisp.harness.f6b.v0",
+        "schema": "cryowsp.harness.f6b.v0",
         "created_at": utc_now(),
         "condition": condition,
         "target": {
@@ -368,10 +368,10 @@ def share_reading(share: float | None) -> str:
 
 
 def cmd_summary(args: argparse.Namespace) -> int:
-    from cryowisp.harness.jsonio import file_sha256, read_json, write_json
+    from cryowsp.harness.jsonio import file_sha256, read_json, write_json
 
     base = Path(args.reads) if args.reads else runs_root() / "f6b"
-    result: dict[str, Any] = {"schema": "cryowisp.harness.f6b_summary.v0", "conditions": {}, "files": {}}
+    result: dict[str, Any] = {"schema": "cryowsp.harness.f6b_summary.v0", "conditions": {}, "files": {}}
     for condition, final in FINALS.items():
         sid, prog = final["session"], final["program12"]
         ids = targets(condition)

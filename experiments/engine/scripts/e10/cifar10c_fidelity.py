@@ -62,7 +62,7 @@ def _per_image_mad(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 
 def _x_sha256(x: np.ndarray) -> str:
-    """The store's canonical hash (``cryowisp.common.identity.params_sha256``) of the single array ``x``."""
+    """The store's canonical hash (``cryowsp.common.identity.params_sha256``) of the single array ``x``."""
     import hashlib
 
     digest = hashlib.sha256()
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({name: entry}), file=sys.stderr, flush=True)
     weather = "snow" if results["snow"]["pass"] else ("fog" if results["fog"]["pass"] else None)
     record = {
-        "schema": "cryowisp.e10.cifar10c_fidelity.v1",
+        "schema": "cryowsp.e10.cifar10c_fidelity.v1",
         "rule": "PREREG E10 fidelity check, pixels only (no label, no model)",
         "official": {
             "repository": O.OFFICIAL_REPOSITORY,

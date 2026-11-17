@@ -7,11 +7,11 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from cryowisp.analysis import arxiv_headroom as H
-from cryowisp.data.arxiv import build_graph
-from cryowisp.models import gcn as G
-from cryowisp.models.export import load_forward_no_cache
-from cryowisp.models.forward_gen import render_gcn_forward, write_forward
+from cryowsp.analysis import arxiv_headroom as H
+from cryowsp.data.arxiv import build_graph
+from cryowsp.models import gcn as G
+from cryowsp.models.export import load_forward_no_cache
+from cryowsp.models.forward_gen import render_gcn_forward, write_forward
 
 
 def test_paired_difference_counts_and_se() -> None:

@@ -1,4 +1,4 @@
-"""Train the PREREG E11 ViT-Lite-7/4 students (``cryowisp.models.vitlite``, ``cryowisp.models.e11_export``).
+"""Train the PREREG E11 ViT-Lite-7/4 students (``cryowsp.models.vitlite``, ``cryowsp.models.e11_export``).
 
 Group ``train``: for each seed, the Compact-Transformers CIFAR recipe (``CCTTrainConfig``) on E1's 40,000 cifar10
 train rows; each student goes to the pending directory with a pending index row. The job needs cifar10's
@@ -31,11 +31,11 @@ from typing import Any
 
 import torch
 
-from cryowisp.data.store import read_json, write_json
-from cryowisp.models import e11_export as E
-from cryowisp.models import vitlite as V
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.train import configure_determinism
+from cryowsp.data.store import read_json, write_json
+from cryowsp.models import e11_export as E
+from cryowsp.models import vitlite as V
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.train import configure_determinism
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_EVERY = 10

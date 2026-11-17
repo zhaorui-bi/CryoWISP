@@ -1,11 +1,11 @@
 """Run the static training-free audit (contract section 5.5, HARNESS_SPEC section 7) on one session directory.
 
 Reads ``<session_dir>/logs/cells.jsonl`` and the ``predict`` calls of ``<session_dir>/logs/tools.jsonl`` (absent:
-no predict calls), and writes the report (schema ``cryowisp.audit.v0``) to ``<session_dir>/logs/audit.json``, or to
+no predict calls), and writes the report (schema ``cryowsp.audit.v0``) to ``<session_dir>/logs/audit.json``, or to
 ``--out``. Prints the verdict, the candidate count and the flags. The verdict is a reported field: the exit status is 0
 whenever a report was written, whatever the verdict. Exit status 2 means nothing was written because the cell log is
 missing, a log is malformed, or the cell log still has a cell in flight (run
-``cryowisp.sandbox.host.recover_interrupted_cell`` on it first).
+``cryowsp.sandbox.host.recover_interrupted_cell`` on it first).
 
 The harness writes its own report to ``<session_dir>/audit.json`` when a session finalises. A rerun with a changed
 auditor goes beside it, ``--out <session_dir>/audit.rerun<N>.json --no-overwrite``, so the report of record is never
@@ -17,7 +17,7 @@ settings that the verdict uses and (C) the configuration count, reported only.
 
 Example::
 
-    .venv/bin/python scripts/audit_session.py "$CRYOWISP_RUNS/sessions/<session_id>"
+    .venv/bin/python scripts/audit_session.py "$CRYOWSP_RUNS/sessions/<session_id>"
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    from cryowisp.audit.session import (
+    from cryowsp.audit.session import (
         AUDIT_FILENAME,
         DEFAULT_LABEL_KEYS,
         AuditInputError,

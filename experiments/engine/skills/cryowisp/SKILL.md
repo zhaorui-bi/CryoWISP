@@ -1,12 +1,12 @@
 ---
-name: cryowisp
-description: Install a capability in a trained neural network by synthesizing or reusing an executable weight program with CryoWISP, without gradient fine-tuning. Use when a user wants a trained model (first adapter: torchvision ResNet-18) to handle a new condition or class decision while keeping its old behaviour, wants to rerun a saved weight program on another checkpoint, or wants such an edit validated and exported. Ordinary source-code edits do not need this skill.
+name: cryowsp
+description: Install a capability in a trained neural network by synthesizing or reusing an executable weight program with CryoWSP, without gradient fine-tuning. Use when a user wants a trained model (first adapter: torchvision ResNet-18) to handle a new condition or class decision while keeping its old behaviour, wants to rerun a saved weight program on another checkpoint, or wants such an edit validated and exported. Ordinary source-code edits do not need this skill.
 ---
 
-# CryoWISP
+# CryoWSP
 
 Turn the user's capability request into a checked weight program and an independently runnable model. The
-CryoWISP engine executes programs, enforces edit/check budgets, selects candidates, and exports artifacts.
+CryoWSP engine executes programs, enforces edit/check budgets, selects candidates, and exports artifacts.
 This skill translates the task and operates that engine.
 
 ## Choose a workflow
@@ -20,7 +20,7 @@ This skill translates the task and operates that engine.
 - **Inspect/package:** explain or package an existing program without promising a capability gain.
 
 Read [references/workflow.md](references/workflow.md) for installation, commands, input layout and output meanings.
-Run `cryowisp --help` and `cryowisp doctor --sandbox-python <checkout>/.venv-sandbox/bin/python` before model
+Run `cryowsp --help` and `cryowsp doctor --sandbox-python <checkout>/.venv-sandbox/bin/python` before model
 editing; from outside the engine checkout, prefix each command with `uv run --project <checkout>`. If the engine is
 missing, use an isolated checkout/environment as described there. If the engine has not run on this machine before,
 or `doctor` fails, run the two no-API checks in its "Check the engine" section first. They write about 1.5 GB, so

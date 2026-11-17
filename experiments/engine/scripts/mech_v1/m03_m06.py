@@ -3,7 +3,7 @@
 Spec: docs/PREREG_v0_DRAFT.md (71d1602, entry "M03 and M06, fixed-component interventions on the E11 contrast
 program"); NSCC request R30-mech-m03-m06 (docs/NSCC_REQUESTS.md); background docs/MECHANISM_EVIDENCE_v1.md sections 3
 and 5. Every network is built from deltas already on disk; no check is spent and nothing is selected. Labels enter only
-the shared dev readout (``cryowisp.harness.clean.dev_readout_joint``) and the per-image correctness that the paired
+the shared dev readout (``cryowsp.harness.clean.dev_readout_joint``) and the per-image correctness that the paired
 bootstrap resamples, computed from the same predictions and labels.
 
 The contrast final s760cb52ce82fb937 (k145_gated_b2_r6_orig_targets.py) and the control (a) candidate (the same
@@ -53,12 +53,12 @@ THREADS = 4
 for _variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_variable] = str(THREADS)  # before numpy is imported, or BLAS ignores it
 sys.dont_write_bytecode = (
-    True  # importing an instance's forward.py must not write __pycache__ into $CRYOWISP_PRIVATE
+    True  # importing an instance's forward.py must not write __pycache__ into $CRYOWSP_PRIVATE
 )
 
 import numpy as np  # noqa: E402
 
-SCHEMA = "cryowisp.mech.m03_m06.v1"
+SCHEMA = "cryowsp.mech.m03_m06.v1"
 SPEC = (
     "docs/PREREG_v0_DRAFT.md 71d1602, 'M03 and M06, fixed-component interventions on the E11 contrast program'; "
     "NSCC R30-mech-m03-m06"
@@ -390,7 +390,7 @@ def loss_rows_against_w1(readout_vs_w1: Mapping[str, Any]) -> int:
 
 
 def runs_root() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return Path(runs_dir())
 
@@ -415,7 +415,7 @@ def utc_now() -> str:
 
 
 def jsonable(value: Any) -> Any:
-    from cryowisp.baselines.fit.runner import jsonable as convert
+    from cryowsp.baselines.fit.runner import jsonable as convert
 
     return convert(value)
 
@@ -442,7 +442,7 @@ def write_jsonl(path: Path, rows: Sequence[Mapping[str, Any]]) -> Path:
 
 
 def provenance() -> dict[str, Any]:
-    from cryowisp.baselines.fit.runner import git_state
+    from cryowsp.baselines.fit.runner import git_state
 
     return {
         "script": str(Path(__file__).resolve()),
@@ -459,8 +459,8 @@ def provenance() -> dict[str, Any]:
 
 
 def load_dev_instance(instance_id: str, condition: str) -> Any:
-    from cryowisp.baselines.instance_io import load_instance
-    from cryowisp.evalkit.instances import instances_root
+    from cryowsp.baselines.instance_io import load_instance
+    from cryowsp.evalkit.instances import instances_root
 
     inst = load_instance(instances_root() / instance_id)
     if inst.private.get("split_role") != "dev" or inst.private.get("condition") != condition:
@@ -474,9 +474,9 @@ def load_dev_instance(instance_id: str, condition: str) -> Any:
 
 def program_limits(inst: Any, params: Mapping[str, np.ndarray]) -> Any:
     """The LEARN program limits a derived patch is applied under (``loop_stream.select_round``)."""
-    from cryowisp.harness.arms import applied_limits
-    from cryowisp.harness.transfer import LEARN_ARM
-    from cryowisp.patch.limits import dense_delta_bytes
+    from cryowsp.harness.arms import applied_limits
+    from cryowsp.harness.transfer import LEARN_ARM
+    from cryowsp.patch.limits import dense_delta_bytes
 
     return applied_limits(
         inst.task["limits"],
@@ -488,8 +488,8 @@ def program_limits(inst: Any, params: Mapping[str, np.ndarray]) -> Any:
 
 def e10_limits_equal(inst: Any, params: Mapping[str, np.ndarray], limits: Any) -> bool:
     """Whether the LEARN program limits equal the E10 program limits the E11 session applied (informational)."""
-    from cryowisp.evalkit.e10 import e10_program_limits
-    from cryowisp.patch.limits import dense_delta_bytes
+    from cryowsp.evalkit.e10 import e10_program_limits
+    from cryowsp.patch.limits import dense_delta_bytes
 
     return (
         e10_program_limits(
@@ -503,7 +503,7 @@ def apply_derived_patch(
     parent: Mapping[str, np.ndarray], patch_file: Path, limits: Any, parent_sha: str
 ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Apply a derived patch with the patch executor; returns a writable copy of the child and the edit record."""
-    from cryowisp.patch import apply_patch, task_limits
+    from cryowsp.patch import apply_patch, task_limits
 
     patch = json.loads(patch_file.read_text(encoding="utf-8"))
     if patch.get("parent_sha256") != parent_sha:
@@ -556,7 +556,7 @@ def final_inputs() -> dict[str, Any]:
     info = json.loads(info_path.read_text(encoding="utf-8"))
     if info["final"]["child_sha256"] != FINAL_CHILD_SHA256:
         raise MechError("info.json's final is another child")
-    from cryowisp.common.identity import load_params, params_sha256
+    from cryowsp.common.identity import load_params, params_sha256
 
     return {
         "folder": folder,
@@ -586,7 +586,7 @@ def loop_paths() -> dict[str, Path]:
 
 def candidate_inputs() -> dict[str, Any]:
     """Control (a)'s round-2 candidate (the contrast program run unchanged on W1), checked against its record."""
-    from cryowisp.common.identity import load_params, params_sha256
+    from cryowsp.common.identity import load_params, params_sha256
 
     paths = loop_paths()
     require_sha(paths["json"], LOOP_JSON_SHA256)
@@ -667,10 +667,10 @@ _PRED: dict[tuple[str, str, int], np.ndarray] = {}
 
 
 def install_memo() -> None:
-    """Memoize ``cryowisp.evalkit.devreadout.predict`` on (params hash, rows hash, batch size): the same function on the
+    """Memoize ``cryowsp.evalkit.devreadout.predict`` on (params hash, rows hash, batch size): the same function on the
     same inputs, so no number changes. All instances read here share one forward.py (checked by the callers)."""
-    import cryowisp.evalkit.devreadout as devreadout
-    from cryowisp.common.identity import params_sha256
+    import cryowsp.evalkit.devreadout as devreadout
+    from cryowsp.common.identity import params_sha256
 
     if getattr(devreadout.predict, "_mech_memo", False):
         return
@@ -712,9 +712,9 @@ def readout(
 ) -> tuple[dict[str, Any], dict[str, Any], str]:
     """``dev_readout_joint`` of ``child`` on the instance's V_select and its clean companion, against the instance's
     base (``parent`` None) or against ``parent`` (the same function with the base replaced)."""
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE
-    from cryowisp.harness import clean
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE
+    from cryowsp.harness import clean
 
     install_memo()
     ref = (
@@ -732,8 +732,8 @@ def readout(
 
 def per_image_correct(inst: Any, params: Mapping[str, np.ndarray]) -> dict[str, np.ndarray]:
     """0/1 correctness per V_select row and per clean companion row, from the memoized predictions of the readout."""
-    import cryowisp.evalkit.devreadout as devreadout
-    from cryowisp.evalkit.companions import load_clean_rows
+    import cryowsp.evalkit.devreadout as devreadout
+    from cryowsp.evalkit.companions import load_clean_rows
 
     install_memo()
     cond = devreadout.readout_split(inst)
@@ -999,8 +999,8 @@ def network_internal(
 
 def image_sets(instances: Sequence[Any]) -> dict[str, np.ndarray]:
     """V_select inputs of each instance's condition, plus their shared clean companion (no labels kept)."""
-    import cryowisp.evalkit.devreadout as devreadout
-    from cryowisp.evalkit.companions import load_clean_rows
+    import cryowsp.evalkit.devreadout as devreadout
+    from cryowsp.evalkit.companions import load_clean_rows
 
     sets: dict[str, np.ndarray] = {}
     clean_x = None
@@ -1035,7 +1035,7 @@ def network_line(
     parent: Mapping[str, np.ndarray],
     parent_label: str,
 ) -> dict[str, Any]:
-    from cryowisp.common.identity import count_changed, params_sha256
+    from cryowsp.common.identity import count_changed, params_sha256
 
     return {
         "schema": SCHEMA,
@@ -1049,7 +1049,7 @@ def network_line(
 
 
 def cmd_m03(args: argparse.Namespace) -> int:
-    from cryowisp.common.identity import params_sha256
+    from cryowsp.common.identity import params_sha256
 
     out = out_dir(args)
     started = time.perf_counter()
@@ -1171,7 +1171,7 @@ def m06_readouts(
 
 
 def cmd_m06(args: argparse.Namespace) -> int:
-    from cryowisp.common.identity import params_sha256
+    from cryowsp.common.identity import params_sha256
 
     out = out_dir(args)
     started = time.perf_counter()
@@ -1183,7 +1183,7 @@ def cmd_m06(args: argparse.Namespace) -> int:
     cand = candidate_inputs()
     w1 = {key: np.array(value) for key, value in cand["w1"].items()}
     limits = program_limits(inst_c, w1)
-    from cryowisp.patch import task_limits
+    from cryowsp.patch import task_limits
 
     identity: dict[str, Any] = {
         "schema": SCHEMA,
@@ -1313,11 +1313,11 @@ def run_program_on_w1(
     """Run one program file on W1 with control (a)'s round-2 experience in the LEARN program sandbox (4 threads,
     8 GiB, 300 s), write its derived patch and apply it under control (a)'s limits. Returns the update, the run
     record and the edit record (with the child, or the refusal)."""
-    from cryowisp.harness.program import run_update, write_derived_patch
-    from cryowisp.harness.runner import DEFAULT_MEMORY_BYTES, SANDBOX_PYTHON
-    from cryowisp.harness.transfer import stage_student
-    from cryowisp.patch import PatchError
-    from cryowisp.sandbox.program import PROGRAM_WALL_S, ProgramSandbox
+    from cryowsp.harness.program import run_update, write_derived_patch
+    from cryowsp.harness.runner import DEFAULT_MEMORY_BYTES, SANDBOX_PYTHON
+    from cryowsp.harness.transfer import stage_student
+    from cryowsp.patch import PatchError
+    from cryowsp.sandbox.program import PROGRAM_WALL_S, ProgramSandbox
 
     work.mkdir(parents=True, mode=0o700)
     record_exp = {"content_sha256": ROUND2_EXPERIENCE_SHA256}
@@ -1371,7 +1371,7 @@ def cmd_m06b(args: argparse.Namespace) -> int:
         )
         print("M06b not run: the reading is not collision", flush=True)
         return 0
-    from cryowisp.common.identity import params_sha256
+    from cryowsp.common.identity import params_sha256
 
     started = time.perf_counter()
     inst_g = load_dev_instance(GAUSSIAN_ID, GAUSSIAN)
@@ -1459,7 +1459,7 @@ def cmd_m06b(args: argparse.Namespace) -> int:
     child = edit.pop("child")
     record["changed"] = {"run": run, "edit": edit}
     if child is None:  # refused under control (a)'s limits: recorded and read without the size limits
-        from cryowisp.patch import apply_patch
+        from cryowsp.patch import apply_patch
 
         unbounded = dataclasses.replace(program_limits(inst_c, w1), max_rel_frob=None, max_changed_frac=None)
         patch_file = work / "changed" / "patch" / "derived_patch.json"

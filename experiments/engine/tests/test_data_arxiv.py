@@ -2,7 +2,7 @@
 export of both protocols through a toy store.
 
 A small random RawGraph stands in for the official zip (split sizes shrunk with monkeypatch); the store is a tmp
-directory (CRYOWISP_PRIVATE and CRYOWISP_SEALED point there), never the real one.
+directory (CRYOWSP_PRIVATE and CRYOWSP_SEALED point there), never the real one.
 """
 
 from __future__ import annotations
@@ -14,12 +14,12 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.data import arxiv as A
-from cryowisp.data.store import forward_path, models_dir, read_dataset_json, read_json
-from cryowisp.models import gcn as G
-from cryowisp.models import gcn_export as E
-from cryowisp.models.export import load_forward_no_cache
-from cryowisp.models.forward_gen import render_gcn_forward, write_forward
+from cryowsp.data import arxiv as A
+from cryowsp.data.store import forward_path, models_dir, read_dataset_json, read_json
+from cryowsp.models import gcn as G
+from cryowsp.models import gcn_export as E
+from cryowsp.models.export import load_forward_no_cache
+from cryowsp.models.forward_gen import render_gcn_forward, write_forward
 
 N_TRAIN, N_VALID, N_TEST, N_FEAT = 60, 30, 20, 6
 
@@ -138,7 +138,7 @@ def test_inductive_snapshots_are_the_induced_subgraphs(raw: A.RawGraph) -> None:
 def test_export_trains_on_the_role_graph_and_checks_on_the_deployment_graph(
     raw: A.RawGraph, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, protocol: str
 ) -> None:
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED"):
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED"):
         (tmp_path / variable).mkdir()
         monkeypatch.setenv(variable, str(tmp_path / variable))
     built = A.build(raw) if protocol == "transductive" else A.build_inductive(raw)
@@ -202,10 +202,10 @@ def test_newclass_student_trains_on_the_train_classes_only(
 ) -> None:
     """PREREG E7: a newclass student trains on graph_train.npz with the labels of its train classes only, goes to the
     fewshot store with a FEWSHOT_INDEX_KEYS row, and records the class draw."""
-    from cryowisp.data import arxiv_classes as K
-    from cryowisp.models.export import FEWSHOT_INDEX_KEYS, fewshot_models_dir
+    from cryowsp.data import arxiv_classes as K
+    from cryowsp.models.export import FEWSHOT_INDEX_KEYS, fewshot_models_dir
 
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED"):
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED"):
         (tmp_path / variable).mkdir()
         monkeypatch.setenv(variable, str(tmp_path / variable))
     monkeypatch.setattr(K, "MIN_EVIDENCE_ROWS", 1)

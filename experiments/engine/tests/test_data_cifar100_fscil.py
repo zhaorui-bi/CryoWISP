@@ -1,9 +1,9 @@
-"""cryowisp.data.cifar100_fscil (PREREG E9): the store of CIFAR-100 under the TOPIC/CEC few-shot class-incremental
+"""cryowsp.data.cifar100_fscil (PREREG E9): the store of CIFAR-100 under the TOPIC/CEC few-shot class-incremental
 protocol.
 
 A tiny synthetic archive with the official pickle layout and synthetic session lists stand in for the real files
-(per-class sizes and file hashes shrunk or replaced with monkeypatch); the store is a tmp directory (CRYOWISP_PRIVATE and
-CRYOWISP_SEALED point there), never the real one.
+(per-class sizes and file hashes shrunk or replaced with monkeypatch); the store is a tmp directory (CRYOWSP_PRIVATE and
+CRYOWSP_SEALED point there), never the real one.
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.data import cifar100_fscil as C
-from cryowisp.data.store import read_dataset_json, sealed_test_path, split_sha256
+from cryowsp.data import cifar100_fscil as C
+from cryowsp.data.store import read_dataset_json, sealed_test_path, split_sha256
 
 N_TRAIN, N_TEST = 10, 2
 BASE = {"old_select": 1, "old_check": 1, "old_replay": 1, "train": 7}
@@ -89,7 +89,7 @@ def _fake_files(root: Path) -> tuple[Path, Path, dict]:
 
 @pytest.fixture()
 def fake(tmp_path, monkeypatch):
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED"):
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED"):
         (tmp_path / variable).mkdir()
         monkeypatch.setenv(variable, str(tmp_path / variable))
     files = tmp_path / "downloads"

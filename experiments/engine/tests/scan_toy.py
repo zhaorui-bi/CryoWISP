@@ -4,7 +4,7 @@
 command without jump plus "jump" 1467 times and its test every other command with jump; around_right's train is
 every command without "around right" (15,225) and its test every command with it except the 1,209 with "turn around
 right", which the official template split leaves out of both files (4,476).
-``scan.RAW_SHA256`` is patched to these files' hashes, and CRYOWISP_PRIVATE, CRYOWISP_SEALED and CRYOWISP_RUNS point into the
+``scan.RAW_SHA256`` is patched to these files' hashes, and CRYOWSP_PRIVATE, CRYOWSP_SEALED and CRYOWSP_RUNS point into the
 test's tmp dir. ``built_store`` also installs the raw copy, forward.py and both conditions.
 """
 
@@ -15,8 +15,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.data import scan as S
-from cryowisp.data import scan_build as B
+from cryowsp.data import scan as S
+from cryowsp.data import scan_build as B
 
 
 def _write(path: Path, rows: list[str]) -> None:
@@ -50,9 +50,9 @@ def fake_raw(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(S, "RAW_SHA256", {rel: S.file_sha256(raw / rel) for rel in S.RAW_SHA256})
     for name in ("private", "sealed", "runs"):
         (tmp_path / name).mkdir(exist_ok=True)
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(tmp_path / "sealed"))
-    monkeypatch.setenv("CRYOWISP_RUNS", str(tmp_path / "runs"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(tmp_path / "sealed"))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(tmp_path / "runs"))
     return raw
 
 
@@ -73,12 +73,12 @@ def store_with_students(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, seed: i
 
     import torch
 
-    from cryowisp.data.scan_build import checked_split
-    from cryowisp.data.store import read_dataset_json
-    from cryowisp.evalkit import scanskill
-    from cryowisp.models import scan_export
-    from cryowisp.models import train_scan as TS
-    from cryowisp.models.export import write_index
+    from cryowsp.data.scan_build import checked_split
+    from cryowsp.data.store import read_dataset_json
+    from cryowsp.evalkit import scanskill
+    from cryowsp.models import scan_export
+    from cryowsp.models import train_scan as TS
+    from cryowsp.models.export import write_index
 
     built_store(tmp_path, monkeypatch)
     monkeypatch.setattr(scan_export, "GATE_EM", 0.0)

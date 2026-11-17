@@ -1,4 +1,4 @@
-"""CEC's replace_base_fc on the E9 students (``cryowisp.models.fscil_export.replace_base_fc``), on the toy store."""
+"""CEC's replace_base_fc on the E9 students (``cryowsp.models.fscil_export.replace_base_fc``), on the toy store."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 from fscil_toy import add_toy_allclass, toy_fscil  # noqa: F401
 
-from cryowisp.common.identity import load_params
-from cryowisp.data.store import read_dataset_json
-from cryowisp.evalkit import fscil as FS
-from cryowisp.models import fscil_export as X
-from cryowisp.models.export import fewshot_models_dir, read_fewshot_index
+from cryowsp.common.identity import load_params
+from cryowsp.data.store import read_dataset_json
+from cryowsp.evalkit import fscil as FS
+from cryowsp.models import fscil_export as X
+from cryowsp.models.export import fewshot_models_dir, read_fewshot_index
 
 
 def test_replace_base_fc_sets_class_means_and_supersedes(toy_fscil) -> None:  # noqa: F811

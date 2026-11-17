@@ -25,17 +25,17 @@ from test_harness_fixtures import (  # noqa: F401
     scripted_session,
 )
 
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.evalkit.devreadout import dev_readout, final_child
-from cryowisp.evalkit.evidence import load_evidence
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.harness.finalize import run_record
-from cryowisp.harness.launch import KILL_REASON_WALL, LaunchOutcome
-from cryowisp.harness.runner import run_session
-from cryowisp.harness.scripted import McpError, ScriptedLauncher
-from cryowisp.harness.session import SessionPaths, new_session_id
-from cryowisp.patch import Limits, apply_patch_file
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.evalkit.devreadout import dev_readout, final_child
+from cryowsp.evalkit.evidence import load_evidence
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.harness.finalize import run_record
+from cryowsp.harness.launch import KILL_REASON_WALL, LaunchOutcome
+from cryowsp.harness.runner import run_session
+from cryowsp.harness.scripted import McpError, ScriptedLauncher
+from cryowsp.harness.session import SessionPaths, new_session_id
+from cryowsp.patch import Limits, apply_patch_file
 
 pytestmark = needs_sandbox
 
@@ -424,7 +424,7 @@ def test_the_selftest_aborts_a_session_whose_paths_name_an_arm(
 ) -> None:
     runs = harness_store.store.root / "decoy_runs"
     runs.mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(runs))
     launcher = ScriptedLauncher(lambda client, replies: pytest.fail("the editor must not be launched"))
     result = run_session(
         harness_store.dev(100), "M2", 0, effort="low", wall_timeout_s=60.0, launcher=launcher
@@ -468,7 +468,7 @@ def test_an_aborted_dry_run_writes_no_run_record_and_no_manifest_line(
 ) -> None:
     runs = harness_store.store.root / ("decoy_runs" if abort == "aborted_selftest" else "runs_b")
     runs.mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(runs))
     override = "Improve the decoy classifier." if abort == "aborted_leak" else None
     result = run_session(
         harness_store.dev(100),

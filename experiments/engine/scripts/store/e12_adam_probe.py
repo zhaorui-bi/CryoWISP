@@ -35,10 +35,10 @@ def main(argv: list[str] | None = None) -> int:
     torch.set_num_threads(args.threads)
     if args.no_mkldnn:
         torch.backends.mkldnn.enabled = False
-    from cryowisp.baselines.fit.cli import load_checked_instances
-    from cryowisp.baselines.fit.grad import adam_checkpoints
-    from cryowisp.baselines.fit.runner import load_joint_evidence, read_model_spec
-    from cryowisp.baselines.fit.torch_forward import architecture_from, images_tensor, trainable_tensors
+    from cryowsp.baselines.fit.cli import load_checked_instances
+    from cryowsp.baselines.fit.grad import adam_checkpoints
+    from cryowsp.baselines.fit.runner import load_joint_evidence, read_model_spec
+    from cryowsp.baselines.fit.torch_forward import architecture_from, images_tensor, trainable_tensors
 
     instance = load_checked_instances([args.instance], allow_main=False)[0]
     evidence = load_joint_evidence(instance)

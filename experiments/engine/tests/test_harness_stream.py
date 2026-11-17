@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from cryowisp.harness.finalize import (
+from cryowsp.harness.finalize import (
     KEEPS_FINAL_PATCH,
     STATUS_COMPLETE,
     STATUS_CRASHED,
@@ -20,8 +20,8 @@ from cryowisp.harness.finalize import (
     STATUS_TIMED_OUT,
     classify,
 )
-from cryowisp.harness.launch import KILL_REASON_WALL, LaunchOutcome
-from cryowisp.harness.stream import infra_reasons, parse_stream
+from cryowsp.harness.launch import KILL_REASON_WALL, LaunchOutcome
+from cryowsp.harness.stream import infra_reasons, parse_stream
 
 RECORDED: list[dict[str, Any]] = [
     {
@@ -30,12 +30,12 @@ RECORDED: list[dict[str, Any]] = [
         "model": "claude-opus-5-5",
         "claude_code_version": "2.1.311",
         "tools": [
-            "mcp__cryowisp__declare_final",
-            "mcp__cryowisp__patch_check",
-            "mcp__cryowisp__python",
-            "mcp__cryowisp__status",
+            "mcp__cryowsp__declare_final",
+            "mcp__cryowsp__patch_check",
+            "mcp__cryowsp__python",
+            "mcp__cryowsp__status",
         ],
-        "mcp_servers": [{"name": "cryowisp", "status": "connected", "source": "dynamic"}],
+        "mcp_servers": [{"name": "cryowsp", "status": "connected", "source": "dynamic"}],
         "permissionMode": "default",
         "apiKeySource": "none",
     },
@@ -46,7 +46,7 @@ RECORDED: list[dict[str, Any]] = [
                 {
                     "type": "tool_use",
                     "id": "toolu_01JymJcc3JEtbajCBzfKA3wZ",
-                    "name": "mcp__cryowisp__python",
+                    "name": "mcp__cryowsp__python",
                     "input": {},
                 }
             ]
@@ -94,7 +94,7 @@ RECORDED: list[dict[str, Any]] = [
                 {
                     "type": "tool_use",
                     "id": "toolu_0168Xu3gyTMycSWMjiCtJfdS",
-                    "name": "mcp__cryowisp__python",
+                    "name": "mcp__cryowsp__python",
                     "input": {},
                 }
             ]
@@ -145,7 +145,7 @@ def test_the_recorded_transcript_parses_and_is_a_complete_session(tmp_path: Path
     view = summary.as_dict()
     assert view["n_lines"] == 7 and view["n_unparsed"] == 1
     assert view["init"]["model"] == "claude-opus-5-5" and view["init"]["claude_code_version"] == "2.1.311"
-    assert view["tool_calls"] == {"mcp__cryowisp__python": 2} and view["n_tool_errors"] == 0
+    assert view["tool_calls"] == {"mcp__cryowsp__python": 2} and view["n_tool_errors"] == 0
     assert view["n_rate_limit_events"] == 1
     rate = view["rate_limit_last"]
     assert (

@@ -9,10 +9,10 @@ from dataclasses import asdict
 import numpy as np
 import pytest
 
-from cryowisp.baselines.search.arachne import arachne_fitness, layer_bounds, pareto_front, sample_positives
-from cryowisp.baselines.search.care import periodic_bounds
-from cryowisp.baselines.search.evidence import CountedForward, build_evidence_sets, evidence_readout
-from cryowisp.baselines.search.limits import (
+from cryowsp.baselines.search.arachne import arachne_fitness, layer_bounds, pareto_front, sample_positives
+from cryowsp.baselines.search.care import periodic_bounds
+from cryowsp.baselines.search.evidence import CountedForward, build_evidence_sets, evidence_readout
+from cryowsp.baselines.search.limits import (
     EditLimitError,
     EditLimits,
     check_limits,
@@ -20,10 +20,10 @@ from cryowisp.baselines.search.limits import (
     limit_violations,
     shrink_to_radius,
 )
-from cryowisp.baselines.search.netspec import cross_entropy
-from cryowisp.baselines.search.runner import looser_than
-from cryowisp.baselines.search.selection import Trajectory, select_for_query
-from cryowisp.patch import Limits
+from cryowsp.baselines.search.netspec import cross_entropy
+from cryowsp.baselines.search.runner import looser_than
+from cryowsp.baselines.search.selection import Trajectory, select_for_query
+from cryowsp.patch import Limits
 
 # Explicit limits for the arithmetic tests, independent of the executor's current values.
 OLD_STYLE = EditLimits(max_changed_frac=0.05, max_edit_frac=None, max_rel_frob=0.5, rel_frob_min_ndim=1)

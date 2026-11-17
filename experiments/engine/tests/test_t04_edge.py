@@ -11,11 +11,11 @@ from typing import Any
 
 import pytest
 
-from cryowisp.baselines.fit import bnrefs as BN
-from cryowisp.baselines.fit import cli as C
-from cryowisp.baselines.fit import ftcompare as FT
-from cryowisp.baselines.fit import grad as G
-from cryowisp.common.paths import relocate_run_path
+from cryowsp.baselines.fit import bnrefs as BN
+from cryowsp.baselines.fit import cli as C
+from cryowsp.baselines.fit import ftcompare as FT
+from cryowsp.baselines.fit import grad as G
+from cryowsp.common.paths import relocate_run_path
 
 ROOT = Path(__file__).parents[1]
 _spec = importlib.util.spec_from_file_location("t04_edge_extension", ROOT / "scripts/t04/edge_extension.py")

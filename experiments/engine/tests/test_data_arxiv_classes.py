@@ -1,6 +1,6 @@
 """Rule graphnew-classes-v1 (PREREG E7) on toy class counts: eligibility, the seeded draw and the sidecar record.
 
-The store is a tmp directory (CRYOWISP_PRIVATE points there), never the real one.
+The store is a tmp directory (CRYOWSP_PRIVATE points there), never the real one.
 """
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.data import arxiv as A
-from cryowisp.data import arxiv_classes as K
-from cryowisp.data.registry import SPLIT_SEED
+from cryowsp.data import arxiv as A
+from cryowsp.data import arxiv_classes as K
+from cryowsp.data.registry import SPLIT_SEED
 
 
 def _meta() -> dict:
@@ -61,7 +61,7 @@ def test_too_few_eligible_classes_are_refused() -> None:
 
 
 def test_sidecar_is_written_once_and_checked(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path))
     folder = tmp_path / K.DATASET
     folder.mkdir()
     (folder / "dataset.json").write_text(json.dumps(_meta()), encoding="utf-8")

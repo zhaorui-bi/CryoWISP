@@ -16,12 +16,12 @@ import pytest
 import scan_toy
 import torch
 
-from cryowisp.data import scan as S
-from cryowisp.data.scan_build import checked_split
-from cryowisp.data.store import models_dir, read_dataset_json, read_json, write_json
-from cryowisp.models import train_scan as TS
-from cryowisp.models.export import read_index
-from cryowisp.models.scan_export import build_spec, export_scan_model, import_scan_models
+from cryowsp.data import scan as S
+from cryowsp.data.scan_build import checked_split
+from cryowsp.data.store import models_dir, read_dataset_json, read_json, write_json
+from cryowsp.models import train_scan as TS
+from cryowsp.models.export import read_index
+from cryowsp.models.scan_export import build_spec, export_scan_model, import_scan_models
 
 TINY = dataclasses.replace(
     TS.SIZE_STEPS[0],
@@ -170,7 +170,7 @@ def test_import_refuses_smoke_and_a_spec_that_differs(store: Path, tmp_path: Pat
 
 
 def test_spec_builder_refuses_a_forbidden_term() -> None:
-    from cryowisp.models import transformer as T
+    from cryowsp.models import transformer as T
 
     config = TINY.model_config()
     params = T.export_seq_params(T.build_seq_model(config))

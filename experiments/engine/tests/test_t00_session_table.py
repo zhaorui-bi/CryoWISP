@@ -178,7 +178,7 @@ def store(tmp_path: Path) -> dict[str, Path]:
     _w(
         readings,
         {
-            "schema": "cryowisp.t00.session_readings.v1",
+            "schema": "cryowsp.t00.session_readings.v1",
             "sessions": {
                 SID_DONE: {
                     "experiment": "TOY",

@@ -1,4 +1,4 @@
-"""PREREG F1s (``cryowisp.baselines.fit.f1s``): configurations, augmentation, the label-free corruption estimate."""
+"""PREREG F1s (``cryowsp.baselines.fit.f1s``): configurations, augmentation, the label-free corruption estimate."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import torch
 from test_e11_refs import _instance, _student
 from test_ft_compare import _joint_evidence
 
-from cryowisp.baselines.fit import f1s as S
+from cryowsp.baselines.fit import f1s as S
 
 SHAPE = (3, 32, 32)
 
@@ -91,8 +91,8 @@ def test_generator_candidates(tmp_path, monkeypatch: pytest.MonkeyPatch, method:
 
 
 def test_warmup_scales_first_steps(tmp_path) -> None:
-    from cryowisp.baselines.fit.runner import read_model_spec
-    from cryowisp.baselines.fit.torch_forward import architecture_from, images_tensor
+    from cryowsp.baselines.fit.runner import read_model_spec
+    from cryowsp.baselines.fit.torch_forward import architecture_from, images_tensor
 
     params = _student(7)
     instance = _instance(tmp_path, params)

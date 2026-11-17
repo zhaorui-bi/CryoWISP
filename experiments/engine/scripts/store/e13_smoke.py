@@ -18,7 +18,7 @@ the timings set the main job's layout and walltime.
 
     python -B scripts/store/e13_smoke.py time --condition addprim_jump --threads 1 --device cuda --steps 20
     python -B scripts/store/e13_smoke.py paths --condition addprim_jump --method lora_r4 --threads 1 \\
-        --device cuda --out-root "$CRYOWISP_RUNS/smoke_paths"
+        --device cuda --out-root "$CRYOWSP_RUNS/smoke_paths"
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     opened: set[str] = set()
     store_roots = tuple(
         os.path.realpath(os.environ[name]) + os.sep
-        for name in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS")
+        for name in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS")
     )
 
     def hook(event: str, hook_args: tuple) -> None:
@@ -68,11 +68,11 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit import scanrefs as R
-    from cryowisp.baselines.fit import seqgrad as SG
-    from cryowisp.baselines.fit.cli import summary_line
-    from cryowisp.baselines.fit.runner import load_scan_evidence
-    from cryowisp.evalkit import scanskill as K
+    from cryowsp.baselines.fit import scanrefs as R
+    from cryowsp.baselines.fit import seqgrad as SG
+    from cryowsp.baselines.fit.cli import summary_line
+    from cryowsp.baselines.fit.runner import load_scan_evidence
+    from cryowsp.evalkit import scanskill as K
 
     def emit(**record: object) -> None:
         print(json.dumps(record), flush=True)
@@ -88,9 +88,9 @@ def main(argv: list[str] | None = None) -> int:
         torch_threads=torch.get_num_threads(),
         nproc=os.cpu_count(),
         device=settings,
-        cryowisp_private=os.environ.get("CRYOWISP_PRIVATE"),
-        cryowisp_runs=os.environ.get("CRYOWISP_RUNS"),
-        sealed_entries=len(os.listdir(os.environ["CRYOWISP_SEALED"])),
+        cryowsp_private=os.environ.get("CRYOWSP_PRIVATE"),
+        cryowsp_runs=os.environ.get("CRYOWSP_RUNS"),
+        sealed_entries=len(os.listdir(os.environ["CRYOWSP_SEALED"])),
     )
     (instance_id,) = K.active_scan_ids(args.condition)
 

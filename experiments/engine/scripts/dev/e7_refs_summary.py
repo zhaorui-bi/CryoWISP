@@ -12,7 +12,7 @@ Writes one JSON record (refuses to overwrite) and prints the table:
   floor round((n_c / 100) (R - 0.11 + 164.5 sqrt(d / n_c + d / n_s))) clamped to [-20, 0] (PREREG E7 kept rule).
 
     .venv/bin/python scripts/dev/e7_refs_summary.py --refs REFS.jsonl --kept KEPT.jsonl \\
-        --validity $CRYOWISP_RUNS/devreadouts/e7_validity_s100_dev_20261104.json --out SUMMARY.json
+        --validity $CRYOWSP_RUNS/devreadouts/e7_validity_s100_dev_20261104.json --out SUMMARY.json
 """
 
 from __future__ import annotations
@@ -105,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     gate = [x for x in rows if x["method"] not in GATE_EXCLUDED]
     best = max(gate, key=lambda x: x["vselect_all_acc"])
     summary = {
-        "schema": "cryowisp.e7_refs_summary.v1",
+        "schema": "cryowsp.e7_refs_summary.v1",
         "instance_id": refs[0]["instance_id"],
         "inputs": {str(p): sha256(p) for p in (args.refs, args.kept, args.validity)},
         "R_points": r_points,

@@ -13,7 +13,7 @@ each pass over a part by a torch generator seeded with the run seed (the same se
 Candidates: lr {1e-5, 1e-4} x steps {30, 100, 300, 1000}, eight, checked once each on the condition's V_check and
 the clean V_check by the joint oracle, kept by joint-retain-v1 like every reference, read on V_select by the dev
 readout. Edit limits are not enforced (as grad_full). The run goes to
-``$CRYOWISP_RUNS/baselines/<instance>/ft_large/t04/<seed>/``. It is a diagnostic of what labelled data at scale buys, read
+``$CRYOWSP_RUNS/baselines/<instance>/ft_large/t04/<seed>/``. It is a diagnostic of what labelled data at scale buys, read
 beside the bar and never part of it.
 """
 
@@ -28,8 +28,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from cryowisp.baselines.fit.grad import ADAM_BETAS, ADAM_EPS
-from cryowisp.baselines.fit.runner import (
+from cryowsp.baselines.fit.grad import ADAM_BETAS, ADAM_EPS
+from cryowsp.baselines.fit.runner import (
     CandidatePatch,
     Evidence,
     MethodSpec,
@@ -37,7 +37,7 @@ from cryowisp.baselines.fit.runner import (
     execute_run,
     read_model_spec,
 )
-from cryowisp.baselines.fit.torch_forward import (
+from cryowsp.baselines.fit.torch_forward import (
     architecture_from,
     assert_parity,
     images_tensor,
@@ -45,12 +45,12 @@ from cryowisp.baselines.fit.torch_forward import (
     to_tensors,
     trainable_tensors,
 )
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.data import t04 as T
-from cryowisp.data.store import load_split, read_dataset_json, split_sha256
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.evalkit.patch_check import predict
-from cryowisp.evalkit.targets import deployment_splits, load_checked_split
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.data import t04 as T
+from cryowsp.data.store import load_split, read_dataset_json, split_sha256
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.evalkit.patch_check import predict
+from cryowsp.evalkit.targets import deployment_splits, load_checked_split
 
 METHOD = "ft_large"
 REF_LABEL = "t04"

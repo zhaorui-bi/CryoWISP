@@ -1,8 +1,8 @@
 """PREREG T07 (applicability range): the image sets, and the dev rows of the conditions no dev row exists for yet.
 
     <cifarc venv>/bin/python -I scripts/t07/t07_conditions.py make --official MAKE_CIFAR_C_PY --frost-dir FROST_DIR \\
-        --clean-dir $CRYOWISP_PRIVATE/cifar10/splits --dev-rows $CRYOWISP_PRIVATE/e10_staging/dev_rows_20261104 \\
-        --out-dir $CRYOWISP_PRIVATE/t07_conditions/v1
+        --clean-dir $CRYOWSP_PRIVATE/cifar10/splits --dev-rows $CRYOWSP_PRIVATE/e10_staging/dev_rows_20261104 \\
+        --out-dir $CRYOWSP_PRIVATE/t07_conditions/v1
 
 The T07 sets are the 4000 clean V_select rows that every E10, E11 and E12 instance reads (split sha256 75b0a7c4...,
 the same rows in cifar10, cifar10_r20, cifar10_vl7 and cifar10_r18), each with one corruption applied: ``SETS``,
@@ -45,7 +45,7 @@ from typing import Any
 
 import numpy as np
 
-SCHEMA = "cryowisp.t07.conditions.v1"
+SCHEMA = "cryowsp.t07.conditions.v1"
 REGISTRY = (
     "gaussian_noise",
     "shot_noise",
@@ -76,7 +76,7 @@ NOT_RUNNABLE = {
 DEV_USED = ("gaussian_noise", "defocus_blur", "snow", "contrast")
 """Official corruptions some line of the project read dev rows of (all at severity 5): E10 all four (and its stream,
 control (a), F4, T09-A); E11, E12, the E11 stream, T16, F1, F1s, F2 and K1 gaussian_noise and contrast. E1 to E4 used
-their own gaussian_noise_s3 and contrast_s3 transcriptions (cryowisp/data/conditions.py), not the official code."""
+their own gaussian_noise_s3 and contrast_s3 transcriptions (cryowsp/data/conditions.py), not the official code."""
 OWN = ("gaussian_noise", "contrast")
 """The corruptions of the T07 finals (E11 and E12 B, seed 100)."""
 OWN_NEW_SEVERITIES = (1, 2, 3, 4)
@@ -325,7 +325,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     make = sub.add_parser("make", help="the reproduction check, then the 21 new sets")
     make.add_argument("--official", required=True, help="local copy of make_cifar_c.py (sha256 checked)")
     make.add_argument("--frost-dir", required=True, help="the six frost files of the pinned commit")
-    make.add_argument("--clean-dir", required=True, help="$CRYOWISP_PRIVATE/cifar10/splits")
+    make.add_argument("--clean-dir", required=True, help="$CRYOWSP_PRIVATE/cifar10/splits")
     make.add_argument("--dev-rows", required=True, help="E10's dev rows directory (dev_rows.json)")
     make.add_argument("--out-dir", required=True)
     make.add_argument("--spec", required=True, help="the PREREG commit the sets are made under")

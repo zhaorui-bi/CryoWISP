@@ -1,7 +1,7 @@
-"""``UnisolatedRunner``: the update-program driver without bubblewrap (``cryowisp.sandbox.program``).
+"""``UnisolatedRunner``: the update-program driver without bubblewrap (``cryowsp.sandbox.program``).
 
 It exists to replay published, hash-checked programs on machines without a suitable bubblewrap
-(``cryowisp reproduce``). It must behave like the sandbox in everything but isolation: on the learn toy store the
+(``cryowsp reproduce``). It must behave like the sandbox in everything but isolation: on the learn toy store the
 programs of test_sandbox_program_clock give the deltas.npz bytes that the sandboxed driver gave, the virtual clock is
 installed, the wall limit still stops a program, and the launcher leaves the driver file unchanged. None of these tests
 needs bubblewrap.
@@ -17,8 +17,8 @@ import pytest
 from test_harness_learn import LearnStore, _assembled, _student, _write_program, learn_store  # noqa: F401
 from test_sandbox_program_clock import BEFORE_DELTAS_SHA256, BUDGET, POLL_FOREVER
 
-from cryowisp.harness.program import ProgramProblem, Update, run_update
-from cryowisp.sandbox.program import (
+from cryowsp.harness.program import ProgramProblem, Update, run_update
+from cryowsp.sandbox.program import (
     DRIVER_SCRIPT,
     ISOLATION_NONE,
     LAUNCHER_SCRIPT,

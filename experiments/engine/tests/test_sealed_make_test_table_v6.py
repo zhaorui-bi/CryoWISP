@@ -11,9 +11,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit.sealed import manifest_sha256
-from cryowisp.evalkit.sealed_range import per_image
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit.sealed import manifest_sha256
+from cryowsp.evalkit.sealed_range import per_image
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(

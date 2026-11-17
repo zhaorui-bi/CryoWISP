@@ -7,10 +7,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.data import colored
-from cryowisp.data.registry import DATASETS, SPLIT_NAMES, SPLIT_SEED
-from cryowisp.data.splits import largest_remainder_quota, stratified_split
-from cryowisp.data.store import channel_stats, load_split, save_split, split_path, split_sha256
+from cryowsp.data import colored
+from cryowsp.data.registry import DATASETS, SPLIT_NAMES, SPLIT_SEED
+from cryowsp.data.splits import largest_remainder_quota, stratified_split
+from cryowsp.data.store import channel_stats, load_split, save_split, split_path, split_sha256
 
 MNIST_CLASS_COUNTS = np.array([5923, 6742, 5958, 6131, 5842, 5421, 5918, 6265, 5851, 5949])
 
@@ -125,7 +125,7 @@ def test_channel_stats_are_exact() -> None:
 def test_split_storage_roundtrip_and_test_set_refusal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path))
     rng = np.random.default_rng(4)
     arrays = {
         "x": rng.integers(0, 256, size=(6, 3, 4, 4), dtype=np.uint8),

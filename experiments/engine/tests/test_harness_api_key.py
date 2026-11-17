@@ -1,4 +1,4 @@
-"""The editor's API-key billing option (cryowisp.harness.launch: read_api_key, billing_record, ClaudeLauncher)."""
+"""The editor's API-key billing option (cryowsp.harness.launch: read_api_key, billing_record, ClaudeLauncher)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.harness import launch
+from cryowsp.harness import launch
 
 SESSION = {"mcp": {"tool_timeout_ms": 1000, "connect_timeout_ms": 1000}}
 KEY = "sk-test-not-a-real-key-0123456789"

@@ -1,4 +1,4 @@
-"""cryowisp.analysis.vit_internal: the block-level trace against the ViT forward.py template, gate parsing and checks,
+"""cryowsp.analysis.vit_internal: the block-level trace against the ViT forward.py template, gate parsing and checks,
 the accumulated statistics and the descriptive rank correlation, on toy networks with known answers."""
 
 from __future__ import annotations
@@ -6,9 +6,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import cryowisp.analysis.vit_internal as V
-from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.models import vit_synth
+import cryowsp.analysis.vit_internal as V
+from cryowsp.evalkit.patch_check import load_forward
+from cryowsp.models import vit_synth
 
 K = V.GAUSSIAN_K_RAMP
 

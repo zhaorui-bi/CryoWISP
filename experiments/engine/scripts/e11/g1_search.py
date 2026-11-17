@@ -6,7 +6,7 @@ contrast_s5). Information: the session's experience (64 condition rows x_new, 64
 student. E10 program limits, joint-retain-v1 (S_old >= -20 of 4000), at most 8 checks on V_check, the pick read on
 V_select. No sealed data.
 
-Stages (each writes ``$CRYOWISP_RUNS/devreadouts/g1/g1_<condition>_<stage>.jsonl`` with a .sha256, never overwritten):
+Stages (each writes ``$CRYOWSP_RUNS/devreadouts/g1/g1_<condition>_<stage>.jsonl`` with a .sha256, never overwritten):
 
 * ``selftest``: realization identities and limit feasibility of the builders. Reads no label and no V_ split.
 * ``singles [--shard i/n]`` then ``merge``: every member of the family at every strength: built on the student, checked against the E10 limits,
@@ -61,7 +61,7 @@ _spec.loader.exec_module(mech)
 SMOKE = int(os.environ.get("G1_SMOKE", "0"))
 """G1_SMOKE=N: the first N members only, records under devreadouts/g1_smoke (never the record of record). A smoke run
 exercises every stage on the real inputs; its records are not read for results."""
-SCHEMA = "cryowisp.g1.v1"
+SCHEMA = "cryowsp.g1.v1"
 SPEC = "docs/PREREG_v0_DRAFT.md G1 entry and its realization amendment (main 5bd3817)"
 TOP_SINGLES = 5
 MAX_MEMBERS = 3
@@ -513,7 +513,7 @@ def apply_member(
 
 
 def limits_stats(ctx: Ctx, child: Mapping[str, np.ndarray]) -> dict[str, Any]:
-    from cryowisp.baselines.fit.edits import edit_stats_under
+    from cryowsp.baselines.fit.edits import edit_stats_under
 
     return edit_stats_under(ctx.base, child, ctx.limits)
 
@@ -562,7 +562,7 @@ def largest_feasible(ctx: Ctx, m: Member, hi: float, steps: int = 14) -> float |
 
 
 def params_sha(params: Mapping[str, np.ndarray]) -> str:
-    from cryowisp.common.identity import params_sha256
+    from cryowsp.common.identity import params_sha256
 
     return params_sha256(params)
 
@@ -598,7 +598,7 @@ def write_records(instance_id: str, stage: str, records: Sequence[Mapping[str, A
     path = folder / f"g1_{CONDITION[instance_id]}_{stage}.jsonl"
     if path.exists():
         raise G1Error(f"{path} exists; records are never overwritten")
-    from cryowisp.baselines.fit.runner import jsonable
+    from cryowsp.baselines.fit.runner import jsonable
 
     path.write_text(
         "".join(json.dumps(jsonable(r), sort_keys=True, allow_nan=False) + "\n" for r in records),
@@ -803,8 +803,8 @@ def cmd_search(ctx: Ctx, instance_id: str) -> list[dict[str, Any]]:
 def run_checks(ctx: Ctx, instance_id: str, chosen: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     """execute_run over the chosen candidates (joint oracle, E10 limits, at most 8 checks), then the joint-retain-v1
     pick read on V_select."""
-    from cryowisp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
-    from cryowisp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_retention
+    from cryowsp.baselines.fit.runner import CandidatePatch, MethodSpec, execute_run
+    from cryowsp.evalkit.devreadout import DEFAULT_BATCH_SIZE, readout_retention
 
     inst = ctx.inst
     mech.install_base_memo(inst)

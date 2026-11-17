@@ -1,4 +1,4 @@
-"""PREREG F2, the label-equivalent amount (``cryowisp.baselines.fit.labeleq``): grid, sampler, training plumbing on a
+"""PREREG F2, the label-equivalent amount (``cryowsp.baselines.fit.labeleq``): grid, sampler, training plumbing on a
 synthetic ViT-Lite-7/4 student, the check generator and N*."""
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ from test_baselines_fit_joint import CHILDREN, joint_instance  # noqa: F401
 from test_e11_refs import MEAN, STD, _images, _student
 from test_evalkit_instances_store import toy_store  # noqa: F401
 
-from cryowisp.baselines.fit import labeleq as F
-from cryowisp.common.identity import params_sha256, save_params
+from cryowsp.baselines.fit import labeleq as F
+from cryowsp.common.identity import params_sha256, save_params
 
 
 def test_grid_is_prereg_f2() -> None:
@@ -91,7 +91,7 @@ def test_trajectory_rows_mix_corrupt_then_clean() -> None:
 def test_training_is_deterministic_and_checkpoints_equal_short_runs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from cryowisp.models.train import configure_determinism
+    from cryowsp.models.train import configure_determinism
 
     params = _student(0)
     monkeypatch.setattr(F, "F2_STUDENT_SHA256", params_sha256(params))
@@ -205,7 +205,7 @@ def test_f2_run_checks_every_checkpoint_and_reads_out_like_the_references(
     """End to end on the toy joint store: the 8 imported children of one group are checked by the joint oracle in
     configuration order under the E10 limits' executor without size limits, and the project's readouts (the kept
     pick under joint-retain-v1 and the frontier) read them."""
-    from cryowisp.evalkit import devreadout
+    from cryowsp.evalkit import devreadout
 
     params = dict(joint_instance.params)
     makers = [*CHILDREN] * 4

@@ -17,23 +17,23 @@ import pytest
 import scan_toy
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.common.identity import params_sha256
-from cryowisp.data import scan as S
-from cryowisp.evalkit import scanskill as K
-from cryowisp.harness import seqskill
-from cryowisp.harness.applying import ArmApplier
-from cryowisp.harness.arms import arm_spec
-from cryowisp.harness.experience import EXPERIENCE_FILE
-from cryowisp.harness.instance import read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.leaks import scan_for_tokens
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.prompts import Budgets, render_system, render_task
-from cryowisp.harness.retention import kept_rule_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import SCAN_CHECK_SETS, SEQSKILL_CHECK_SETS, tool_specs
-from cryowisp.harness.trial import TrialError, assemble
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.common.identity import params_sha256
+from cryowsp.data import scan as S
+from cryowsp.evalkit import scanskill as K
+from cryowsp.harness import seqskill
+from cryowsp.harness.applying import ArmApplier
+from cryowsp.harness.arms import arm_spec
+from cryowsp.harness.experience import EXPERIENCE_FILE
+from cryowsp.harness.instance import read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.leaks import scan_for_tokens
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.prompts import Budgets, render_system, render_task
+from cryowsp.harness.retention import kept_rule_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import SCAN_CHECK_SETS, SEQSKILL_CHECK_SETS, tool_specs
+from cryowsp.harness.trial import TrialError, assemble
 
 SCAN = seqskill.SCAN
 # Gives jump's token-embedding row walk's row, found by name in the layout: one row of one tensor.

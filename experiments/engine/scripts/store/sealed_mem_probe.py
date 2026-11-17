@@ -8,7 +8,7 @@ recovers its child as the read does (``sealed_finals.load_entry``), takes the en
 readout on them as the read does (``Family.read``). It writes one JSON record: the arrays' shapes, dtypes and bytes,
 the process's peak resident set (``getrusage`` ru_maxrss) after imports, after loading and after the readout, and the
 readout's wall time. The readout itself is not written: tiled rows are not a test set, and the numbers would mean
-nothing. Nothing under $CRYOWISP_SEALED is opened; the sealed index is not consulted.
+nothing. Nothing under $CRYOWSP_SEALED is opened; the sealed index is not consulted.
 
     OMP_NUM_THREADS=4 python -B scripts/store/sealed_mem_probe.py --list LIST --name NAME --rows 10000 --out FILE
 """
@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 
-from cryowisp.evalkit import sealed_finals as SF
+from cryowsp.evalkit import sealed_finals as SF
 
 LABEL = (
     "synthetic rows: the entry's dev rows of record tiled to the sealed row count; memory and time only, the "

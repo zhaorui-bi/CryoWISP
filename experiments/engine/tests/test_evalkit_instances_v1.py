@@ -1,4 +1,4 @@
-"""Tests for evidence-v1 instances, supersession, decoy maps and edit-limit definitions (cryowisp.evalkit.instances)."""
+"""Tests for evidence-v1 instances, supersession, decoy maps and edit-limit definitions (cryowsp.evalkit.instances)."""
 
 from __future__ import annotations
 
@@ -20,9 +20,9 @@ from test_evalkit_instances_store import (  # noqa: F401
     toy_store,
 )
 
-import cryowisp.evalkit.instances as instances
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.evalkit.evidence import (
+import cryowsp.evalkit.instances as instances
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.evalkit.evidence import (
     EVIDENCE_KEYS,
     K_RAND,
     draw_evidence,
@@ -30,7 +30,7 @@ from cryowisp.evalkit.evidence import (
     evidence_seed_v1,
     load_evidence,
 )
-from cryowisp.evalkit.instances import (
+from cryowsp.evalkit.instances import (
     DEFAULT_DECOYS,
     EDITOR_VISIBLE_FILES,
     INDEX_FIELDS_V1,
@@ -46,9 +46,9 @@ from cryowisp.evalkit.instances import (
     read_index,
     supersede_instances,
 )
-from cryowisp.evalkit.patch_check import PatchCheckOracle
-from cryowisp.evalkit.targets import K_FAIL, SeedSelection
-from cryowisp.patch import task_limits
+from cryowsp.evalkit.patch_check import PatchCheckOracle
+from cryowsp.evalkit.targets import K_FAIL, SeedSelection
+from cryowsp.patch import task_limits
 
 
 def _errors_input(n: int = 300, n_errors: int = 40) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -119,7 +119,7 @@ def test_v1_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa: F811
         assert not [token for token in forbidden if token in task_text.lower()]
         task = json.loads(task_text)
         assert (
-            task["schema"] == "cryowisp.task.v1" and "target" not in task and "selection_counts" not in task
+            task["schema"] == "cryowsp.task.v1" and "target" not in task and "selection_counts" not in task
         )
         assert "gets wrong" in task["statement"] and "random examples" in task["statement"]
         assert task["evidence"]["fail"]["count"] == K_FAIL and task["evidence"]["random"]["count"] == K_RAND
@@ -128,7 +128,7 @@ def test_v1_layout_task_and_private(toy_store: ToyStore) -> None:  # noqa: F811
         assert task["limit_definitions"] == limit_definitions(task["limits"])
         private = json.loads((folder / "private.json").read_text())
         assert (
-            private["schema"] == "cryowisp.instance_private.v1" and private["evidence_rule"] == "evidence-v1"
+            private["schema"] == "cryowsp.instance_private.v1" and private["evidence_rule"] == "evidence-v1"
         )
         assert private["condition"] == "deploy" and private["split_role"] == outcome.split_role
         assert not [key for key in private if key.startswith("target")]

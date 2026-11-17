@@ -26,29 +26,29 @@ import pytest
 from fscil_toy import ToyFscil, build_toy_fscil_store
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import params_sha256, save_params
-from cryowisp.data import store as data_store
-from cryowisp.evalkit import fscil as FS
-from cryowisp.evalkit.devreadout import readout_run
-from cryowisp.evalkit.instances import leak_tokens, scan_for_tokens
-from cryowisp.harness import fscil, seqskill
-from cryowisp.harness.applying import ArmApplier
-from cryowisp.harness.arms import applied_limits, arm_spec
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.library import LIBRARY_INDEX_FILE
-from cryowisp.harness.prompts import PROMPT_DIR, render_system
-from cryowisp.harness.retention import kept_rule_record_rows
-from cryowisp.harness.runner import SANDBOX_PYTHON, run_session, session_forbidden_strings
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import FSCIL_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.harness.trial import assemble
-from cryowisp.patch import PatchError, apply_patch
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import params_sha256, save_params
+from cryowsp.data import store as data_store
+from cryowsp.evalkit import fscil as FS
+from cryowsp.evalkit.devreadout import readout_run
+from cryowsp.evalkit.instances import leak_tokens, scan_for_tokens
+from cryowsp.harness import fscil, seqskill
+from cryowsp.harness.applying import ArmApplier
+from cryowsp.harness.arms import applied_limits, arm_spec
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.library import LIBRARY_INDEX_FILE
+from cryowsp.harness.prompts import PROMPT_DIR, render_system
+from cryowsp.harness.retention import kept_rule_record_rows
+from cryowsp.harness.runner import SANDBOX_PYTHON, run_session, session_forbidden_strings
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import FSCIL_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.harness.trial import assemble
+from cryowsp.patch import PatchError, apply_patch
+from cryowsp.sandbox.program import ProgramSandbox
 
 # The repo is mounted into every session, so its path must hold none of the self-test's dataset tokens.
 REPO_TOKENS = scan_for_tokens(str(Path(__file__).resolve().parents[1]), leak_tokens(FS.DATASET))
@@ -74,7 +74,7 @@ KEPT_TEMPLATE_SHA256 = {
     "system_LEARN.md": "206fc7e3fd3239825c186bbe9906c046a1d93d11a95454458496603c608623d1",
     "system_LEARN_fewshot.md": "bb17d52ff6fe65bd4b1eeeff0f0041b316ef6c8ceb922869543d38fbb054382b",
     # task_LEARN.md of E2 session s93c1bda80ae82274 was e6ce25c2d7c8...; since 2026-11-04 it adds the clock line
-    # (wall_s_elapsed, wall_s_remaining in every tool result; CRYOWISP-main 18:05) and nothing else.
+    # (wall_s_elapsed, wall_s_remaining in every tool result; CRYOWSP-main 18:05) and nothing else.
     "task_LEARN.md": "96a563fd7f234b2af9ca2ab821bc951b65f6c457fc9e8e9579e61ddde07e6c1c",
     "system_LEARN_seqskill.md": "972ae9dede30df9017a8a1e285351829d6f1e63f0749d5170004e500b18d0563",
     "task_LEARN_seqskill.md": "b5c97584b11dd6035978777df4e61010ac2bdeb4952c9566e45da9f4de6f5df4",
@@ -205,7 +205,7 @@ def _paragraphs(text: str) -> list[str]:
 
 
 def test_fscil_names_agree_with_the_evalkit_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("CRYOWISP_PRIVATE", "CRYOWISP_RUNS", "CRYOWISP_SEALED"):
+    for name in ("CRYOWSP_PRIVATE", "CRYOWSP_RUNS", "CRYOWSP_SEALED"):
         (tmp_path / name).mkdir()
         monkeypatch.setenv(name, str(tmp_path / name))
     assert fscil.FSCIL_RULE == FS.FSCIL_RULE and fscil.FSCIL_ROOT_NAME == FS.ROOT_NAME
@@ -303,7 +303,7 @@ def test_an_fscil_id_resolves_and_every_refusal_comes_before_a_write(toy: ToyFsc
     assert record.is_fscil and record.has_own_experience and record.private["session"] == 2
     with pytest.raises(InstanceRefused, match="does not exist"):
         read_instance_record("c00000000")
-    runs = Path(os.environ["CRYOWISP_RUNS"])
+    runs = Path(os.environ["CRYOWSP_RUNS"])
     before = sorted(path.name for path in runs.iterdir())
     n_old = int(record.private["n_vcheck_old"])
     refusals = [
@@ -371,7 +371,7 @@ def test_the_fscil_limits_exempt_the_head_and_allow_one_op_per_tensor(toy: ToyFs
     def patch(tensor: str, scale: float) -> dict:
         value = instance.params[tensor]
         return {
-            "schema": "cryowisp.patch.v0",
+            "schema": "cryowsp.patch.v0",
             "parent_sha256": instance.params_sha256,
             **WHY,
             "ops": [
@@ -391,7 +391,7 @@ def test_the_fscil_limits_exempt_the_head_and_allow_one_op_per_tensor(toy: ToyFs
     with pytest.raises(PatchError, match="rel"):
         apply_patch(instance.params, patch(conv, 3.0), None, limits, instance.params_sha256)
     every = {
-        "schema": "cryowisp.patch.v0",
+        "schema": "cryowsp.patch.v0",
         "parent_sha256": instance.params_sha256,
         **WHY,
         "ops": [
@@ -631,7 +631,7 @@ def test_the_library_of_session_3_is_the_lineage_kept_program(
 
 
 def toy_sessions_dir() -> Path:
-    return Path(os.environ["CRYOWISP_RUNS"]) / "sessions"
+    return Path(os.environ["CRYOWSP_RUNS"]) / "sessions"
 
 
 def row_on_base(toy: ToyFscil, cid: str) -> str:

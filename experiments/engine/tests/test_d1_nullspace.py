@@ -1,4 +1,4 @@
-"""PREREG D1's null-space projection (``cryowisp.analysis.nullspace``) on a ViT-Lite-7/4 student, and the scope and grid
+"""PREREG D1's null-space projection (``cryowsp.analysis.nullspace``) on a ViT-Lite-7/4 student, and the scope and grid
 rules of ``scripts/e11/d1_nullspace.py``."""
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ import numpy as np
 import pytest
 from test_e11_refs import MEAN, STD, _images, _student
 
-from cryowisp.analysis import nullspace as N
-from cryowisp.models import vitlite as V
-from cryowisp.models.forward_gen import render_vitlite_forward
+from cryowsp.analysis import nullspace as N
+from cryowsp.models import vitlite as V
+from cryowsp.models.forward_gen import render_vitlite_forward
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "e11" / "d1_nullspace.py"
 
@@ -167,7 +167,7 @@ def test_summarize_reads_both_record_shapes() -> None:
         "n_select": 4000,
         "n_clean": 4000,
         "clean_split_sha256": "a",
-        "schema": "cryowisp.harness.program_transfer.v0",
+        "schema": "cryowsp.harness.program_transfer.v0",
     }
     for record in (joint, transfer):
         v = script.summarize(record)

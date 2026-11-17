@@ -1,8 +1,8 @@
-"""Build and store the seqops dataset and its new-skill conditions (PREREG E5; ``cryowisp.data.seqops_build``).
+"""Build and store the seqops dataset and its new-skill conditions (PREREG E5; ``cryowsp.data.seqops_build``).
 
-Base: $CRYOWISP_PRIVATE/seqops/splits/{train,V_select,V_evidence,V_check}.npz, the numpy forward.py, dataset.json and
-$CRYOWISP_SEALED/seqops/test.npz. A condition new<k>_<kind> binds reserved operator NEW<k> to the rule drawn for it and
-writes $CRYOWISP_PRIVATE/seqops/conditions/<condition>/{dataset.json,splits/*.npz} and its sealed test. Draw a condition
+Base: $CRYOWSP_PRIVATE/seqops/splits/{train,V_select,V_evidence,V_check}.npz, the numpy forward.py, dataset.json and
+$CRYOWSP_SEALED/seqops/test.npz. A condition new<k>_<kind> binds reserved operator NEW<k> to the rule drawn for it and
+writes $CRYOWSP_PRIVATE/seqops/conditions/<condition>/{dataset.json,splits/*.npz} and its sealed test. Draw a condition
 only after the base students are trained (PREREG E5); nothing in base training reads it.
 
 Usage:
@@ -20,11 +20,11 @@ import json
 import sys
 from pathlib import Path
 
-from cryowisp.data import seqops_build as B
-from cryowisp.data.seqops import DATASET
-from cryowisp.data.store import dataset_json_path, forward_path, read_dataset_json
-from cryowisp.models.forward_gen import render_seq_forward, write_forward
-from cryowisp.models.runinfo import run_info
+from cryowsp.data import seqops_build as B
+from cryowsp.data.seqops import DATASET
+from cryowsp.data.store import dataset_json_path, forward_path, read_dataset_json
+from cryowsp.models.forward_gen import render_seq_forward, write_forward
+from cryowsp.models.runinfo import run_info
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

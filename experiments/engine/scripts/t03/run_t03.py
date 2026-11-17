@@ -3,10 +3,10 @@
     python scripts/t03/run_t03.py --data-root DIR --weights resnet18-f37072fd.pth --out OUT \
         --code-commit SHA [--threads 4] [--job-id ID] [--ncpus 8 --mem-gb 29 --walltime-s 7200] [--smoke ...]
 
-DIR holds manifest.sha256, classes.py and data/validation-*.parquet (cryowisp.data.imagenet_val). The run checks the
+DIR holds manifest.sha256, classes.py and data/validation-*.parquet (cryowsp.data.imagenet_val). The run checks the
 manifest, decodes only D (1,000 rows, global row number % 50 == 0), preprocesses with torchvision's IMAGENET1K_V1 eval
-transform, and checks PREREG T03's pass items (1) to (4) (cryowisp.evalkit.t03_native) with forward.py
-(cryowisp.models.resnet18native.render_forward) against float64 and float32 torch rebuilds. The cost items run in fresh
+transform, and checks PREREG T03's pass items (1) to (4) (cryowsp.evalkit.t03_native) with forward.py
+(cryowsp.models.resnet18native.render_forward) against float64 and float32 torch rebuilds. The cost items run in fresh
 numpy-only processes (scripts/t03/cost_probe.py) at the inherited thread settings. Records go to OUT:
 t03_summary.json, t03_summary.md, d_index.jsonl (D's rows, hashes and labels), forward.py, model_spec.json,
 logits.npz, the fixed edit's patch.json, cost probe outputs and run.log. OUT/work holds the preprocessed D tensor, the
@@ -33,16 +33,16 @@ from typing import Any
 import numpy as np
 import torch
 
-from cryowisp.data import imagenet_val as I
-from cryowisp.evalkit import t03_native as T
-from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.models import resnet18native as N
-from cryowisp.models import resnet18up as M
-from cryowisp.models.forward_gen import write_forward
-from cryowisp.sandbox.host import SandboxConfig
-from cryowisp.sandbox.program import PROGRAM_WALL_S
+from cryowsp.data import imagenet_val as I
+from cryowsp.evalkit import t03_native as T
+from cryowsp.evalkit.patch_check import load_forward
+from cryowsp.models import resnet18native as N
+from cryowsp.models import resnet18up as M
+from cryowsp.models.forward_gen import write_forward
+from cryowsp.sandbox.host import SandboxConfig
+from cryowsp.sandbox.program import PROGRAM_WALL_S
 
-SUMMARY_SCHEMA = "cryowisp.t03.summary.v1"
+SUMMARY_SCHEMA = "cryowsp.t03.summary.v1"
 THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 PROBE_SIZES = (1000, 64)
 """Cost probes: a 1,000-image check (all of D) and a 64-image readout (four forward.py chunks)."""

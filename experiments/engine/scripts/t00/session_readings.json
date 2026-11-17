@@ -1,5 +1,5 @@
 {
-  "schema": "cryowisp.t00.session_readings.v1",
+  "schema": "cryowsp.t00.session_readings.v1",
   "source": "docs/DEV_RESULTS.md (sha256 921adcbde885c8d26c0981bedabccda9ea69311041627da63ddf489b008f9896), read by hand on 2026-11-06; E5 v2 bar from docs/PREREG_v0_DRAFT.md",
   "fields": {
     "experiment": "experiment label as DEV_RESULTS names it (records-derived name where DEV_RESULTS has no entry)",
@@ -103,39 +103,39 @@
       "experiment": "E4-loop", "round": 2, "condition": "contrast_s3",
       "bar": "E4 criteria on the stream: mean gain >= 10, clean >= -2.0, largest forgetting <= 3, and +15.67 at clean >= -9.53 against grad_full cumulative",
       "met": false, "met_scope": "stream", "reading": "outcome (ii): mean, clean and forgetting met; the grad_full comparison missed by 3.39 points",
-      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWISP-loop c2a9d18)"
+      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWSP-loop c2a9d18)"
     },
     "sf1058d4f0a6d772c": {
       "experiment": "E4-loop", "round": 3, "condition": "blur5_d1",
       "bar": "E4 criteria on the stream: mean gain >= 10, clean >= -2.0, largest forgetting <= 3, and +15.67 at clean >= -9.53 against grad_full cumulative",
       "met": false, "met_scope": "stream", "reading": "outcome (ii): mean, clean and forgetting met; the grad_full comparison missed by 3.39 points",
-      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWISP-loop c2a9d18)"
+      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWSP-loop c2a9d18)"
     },
     "se3f3a264ea34bdf0": {
       "experiment": "E4-loop", "round": 4, "condition": "gamma_d1",
       "bar": null, "met": null, "null_kind": "not_applicable", "met_scope": null,
       "reading": "killed by systemd-oomd before any check",
       "reason": "Not a launched session: the PREREG amendment of about 13:05 treats the two oomd kills of round 4 as stops before launch; round 4 ran as s413aa6145bc5269d.",
-      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWISP-loop c2a9d18)"
+      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWSP-loop c2a9d18)"
     },
     "s6b54e9d476f5c4c6": {
       "experiment": "E4-loop", "round": 4, "condition": "gamma_d1",
       "bar": null, "met": null, "null_kind": "not_applicable", "met_scope": null,
       "reading": "killed by systemd-oomd before any check",
       "reason": "Not a launched session: the PREREG amendment of about 13:05 treats the two oomd kills of round 4 as stops before launch; round 4 ran as s413aa6145bc5269d.",
-      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWISP-loop c2a9d18)"
+      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWSP-loop c2a9d18)"
     },
     "s413aa6145bc5269d": {
       "experiment": "E4-loop", "round": 4, "condition": "gamma_d1",
       "bar": "E4 criteria on the stream: mean gain >= 10, clean >= -2.0, largest forgetting <= 3, and +15.67 at clean >= -9.53 against grad_full cumulative",
       "met": false, "met_scope": "stream", "reading": "outcome (ii): mean, clean and forgetting met; the grad_full comparison missed by 3.39 points",
-      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWISP-loop c2a9d18)"
+      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWSP-loop c2a9d18)"
     },
     "s2dbfdcb8cb5408d8": {
       "experiment": "E4-loop", "round": 5, "condition": "colormix_d1",
       "bar": "E4 criteria on the stream: mean gain >= 10, clean >= -2.0, largest forgetting <= 3, and +15.67 at clean >= -9.53 against grad_full cumulative",
       "met": false, "met_scope": "stream", "reading": "outcome (ii); round 5 declared the base without a check (no-op round)",
-      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWISP-loop c2a9d18)"
+      "dev_results_heading": "## E4-loop, the teacher in the loop (seed-100 student, launched 09:40 Beijing from CryoWSP-loop c2a9d18)"
     },
     "sc5732a5ca92decfe": {
       "experiment": "E5", "condition": "new0 (seqskill-v1)",

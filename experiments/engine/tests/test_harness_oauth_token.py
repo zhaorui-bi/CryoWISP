@@ -1,4 +1,4 @@
-"""The editor's OAuth-token billing option (cryowisp.harness.launch: read_oauth_token, billing_record, ClaudeLauncher).
+"""The editor's OAuth-token billing option (cryowsp.harness.launch: read_oauth_token, billing_record, ClaudeLauncher).
 
 A long-lived subscription token from ``claude setup-token`` bills batch sessions on NSCC compute nodes (user
 2026-11-07). The file rules are the API key file's; the token reaches only the editor's environment and never a record.
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.harness import launch
+from cryowsp.harness import launch
 
 SESSION = {"mcp": {"tool_timeout_ms": 1000, "connect_timeout_ms": 1000}}
 TOKEN = "sk-ant-oat01-test-not-a-real-token-0123456789"

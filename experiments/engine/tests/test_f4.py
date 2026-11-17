@@ -1,4 +1,4 @@
-"""PREREG F4 (``cryowisp.baselines.fit.f4``): the continual fine-tuning arms on the ViT-Lite and ResNet-20 students."""
+"""PREREG F4 (``cryowsp.baselines.fit.f4``): the continual fine-tuning arms on the ViT-Lite and ResNet-20 students."""
 
 from __future__ import annotations
 
@@ -14,11 +14,11 @@ from test_e10_refs import _student as _resnet_student
 from test_e11_refs import _instance, _student
 from test_ft_compare import _joint_evidence
 
-from cryowisp.baselines.fit import checked_reference_stream as CRS
-from cryowisp.baselines.fit import f4 as F
-from cryowisp.baselines.fit import ftcompare as FT
-from cryowisp.baselines.fit.runner import Evidence
-from cryowisp.baselines.fit.torch_forward import architecture_from, images_tensor
+from cryowsp.baselines.fit import checked_reference_stream as CRS
+from cryowsp.baselines.fit import f4 as F
+from cryowsp.baselines.fit import ftcompare as FT
+from cryowsp.baselines.fit.runner import Evidence
+from cryowsp.baselines.fit.torch_forward import architecture_from, images_tensor
 
 
 def test_grids_are_the_prereg_grids() -> None:
@@ -109,7 +109,7 @@ def test_generator_on_vit(tmp_path, monkeypatch: pytest.MonkeyPatch, method: str
 def test_generator_on_resnet(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     import json
 
-    from cryowisp.models import resnet20a as A
+    from cryowsp.models import resnet20a as A
 
     monkeypatch.setattr(F, "STEP_CHECKPOINTS", (1, 2))
     params = _resnet_student(4)

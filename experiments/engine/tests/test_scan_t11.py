@@ -1,4 +1,4 @@
-"""PREREG E13 T11 SCAN controls and M04 (``cryowisp.evalkit.scan_t11`` and ``scripts/e13/t11_scan.py``): command groups,
+"""PREREG E13 T11 SCAN controls and M04 (``cryowsp.evalkit.scan_t11`` and ``scripts/e13/t11_scan.py``): command groups,
 the external renaming wrappers on a stub interpreter, the isomorphic relabelling (forward, layout, deltas, and a
 program rerun through the sandbox on the toy store), the component networks, the traced forward and the slot and state
 readouts. Toy data only: never the real SCAN files, instances or finals."""
@@ -14,9 +14,9 @@ import numpy as np
 import pytest
 from test_harness_fixtures import needs_sandbox
 
-from cryowisp.data import scan as S
-from cryowisp.evalkit import scan_t11 as T
-from cryowisp.evalkit.metrics import IGNORE
+from cryowsp.data import scan as S
+from cryowsp.evalkit import scan_t11 as T
+from cryowsp.evalkit.metrics import IGNORE
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -172,9 +172,9 @@ def test_swap_wrapper_renames_around_right_into_around_left() -> None:
 
 @pytest.fixture(scope="module")
 def forward(tmp_path_factory: pytest.TempPathFactory):
-    from cryowisp.data.scan_build import forward_constants
-    from cryowisp.evalkit.patch_check import load_forward
-    from cryowisp.models.forward_gen import render_seq_forward
+    from cryowsp.data.scan_build import forward_constants
+    from cryowsp.evalkit.patch_check import load_forward
+    from cryowsp.models.forward_gen import render_seq_forward
 
     path = tmp_path_factory.mktemp("fwd") / "forward.py"
     path.write_text(render_seq_forward(**forward_constants()))
@@ -383,7 +383,7 @@ def update(student, experience):
 def toy_instance(tmp_path_factory: pytest.TempPathFactory) -> Iterator[object]:
     import scan_toy
 
-    from cryowisp.evalkit import scanskill as K
+    from cryowsp.evalkit import scanskill as K
 
     patcher = pytest.MonkeyPatch()
     tmp = tmp_path_factory.mktemp("t11_store")
@@ -397,15 +397,15 @@ def toy_instance(tmp_path_factory: pytest.TempPathFactory) -> Iterator[object]:
 
 @needs_sandbox
 def test_program_rerun_on_the_relabelled_student_gives_the_same_edit(toy_instance, tmp_path: Path) -> None:
-    from cryowisp.harness.program import run_update
-    from cryowisp.harness.transfer import stage_student
-    from cryowisp.sandbox.program import ProgramSandbox
+    from cryowsp.harness.program import run_update
+    from cryowsp.harness.transfer import stage_student
+    from cryowsp.sandbox.program import ProgramSandbox
 
     script = _script()
     instance = toy_instance
     program = tmp_path / "toy_program.py"
     program.write_text(TOY_PROGRAM)
-    from cryowisp.harness.runner import SANDBOX_PYTHON
+    from cryowsp.harness.runner import SANDBOX_PYTHON
 
     sandbox = ProgramSandbox(python=SANDBOX_PYTHON, memory_bytes=2 * 2**30, threads=1)
     relabel = T.default_relabel()
@@ -434,19 +434,19 @@ def test_script_end_to_end_on_the_toy_store(
     import os
     import shutil
 
-    from cryowisp.baselines.fit import scanrefs as R
-    from cryowisp.common.identity import save_params
-    from cryowisp.evalkit import devreadout as D
-    from cryowisp.evalkit.scanskill import scan_readout
-    from cryowisp.harness.program import run_update
-    from cryowisp.harness.runner import SANDBOX_PYTHON
-    from cryowisp.harness.transfer import stage_student
-    from cryowisp.patch import Limits
-    from cryowisp.sandbox.program import ProgramSandbox
+    from cryowsp.baselines.fit import scanrefs as R
+    from cryowsp.common.identity import save_params
+    from cryowsp.evalkit import devreadout as D
+    from cryowsp.evalkit.scanskill import scan_readout
+    from cryowsp.harness.program import run_update
+    from cryowsp.harness.runner import SANDBOX_PYTHON
+    from cryowsp.harness.transfer import stage_student
+    from cryowsp.patch import Limits
+    from cryowsp.sandbox.program import ProgramSandbox
 
     script = _script()
     instance = toy_instance
-    runs = Path(os.environ["CRYOWISP_RUNS"])
+    runs = Path(os.environ["CRYOWSP_RUNS"])
     session = "stoy0000000000001"
     final_dir = runs / "sessions" / session / "final"
     final_dir.mkdir(parents=True)

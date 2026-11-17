@@ -2,7 +2,7 @@
 
 Sessions on the toy E11 store (``e11_toy``) through the real MCP server and sandbox, running the probe programs of
 ``a4_view`` (each pushes the student's weights out of its run by one route a program has). The B arm matches the namespace-migrated
-reference from main 9a65b20 (``a4_view.B_SHOWN_CRYOWISP``), and the leak detectors used on the blind arm
+reference from main 9a65b20 (``a4_view.B_SHOWN_CRYOWSP``), and the leak detectors used on the blind arm
 fire on it (a positive control). The blind arm shows no parameter value in its trial, its kernel, its prompts, its tool
 list or any tool reply; no program output, exception text, numeric exit code, key, count or tensor name from a run
 reaches a reply; the host logs keep the full text; its programs get exactly the LEARN inputs; and the final read on
@@ -23,21 +23,21 @@ from typing import Any
 
 import numpy as np
 import pytest
-from a4_view import B_SHOWN_CRYOWISP, PROBE_ORDER, VALUE_MARKERS, probe_session, shown_digest, trial_digest
+from a4_view import B_SHOWN_CRYOWSP, PROBE_ORDER, VALUE_MARKERS, probe_session, shown_digest, trial_digest
 from e11_toy import PLANT_CONDITION, e11_store  # noqa: F401
 from test_harness_fixtures import needs_sandbox
 from test_harness_learn import STRINGS, _program_cell
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.common.identity import load_params, params_sha256
-from cryowisp.evalkit.devreadout import readout_run
-from cryowisp.harness import runner
-from cryowisp.harness.applying import BLIND_OTHER_TEXT, NON_FINITE_TEXT, blind_rejection_messages
-from cryowisp.harness.arms import BASE_TOOLS, arm_spec
-from cryowisp.harness.experience import BLIND_HIDDEN_KEYS, BLIND_OUTPUT, EXPERIENCE_KEYS
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import json_text, read_json
-from cryowisp.harness.program import (
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.common.identity import load_params, params_sha256
+from cryowsp.evalkit.devreadout import readout_run
+from cryowsp.harness import runner
+from cryowsp.harness.applying import BLIND_OTHER_TEXT, NON_FINITE_TEXT, blind_rejection_messages
+from cryowsp.harness.arms import BASE_TOOLS, arm_spec
+from cryowsp.harness.experience import BLIND_HIDDEN_KEYS, BLIND_OUTPUT, EXPERIENCE_KEYS
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import json_text, read_json
+from cryowsp.harness.program import (
     BLIND_BAD_KEY,
     BLIND_BAD_SHAPE,
     BLIND_NON_FINITE,
@@ -45,13 +45,13 @@ from cryowisp.harness.program import (
     ProgramProblem,
     load_deltas,
 )
-from cryowisp.harness.prompts import PROMPT_DIR, Budgets, render_task
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import BLIND_RETURNS, PROGRAM_RETURNS, tool_specs
-from cryowisp.harness.trial import arm_task, assemble
-from cryowisp.models import vit_synth as V
-from cryowisp.patch import Limits
+from cryowsp.harness.prompts import PROMPT_DIR, Budgets, render_task
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import BLIND_RETURNS, PROGRAM_RETURNS, tool_specs
+from cryowsp.harness.trial import arm_task, assemble
+from cryowsp.models import vit_synth as V
+from cryowsp.patch import Limits
 
 WALL_S = 300.0
 BLIND_TRIAL = ["experience.npz", "forward.py", "model_shapes.json", "model_spec.json", "task.json"]
@@ -115,7 +115,7 @@ def test_the_b_arm_matches_the_namespace_migrated_pre_a4_reference(e11_store: V.
     instance_id = _instance(e11_store)
     result, replies, listed = probe_session(instance_id, "LEARN")
     assert result.status == "complete", result.record.get("infra_reasons")
-    assert shown_digest(result.root, replies, listed) == B_SHOWN_CRYOWISP
+    assert shown_digest(result.root, replies, listed) == B_SHOWN_CRYOWSP
     session = read_json(result.root / "session.json")
     assert "blind" not in session and "check_cap" not in session and "blind" not in session["trial"]
     assert session["budget"]["patch_checks"] == 8
@@ -229,8 +229,8 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
     # the programs got exactly the LEARN inputs: B's weights and B's whole experience, by content and by file
     session = read_json(root / "session.json")
     blind = session["blind"]
-    assert blind["params_sha256"] == B_SHOWN_CRYOWISP["trial"]["model.npz"].removeprefix("arrays:")
-    assert blind["experience_content_sha256"] == B_SHOWN_CRYOWISP["trial"]["experience.npz"].removeprefix(
+    assert blind["params_sha256"] == B_SHOWN_CRYOWSP["trial"]["model.npz"].removeprefix("arrays:")
+    assert blind["experience_content_sha256"] == B_SHOWN_CRYOWSP["trial"]["experience.npz"].removeprefix(
         "arrays:"
     )
     assert blind["predictions_shown"] is False and sorted(blind["trial_experience_keys"]) == BLIND_EXPERIENCE
@@ -242,9 +242,9 @@ def test_a_blind_session_shows_no_parameter_value_and_no_program_output(e11_stor
 
     # everything else is B's: the system prompt, the score fields, the final selection
     digest = shown_digest(root, replies, listed)
-    assert digest["system_prompt"] == B_SHOWN_CRYOWISP["system_prompt"]
+    assert digest["system_prompt"] == B_SHOWN_CRYOWSP["system_prompt"]
     assert {key: digest["trial"][key] for key in ("forward.py", "model_spec.json")} == {
-        key: B_SHOWN_CRYOWISP["trial"][key] for key in ("forward.py", "model_spec.json")
+        key: B_SHOWN_CRYOWSP["trial"][key] for key in ("forward.py", "model_spec.json")
     }
     final = read_json(SessionPaths(root).selection_json)["final"]
     assert final["patch_id"] in ("talk.py", "ln.py")
@@ -326,7 +326,7 @@ def test_the_two_check_arm_is_b_with_two_checks_and_refuses_a_third(e11_store: V
 
     # B's view with 8 read as 2: the trial, both prompts and the tools are B's, byte for byte, but for that number
     digest = trial_digest(result.root / "trial")
-    b_trial = B_SHOWN_CRYOWISP["trial"]
+    b_trial = B_SHOWN_CRYOWSP["trial"]
     assert {key: value for key, value in digest.items() if key != "task.json"} == {
         key: value for key, value in b_trial.items() if key != "task.json"
     }
@@ -337,11 +337,11 @@ def test_the_two_check_arm_is_b_with_two_checks_and_refuses_a_third(e11_store: V
     prompt = (result.root / "prompts" / "task.md").read_text()
     assert prompt.count("- `patch_check`: 2 queries in total") == 1
     as_b = prompt.replace("- `patch_check`: 2 queries in total", "- `patch_check`: 8 queries in total")
-    assert hashlib.sha256(as_b.encode()).hexdigest() == B_SHOWN_CRYOWISP["task_prompt"]
+    assert hashlib.sha256(as_b.encode()).hexdigest() == B_SHOWN_CRYOWSP["task_prompt"]
     system = (result.root / "prompts" / "system.md").read_text()
-    assert hashlib.sha256(system.encode()).hexdigest() == B_SHOWN_CRYOWISP["system_prompt"]
+    assert hashlib.sha256(system.encode()).hexdigest() == B_SHOWN_CRYOWSP["system_prompt"]
     assert (
-        hashlib.sha256(json.dumps(listed, sort_keys=True).encode()).hexdigest() == B_SHOWN_CRYOWISP["tools"]
+        hashlib.sha256(json.dumps(listed, sort_keys=True).encode()).hexdigest() == B_SHOWN_CRYOWSP["tools"]
     )
 
 
@@ -411,7 +411,7 @@ def test_the_blind_view_hides_the_predictions_unless_kept(
             "experience.npz",
         }
     # kept: the trial experience is B's; hidden: B's without the predictions
-    b_experience = B_SHOWN_CRYOWISP["trial"]["experience.npz"].removeprefix("arrays:")
+    b_experience = B_SHOWN_CRYOWSP["trial"]["experience.npz"].removeprefix("arrays:")
     assert kept.blind["trial_experience_content_sha256"] == b_experience
     with np.load(b_view.trial_dir / "experience.npz") as archive:
         b_rows = {key: archive[key] for key in archive.files}

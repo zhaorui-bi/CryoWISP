@@ -21,7 +21,7 @@ with repeat 1's final on its instance (pairing is nominal: every entry of a cond
 
 Outputs: the list (status draft, approval null) and the role map (every role, required or proposed, its source, its
 record numbers and the entry that reads it). Reads JSON records only (the T04 store's kept readouts and run.json files,
-and the sessions' run.json and info.json); opens nothing under $CRYOWISP_SEALED.
+and the sessions' run.json and info.json); opens nothing under $CRYOWSP_SEALED.
 
     .venv/bin/python scripts/sealed/make_finals_v6.py --store T04_STORE \
         --sessions R37I1/store/runs R37I2/store/runs R37C1/store/runs R37C2/store/runs \
@@ -41,10 +41,10 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from cryowisp.common.paths import relocate_run_path
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit.sealed import manifest_sha256
+from cryowsp.common.paths import relocate_run_path
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit.sealed import manifest_sha256
 
 REPO = Path(__file__).resolve().parents[2]
 FLOOR = -20
@@ -296,7 +296,7 @@ def note_text(
     )
     return (
         'List v6 of the sealed read (PREREG "T04", sealed test section, main 475a899; the edge-extension amendment, '
-        "main 9f0baa9), drafted by the t04-sealed subagent of CRYOWISP-main from the T04 records (scripts/sealed/"
+        "main 9f0baa9), drafted by the t04-sealed subagent of CRYOWSP-main from the T04 records (scripts/sealed/"
         "make_finals_v6.py; role map scripts/sealed/finals_v6_roles.json). Native ImageNet ResNet-18 (in1k_t04), seed "
         "100: gaussian_noise_s3 on i4c8c63bd and contrast_s4 on i62cbf956. PREREG-required entries: the base, both "
         "LEARN finals, the main control of record (gaussian ft_bn f1 q5; contrast grad_full t04g3 q0), bn_adapt and "
@@ -351,7 +351,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parsed, entries = SF.load_list(args.out)  # the list validates as the pipeline reads it
     sha = manifest_sha256(parsed)
     roles = {
-        "schema": "cryowisp.t04_v6_roles.v1",
+        "schema": "cryowsp.t04_v6_roles.v1",
         "list": args.out.name,
         "list_sha256": sha,
         "required_only": args.required_only,

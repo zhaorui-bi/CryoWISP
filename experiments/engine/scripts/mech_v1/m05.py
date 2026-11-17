@@ -10,7 +10,7 @@ Cells are T08's program-arm cells (``runs/t08/program/<session>/transfer_<progra
 targets of each program (the diagonal included), none picked: the gaussian final sc918e11dceef637a (gate3_lower.py)
 and the contrast final s760cb52ce82fb937 (k145_gated_b2_r6_orig_targets.py). Each child is rebuilt from the cell's
 derived patch under the cell's limits and must hash to the cell's child_sha256; the gates are read from the cell's own
-stdout and checked against the child's weights (``cryowisp.analysis.vit_internal``). The target's gain and clean change are
+stdout and checked against the child's weights (``cryowsp.analysis.vit_internal``). The target's gain and clean change are
 the cell's V_select readouts of record (T08), not recomputed.
 
 Per cell, on the target's V_select condition rows and their clean companions (paired by idx, 4000 each), with the
@@ -46,7 +46,7 @@ from typing import Any
 
 import numpy as np
 
-SCHEMA = "cryowisp.mech.m05.v1"
+SCHEMA = "cryowsp.mech.m05.v1"
 SPEC = "docs/PREREG_v0_DRAFT.md section 0.1, 'T07 and M05 phase 1'; NSCC R38-t07-m05"
 N_CLASSES = 10
 OPEN_ON_CONDITION_MIN = 0.90
@@ -175,13 +175,13 @@ def require_sha(path: Path, expected: str) -> None:
 
 
 def runs_root() -> Path:
-    from cryowisp.common.paths import runs_dir
+    from cryowsp.common.paths import runs_dir
 
     return Path(runs_dir())
 
 
 def write_json(path: Path, data: Any) -> str:
-    from cryowisp.baselines.fit.runner import jsonable
+    from cryowsp.baselines.fit.runner import jsonable
 
     if path.exists():
         raise M05Error(f"{path} exists; records are never overwritten")
@@ -194,8 +194,8 @@ def write_json(path: Path, data: Any) -> str:
 
 
 def provenance() -> dict[str, Any]:
-    import cryowisp.analysis.vit_internal as V
-    from cryowisp.baselines.fit.runner import git_state
+    import cryowsp.analysis.vit_internal as V
+    from cryowsp.baselines.fit.runner import git_state
 
     return {
         "script": str(Path(__file__).resolve()),
@@ -221,9 +221,9 @@ def cell_dir(program: str, target: str) -> Path:
 
 def load_cell(program: str, target: str) -> tuple[dict[str, Any], str, Any, dict[str, np.ndarray]]:
     """The T08 cell record, its program stdout, the target instance and the child rebuilt from the cell's patch."""
-    from cryowisp.baselines.instance_io import load_instance
-    from cryowisp.evalkit.instances import instances_root
-    from cryowisp.patch import Limits, apply_patch_file
+    from cryowsp.baselines.instance_io import load_instance
+    from cryowsp.evalkit.instances import instances_root
+    from cryowsp.patch import Limits, apply_patch_file
 
     spec = PROGRAMS[program]
     if target not in spec["cells"]:
@@ -282,9 +282,9 @@ def readout_of_record(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def cell_internals(program: str, inst: Any, child: Mapping[str, np.ndarray], stdout: str) -> dict[str, Any]:
-    import cryowisp.analysis.vit_internal as V
-    import cryowisp.evalkit.devreadout as D
-    from cryowisp.evalkit.companions import load_clean_rows
+    import cryowsp.analysis.vit_internal as V
+    import cryowsp.evalkit.devreadout as D
+    from cryowsp.evalkit.companions import load_clean_rows
 
     cond = D.readout_split(inst)
     clean = load_clean_rows(inst, D.READOUT_SPLIT)
@@ -549,7 +549,7 @@ def cmd_cell(args: argparse.Namespace) -> int:
 
 
 def cmd_summary(args: argparse.Namespace) -> int:
-    from cryowisp.analysis.vit_internal import spearman
+    from cryowsp.analysis.vit_internal import spearman
 
     out_dir = Path(args.out)
     result: dict[str, Any] = {"schema": SCHEMA, "kind": "summary", "programs": {}}

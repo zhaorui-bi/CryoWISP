@@ -1,21 +1,21 @@
-"""The ``tie`` op of cryowisp.patch against hand-computed references (contract 5.0, HARNESS_SPEC section 2)."""
+"""The ``tie`` op of cryowsp.patch against hand-computed references (contract 5.0, HARNESS_SPEC section 2)."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.patch import SCHEMA, Limits, PatchError, apply_patch
+from cryowsp.common.identity import params_sha256
+from cryowsp.patch import SCHEMA, Limits, PatchError, apply_patch
 
 OPEN = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)
 
 
 @pytest.fixture(autouse=True)
 def _isolated_store(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Point the CRYOWISP data locations at temporary directories so no test can touch the real store."""
-    root = tmp_path_factory.mktemp("cryowisp_store")
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    """Point the CRYOWSP data locations at temporary directories so no test can touch the real store."""
+    root = tmp_path_factory.mktemp("cryowsp_store")
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (root / variable).mkdir()
         monkeypatch.setenv(variable, str(root / variable))
 

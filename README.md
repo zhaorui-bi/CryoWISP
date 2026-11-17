@@ -1,10 +1,10 @@
-# CryoWISP
+# CryoWSP
 
-Weight-space installation of new particle-picking capabilities into frozen cryo-EM networks.
+**Cryo-EM Weight-Space Programming** — new picking skills welded into frozen networks, one program at a time.
 
-## What is CryoWISP?
+## What is CryoWSP?
 
-CryoWISP is an open-source framework for adapting frozen cryo-EM particle pickers to new
+CryoWSP is an open-source framework for adapting frozen cryo-EM particle pickers to new
 datasets without gradient training. It is built on top of components from other open-source
 projects, including:
 
@@ -37,7 +37,7 @@ no gradients, 1,026 / 11.69M weights changed, zero 2-D convolutions touched):
 | Linear probe (1,026 params) | 49.0 / 93.6 | 48.0 / 92.3 | 58.0 / 92.0 | 59.5 / 92.8 |
 | Knob gradient fit (the program's exact 1,026 params; 60 ep, 10x class weight) | 49.0 / 93.4 | 48.5 / 92.2 | 56.8 / 93.4 | 55.8 / 92.0 |
 | Full fine-tune (20 ep, same crops) | 74.5 / 93.4 | 71.8 / 93.1 | 69.8 / 91.3 | 67.3 / 92.7 |
-| **CryoWISP weight program** | **72.3 / 89.7** | **75.5 / 89.4** | **60.8 / 89.2** | **59.8 / 90.8** |
+| **CryoWSP weight program** | **72.3 / 89.7** | **75.5 / 89.4** | **60.8 / 89.2** | **59.8 / 90.8** |
 
 Four findings (all under one protocol: same experience crops, selection-based model choice,
 final scored once):
@@ -62,7 +62,7 @@ final scored once):
    (+0 / +3). Session-level variance is large; the external-validating protocol is what
    keeps the headline honest.
 
-CryoWISP is research code for a submission in preparation, developed by a single person on
+CryoWSP is research code for a submission in preparation, developed by a single person on
 an HPC login node. Expect rough edges. It can serve as a good starting point for research on
 weight-space adaptation of cryo-EM pipelines: the authoritative record of every session,
 program and baseline lives under `experiments/`; dig around there.
@@ -91,16 +91,16 @@ bash experiments/run_synth_seed1.sh 1        # editor session (needs an endpoint
 
 A *weight program* is an executable `update(student, experience) -> {tensor: delta}` written
 by a frozen LLM inside fixed edit budgets. The budgets and their validation live in
-`cryowisp/patch/`; the budgets explain where the programs actually edit:
+`cryowsp/patch/`; the budgets explain where the programs actually edit:
 
 - `dense_delta` ops: at most 5% of entries, relative Frobenius change <= 0.5 for rank >= 2
-  tensors (`cryowisp/patch/limits.py`)
+  tensors (`cryowsp/patch/limits.py`)
 - the 1-D escape hatch: per-channel BatchNorm affine parameters (gamma/beta) are 1-D, hence
   outside the 2-D relative-Frobenius cap. Every kept program so far welds through
   `layer4.1.bn2.{weight,bias}` plus `fc.bias` — 1,026 parameters that re-gate the pooled
   features in front of the frozen head
 - selection and release: each candidate is scored on a held-out selection split; the frozen
-  best is scored once on the final split (`cryowisp/application/runtime.py`); below
+  best is scored once on the final split (`cryowsp/application/runtime.py`); below
   threshold, the base model ships unchanged
 - re-welding: the kept program is a file; `apply` recomputes the edit for any compatible
   checkpoint. Copying the fitted deltas to another network fails (48.25% vs 75.50% when
@@ -116,15 +116,15 @@ pack-program, apply — on a synthetic task and must end with a written report.
 ### Code Style
 
 Install `ruff`, then run `make lint` to enumerate and `make format` to apply formatting
-and import-order fixes across `cryowisp/` and `experiments/`.
+and import-order fixes across `cryowsp/` and `experiments/`.
 
 ## Contributors
 
-CryoWISP is developed by zhaorui-bi. The engine derives from WeightCode
+CryoWSP is developed by zhaorui-bi. The engine derives from WeightCode
 (Gen-Verse); the WeightCode kernel/patch/application architecture is preserved and credited
 in `LICENSE` and `experiments/engine/ENGINE.md`.
 
 ## Cite
 
 If you find this project useful, consider citing the WeightCode framework and the CryoPPP
-dataset (references in the links above). A CryoWISP preprint is in preparation.
+dataset (references in the links above). A CryoWSP preprint is in preparation.

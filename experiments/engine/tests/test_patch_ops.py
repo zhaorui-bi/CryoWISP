@@ -1,4 +1,4 @@
-"""Op semantics of cryowisp.patch against hand-computed numpy references (contract 5.0, HARNESS_SPEC section 2)."""
+"""Op semantics of cryowsp.patch against hand-computed numpy references (contract 5.0, HARNESS_SPEC section 2)."""
 
 from __future__ import annotations
 
@@ -10,17 +10,17 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal, assert_array_max_ulp
 
-from cryowisp.common.identity import load_params, params_sha256, save_params
-from cryowisp.patch import OP_NAMES, SCHEMA, Limits, PatchError, apply_patch, describe_ops
+from cryowsp.common.identity import load_params, params_sha256, save_params
+from cryowsp.patch import OP_NAMES, SCHEMA, Limits, PatchError, apply_patch, describe_ops
 
 OPEN = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)
 
 
 @pytest.fixture(autouse=True)
 def _isolated_store(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Point the CRYOWISP data locations at temporary directories so no test can touch the real store."""
-    root = tmp_path_factory.mktemp("cryowisp_store")
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    """Point the CRYOWSP data locations at temporary directories so no test can touch the real store."""
+    root = tmp_path_factory.mktemp("cryowsp_store")
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (root / variable).mkdir()
         monkeypatch.setenv(variable, str(root / variable))
 

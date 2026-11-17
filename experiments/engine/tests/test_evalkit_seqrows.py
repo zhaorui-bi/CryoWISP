@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.data import seqops as S
-from cryowisp.evalkit.metrics import IGNORE, rows_right, sequence_readout, summarize, token_accuracy
-from cryowisp.evalkit.patch_check import JointPatchCheckOracle, load_forward, predict
-from cryowisp.models import transformer as T
-from cryowisp.models.forward_gen import render_seq_forward, write_forward
+from cryowsp.data import seqops as S
+from cryowsp.evalkit.metrics import IGNORE, rows_right, sequence_readout, summarize, token_accuracy
+from cryowsp.evalkit.patch_check import JointPatchCheckOracle, load_forward, predict
+from cryowsp.models import transformer as T
+from cryowsp.models.forward_gen import render_seq_forward, write_forward
 
 
 def test_rows_right_is_exact_match_and_matches_labels_for_one_dimensional_targets() -> None:

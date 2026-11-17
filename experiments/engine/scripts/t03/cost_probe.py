@@ -7,7 +7,7 @@ over them and the argmax check against the labels, and writes the timings and th
 (peak resident set of this process image) and VmPeak (peak address space, what RLIMIT_AS, the sandbox's memory limit,
 bounds) from /proc/self/status. ru_maxrss is written too but is not this process's own peak: Linux carries the
 parent's peak RSS across fork and exec into it. The thread variables are inherited from the caller and recorded.
-Nothing here imports torch or cryowisp.
+Nothing here imports torch or cryowsp.
 """
 
 from __future__ import annotations

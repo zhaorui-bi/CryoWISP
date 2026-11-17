@@ -13,7 +13,7 @@ completed rounds, round 1 the gaussian B final's child (e40c2078...), round 2 a 
 that equals W1 (a base no-op round 2), or a W2 that another stream also produced, is listed once and the note says
 which (a sealed read refuses a pair it has seen). No entry may repeat an (instance, child) of lists v1 to v3.
 
-Usage (reads $CRYOWISP_RUNS only; opens nothing under $CRYOWISP_SEALED)::
+Usage (reads $CRYOWSP_RUNS only; opens nothing under $CRYOWSP_SEALED)::
 
     .venv/bin/python scripts/sealed/make_finals_v4.py --out scripts/sealed/finals_v4.json \
         --stream N1=loop_streams/loop_teacher_92b6e2bd54be_fd7f6d4b8014.json --stream L1=<record> ... \
@@ -27,8 +27,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from cryowisp.common.paths import runs_dir
-from cryowisp.evalkit import sealed_finals as SF
+from cryowsp.common.paths import runs_dir
+from cryowsp.evalkit import sealed_finals as SF
 
 READOUT = SF.READOUT_VISION_JOINT
 BASE = "fd7f6d4b80145c98bc7c6a9cbc2c8e440e3f45e328168df2a8b55bec3f7c5b6a"
@@ -80,7 +80,7 @@ def main() -> int:
     )
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument(
-        "--stream", action="append", required=True, help="LABEL=record path relative to $CRYOWISP_RUNS"
+        "--stream", action="append", required=True, help="LABEL=record path relative to $CRYOWSP_RUNS"
     )
     parser.add_argument("--earlier", type=Path, nargs="+", required=True)
     args = parser.parse_args()
@@ -131,7 +131,7 @@ def main() -> int:
     )
     note = (
         'List v4 of the sealed read (PREREG T16 "List v4", main b5b3083: user 2026-11-06 about 23:15 Beijing, '
-        'AskUserQuestion "批准 v4", composition fixed before any T16 result), built by CRYOWISP-main from the stream '
+        'AskUserQuestion "批准 v4", composition fixed before any T16 result), built by CRYOWSP-main from the stream '
         "records (scripts/sealed/make_finals_v4.py). The six T16 streams of the E11 two-round stream (base "
         "fd7f6d4b..., W1 = the gaussian B final's child e40c2078...; round 2 one contrast_s5 LEARN session), met or "
         f"missed alike: {streams_text}. Arm N is the protocol of record (N1 is the session of record), arm L adds the "

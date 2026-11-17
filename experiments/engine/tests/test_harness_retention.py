@@ -1,4 +1,4 @@
-"""The retention kept rule of a program arm (``cryowisp.harness.retention``, LEARN v2, dev only): the floor, the final pick,
+"""The retention kept rule of a program arm (``cryowsp.harness.retention``, LEARN v2, dev only): the floor, the final pick,
 the wording in the system prompt and in ``declare_final``, the runner's refusals, and one scripted LEARN session over
 the real MCP server under the rule. The v1 rule is checked to be unchanged wherever the rule is absent.
 """
@@ -13,27 +13,27 @@ import pytest
 from test_harness_fixtures import needs_sandbox, read_jsonl  # noqa: F401
 from test_harness_learn import FIX, WORSE, LearnStore, _program_cell, learn_store  # noqa: F401
 
-from cryowisp.harness import runner
-from cryowisp.harness.arms import ARMS, arm_spec
-from cryowisp.harness.finalize import (
+from cryowsp.harness import runner
+from cryowsp.harness.arms import ARMS, arm_spec
+from cryowsp.harness.finalize import (
     FINAL_RULE_JOINT,
     FINAL_RULE_JOINT_RETAIN,
     KIND_BASE,
     KIND_CHECKED,
     select_final,
 )
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.prompts import PROMPT_DIR, render_system, system_template_name
-from cryowisp.harness.retention import (
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.prompts import PROMPT_DIR, render_system, system_template_name
+from cryowsp.harness.retention import (
     KEPT_RULE_RETAIN,
     RetentionRuleError,
     kept_rule_record,
     s_old_floor,
     session_floor,
 )
-from cryowisp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import PROGRAM_DESCRIPTIONS, tool_specs
+from cryowsp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import PROGRAM_DESCRIPTIONS, tool_specs
 
 
 def _section(text: str) -> str:

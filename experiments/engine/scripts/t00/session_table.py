@@ -38,7 +38,7 @@ from typing import Any
 from numpy.lib import format as npy_format
 
 REPO = Path(__file__).resolve().parents[2]
-SCHEMA = "cryowisp.t00.session_table.v1"
+SCHEMA = "cryowsp.t00.session_table.v1"
 
 # List prices in US$ per million tokens. Source: the claude-api skill bundled with Claude Code 2.1.318,
 # shared/model-migration.md ("$4 / $20 per MTok; 5-minute cache writes $5 and 1-hour cache writes $8; cache reads
@@ -261,7 +261,7 @@ def npz_layout(path: Path) -> dict[str, tuple[tuple[int, ...], str]]:
 
 
 def shapes_layout(path: Path) -> dict[str, tuple[tuple[int, ...], str]]:
-    """Tensor name -> (shape, dtype) from a cryowisp.model_shapes.v0 file."""
+    """Tensor name -> (shape, dtype) from a cryowsp.model_shapes.v0 file."""
     o = _load_json(path)
     return {t["name"]: (tuple(int(s) for s in t["shape"]), str(t["dtype"])) for t in o["tensors"]}
 
@@ -1576,14 +1576,14 @@ def build(
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--runs", type=Path, help="runs root (default $CRYOWISP_RUNS)")
-    parser.add_argument("--private", type=Path, help="private root (default $CRYOWISP_PRIVATE)")
+    parser.add_argument("--runs", type=Path, help="runs root (default $CRYOWSP_RUNS)")
+    parser.add_argument("--private", type=Path, help="private root (default $CRYOWSP_PRIVATE)")
     parser.add_argument("--readings", type=Path, default=REPO / "scripts" / "t00" / "session_readings.json")
     parser.add_argument("--dev-results", type=Path, default=REPO / "docs" / "DEV_RESULTS.md")
     parser.add_argument("--out-dir", type=Path, help="output directory (default <runs>/t00)")
     args = parser.parse_args(argv)
-    runs = _env_dir(args.runs, "CRYOWISP_RUNS")
-    private = _env_dir(args.private, "CRYOWISP_PRIVATE")
+    runs = _env_dir(args.runs, "CRYOWSP_RUNS")
+    private = _env_dir(args.private, "CRYOWSP_PRIVATE")
     out_dir = (args.out_dir or runs / "t00").expanduser().resolve()
     rows, summary, probs, meta = build(runs, private, args.readings, args.dev_results)
     out_dir.mkdir(parents=True, exist_ok=True)

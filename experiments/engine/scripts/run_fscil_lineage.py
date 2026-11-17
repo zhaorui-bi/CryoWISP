@@ -7,15 +7,15 @@
     .venv/bin/python scripts/run_fscil_lineage.py --lineage T2 [--until 9]
     .venv/bin/python scripts/run_fscil_lineage.py --lineage T2 --dry-run
 
-T2, F2 and C2 (PREREG E9 v2, ``cryowisp.harness.fscil_lineage``) keep by fscil-retain-v2, whose floor is per candidate, so
+T2, F2 and C2 (PREREG E9 v2, ``cryowsp.harness.fscil_lineage``) keep by fscil-retain-v2, whose floor is per candidate, so
 they take no ``--refs``, ``--floors`` or ``--placeholder-floor``.
 
 The floors come from the reference streams' run directory (``--refs``, ``scripts/run_fscil_streams.py --out``) or
 from a floors file (``--floors``); T and C need one, F none. T's sessions 2 to 4 are LEARN sessions (effort max, 90
 minutes, 4 threads), so in production the driver runs as a systemd unit that oomd leaves alone::
 
-    systemd-run --user --collect --property=ManagedOOMPreference=avoid --unit cryowisp-e9-T \\
-        --working-directory=<worktree> --setenv=CRYOWISP_PRIVATE=... --setenv=CRYOWISP_SEALED=... --setenv=CRYOWISP_RUNS=... \\
+    systemd-run --user --collect --property=ManagedOOMPreference=avoid --unit cryowsp-e9-T \\
+        --working-directory=<worktree> --setenv=CRYOWSP_PRIVATE=... --setenv=CRYOWSP_SEALED=... --setenv=CRYOWSP_RUNS=... \\
         <worktree>/.venv/bin/python scripts/run_fscil_lineage.py --lineage T --refs DIR
 
 The worktree path must hold no forbidden string (no "fscil", "cifar" or "seed"): the sandbox self-test reads the
@@ -36,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lineage", choices=("T", "F", "C", "T2", "F2", "C2"), required=True)
     floors = parser.add_mutually_exclusive_group()
     floors.add_argument("--refs", type=Path, help="the reference streams' run directory")
-    floors.add_argument("--floors", type=Path, help="a floors file (cryowisp.fscil_floors.v1)")
+    floors.add_argument("--floors", type=Path, help="a floors file (cryowsp.fscil_floors.v1)")
     parser.add_argument("--until", type=int, default=9)
     parser.add_argument("--base-seed", type=int, default=100)
     parser.add_argument("--dry-run", action="store_true")
@@ -47,8 +47,8 @@ def main(argv: list[str] | None = None) -> int:
         help="a dry run's stand-in floor when no floor is stated yet",
     )
     args = parser.parse_args(argv)
-    from cryowisp.evalkit.fscil import base_student
-    from cryowisp.harness import fscil_lineage as L
+    from cryowsp.evalkit.fscil import base_student
+    from cryowsp.harness import fscil_lineage as L
 
     base = base_student(args.base_seed)
     if args.lineage in L.LINEAGES_V2 and (

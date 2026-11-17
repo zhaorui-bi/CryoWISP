@@ -1,4 +1,4 @@
-"""Train, export, import and report the E13 SCAN students (PREREG E13; ``cryowisp.models.train_scan``).
+"""Train, export, import and report the E13 SCAN students (PREREG E13; ``cryowsp.models.train_scan``).
 
 Groups:
 
@@ -9,7 +9,7 @@ Groups:
   condition is reported and not run). ``--size-step`` trains one step alone. The job reads the condition's
   dataset.json, the dataset's dataset.json and forward.py, train.npz and old_select.npz, each hash-checked; no
   new-part row is read.
-* ``import``: the students of one condition of a fetched NSCC run (``cryowisp.models.scan_export.import_scan_models``).
+* ``import``: the students of one condition of a fetched NSCC run (``cryowsp.models.scan_export.import_scan_models``).
 * ``report``: each condition's index with the gate, parity and, for a base, headroom (exact match on new V_select,
   at most HEADROOM_EM_MAX), read locally.
 
@@ -34,14 +34,14 @@ from typing import Any
 
 import torch
 
-from cryowisp.data import scan as S
-from cryowisp.data.scan_build import checked_split
-from cryowisp.data.store import read_dataset_json, write_json
-from cryowisp.models.export import read_index, write_index
-from cryowisp.models.runinfo import run_info
-from cryowisp.models.scan_export import export_scan_model, import_scan_models
-from cryowisp.models.train import configure_determinism
-from cryowisp.models.train_scan import (
+from cryowsp.data import scan as S
+from cryowsp.data.scan_build import checked_split
+from cryowsp.data.store import read_dataset_json, write_json
+from cryowsp.models.export import read_index, write_index
+from cryowsp.models.runinfo import run_info
+from cryowsp.models.scan_export import export_scan_model, import_scan_models
+from cryowsp.models.train import configure_determinism
+from cryowsp.models.train_scan import (
     GATE_EM,
     HEADROOM_EM_MAX,
     SIZE_STEPS,
@@ -147,10 +147,10 @@ def import_group(args: argparse.Namespace) -> int:
 
 
 def report_group(args: argparse.Namespace) -> int:
-    from cryowisp.common.identity import load_params
-    from cryowisp.data.store import forward_path, models_dir, read_json
-    from cryowisp.evalkit.patch_check import predict
-    from cryowisp.models.export import load_forward_no_cache
+    from cryowsp.common.identity import load_params
+    from cryowsp.data.store import forward_path, models_dir, read_json
+    from cryowsp.evalkit.patch_check import predict
+    from cryowsp.models.export import load_forward_no_cache
 
     forward, _ = load_forward_no_cache(forward_path(S.DATASET))
     rows = []

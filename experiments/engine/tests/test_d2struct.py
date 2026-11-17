@@ -1,4 +1,4 @@
-"""PREREG D2 (``cryowisp.baselines.fit.d2struct``): the program's structure trained by gradient on a ViT-Lite-7/4 student."""
+"""PREREG D2 (``cryowsp.baselines.fit.d2struct``): the program's structure trained by gradient on a ViT-Lite-7/4 student."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ import pytest
 from test_e11_refs import _instance, _student
 from test_ft_compare import _joint_evidence
 
-from cryowisp.baselines.fit import d2struct as D2
-from cryowisp.common.identity import params_sha256
+from cryowsp.baselines.fit import d2struct as D2
+from cryowsp.common.identity import params_sha256
 
 
 def _final(params: dict[str, np.ndarray], seed: int = 3) -> dict[str, np.ndarray]:

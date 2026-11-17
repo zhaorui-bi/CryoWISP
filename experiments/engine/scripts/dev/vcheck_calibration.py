@@ -1,6 +1,6 @@
 """How well a check's clean change on V_check predicts the same program's clean change on V_select (dev only).
 
-Reads the session_info records that scripts/dev/post_learn.sh wrote ($CRYOWISP_RUNS/devreadouts/learn/<sid>/info.json)
+Reads the session_info records that scripts/dev/post_learn.sh wrote ($CRYOWSP_RUNS/devreadouts/learn/<sid>/info.json)
 and pairs, for every checked program of an evidence-v1 session, score_old / n_old on V_check with score / n on the
 clean V_select, both in accuracy points against the base model. Prints the spread of the difference and the V_check
 margin under the floor that keeps the V_select change at or above the floor with a given one-sided probability under
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--floor-points", type=float, default=1.0)
     parser.add_argument("--coverage", type=float, default=0.95, choices=sorted(Z_ONE_SIDED))
     args = parser.parse_args(argv)
-    root = Path(os.environ["CRYOWISP_RUNS"]) / "devreadouts" / "learn"
+    root = Path(os.environ["CRYOWSP_RUNS"]) / "devreadouts" / "learn"
     records = pairs(root, args.sessions)
     if len(records) < 3:
         print(f"{len(records)} checked programs; too few", file=sys.stderr)

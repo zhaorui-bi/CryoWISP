@@ -18,11 +18,11 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.sandbox import DEFAULT_BWRAP, STATE_LOST_NOTE, SandboxConfig, SandboxError, SandboxKernel
+from cryowsp.sandbox import DEFAULT_BWRAP, STATE_LOST_NOTE, SandboxConfig, SandboxError, SandboxKernel
 
 REPO = Path(__file__).resolve().parents[1]
 SANDBOX_PYTHON = REPO / ".venv-sandbox" / "bin" / "python"
-BWRAP = DEFAULT_BWRAP  # $CRYOWISP_BWRAP or /usr/bin/bwrap
+BWRAP = DEFAULT_BWRAP  # $CRYOWSP_BWRAP or /usr/bin/bwrap
 
 pytestmark = [
     pytest.mark.skipif(
@@ -138,7 +138,7 @@ def test_tracebacks_exclude_kernel_frames(kernel: SandboxKernel) -> None:
         and "SyntaxError" in syntax.error
     )
     for error in (runtime.error, syntax.error):
-        assert "kernel.py" not in error and "/opt/cryowisp" not in error and "ast.py" not in error
+        assert "kernel.py" not in error and "/opt/cryowsp" not in error and "ast.py" not in error
     assert "Traceback" not in syntax.error
 
 
@@ -370,7 +370,7 @@ _HOST_SCRIPT = textwrap.dedent(
     """
     import json, sys
     from pathlib import Path
-    from cryowisp.sandbox import SandboxConfig, SandboxKernel
+    from cryowsp.sandbox import SandboxConfig, SandboxKernel
     fields = {key: Path(value) for key, value in json.loads(sys.argv[1]).items()}
     kernel = SandboxKernel(SandboxConfig(**fields, cell_timeout_s=120.0))
     kernel.start()
@@ -433,7 +433,7 @@ def test_close_is_idempotent_and_run_needs_a_started_open_kernel(dirs: dict[str,
     with pytest.raises(SandboxError, match="start"):
         kernel.run("1")
     kernel.start()
-    assert kernel.running and kernel.ready_info["protocol"] == "cryowisp.kernel.v0"
+    assert kernel.running and kernel.ready_info["protocol"] == "cryowsp.kernel.v0"
     kernel.close()
     kernel.close()
     assert not kernel.running

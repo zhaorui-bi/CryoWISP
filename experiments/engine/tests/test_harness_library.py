@@ -1,4 +1,4 @@
-"""The program library of a program-arm session (``cryowisp.harness.library``, LEARN v3, dev only): which earlier sessions
+"""The program library of a program-arm session (``cryowsp.harness.library``, LEARN v3, dev only): which earlier sessions
 it accepts, the files it writes into the trial, the one bullet it adds to the task prompt, the runner's refusals, and
 one scripted LEARN session over the real MCP server that reads a library built from an earlier scripted session on
 another condition of the same student.
@@ -16,11 +16,11 @@ from test_evalkit_instances_store import add_condition, build_condition
 from test_harness_fixtures import needs_sandbox  # noqa: F401
 from test_harness_learn import FIX, LearnStore, _program_cell, learn_store  # noqa: F401
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.harness import runner
-from cryowisp.harness.instance import InstanceRefused
-from cryowisp.harness.jsonio import read_json
-from cryowisp.harness.library import (
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.harness import runner
+from cryowsp.harness.instance import InstanceRefused
+from cryowsp.harness.jsonio import read_json
+from cryowsp.harness.library import (
     LIBRARY_INDEX_FILE,
     LIBRARY_PROGRAM_TEMPLATE,
     LibraryError,
@@ -28,9 +28,9 @@ from cryowisp.harness.library import (
     library_entries,
     write_library,
 )
-from cryowisp.harness.prompts import LIBRARY_FILES_ANCHOR, library_files_section
-from cryowisp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
-from cryowisp.harness.session import SessionPaths
+from cryowsp.harness.prompts import LIBRARY_FILES_ANCHOR, library_files_section
+from cryowsp.harness.scripted import ScriptedLauncher, ToolReply, call_and_record
+from cryowsp.harness.session import SessionPaths
 
 TARGET = "itarget00"
 MODEL = "mtoy"

@@ -1,9 +1,9 @@
 """PREREG F2 data: the pinned official CIFAR-10-C code at severity 5 on E1's 40,000 CIFAR-10 train rows.
 
     .venv/bin/python -I scripts/f2/f2_corrupt_train.py \\
-        --official $CRYOWISP_PRIVATE/external/robustness_8190fe3/make_cifar_c.py \\
-        --clean-dir $CRYOWISP_PRIVATE/cifar10_vl7/splits --dev-rows $CRYOWISP_PRIVATE/e10_staging/dev_rows_20261104/dev_rows.json \\
-        --out-dir $CRYOWISP_PRIVATE/cifar10_vl7/f2_train/corrupt_20261105
+        --official $CRYOWSP_PRIVATE/external/robustness_8190fe3/make_cifar_c.py \\
+        --clean-dir $CRYOWSP_PRIVATE/cifar10_vl7/splits --dev-rows $CRYOWSP_PRIVATE/e10_staging/dev_rows_20261104/dev_rows.json \\
+        --out-dir $CRYOWSP_PRIVATE/cifar10_vl7/f2_train/corrupt_20261105
 
 Runs in E10's pinned environment (``scripts/e10/cifar10c_official.py``: the official make_cifar_c.py at 8190fe3, sha256
 f865ae91..., with the library versions of the E10 fidelity record), not the project's.
@@ -43,7 +43,7 @@ DEV_SEEDS_V_EVIDENCE = {"gaussian_noise": 1001, "contrast": 5001}
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--official", type=Path, required=True)
-    parser.add_argument("--clean-dir", type=Path, required=True, help="$CRYOWISP_PRIVATE/cifar10_vl7/splits")
+    parser.add_argument("--clean-dir", type=Path, required=True, help="$CRYOWSP_PRIVATE/cifar10_vl7/splits")
     parser.add_argument("--dev-rows", type=Path, required=True, help="E10's dev_rows.json")
     parser.add_argument("--out-dir", type=Path, required=True)
     args = parser.parse_args(argv)
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
             f"this environment differs from E10's dev rows: {O.library_versions()} vs {dev['libraries']}"
         )
     record = {
-        "schema": "cryowisp.f2.corrupt_train.v1",
+        "schema": "cryowsp.f2.corrupt_train.v1",
         "severity": O.SEVERITY,
         "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
         "libraries": O.library_versions(),

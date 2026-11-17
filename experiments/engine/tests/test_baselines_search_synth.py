@@ -1,13 +1,13 @@
 """Search baselines on tiny synthetic instances: the re-implemented forward, gradients, localisation, the searches,
 end-to-end runs and the CLI guard. Everything is written to temporary directories.
 
-Each toy instance has the real evidence-v1 layout (model.npz, model_spec.json in the cryowisp.model_spec.v0 format,
+Each toy instance has the real evidence-v1 layout (model.npz, model_spec.json in the cryowsp.model_spec.v0 format,
 forward.py, evidence.npz, task.json with the executor's limits and no pair, private.json with correct hashes and
 split_role and no target, a fake V_check outside the instance directory). Labels come from a random teacher network
 whose output biases balance the classes; the base model is the teacher with the output bias of one class raised, so
 images of every other class near that boundary become base errors. x_fail holds 16 random base errors of any class,
 x_rand 48 random images. The toy forward.py uses naive loops, independent of the im2col code in
-``cryowisp.baselines.search.netspec``.
+``cryowsp.baselines.search.netspec``.
 """
 
 from __future__ import annotations
@@ -25,11 +25,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.baselines.search import arachne, care, runner
-from cryowisp.baselines.search.evidence import CountedForward, build_evidence_sets
-from cryowisp.baselines.search.limits import EditLimits, check_limits, edit_stats, limit_violations
-from cryowisp.baselines.search.netspec import (
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.baselines.search import arachne, care, runner
+from cryowsp.baselines.search.evidence import CountedForward, build_evidence_sets
+from cryowsp.baselines.search.limits import EditLimits, check_limits, edit_stats, limit_violations
+from cryowsp.baselines.search.netspec import (
     SpecError,
     check_parity,
     cross_entropy,
@@ -41,14 +41,14 @@ from cryowisp.baselines.search.netspec import (
     parse_spec,
     softmax,
 )
-from cryowisp.baselines.search.patches import write_sparse_patch
-from cryowisp.baselines.search.runner import RunOptions, SplitRoleError, run_search_baseline
-from cryowisp.baselines.search.selection import select_for_query
-from cryowisp.common.identity import load_params, params_sha256, save_params
-from cryowisp.evalkit.metrics import Candidate, choose_final
-from cryowisp.evalkit.patch_check import load_forward
-from cryowisp.models.forward_gen import render_forward
-from cryowisp.patch import Limits, PatchError, apply_patch_file, task_limits
+from cryowsp.baselines.search.patches import write_sparse_patch
+from cryowsp.baselines.search.runner import RunOptions, SplitRoleError, run_search_baseline
+from cryowsp.baselines.search.selection import select_for_query
+from cryowsp.common.identity import load_params, params_sha256, save_params
+from cryowsp.evalkit.metrics import Candidate, choose_final
+from cryowsp.evalkit.patch_check import load_forward
+from cryowsp.models.forward_gen import render_forward
+from cryowsp.patch import Limits, PatchError, apply_patch_file, task_limits
 
 REPO = Path(__file__).resolve().parents[1]
 N_CLASSES = 4
@@ -130,7 +130,7 @@ def toy_params(arch: str, rng: np.random.Generator) -> dict[str, np.ndarray]:
 
 
 def toy_spec(arch: str, params: dict[str, np.ndarray], mean: list[float], std: list[float]) -> dict:
-    """A model_spec.json in the layout written by ``cryowisp.models.spec``."""
+    """A model_spec.json in the layout written by ``cryowsp.models.spec``."""
     shape = list(SHAPES[arch])
     layers: list[dict] = []
     if arch == "cnn":
@@ -193,7 +193,7 @@ def toy_spec(arch: str, params: dict[str, np.ndarray], mean: list[float], std: l
         if position < len(names) - 1:
             layers.append({"op": "relu"})
     return {
-        "schema": "cryowisp.model_spec.v0",
+        "schema": "cryowsp.model_spec.v0",
         "model_id": f"mtoy{arch}",
         "input": {
             "shape": list(SHAPES[arch]),
@@ -270,13 +270,13 @@ def write_toy_instance(
     )
     spec = toy_spec(arch, base, mean, std)
     (instance_dir / "model_spec.json").write_text(json.dumps(spec, indent=1))
-    task = {"schema": "cryowisp.task.v1", "limits": task_limits()}
+    task = {"schema": "cryowsp.task.v1", "limits": task_limits()}
     (instance_dir / "task.json").write_text(json.dumps(task))
     vcheck_path = root / "vcheck" / f"{instance_id}.npz"
     vcheck_path.parent.mkdir(exist_ok=True)
     np.savez(vcheck_path, x=pool[vcheck], y=y[vcheck])
     private = {
-        "schema": "cryowisp.instance_private.v0",
+        "schema": "cryowsp.instance_private.v0",
         "instance_id": instance_id,
         "model_sha256": params_sha256(base),
         "forward_sha256": forward_sha,
@@ -896,7 +896,7 @@ def _cli_store(tmp_path: Path, source: Toy) -> tuple[dict[str, str], Path]:
         )
     (private / "instances" / "index.json").write_text(json.dumps({"instances": entries}))
     env = dict(
-        os.environ, CRYOWISP_PRIVATE=str(private), CRYOWISP_RUNS=str(runs), CRYOWISP_SEALED=str(sealed)
+        os.environ, CRYOWSP_PRIVATE=str(private), CRYOWSP_RUNS=str(runs), CRYOWSP_SEALED=str(sealed)
     )
     return env, runs
 
@@ -926,7 +926,7 @@ def test_cli_refuses_main_instances(mlp_toy: Toy, tmp_path: Path) -> None:
 
 def test_cli_selects_dev_instances_by_default(mlp_toy: Toy, tmp_path: Path) -> None:
     env, runs = _cli_store(tmp_path, mlp_toy)
-    index_path = Path(env["CRYOWISP_PRIVATE"]) / "instances" / "index.json"
+    index_path = Path(env["CRYOWSP_PRIVATE"]) / "instances" / "index.json"
     index = json.loads(index_path.read_text())
     index["instances"] = [entry for entry in index["instances"] if entry["instance_id"] != "imismatch"]
     index_path.write_text(json.dumps(index))

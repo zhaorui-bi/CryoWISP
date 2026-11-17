@@ -8,8 +8,8 @@ record holds the replay content hash (``replay_v1.json``), so a run refuses rows
 Refuses to overwrite.
 
     .venv/bin/python -I scripts/f1s/f1s_s5_rows.py \\
-        --official $CRYOWISP_PRIVATE/external/robustness_8190fe3/make_cifar_c.py \\
-        --replay-dir $CRYOWISP_PRIVATE/cifar10_vl7/replay --out-dir $CRYOWISP_PRIVATE/cifar10_vl7/f1s_s5
+        --official $CRYOWSP_PRIVATE/external/robustness_8190fe3/make_cifar_c.py \\
+        --replay-dir $CRYOWSP_PRIVATE/cifar10_vl7/replay --out-dir $CRYOWSP_PRIVATE/cifar10_vl7/f1s_s5
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     x4 = x.reshape(len(x), 3, 32, 32)
     args.out_dir.mkdir(parents=True)
     record = {
-        "schema": "cryowisp.f1s.s5_rows.v1",
+        "schema": "cryowsp.f1s.s5_rows.v1",
         "severity": O.SEVERITY,
         "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
         "libraries": O.library_versions(),

@@ -1,6 +1,6 @@
 """Paper table cells and bar readings from sealed-read records (or dev dry-run records of the same entries).
 
-Inputs: the read's result records (``cryowisp.sealed_finals_result.v1`` lines), the approved list and its cell map
+Inputs: the read's result records (``cryowsp.sealed_finals_result.v1`` lines), the approved list and its cell map
 (``finals_v2_cells.json``). Output: one JSON file with
 
 - ``cells``: every test-swapped cell of Paper/manuscript/tables/table_data.json (tab:main, tab:examples, tab:reuse,
@@ -14,7 +14,7 @@ the seed-100 gain of the same method (the program's B final, or the F1 kept pick
 re-selection); a stream score is the mean gain over the four conditions plus the mean clean change after that round;
 max forgetting is the largest (gain after the condition's own round) minus (gain after the last round) over the
 conditions seen before the last round, signed, so a negative value means every earlier gain held or rose (the
-definition of ``cryowisp.harness.program_stream.stream_summary``). A cell whose child is a base no-op (cell map text
+definition of ``cryowsp.harness.program_stream.stream_summary``). A cell whose child is a base no-op (cell map text
 "base no-op" or "unchanged network") is 0 by construction. A cell whose entry has no record is null, never filled
 from another source.
 
@@ -70,9 +70,9 @@ def load_records(paths: Sequence[Path], mode: str, list_sha: str | None) -> dict
                 continue
             record = json.loads(line)
             schemas = (
-                ("cryowisp.sealed_finals_result.v1",)
+                ("cryowsp.sealed_finals_result.v1",)
                 if mode == "sealed"
-                else ("cryowisp.sealed_finals_result.v0", "cryowisp.sealed_finals_result.v1")
+                else ("cryowsp.sealed_finals_result.v0", "cryowsp.sealed_finals_result.v1")
             )  # v0: the first dev dry run
             if record.get("schema") not in schemas:
                 raise TableError(f"{path}:{number}: schema {record.get('schema')!r}")

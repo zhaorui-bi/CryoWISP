@@ -25,13 +25,13 @@ from test_evalkit_instances_store import (  # noqa: F401
     toy_store,
 )
 
-from cryowisp.baselines.fit import cli, grad, ridge, rules
-from cryowisp.baselines.fit.runner import CandidatePatch, Evidence, MethodSpec, execute_run, load_evidence
-from cryowisp.baselines.instance_io import Instance, load_instance
-from cryowisp.evalkit import devreadout
-from cryowisp.evalkit.companions import build_replay
-from cryowisp.evalkit.instances import instances_root
-from cryowisp.evalkit.patch_check import PatchCheckOracle
+from cryowsp.baselines.fit import cli, grad, ridge, rules
+from cryowsp.baselines.fit.runner import CandidatePatch, Evidence, MethodSpec, execute_run, load_evidence
+from cryowsp.baselines.instance_io import Instance, load_instance
+from cryowsp.evalkit import devreadout
+from cryowsp.evalkit.companions import build_replay
+from cryowsp.evalkit.instances import instances_root
+from cryowsp.evalkit.patch_check import PatchCheckOracle
 
 N_REPLAY = 8
 SPEC = MethodSpec(

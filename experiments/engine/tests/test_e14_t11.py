@@ -6,8 +6,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from cryowisp.data import e14 as D
-from cryowisp.evalkit import e14 as E
+from cryowsp.data import e14 as D
+from cryowsp.evalkit import e14 as E
 
 EMPTY, WALL, AGENT = (D.OBJECTS.index(name) for name in ("empty", "wall", "agent"))
 BALL, BOX, KEY = (D.OBJECTS.index(name) for name in ("ball", "box", "key"))

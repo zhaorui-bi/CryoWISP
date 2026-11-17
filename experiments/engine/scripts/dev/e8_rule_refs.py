@@ -24,7 +24,7 @@ row layout, parsed here, never ``seqops``), with OP_NEW0 stated in the E8 form; 
 generator ignores the 64 V_evidence new-operator rows that ``execute_run`` hands it; only the replay part of the
 evidence enters the fit.
 
-Recipes, each the E5 recipe of ``cryowisp.baselines.fit.seqgrad`` (mean token cross-entropy, full-batch Adam, lr
+Recipes, each the E5 recipe of ``cryowsp.baselines.fit.seqgrad`` (mean token cross-entropy, full-batch Adam, lr
 {1e-3, 1e-2} x steps {10, 30, 100, 300}, run seed 0, 8 candidates, each checked once by the seqskill joint oracle):
 
 * ``*_grad_full``: every tensor, edit limits ignored (seq_grad_full on the fit rows).
@@ -34,7 +34,7 @@ Recipes, each the E5 recipe of ``cryowisp.baselines.fit.seqgrad`` (mean token cr
 * ``*_sparse19_traj``: as above, entries ranked by |w - w_base| after unconstrained Adam lr 1e-3, 300 steps on the fit
   rows.
 
-Runs go to ``$CRYOWISP_RUNS/baselines/<instance>/<method>/e8ref/<seed>/``; read them with ``cryowisp.evalkit.devreadout``
+Runs go to ``$CRYOWSP_RUNS/baselines/<instance>/<method>/e8ref/<seed>/``; read them with ``cryowsp.evalkit.devreadout``
 (own final, and ``--retention-floor -20`` for the kept rule).
 
     source scripts/env.sh
@@ -263,11 +263,11 @@ def main(argv: list[str] | None = None) -> int:
     sys.dont_write_bytecode = True
     import numpy as np
 
-    from cryowisp.common.identity import params_sha256
-    from cryowisp.data import seqops as S
-    from cryowisp.data.store import dataset_json_path, read_dataset_json
-    from cryowisp.evalkit.seqskill import load_seqskill_instance, seqskill_program_limits
-    from cryowisp.evalkit.targets import file_sha256
+    from cryowsp.common.identity import params_sha256
+    from cryowsp.data import seqops as S
+    from cryowsp.data.store import dataset_json_path, read_dataset_json
+    from cryowsp.evalkit.seqskill import load_seqskill_instance, seqskill_program_limits
+    from cryowsp.evalkit.targets import file_sha256
 
     instance = load_seqskill_instance(args.instance)
     private = instance.private
@@ -462,7 +462,7 @@ def main(argv: list[str] | None = None) -> int:
             "sha256": params_sha256({"x": x_gen[N_SINGLE:], "y": y_gen[N_SINGLE:]}),
         },
         "generated_sha256": new_sha,
-        "generated_sha256_rule": "cryowisp.common.identity.params_sha256 of {'x': x [2000, SEQ_LEN], 'y': y [2000, "
+        "generated_sha256_rule": "cryowsp.common.identity.params_sha256 of {'x': x [2000, SEQ_LEN], 'y': y [2000, "
         "SEQ_LEN]} int64, single rows then composed rows",
     }
     replay_block = {
@@ -561,16 +561,16 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit.edits import scale_to_norm_limit
-    from cryowisp.baselines.fit.grad import LEARNING_RATES, STEP_CHECKPOINTS
-    from cryowisp.baselines.fit.runner import (
+    from cryowsp.baselines.fit.edits import scale_to_norm_limit
+    from cryowsp.baselines.fit.grad import LEARNING_RATES, STEP_CHECKPOINTS
+    from cryowsp.baselines.fit.runner import (
         CandidatePatch,
         Evidence,
         MethodSpec,
         baseline_run_dir,
         execute_run,
     )
-    from cryowisp.baselines.fit.seqgrad import (
+    from cryowsp.baselines.fit.seqgrad import (
         adam_checkpoints,
         rebuild,
         seq_grad_config,

@@ -14,7 +14,7 @@ with a weight-dependent number of non-finite entries; ``exit7.py`` ends the run 
 content hash of its arrays, since ``numpy.savez`` stamps the time into the archive), both prompts, the ``tools/list``
 reply and every tool reply with its timing fields removed (``wall_s_elapsed``, ``wall_s_remaining`` and
 ``duration_s`` depend on the machine). The B-arm reference is the snapshot from main 9a65b20, before any A4 code, with the package and schema names
-migrated to CryoWISP. ``B_SHOWN_CRYOWISP`` retains a byte-level check of that view.
+migrated to CryoWSP. ``B_SHOWN_CRYOWSP`` retains a byte-level check of that view.
 """
 
 from __future__ import annotations
@@ -28,9 +28,9 @@ from typing import Any
 import numpy as np
 from test_harness_learn import STRINGS, _program_cell
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.harness import runner
-from cryowisp.harness.scripted import ScriptedLauncher, call_and_record
+from cryowsp.common.identity import params_sha256
+from cryowsp.harness import runner
+from cryowsp.harness.scripted import ScriptedLauncher, call_and_record
 
 WALL_S = 300.0
 TIMING_FIELDS = ("wall_s_elapsed", "wall_s_remaining", "duration_s")
@@ -214,7 +214,7 @@ def shown_digest(root: Path, replies: list[Any], listed: list[Any]) -> dict[str,
     }
 
 
-B_SHOWN_CRYOWISP: dict[str, Any] = {
+B_SHOWN_CRYOWSP: dict[str, Any] = {
     "trial": {
         "experience.npz": "arrays:df5eb9b6c167c882373d6c7d71feca35292fe288e0c6fc9e889d12cb703ebd2b",
         "forward.py": "bd0bd988862c996a69bbcb39b979c725a48ce6fb109d2799d2be402a2abf7dc6",

@@ -26,13 +26,13 @@ from test_harness_fixtures import needs_sandbox
 from test_harness_k1_rule import BEFORE_K1, PREREG, _differences, _view_digest, needs_prereg
 from test_harness_learn import STRINGS, _program_cell
 
-from cryowisp.analysis.session_info import session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.data import store as data_store
-from cryowisp.evalkit.instances import scan_for_tokens
-from cryowisp.harness import e11, runner
-from cryowisp.harness.arms import arm_spec
-from cryowisp.harness.experience import (
+from cryowsp.analysis.session_info import session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.data import store as data_store
+from cryowsp.evalkit.instances import scan_for_tokens
+from cryowsp.harness import e11, runner
+from cryowsp.harness.arms import arm_spec
+from cryowsp.harness.experience import (
     EXPERIENCE_KEYS,
     LEARN_NEW_DESCRIPTION,
     NAMED_EXPERIENCE_WORDS,
@@ -45,11 +45,11 @@ from cryowisp.harness.experience import (
     learn_task_named,
     learn_task_unlabelled,
 )
-from cryowisp.harness.finalize import STATUS_DRY_RUN, FinalizeError, run_hidden_check
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import read_json, read_jsonl
-from cryowisp.harness.leaks import HINT_WORDS, scan_label_arrays
-from cryowisp.harness.prompts import (
+from cryowsp.harness.finalize import STATUS_DRY_RUN, FinalizeError, run_hidden_check
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import read_json, read_jsonl
+from cryowsp.harness.leaks import HINT_WORDS, scan_label_arrays
+from cryowsp.harness.prompts import (
     LADDER_TASK_EDITS,
     PROMPT_DIR,
     Budgets,
@@ -58,11 +58,11 @@ from cryowisp.harness.prompts import (
     render_system,
     render_task,
 )
-from cryowisp.harness.scripted import McpError, ScriptedLauncher, call_and_record
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import tool_specs
-from cryowisp.harness.trial import NAMED_PROGRAM_EXPERIENCE_FILE, StudentOverride, TrialError, assemble
-from cryowisp.models import vit_synth as V
+from cryowsp.harness.scripted import McpError, ScriptedLauncher, call_and_record
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import tool_specs
+from cryowsp.harness.trial import NAMED_PROGRAM_EXPERIENCE_FILE, StudentOverride, TrialError, assemble
+from cryowsp.models import vit_synth as V
 
 REPO = Path(__file__).resolve().parents[1]
 POST_LEARN = REPO / "scripts" / "dev" / "post_learn.sh"
@@ -193,7 +193,7 @@ def labels_in(paths: list[Path], labels: np.ndarray) -> list[str]:
 
 def every_split(dataset: str) -> dict[str, dict[str, np.ndarray]]:
     """``{"<condition or clean>/<split>": arrays}`` of every private split of ``dataset`` and of each of its
-    conditions (``cryowisp.data.store.LOADABLE_SPLITS``; the sealed test set is never among them)."""
+    conditions (``cryowsp.data.store.LOADABLE_SPLITS``; the sealed test set is never among them)."""
     found = {}
     for condition in (None, *data_store.list_conditions(dataset)):
         for split in data_store.LOADABLE_SPLITS:
@@ -796,7 +796,7 @@ def test_ladder_dry_runs_pass_the_scans_and_keep_the_other_views(ladder_store: V
             assert session["budget"] == plain["budget"]
         else:
             assert session["tools"] == ["python", "status", "declare_final"]
-            assert session["allowed_tools"] == [f"mcp__cryowisp__{tool}" for tool in session["tools"]]
+            assert session["allowed_tools"] == [f"mcp__cryowsp__{tool}" for tool in session["tools"]]
             assert session["budget"] == {**plain["budget"], "patch_checks": 1}
             assert session["e11_view"]["hidden_check_budget"] == 1
             assert all("check" not in text.lower() for text in texts.values())
@@ -823,7 +823,7 @@ def test_a_leak_word_outside_the_sentence_still_fails_the_scan(ladder_store: V.S
     result = _dry(_id(ladder_store), K0B)
     session = read_json(result.root / "session.json")
     paths = SessionPaths(result.root)
-    from cryowisp.harness.leaks import ForbiddenStrings
+    from cryowsp.harness.leaks import ForbiddenStrings
 
     record = session["forbidden_strings"]
     forbidden = ForbiddenStrings(

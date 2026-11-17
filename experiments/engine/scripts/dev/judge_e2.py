@@ -1,5 +1,5 @@
 """E2 numbers of one fewshot LEARN session against PREREG section 0 E2 (dev, seed 100). Reads the outputs of
-scripts/dev/post_learn.sh ($CRYOWISP_RUNS/devreadouts/learn/<sid>/info.json from session_info and
+scripts/dev/post_learn.sh ($CRYOWSP_RUNS/devreadouts/learn/<sid>/info.json from session_info and
 transfer/transfer_*.json next to it), the session's own
 logs/checks.jsonl, and the references' devreadout records.
 
@@ -12,7 +12,7 @@ points, read from the references' own record before this session's readout; with
 
 Supplementary, not the gate (PREREG E2, recorded before any E2 LEARN check): the equal-retention pick. Among the
 session's checks with S_old >= -20 on V_check plus the base no-op, the highest S_joint, ties to fewer changed
-parameters, then the earlier query (choose_final on a filtered pool, as cryowisp.evalkit.devreadout.retention_choice).
+parameters, then the earlier query (choose_final on a filtered pool, as cryowsp.evalkit.devreadout.retention_choice).
 Its V_select row comes from the session_info trajectory. --refs lists reference records (jsonl, one run per line,
 each with instance_id, method and readouts_fewshot) whose rows for this instance are printed next to it.
 """
@@ -24,7 +24,7 @@ import json
 import os
 from pathlib import Path
 
-LEARN_ROOT = Path(os.environ["CRYOWISP_RUNS"]) / "devreadouts" / "learn"
+LEARN_ROOT = Path(os.environ["CRYOWSP_RUNS"]) / "devreadouts" / "learn"
 S_OLD_FLOOR = -20
 
 
@@ -87,7 +87,7 @@ def main() -> None:
                 f"{args.best_ref_all:+.2f}): {checks}"
             )
     session_checks = (
-        Path(os.environ["CRYOWISP_RUNS"]) / "sessions" / args.session_id / "logs" / "checks.jsonl"
+        Path(os.environ["CRYOWSP_RUNS"]) / "sessions" / args.session_id / "logs" / "checks.jsonl"
     )
     checks = [json.loads(raw) for raw in session_checks.read_text().splitlines() if raw.strip()]
     chosen, n_eligible = retention_pick(checks)

@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from cryowisp.common.paths import relocate_run_path
+from cryowsp.common.paths import relocate_run_path
 
 CONDITIONS = ("gaussian_noise_s3", "contrast_s4")
 ARM4 = ("bn_adapt", "tent")

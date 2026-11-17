@@ -5,7 +5,7 @@ of 64 + 64, constant lr) is run from the seed-100 student with the "corrupted" h
 every row is clean. N in {64, 1024} (each mixed 1:1 with N more clean rows), lr 1e-5, 100 steps. The two checkpoints
 are checked once each by the joint oracle on the gaussian_noise_s5 instance (V_check S_old is the retention cost of
 the recipe alone). If S_old stays at about -40 or worse, F2's gaussian retention failures are a recipe effect.
-Output: ``$CRYOWISP_RUNS/baselines/<instance>/f1s_diag_f2/0/`` (run.json) and a summary line per N.
+Output: ``$CRYOWSP_RUNS/baselines/<instance>/f1s_diag_f2/0/`` (run.json) and a summary line per N.
 
     python -B scripts/f1s/f1s_diag_f2.py --instance i00802425 --threads 8
 """
@@ -32,10 +32,10 @@ def main(argv: list[str] | None = None) -> int:
     import torch
 
     torch.set_num_threads(args.threads)
-    from cryowisp.baselines.fit import labeleq as L
-    from cryowisp.baselines.fit.cli import load_checked_instances, summary_line
-    from cryowisp.baselines.fit.runner import CandidatePatch, baseline_run_dir, execute_run
-    from cryowisp.models.train import configure_determinism
+    from cryowsp.baselines.fit import labeleq as L
+    from cryowsp.baselines.fit.cli import load_checked_instances, summary_line
+    from cryowsp.baselines.fit.runner import CandidatePatch, baseline_run_dir, execute_run
+    from cryowsp.models.train import configure_determinism
 
     instance = load_checked_instances([args.instance], allow_main=False)[0]
     condition = L.condition_of(instance)

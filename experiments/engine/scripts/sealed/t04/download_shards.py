@@ -2,16 +2,16 @@
 sealed test: "Local images").
 
     source scripts/env.sh
-    .venv/bin/python scripts/sealed/t04/download_shards.py --kit $CRYOWISP_RUNS/t04/sealed_kit_v6
+    .venv/bin/python scripts/sealed/t04/download_shards.py --kit $CRYOWSP_RUNS/t04/sealed_kit_v6
 
-Runs only after the user approves the sealed list. Files go to ``$CRYOWISP_SEALED/in1k_t04/hf_49e2ee26``
-(``cryowisp.evalkit.sealed_t04.SHARDS_LOCATION``) by ``huggingface_hub.snapshot_download`` at the pinned revision, with the
+Runs only after the user approves the sealed list. Files go to ``$CRYOWSP_SEALED/in1k_t04/hf_49e2ee26``
+(``cryowsp.evalkit.sealed_t04.SHARDS_LOCATION``) by ``huggingface_hub.snapshot_download`` at the pinned revision, with the
 same file patterns as the NSCC download (scripts/t03/download_imagenet_val.pbs). huggingface_hub authenticates with its
 own cached login; this script never reads, prints or passes a token. The kit's manifest.sha256 (the NSCC manifest,
-sha256 pinned in ``cryowisp.data.imagenet_val.MANIFEST_SHA256``) is copied next to the files and every listed file is
+sha256 pinned in ``cryowsp.data.imagenet_val.MANIFEST_SHA256``) is copied next to the files and every listed file is
 checked against it (``imagenet_val.verify_manifest``); a mismatch is an error. Nothing is decoded or opened as an
 image. The record (file names, sizes, sha256, library version, wall time) goes to
-``$CRYOWISP_RUNS/t04/sealed_download/download_<time>.json``; nothing else is printed.
+``$CRYOWSP_RUNS/t04/sealed_download/download_<time>.json``; nothing else is printed.
 
 An interrupted download can be rerun: snapshot_download keeps the files it finished, and the manifest check decides.
 """
@@ -25,11 +25,11 @@ import sys
 import time
 from pathlib import Path
 
-from cryowisp.common.paths import runs_dir, sealed_dir
-from cryowisp.data import imagenet_val as V
-from cryowisp.evalkit import sealed_finals as SF
-from cryowisp.evalkit import sealed_t04 as ST
-from cryowisp.evalkit.targets import file_sha256, utc_now
+from cryowsp.common.paths import runs_dir, sealed_dir
+from cryowsp.data import imagenet_val as V
+from cryowsp.evalkit import sealed_finals as SF
+from cryowsp.evalkit import sealed_t04 as ST
+from cryowsp.evalkit.targets import file_sha256, utc_now
 
 ALLOW_PATTERNS = [V.CLASSES_FILE, "data/validation-*.parquet"]
 """As the NSCC download of R29 job 1 (scripts/t03/download_imagenet_val.pbs)."""
@@ -53,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
     free_gb = shutil.disk_usage(sealed_dir()).free / 1e9
     if free_gb < args.min_free_gb:
         raise SystemExit(
-            f"{free_gb:.1f} GB free under $CRYOWISP_SEALED; {args.min_free_gb} GB needed; nothing downloaded"
+            f"{free_gb:.1f} GB free under $CRYOWSP_SEALED; {args.min_free_gb} GB needed; nothing downloaded"
         )
     target.mkdir(parents=True, exist_ok=True, mode=0o700)
     started = time.time()
@@ -77,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
             f"the manifest lists {sorted(set(listed) ^ expected)} beyond or short of the 15 files"
         )
     record = {
-        "schema": "cryowisp.t04.shard_download.v1",
+        "schema": "cryowsp.t04.shard_download.v1",
         "time": utc_now(),
         "repo_id": V.REPO_ID,
         "revision": V.REVISION,

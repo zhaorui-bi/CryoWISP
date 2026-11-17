@@ -1,11 +1,11 @@
 """A toy E11 store for the harness tests: tiny synthetic ViT-Lite students under the E11 dataset name.
 
-The store is ``cryowisp.models.vit_synth.build_store`` with the ``TINY`` configuration (3 x 8 x 8 images, 4 x 4 patches,
+The store is ``cryowsp.models.vit_synth.build_store`` with the ``TINY`` configuration (3 x 8 x 8 images, 4 x 4 patches,
 width 16, 2 layers, 2 heads, 4 classes; the authors' tensor names and layer, 30 tensors): random images, a stand-in
 transform under each E10 condition name, dev seeds 100 to 105 with E10's decoy pairs, one evidence-v1 instance per
 (condition, seed) and the replay draw. Its labels are planted so that the LayerNorm edit ``vit_synth.plant_deltas`` of
 the seed-100 student fixes gaussian_noise_s5 rows and breaks no clean row. Everything lives under a pytest tmp
-directory with CRYOWISP_* monkeypatched; nothing touches the real store.
+directory with CRYOWSP_* monkeypatched; nothing touches the real store.
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.harness import e10, e11
-from cryowisp.models import vit_synth as V
+from cryowsp.harness import e10, e11
+from cryowsp.models import vit_synth as V
 
 CLASSES = ("alpha", "beta", "gamma", "delta")
 DEV_SEEDS = (100, 101, 102, 103, 104, 105)
@@ -26,11 +26,11 @@ ROWS = {"train": 96, "V_select": 160, "V_evidence": 128, "V_check": 160, "test":
 
 
 def activate(root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Point CRYOWISP_PRIVATE, CRYOWISP_SEALED and CRYOWISP_RUNS at ``root``."""
+    """Point CRYOWSP_PRIVATE, CRYOWSP_SEALED and CRYOWSP_RUNS at ``root``."""
     for variable, sub in (
-        ("CRYOWISP_PRIVATE", "private"),
-        ("CRYOWISP_SEALED", "sealed"),
-        ("CRYOWISP_RUNS", "runs"),
+        ("CRYOWSP_PRIVATE", "private"),
+        ("CRYOWSP_SEALED", "sealed"),
+        ("CRYOWSP_RUNS", "runs"),
     ):
         monkeypatch.setenv(variable, str(root / sub))
 

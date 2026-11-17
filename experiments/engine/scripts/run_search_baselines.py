@@ -1,11 +1,11 @@
 """Run the search baselines (Arachne-style DE, CARE-style PSO) on repair instances.
 
-Instances come from $CRYOWISP_PRIVATE/instances/index.json: by default every entry with split_role "dev", optionally
+Instances come from $CRYOWSP_PRIVATE/instances/index.json: by default every entry with split_role "dev", optionally
 narrowed by --dataset, or exactly the ids given with --instance. Before anything runs, the split_role in every
 selected instance's private.json is read; a "main" instance is refused (exit status 2, nothing run) unless
 --allow-main is given, which is reserved for runs after the pre-registration freeze (PREREG section 2). Each method
 on each instance gets its own counted oracle with 8 patch-check queries and writes
-$CRYOWISP_RUNS/baselines/<instance_id>/<method>/<seed>/ (q<k>/ patches and run.json). An existing run directory is
+$CRYOWSP_RUNS/baselines/<instance_id>/<method>/<seed>/ (q<k>/ patches and run.json). An existing run directory is
 never overwritten.
 
 Example::
@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--threads must be at least 1")
     for variable in THREAD_VARIABLES:  # before numpy is imported, or BLAS ignores it
         os.environ[variable] = str(args.threads)
-    from cryowisp.common.paths import private_dir
+    from cryowsp.common.paths import private_dir
 
     instances_root = private_dir() / "instances"
     try:
@@ -142,7 +142,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         return 0
 
-    from cryowisp.baselines.search.runner import baseline_run_dir, run_search_baseline, summary_line
+    from cryowsp.baselines.search.runner import baseline_run_dir, run_search_baseline, summary_line
 
     for instance_dir in instance_dirs:
         for method in args.methods:

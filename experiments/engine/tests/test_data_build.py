@@ -1,6 +1,6 @@
 """End-to-end build, write, verify and the pre-registered Colored-MNIST rebuild, on synthetic raw arrays.
 
-Nothing here downloads data or touches the real stores: CRYOWISP_PRIVATE and CRYOWISP_SEALED point to temporary dirs.
+Nothing here downloads data or touches the real stores: CRYOWSP_PRIVATE and CRYOWSP_SEALED point to temporary dirs.
 """
 
 from __future__ import annotations
@@ -10,11 +10,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.data import build as B
-from cryowisp.data import colored
-from cryowisp.data.registry import DATASETS, DIGIT_CLASSES, SPLIT_NAMES
-from cryowisp.data.sources import RawDataset
-from cryowisp.data.store import load_split, read_dataset_json, split_path, split_sha256
+from cryowsp.data import build as B
+from cryowsp.data import colored
+from cryowsp.data.registry import DATASETS, DIGIT_CLASSES, SPLIT_NAMES
+from cryowsp.data.sources import RawDataset
+from cryowsp.data.store import load_split, read_dataset_json, split_path, split_sha256
 
 
 def _synthetic_mnist(seed: int = 0) -> RawDataset:
@@ -36,8 +36,8 @@ def _synthetic_mnist(seed: int = 0) -> RawDataset:
 def stores(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     for name in ("private", "sealed"):
         (tmp_path / name).mkdir()
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(tmp_path / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(tmp_path / "sealed"))
     return tmp_path
 
 

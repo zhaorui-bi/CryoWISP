@@ -1,4 +1,4 @@
-"""Structural validation, parent hash, finiteness and size limits of cryowisp.patch (contract 5.1)."""
+"""Structural validation, parent hash, finiteness and size limits of cryowsp.patch (contract 5.1)."""
 
 from __future__ import annotations
 
@@ -9,17 +9,17 @@ import pickle
 import numpy as np
 import pytest
 
-from cryowisp.common.identity import params_sha256
-from cryowisp.patch import SCHEMA, Limits, PatchError, apply_patch
+from cryowsp.common.identity import params_sha256
+from cryowsp.patch import SCHEMA, Limits, PatchError, apply_patch
 
 OPEN = Limits(max_changed_frac=None, max_rel_frob=None, max_edit_frac=None)
 
 
 @pytest.fixture(autouse=True)
 def _isolated_store(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Point the CRYOWISP data locations at temporary directories so no test can touch the real store."""
-    root = tmp_path_factory.mktemp("cryowisp_store")
-    for variable in ("CRYOWISP_PRIVATE", "CRYOWISP_SEALED", "CRYOWISP_RUNS"):
+    """Point the CRYOWSP data locations at temporary directories so no test can touch the real store."""
+    root = tmp_path_factory.mktemp("cryowsp_store")
+    for variable in ("CRYOWSP_PRIVATE", "CRYOWSP_SEALED", "CRYOWSP_RUNS"):
         (root / variable).mkdir()
         monkeypatch.setenv(variable, str(root / variable))
 
@@ -92,7 +92,7 @@ def test_top_level_schema_rules() -> None:
     op = {"op": "scale_rows", "tensor": "fc.bias", "rows": [0], "factor": 2.0}
     sha = params_sha256(params)
     cases = [
-        (_patch(params, op, schema="cryowisp.patch.v1"), "schema: must be 'cryowisp.patch.v0'"),
+        (_patch(params, op, schema="cryowsp.patch.v1"), "schema: must be 'cryowsp.patch.v0'"),
         (_patch(params, op, hypothesis="  "), "hypothesis: must be a non-empty string"),
         (_patch(params, op, predicted_effect=3), "predicted_effect: must be a non-empty string"),
         (_patch(params, op, notes="x"), "unknown field(s) 'notes'"),
@@ -780,7 +780,7 @@ def test_invalid_limits_are_refused(fields) -> None:
 def test_task_limits_is_the_json_form_of_every_field() -> None:
     import dataclasses
 
-    from cryowisp.patch import task_limits
+    from cryowsp.patch import task_limits
 
     every = dataclasses.asdict(Limits())
     assert every.pop("rel_frob_exempt") == () and task_limits() == every == json.loads(

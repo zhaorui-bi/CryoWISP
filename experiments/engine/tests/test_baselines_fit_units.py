@@ -8,14 +8,14 @@ import math
 import numpy as np
 import pytest
 
-from cryowisp.baselines.fit.controls import (
+from cryowsp.baselines.fit.controls import (
     baseline_session_id,
     candidate_rng,
     control_run_seed,
     gaussian_delta,
     permuted_delta,
 )
-from cryowisp.baselines.fit.edits import (
+from cryowsp.baselines.fit.edits import (
     MAX_REL_FROB,
     REL_FROB_MIN_NDIM,
     apply_patch_path,
@@ -23,12 +23,12 @@ from cryowisp.baselines.fit.edits import (
     rel_frob,
     scale_to_norm_limit,
 )
-from cryowisp.baselines.fit.ridge import ridge_solve, ridge_targets, softmax
-from cryowisp.baselines.fit.runner import jsonable, safe_name
-from cryowisp.baselines.fit.torch_forward import architecture_from
-from cryowisp.baselines.instance_io import write_delta_patch
-from cryowisp.common.identity import params_sha256
-from cryowisp.patch import PatchError
+from cryowsp.baselines.fit.ridge import ridge_solve, ridge_targets, softmax
+from cryowsp.baselines.fit.runner import jsonable, safe_name
+from cryowsp.baselines.fit.torch_forward import architecture_from
+from cryowsp.baselines.instance_io import write_delta_patch
+from cryowsp.common.identity import params_sha256
+from cryowsp.patch import PatchError
 
 
 def _params(seed: int = 0) -> dict[str, np.ndarray]:
@@ -261,7 +261,7 @@ def test_jsonable_and_safe_name() -> None:
 
 
 def test_label_shift_direction_matches_the_closed_form_and_ignores_logit_shifts() -> None:
-    from cryowisp.baselines.fit.rules import label_shift_direction
+    from cryowsp.baselines.fit.rules import label_shift_direction
 
     y = np.array([0, 0, 0, 1, 2, 2], dtype=np.int64)
     uniform = label_shift_direction(np.zeros((6, 4)), y)
@@ -286,8 +286,8 @@ def test_label_shift_direction_matches_the_closed_form_and_ignores_logit_shifts(
 )
 @pytest.mark.parametrize("strength", [0.37, 1.0])
 def test_tie_columns_matches_the_executor_bit_for_bit(shape, groups, strength) -> None:
-    from cryowisp.baselines.fit.rules import tie_columns
-    from cryowisp.patch import Limits, apply_patch
+    from cryowsp.baselines.fit.rules import tie_columns
+    from cryowsp.patch import Limits, apply_patch
 
     rng = np.random.default_rng(11)
     params = {
@@ -296,7 +296,7 @@ def test_tie_columns_matches_the_executor_bit_for_bit(shape, groups, strength) -
     }
     sha = params_sha256(params)
     patch = {
-        "schema": "cryowisp.patch.v0",
+        "schema": "cryowsp.patch.v0",
         "parent_sha256": sha,
         "hypothesis": "h",
         "predicted_effect": "p",
@@ -315,7 +315,7 @@ def test_tie_columns_matches_the_executor_bit_for_bit(shape, groups, strength) -
 
 
 def test_tie_columns_leaves_singleton_groups_unchanged() -> None:
-    from cryowisp.baselines.fit.rules import tie_columns
+    from cryowsp.baselines.fit.rules import tie_columns
 
     weight = np.random.default_rng(2).normal(size=(3, 5)).astype(np.float32)
     tied = tie_columns(weight, np.array([0, 0, 2, 3, 4]), 1.0)
@@ -324,8 +324,8 @@ def test_tie_columns_leaves_singleton_groups_unchanged() -> None:
 
 
 def test_tie_strengths_follow_the_norm_limit() -> None:
-    from cryowisp.baselines.fit.edits import NORM_SCALE_MARGIN
-    from cryowisp.baselines.fit.rules import tie_strengths
+    from cryowsp.baselines.fit.edits import NORM_SCALE_MARGIN
+    from cryowsp.baselines.fit.rules import tie_strengths
 
     assert MAX_REL_FROB is not None
     cap = MAX_REL_FROB * (1.0 - NORM_SCALE_MARGIN)
@@ -356,7 +356,7 @@ def test_edit_stats_uses_an_executor_edit_size_when_given() -> None:
 
 
 def test_write_ops_patch_writes_a_patch_the_executor_applies(tmp_path) -> None:
-    from cryowisp.baselines.fit.edits import apply_patch_result, write_ops_patch
+    from cryowsp.baselines.fit.edits import apply_patch_result, write_ops_patch
 
     base = _params()
     sha = params_sha256(base)

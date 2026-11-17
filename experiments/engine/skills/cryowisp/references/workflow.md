@@ -5,22 +5,22 @@
 Use Linux with bubblewrap 0.8+, unprivileged user namespaces, and `uv`. The program interpreter is a separate
 NumPy-only venv; the setup script bases it on `/usr/bin/python3.14` when present, else on a CPython 3.14 that uv
 downloads. Where the distribution's bubblewrap is older (Ubuntu 22.04 ships 0.6), `bash scripts/build_bwrap.sh`
-builds one without root; pass it with `--bwrap` or `export CRYOWISP_BWRAP=<path>`. Programs a language model writes
+builds one without root; pass it with `--bwrap` or `export CRYOWSP_BWRAP=<path>`. Programs a language model writes
 always run in the sandbox. Only reuse of one fixed program can skip it, when the user names that program's sha256
 (see "Reuse without the sandbox").
 
 ```bash
 git clone https://github.com/Gen-Verse/WeightCode.git
-cd CryoWISP
+cd CryoWSP
 uv sync --locked --extra train --extra dev
 bash scripts/setup_sandbox_venv.sh
-uv run cryowisp doctor --sandbox-python .venv-sandbox/bin/python
+uv run cryowsp doctor --sandbox-python .venv-sandbox/bin/python
 ```
 
 `doctor` prints `"status": "ok"` with the bubblewrap and NumPy versions once the sandbox works.
 
-The `cryowisp` executable is installed in the engine environment. When operating from elsewhere, use
-`uv run --project <engine-checkout> cryowisp ...` and give paths inside the checkout as absolute paths: the sandbox
+The `cryowsp` executable is installed in the engine environment. When operating from elsewhere, use
+`uv run --project <engine-checkout> cryowsp ...` and give paths inside the checkout as absolute paths: the sandbox
 interpreter and any program file, such as `<engine-checkout>/programs/resnet18-ridge-head/program.py`. Paths of the
 user's own files stay relative to the user's project. uv may warn that `VIRTUAL_ENV` does not match the project
 environment; the warning is harmless.
@@ -51,7 +51,7 @@ Wrapped checkpoints, half precision, custom
 layers and custom normalization are unsupported. `labels.json` is an ordered list matching the head rows.
 
 ```bash
-uv run cryowisp import-model --checkpoint model.pt --labels labels.json --out work/model
+uv run cryowsp import-model --checkpoint model.pt --labels labels.json --out work/model
 ```
 
 Each chosen data role has `new/<class-name>/<image>` and `old/<class-name>/<image>` directories. Class names must
@@ -59,10 +59,10 @@ match the ordered labels; a role may contain only the relevant classes. Images a
 bilinear antialiasing, then center-cropped. Normalization happens inside the fixed forward adapter.
 
 ```bash
-uv run cryowisp prepare-data --model work/model --new images/experience/new --old images/experience/old --out work/experience.npz
-uv run cryowisp prepare-data --model work/model --new images/selection/new --old images/selection/old --out work/selection.npz
-uv run cryowisp prepare-data --model work/model --new images/final/new --old images/final/old --out work/final.npz
-uv run cryowisp prepare-task --model work/model --experience work/experience.npz --selection work/selection.npz --final work/final.npz --goal 'Recognize objects under the supplied corruption while retaining clean recognition' --retention-drop 0.01 --min-new-gain 0.01 --out work/task
+uv run cryowsp prepare-data --model work/model --new images/experience/new --old images/experience/old --out work/experience.npz
+uv run cryowsp prepare-data --model work/model --new images/selection/new --old images/selection/old --out work/selection.npz
+uv run cryowsp prepare-data --model work/model --new images/final/new --old images/final/old --out work/final.npz
+uv run cryowsp prepare-task --model work/model --experience work/experience.npz --selection work/selection.npz --final work/final.npz --goal 'Recognize objects under the supplied corruption while retaining clean recognition' --retention-drop 0.01 --min-new-gain 0.01 --out work/task
 ```
 
 `--goal` is one sentence describing the capability; the editor reads it during synthesis, and reuse only records
@@ -81,8 +81,8 @@ A program bundle contains `program.py` and a manifest binding its source hash, a
 layout and class order. Compatibility does not imply a gain on a different checkpoint; rerun and validate it.
 
 ```bash
-uv run cryowisp pack-program --program programs/resnet18-ridge-head/program.py --model work/model --out work/program
-uv run cryowisp apply --task work/task --program work/program --sandbox-python .venv-sandbox/bin/python --wall-s 600 --out work/reuse
+uv run cryowsp pack-program --program programs/resnet18-ridge-head/program.py --model work/model --out work/program
+uv run cryowsp apply --task work/task --program work/program --sandbox-python .venv-sandbox/bin/python --wall-s 600 --out work/reuse
 ```
 
 The bundled ridge-head example is an analytic, gradient-free head correction with old-logit anchors. It is a
@@ -99,7 +99,7 @@ When bubblewrap is unavailable, `apply` can run one program the user trusts with
 (for a program an earlier run accepted, `freeze.program_sha256` in that run's `report.json`):
 
 ```bash
-uv run cryowisp apply --task work/task --program work/program --program-sha256 "$PROGRAM_SHA256" --wall-s 600 --out work/reuse
+uv run cryowsp apply --task work/task --program work/program --program-sha256 "$PROGRAM_SHA256" --wall-s 600 --out work/reuse
 ```
 
 The engine refuses a program whose hash differs, runs it with the same limits and virtual clock but without
@@ -114,7 +114,7 @@ application MCP tools allowed. An outer Codex agent can operate the skill; this 
 The following is an example budget, not permission to incur spending without the user's requested run:
 
 ```bash
-uv run cryowisp synthesize --task work/task --sandbox-python .venv-sandbox/bin/python --editor-model sonnet --checks 8 --cells 100 --wall-s 1800 --out work/synthesis
+uv run cryowsp synthesize --task work/task --sandbox-python .venv-sandbox/bin/python --editor-model sonnet --checks 8 --cells 100 --wall-s 1800 --out work/synthesis
 ```
 
 Tools: `python(code)`, `check(program_file)`, `status()`, `finish()`. The editor sees `/work/trial` read-only and

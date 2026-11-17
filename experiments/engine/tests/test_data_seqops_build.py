@@ -1,6 +1,6 @@
 """The stored seqops dataset and its conditions: build, write, verify, the exclusion check and the old part.
 
-Nothing here reads the real stores: CRYOWISP_PRIVATE and CRYOWISP_SEALED point to tmp dirs.
+Nothing here reads the real stores: CRYOWSP_PRIVATE and CRYOWSP_SEALED point to tmp dirs.
 """
 
 from __future__ import annotations
@@ -12,9 +12,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from cryowisp.data import seqops as S
-from cryowisp.data import seqops_build as B
-from cryowisp.data.store import (
+from cryowsp.data import seqops as S
+from cryowsp.data import seqops_build as B
+from cryowsp.data.store import (
     load_split,
     read_dataset_json,
     save_split,
@@ -28,8 +28,8 @@ from cryowisp.data.store import (
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     for name in ("private", "sealed"):
         (tmp_path / name).mkdir()
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(tmp_path / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(tmp_path / "sealed"))
     return tmp_path
 
 

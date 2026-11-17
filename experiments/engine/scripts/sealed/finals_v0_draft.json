@@ -1,8 +1,8 @@
 {
-  "schema": "cryowisp.sealed_finals_list.v0",
+  "schema": "cryowsp.sealed_finals_list.v0",
   "status": "draft",
   "approval": null,
-  "note": "Draft v0 of the sealed-read list (PREREG Sealed read, main 6d186d4; scenario plan M6), drafted 2026-11-06 by session cryowisp-0e for CRYOWISP-main from the store's run records. Seed 100 finals only: E11 B both conditions, E12 B both conditions, the E10 stream v2 final student (four finals, one per condition instance), information ladder U and K1. Not yet in it: the E11 replication finals (s101, s102, both conditions), whose sessions have not run, and E13 and E14 if they enter the main text. Read once, after the last LLM session of the paper, only once the user has approved the list and it is committed with status approved.",
+  "note": "Draft v0 of the sealed-read list (PREREG Sealed read, main 6d186d4; scenario plan M6), drafted 2026-11-06 by session cryowsp-0e for CRYOWSP-main from the store's run records. Seed 100 finals only: E11 B both conditions, E12 B both conditions, the E10 stream v2 final student (four finals, one per condition instance), information ladder U and K1. Not yet in it: the E11 replication finals (s101, s102, both conditions), whose sessions have not run, and E13 and E14 if they enter the main text. Read once, after the last LLM session of the paper, only once the user has approved the list and it is committed with status approved.",
   "finals": [
     {
       "name": "E11_B_gaussian_s100",

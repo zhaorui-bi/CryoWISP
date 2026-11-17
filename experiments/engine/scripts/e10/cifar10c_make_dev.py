@@ -8,7 +8,7 @@ every split of ``SPLITS``, the clean split's images are corrupted by ``cifar10c_
 (condition, split)'s seed from ``DEV_SEEDS`` (one seed each, fixed here before any dev row exists) and written to
 ``<out-dir>/<condition>/<split>.npz`` with the single array ``x`` (NCHW uint8, the clean rows' order). A JSON record
 beside them states the inputs' sha256, the seeds, the official code and the libraries. Labels and row ids are not
-copied here: the project's store builder (``cryowisp.data.e10``) pairs each array with the clean split's y and idx and
+copied here: the project's store builder (``cryowsp.data.e10``) pairs each array with the clean split's y and idx and
 checks the row count. Nothing sealed is read. Refuses to overwrite.
 """
 
@@ -50,7 +50,7 @@ DEV_SEEDS = {
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--official", type=Path, required=True)
-    parser.add_argument("--clean-dir", type=Path, required=True, help="$CRYOWISP_PRIVATE/cifar10/splits")
+    parser.add_argument("--clean-dir", type=Path, required=True, help="$CRYOWSP_PRIVATE/cifar10/splits")
     parser.add_argument(
         "--fidelity", type=Path, required=True, help="the fidelity record (cifar10c_fidelity.py)"
     )
@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     staging = args.out_dir.with_name(args.out_dir.name + ".partial")
     staging.mkdir(parents=True)
     record = {
-        "schema": "cryowisp.e10.cifar10c_dev_rows.v1",
+        "schema": "cryowsp.e10.cifar10c_dev_rows.v1",
         "severity": O.SEVERITY,
         "official": {"commit": O.OFFICIAL_COMMIT, "file": O.OFFICIAL_FILE, "sha256": O.OFFICIAL_SHA256},
         "libraries": O.library_versions(),

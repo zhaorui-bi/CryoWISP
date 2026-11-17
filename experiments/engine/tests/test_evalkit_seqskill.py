@@ -1,6 +1,6 @@
 """Rule seqskill-v1: instance build and reuse, evidence format, check parts, oracle, readout and refusals.
 
-Nothing here reads the real stores: CRYOWISP_PRIVATE and CRYOWISP_SEALED point to tmp dirs. The student is a tiny tfm
+Nothing here reads the real stores: CRYOWSP_PRIVATE and CRYOWSP_SEALED point to tmp dirs. The student is a tiny tfm
 trained for a few steps; it answers nothing, which is all the rule needs from a base.
 """
 
@@ -13,14 +13,14 @@ import numpy as np
 import pytest
 import torch
 
-from cryowisp.data import seqops as S
-from cryowisp.data import seqops_build as B
-from cryowisp.data.store import forward_path, load_split
-from cryowisp.evalkit import seqskill as Q
-from cryowisp.models import train_seq as TS
-from cryowisp.models.export import write_index
-from cryowisp.models.forward_gen import render_seq_forward, write_forward
-from cryowisp.models.seq_export import export_seq_model
+from cryowsp.data import seqops as S
+from cryowsp.data import seqops_build as B
+from cryowsp.data.store import forward_path, load_split
+from cryowsp.evalkit import seqskill as Q
+from cryowsp.models import train_seq as TS
+from cryowsp.models.export import write_index
+from cryowsp.models.forward_gen import render_seq_forward, write_forward
+from cryowsp.models.seq_export import export_seq_model
 
 CONDITION = "new0_substitution"
 TINY = TS.SeqTrainConfig(d_model=16, n_layers=1, d_mlp=32, steps=3, warmup_steps=1, log_every=3)
@@ -30,8 +30,8 @@ TINY = TS.SeqTrainConfig(d_model=16, n_layers=1, d_mlp=32, steps=3, warmup_steps
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     for name in ("private", "sealed"):
         (tmp_path / name).mkdir()
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path / "private"))
-    monkeypatch.setenv("CRYOWISP_SEALED", str(tmp_path / "sealed"))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path / "private"))
+    monkeypatch.setenv("CRYOWSP_SEALED", str(tmp_path / "sealed"))
     sha = write_forward(forward_path(S.DATASET), render_seq_forward(**B.forward_constants()))
     base_manifest = B.write_built(B.build_base(), {"forward_path": "forward.py", "forward_sha256": sha})
     torch.manual_seed(0)

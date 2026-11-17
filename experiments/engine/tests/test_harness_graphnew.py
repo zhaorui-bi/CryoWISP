@@ -22,34 +22,34 @@ import pytest
 from test_evalkit_graphnew import store  # noqa: F401
 from test_harness_fixtures import needs_sandbox, read_jsonl, scripted_session
 
-from cryowisp.analysis.session_info import format_table, session_info
-from cryowisp.baselines.instance_io import load_instance
-from cryowisp.common.identity import params_sha256
-from cryowisp.evalkit import graphnew as GN
-from cryowisp.evalkit.devreadout import readout_run
-from cryowisp.harness import graphnew
-from cryowisp.harness.applying import ArmApplier
-from cryowisp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, applied_limits, arm_spec
-from cryowisp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
-from cryowisp.harness.instance import InstanceRefused, read_instance_record
-from cryowisp.harness.jsonio import file_sha256, read_json
-from cryowisp.harness.leaks import file_text
-from cryowisp.harness.ledger import CheckLedger
-from cryowisp.harness.prompts import PROMPT_DIR, render_system
-from cryowisp.harness.retention import (
+from cryowsp.analysis.session_info import format_table, session_info
+from cryowsp.baselines.instance_io import load_instance
+from cryowsp.common.identity import params_sha256
+from cryowsp.evalkit import graphnew as GN
+from cryowsp.evalkit.devreadout import readout_run
+from cryowsp.harness import graphnew
+from cryowsp.harness.applying import ArmApplier
+from cryowsp.harness.arms import PROGRAM_MAX_CHANGED_FRAC, applied_limits, arm_spec
+from cryowsp.harness.experience import EXPERIENCE_FILE, EXPERIENCE_KEYS
+from cryowsp.harness.instance import InstanceRefused, read_instance_record
+from cryowsp.harness.jsonio import file_sha256, read_json
+from cryowsp.harness.leaks import file_text
+from cryowsp.harness.ledger import CheckLedger
+from cryowsp.harness.prompts import PROMPT_DIR, render_system
+from cryowsp.harness.retention import (
     RetentionRuleError,
     check_floor_rows,
     kept_rule_record,
     kept_rule_record_rows,
     session_floor,
 )
-from cryowisp.harness.runner import SANDBOX_PYTHON, run_session, session_forbidden_strings
-from cryowisp.harness.session import SessionPaths
-from cryowisp.harness.tools import GRAPHNEW_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs
-from cryowisp.harness.transfer import run_transfer
-from cryowisp.harness.trial import CLEAN_VCHECK_FILE, TrialError, assemble
-from cryowisp.patch import Limits, PatchError, apply_patch
-from cryowisp.sandbox.program import ProgramSandbox
+from cryowsp.harness.runner import SANDBOX_PYTHON, run_session, session_forbidden_strings
+from cryowsp.harness.session import SessionPaths
+from cryowsp.harness.tools import GRAPHNEW_CHECK_SETS, PROGRAM_CHECK_SETS, tool_specs
+from cryowsp.harness.transfer import run_transfer
+from cryowsp.harness.trial import CLEAN_VCHECK_FILE, TrialError, assemble
+from cryowsp.patch import Limits, PatchError, apply_patch
+from cryowsp.sandbox.program import ProgramSandbox
 
 HEAD = ["conv3.weight", "conv3.bias"]
 SOURCE = {"rule": "E7 formula", "R": -4.93, "d": 0.1, "n_c": 3002, "n_s": 3002}  # the toy numbers are made up
@@ -63,7 +63,7 @@ KEPT_TEMPLATE_SHA256 = {
     "system_LEARN.md": "206fc7e3fd3239825c186bbe9906c046a1d93d11a95454458496603c608623d1",
     "system_LEARN_fewshot.md": "bb17d52ff6fe65bd4b1eeeff0f0041b316ef6c8ceb922869543d38fbb054382b",
     # task_LEARN.md of E2 session s93c1bda80ae82274 was e6ce25c2d7c8...; since 2026-11-04 it adds the clock line
-    # (wall_s_elapsed, wall_s_remaining in every tool result; CRYOWISP-main 18:05) and nothing else.
+    # (wall_s_elapsed, wall_s_remaining in every tool result; CRYOWSP-main 18:05) and nothing else.
     "task_LEARN.md": "96a563fd7f234b2af9ca2ab821bc951b65f6c457fc9e8e9579e61ddde07e6c1c",
     "system_LEARN_seqskill.md": "972ae9dede30df9017a8a1e285351829d6f1e63f0749d5170004e500b18d0563",
     "task_LEARN_seqskill.md": "b5c97584b11dd6035978777df4e61010ac2bdeb4952c9566e45da9f4de6f5df4",
@@ -93,7 +93,7 @@ def gid(store: dict, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:  #
     """The toy graphnew instance built, with a runs root for sessions."""
     runs = tmp_path / "runs"
     runs.mkdir()
-    monkeypatch.setenv("CRYOWISP_RUNS", str(runs))
+    monkeypatch.setenv("CRYOWSP_RUNS", str(runs))
     (outcome,) = GN.build_graphnew_instances()
     return str(outcome["instance_id"])
 
@@ -118,7 +118,7 @@ def _paragraphs(text: str) -> list[str]:
 
 
 def test_graphnew_names_agree_with_the_evalkit_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CRYOWISP_PRIVATE", str(tmp_path))
+    monkeypatch.setenv("CRYOWSP_PRIVATE", str(tmp_path))
     assert graphnew.GRAPHNEW_RULE == GN.GRAPHNEW_RULE and graphnew.GRAPH_FILE == GN.GRAPH_FILE
     assert graphnew.INSTANCE_ID_RE.pattern == GN.INSTANCE_ID_RE.pattern
     assert graphnew.GRAPHNEW_ROOT_NAME == GN.ROOT_NAME
@@ -176,7 +176,7 @@ def test_a_graphnew_id_resolves_in_its_store_and_refusals_come_before_writes(gid
             retention_floor_rows=floor,
             retention_floor_source=PLACEHOLDER,
         )
-    assert not list(Path(os.environ["CRYOWISP_RUNS"]).rglob("session.json"))  # refused before any write
+    assert not list(Path(os.environ["CRYOWSP_RUNS"]).rglob("session.json"))  # refused before any write
     task_path = GN.graphnew_instance_dir(gid) / "task.json"
     task_path.write_text(
         task_path.read_text(encoding="utf-8").replace("trained", "taught", 1), encoding="utf-8"
@@ -246,7 +246,7 @@ def test_the_graphnew_limits_exempt_the_head_and_count_batchnorm(gid: str, tmp_p
     def one_entry(tensor: str, value: float) -> dict:
         index = [0] * params[tensor].ndim
         return {
-            "schema": "cryowisp.patch.v0",
+            "schema": "cryowsp.patch.v0",
             "parent_sha256": instance.params_sha256,
             **WHY,
             "ops": [{"op": "add", "tensor": tensor, "index": [index], "values": [value]}],
@@ -264,7 +264,7 @@ def test_the_graphnew_limits_exempt_the_head_and_count_batchnorm(gid: str, tmp_p
     head = params["conv3.weight"]  # more than 20% of all entries, in the exempt head: the cap still binds
     assert head.size > PROGRAM_MAX_CHANGED_FRAC * sum(value.size for value in params.values())
     whole = {
-        "schema": "cryowisp.patch.v0",
+        "schema": "cryowsp.patch.v0",
         "parent_sha256": instance.params_sha256,
         **WHY,
         "ops": [
@@ -290,7 +290,7 @@ def test_the_graphnew_limits_exempt_the_head_and_count_batchnorm(gid: str, tmp_p
         }
         for name in running
     ]
-    patch = {"schema": "cryowisp.patch.v0", "parent_sha256": instance.params_sha256, **WHY, "ops": ops}
+    patch = {"schema": "cryowsp.patch.v0", "parent_sha256": instance.params_sha256, **WHY, "ops": ops}
     if counted > PROGRAM_MAX_CHANGED_FRAC * n_total:  # BatchNorm statistics count in the 20% cap
         with pytest.raises(PatchError):
             apply_patch(params, patch, None, limits, instance.params_sha256)

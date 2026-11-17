@@ -1,4 +1,4 @@
-"""The LLM-judge step (cryowisp/audit/judge.py, scripts/audit_judge.py) with a stand-in executable.
+"""The LLM-judge step (cryowsp/audit/judge.py, scripts/audit_judge.py) with a stand-in executable.
 
 The real claude CLI is never run here: every test that reaches the CLI passes the path of a small stand-in script
 that records its arguments and stdin and replies in the CLI's JSON output format.
@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from cryowisp.audit import judge as J
-from cryowisp.audit import report as R
-from cryowisp.audit.session import audit_session, read_cells, write_report
+from cryowsp.audit import judge as J
+from cryowsp.audit import report as R
+from cryowsp.audit.session import audit_session, read_cells, write_report
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "scripts" / "audit_judge.py"
@@ -309,7 +309,7 @@ def test_stale_or_foreign_report_is_refused_without_a_record(tmp_path: Path, sta
 
 
 def run_script(*args: str) -> subprocess.CompletedProcess[str]:
-    env = {key: value for key, value in os.environ.items() if not key.startswith("CRYOWISP_")}
+    env = {key: value for key, value in os.environ.items() if not key.startswith("CRYOWSP_")}
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
         capture_output=True,
